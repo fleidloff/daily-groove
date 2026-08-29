@@ -150,16 +150,22 @@ export type SamplePack = {
   describe(): PackDeclaration
 }
 
+export type VelocityLayer = { maxVelocity: number; files: string[] }   // files = round-robins
+
 export type PackDeclaration = {
   id: string
+  sampleRate: number
   voices: Partial<Record<VoiceName, {
-    layers?: { maxVelocity: number; files: string[] }[]   // drums: velocity layers + round-robins
-    notes?: { midi: number; file: string }[]              // pitched: sampled notes
+    layers?: VelocityLayer[]                              // percussive: layers of alternates
+    notes?: { midi: number; layers: VelocityLayer[] }[]   // pitched: sampled notes, each layered
   }>>
 }
 
 export type Track = { voice: VoiceName; pcm: Pcm }
 ```
+
+`midi` on a sampled note is its **sounding** pitch, which is not always what the source
+file is named — see `scripts/grooves/samples/README.md`.
 
 **Stage signatures — the four pipeline seams.**
 
@@ -633,6 +639,11 @@ Covers: R15, R16, AC10
 
 ### Track D — The sample pack
 
+> **Track D is complete.** The pack is sourced, processed and committed at
+> `scripts/grooves/samples/` — 83 files, 4.8 MB, all CC0 from VCSL, with `pack.json`,
+> `provenance.json`, `LICENSE.txt` and a README. The steps below record what it had to
+> satisfy; their tests still need writing once the generator exists.
+
 #### Step D1 — The pack declares itself
 
 Covers: R6, R17
@@ -664,8 +675,8 @@ Covers: R21, AC15
   `layers`, and `kick`, `snare` and `hatClosed` each have two or more `files` in their
   top layer. For `bass` and `comp`, assert the sampled `notes` are spaced closely enough
   that **no note in the voice's playable range is more than two semitones from a sampled
-  one** — a sample every third semitone or closer. Run it: fails until the sourcing
-  covers layers, alternates and a dense enough note map.
+  one** — which a 4-semitone spacing satisfies, since the renderer picks the nearest.
+  Run it: fails until the sourcing covers layers, alternates and a dense enough note map.
 - **Implement** — extend the sourced pack until it does.
 - **Green when** — all assertions pass. This is what stops Epic 2 needing a second
   sourcing round, and the note-spacing bound is what keeps linear resampling
@@ -817,8 +828,8 @@ Changed: nothing — Step C5 was already written this way, and is now confirmed 
 than provisional.
 
 **Carried in from Epic 2's Q2 (linear resampling retained):** Step D3 now asserts the
-pitched voices are sampled at least every third semitone, so the renderer never shifts
-a sample more than two semitones.
+pitched voices are sampled densely enough that the renderer never shifts a sample more
+than two semitones.
 
 **Carried in from Epic 4's Q2 (wall-clock start seed for minting):** the Architecture's
 determinism rule is narrowed to the render path, with minting named as the one

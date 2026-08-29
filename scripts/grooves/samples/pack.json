@@ -1,0 +1,527 @@
+{
+  "id": "vcsl-funk",
+  "sampleRate": 44100,
+  "voices": {
+    "kick": {
+      "layers": [
+        {
+          "maxVelocity": 0.45,
+          "files": [
+            "kick/Cajon_hit1_mp_rr1.flac",
+            "kick/Cajon_hit1_mp_rr2.flac"
+          ]
+        },
+        {
+          "maxVelocity": 0.8,
+          "files": [
+            "kick/Cajon_hit1_f_rr1.flac",
+            "kick/Cajon_hit1_f_rr2.flac"
+          ]
+        },
+        {
+          "maxVelocity": 1.0,
+          "files": [
+            "kick/Cajon_hit1_fff_rr1.flac",
+            "kick/Cajon_hit1_fff_rr2.flac"
+          ]
+        }
+      ]
+    },
+    "snare": {
+      "layers": [
+        {
+          "maxVelocity": 0.4,
+          "files": [
+            "snare/Snare2_HitNS_v2_rr1_Mid.flac",
+            "snare/Snare2_HitNS_v2_rr2_Mid.flac"
+          ]
+        },
+        {
+          "maxVelocity": 0.65,
+          "files": [
+            "snare/Snare2_HitNS_v4_rr1_Mid.flac",
+            "snare/Snare2_HitNS_v4_rr2_Mid.flac"
+          ]
+        },
+        {
+          "maxVelocity": 0.85,
+          "files": [
+            "snare/Snare2_HitNS_v5_rr1_Mid.flac",
+            "snare/Snare2_HitNS_v5_rr2_Mid.flac"
+          ]
+        },
+        {
+          "maxVelocity": 1.0,
+          "files": [
+            "snare/Snare2_HitNS_v6_rr1_Mid.flac",
+            "snare/Snare2_HitNS_v6_rr2_Mid.flac"
+          ]
+        }
+      ]
+    },
+    "hatClosed": {
+      "layers": [
+        {
+          "maxVelocity": 0.35,
+          "files": [
+            "hatClosed/HiHat_HitC_v1_rr1_Mid.flac",
+            "hatClosed/HiHat_HitC_v1_rr2_Mid.flac"
+          ]
+        },
+        {
+          "maxVelocity": 0.6,
+          "files": [
+            "hatClosed/HiHat_HitC_v2_rr1_Mid.flac",
+            "hatClosed/HiHat_HitC_v2_rr2_Mid.flac"
+          ]
+        },
+        {
+          "maxVelocity": 0.8,
+          "files": [
+            "hatClosed/HiHat_HitC_v3_rr1_Mid.flac",
+            "hatClosed/HiHat_HitC_v3_rr2_Mid.flac"
+          ]
+        },
+        {
+          "maxVelocity": 1.0,
+          "files": [
+            "hatClosed/HiHat_HitC_v4_rr1_Mid.flac",
+            "hatClosed/HiHat_HitC_v4_rr2_Mid.flac"
+          ]
+        }
+      ]
+    },
+    "hatOpen": {
+      "layers": [
+        {
+          "maxVelocity": 1.0,
+          "files": [
+            "hatOpen/HiHat_HitO_rr1_Mid.flac",
+            "hatOpen/HiHat_HitO_rr2_Mid.flac",
+            "hatOpen/HiHat_HitLoose_rr1_Mid.flac",
+            "hatOpen/HiHat_HitLoose_rr2_Mid.flac"
+          ]
+        }
+      ]
+    },
+    "rim": {
+      "layers": [
+        {
+          "maxVelocity": 0.5,
+          "files": [
+            "rim/wood_click_pp_rr1.flac",
+            "rim/wood_click_pp_rr2.flac",
+            "rim/wood_click_pp_rr3.flac"
+          ]
+        },
+        {
+          "maxVelocity": 1.0,
+          "files": [
+            "rim/wood_click_f_rr1.flac",
+            "rim/wood_click_f_rr2.flac",
+            "rim/wood_click_ff.flac"
+          ]
+        }
+      ]
+    },
+    "bass": {
+      "notes": [
+        {
+          "midi": 24,
+          "layers": [
+            {
+              "maxVelocity": 0.45,
+              "files": [
+                "bass/FMPiano_C1_vl1.flac"
+              ]
+            },
+            {
+              "maxVelocity": 0.8,
+              "files": [
+                "bass/FMPiano_C1_vl2.flac"
+              ]
+            },
+            {
+              "maxVelocity": 1.0,
+              "files": [
+                "bass/FMPiano_C1_vl3.flac"
+              ]
+            }
+          ]
+        },
+        {
+          "midi": 28,
+          "layers": [
+            {
+              "maxVelocity": 0.45,
+              "files": [
+                "bass/FMPiano_E1_vl1.flac"
+              ]
+            },
+            {
+              "maxVelocity": 0.8,
+              "files": [
+                "bass/FMPiano_E1_vl2.flac"
+              ]
+            },
+            {
+              "maxVelocity": 1.0,
+              "files": [
+                "bass/FMPiano_E1_vl3.flac"
+              ]
+            }
+          ]
+        },
+        {
+          "midi": 32,
+          "layers": [
+            {
+              "maxVelocity": 0.45,
+              "files": [
+                "bass/FMPiano_G#1_vl1.flac"
+              ]
+            },
+            {
+              "maxVelocity": 0.8,
+              "files": [
+                "bass/FMPiano_G#1_vl2.flac"
+              ]
+            },
+            {
+              "maxVelocity": 1.0,
+              "files": [
+                "bass/FMPiano_G#1_vl3.flac"
+              ]
+            }
+          ]
+        },
+        {
+          "midi": 36,
+          "layers": [
+            {
+              "maxVelocity": 0.45,
+              "files": [
+                "bass/FMPiano_C2_vl1.flac"
+              ]
+            },
+            {
+              "maxVelocity": 0.8,
+              "files": [
+                "bass/FMPiano_C2_vl2.flac"
+              ]
+            },
+            {
+              "maxVelocity": 1.0,
+              "files": [
+                "bass/FMPiano_C2_vl3.flac"
+              ]
+            }
+          ]
+        },
+        {
+          "midi": 40,
+          "layers": [
+            {
+              "maxVelocity": 0.45,
+              "files": [
+                "bass/FMPiano_E2_vl1.flac"
+              ]
+            },
+            {
+              "maxVelocity": 0.8,
+              "files": [
+                "bass/FMPiano_E2_vl2.flac"
+              ]
+            },
+            {
+              "maxVelocity": 1.0,
+              "files": [
+                "bass/FMPiano_E2_vl3.flac"
+              ]
+            }
+          ]
+        },
+        {
+          "midi": 44,
+          "layers": [
+            {
+              "maxVelocity": 0.45,
+              "files": [
+                "bass/FMPiano_G#2_vl1.flac"
+              ]
+            },
+            {
+              "maxVelocity": 0.8,
+              "files": [
+                "bass/FMPiano_G#2_vl2.flac"
+              ]
+            },
+            {
+              "maxVelocity": 1.0,
+              "files": [
+                "bass/FMPiano_G#2_vl3.flac"
+              ]
+            }
+          ]
+        },
+        {
+          "midi": 48,
+          "layers": [
+            {
+              "maxVelocity": 0.45,
+              "files": [
+                "bass/FMPiano_C3_vl1.flac"
+              ]
+            },
+            {
+              "maxVelocity": 0.8,
+              "files": [
+                "bass/FMPiano_C3_vl2.flac"
+              ]
+            },
+            {
+              "maxVelocity": 1.0,
+              "files": [
+                "bass/FMPiano_C3_vl3.flac"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "comp": {
+      "notes": [
+        {
+          "midi": 48,
+          "layers": [
+            {
+              "maxVelocity": 0.45,
+              "files": [
+                "comp/Clavisynth_C1_vl1.flac"
+              ]
+            },
+            {
+              "maxVelocity": 0.8,
+              "files": [
+                "comp/Clavisynth_C1_vl2.flac"
+              ]
+            },
+            {
+              "maxVelocity": 1.0,
+              "files": [
+                "comp/Clavisynth_C1_vl3.flac"
+              ]
+            }
+          ]
+        },
+        {
+          "midi": 52,
+          "layers": [
+            {
+              "maxVelocity": 0.45,
+              "files": [
+                "comp/Clavisynth_E1_vl1.flac"
+              ]
+            },
+            {
+              "maxVelocity": 0.8,
+              "files": [
+                "comp/Clavisynth_E1_vl2.flac"
+              ]
+            },
+            {
+              "maxVelocity": 1.0,
+              "files": [
+                "comp/Clavisynth_E1_vl3.flac"
+              ]
+            }
+          ]
+        },
+        {
+          "midi": 56,
+          "layers": [
+            {
+              "maxVelocity": 0.45,
+              "files": [
+                "comp/Clavisynth_G#1_vl1.flac"
+              ]
+            },
+            {
+              "maxVelocity": 0.8,
+              "files": [
+                "comp/Clavisynth_G#1_vl2.flac"
+              ]
+            },
+            {
+              "maxVelocity": 1.0,
+              "files": [
+                "comp/Clavisynth_G#1_vl3.flac"
+              ]
+            }
+          ]
+        },
+        {
+          "midi": 60,
+          "layers": [
+            {
+              "maxVelocity": 0.45,
+              "files": [
+                "comp/Clavisynth_C2_vl1.flac"
+              ]
+            },
+            {
+              "maxVelocity": 0.8,
+              "files": [
+                "comp/Clavisynth_C2_vl2.flac"
+              ]
+            },
+            {
+              "maxVelocity": 1.0,
+              "files": [
+                "comp/Clavisynth_C2_vl3.flac"
+              ]
+            }
+          ]
+        },
+        {
+          "midi": 64,
+          "layers": [
+            {
+              "maxVelocity": 0.45,
+              "files": [
+                "comp/Clavisynth_E2_vl1.flac"
+              ]
+            },
+            {
+              "maxVelocity": 0.8,
+              "files": [
+                "comp/Clavisynth_E2_vl2.flac"
+              ]
+            },
+            {
+              "maxVelocity": 1.0,
+              "files": [
+                "comp/Clavisynth_E2_vl3.flac"
+              ]
+            }
+          ]
+        },
+        {
+          "midi": 68,
+          "layers": [
+            {
+              "maxVelocity": 0.45,
+              "files": [
+                "comp/Clavisynth_G#2_vl1.flac"
+              ]
+            },
+            {
+              "maxVelocity": 0.8,
+              "files": [
+                "comp/Clavisynth_G#2_vl2.flac"
+              ]
+            },
+            {
+              "maxVelocity": 1.0,
+              "files": [
+                "comp/Clavisynth_G#2_vl3.flac"
+              ]
+            }
+          ]
+        },
+        {
+          "midi": 72,
+          "layers": [
+            {
+              "maxVelocity": 0.45,
+              "files": [
+                "comp/Clavisynth_C3_vl1.flac"
+              ]
+            },
+            {
+              "maxVelocity": 0.8,
+              "files": [
+                "comp/Clavisynth_C3_vl2.flac"
+              ]
+            },
+            {
+              "maxVelocity": 1.0,
+              "files": [
+                "comp/Clavisynth_C3_vl3.flac"
+              ]
+            }
+          ]
+        },
+        {
+          "midi": 76,
+          "layers": [
+            {
+              "maxVelocity": 0.45,
+              "files": [
+                "comp/Clavisynth_E3_vl1.flac"
+              ]
+            },
+            {
+              "maxVelocity": 0.8,
+              "files": [
+                "comp/Clavisynth_E3_vl2.flac"
+              ]
+            },
+            {
+              "maxVelocity": 1.0,
+              "files": [
+                "comp/Clavisynth_E3_vl3.flac"
+              ]
+            }
+          ]
+        },
+        {
+          "midi": 80,
+          "layers": [
+            {
+              "maxVelocity": 0.45,
+              "files": [
+                "comp/Clavisynth_G#3_vl1.flac"
+              ]
+            },
+            {
+              "maxVelocity": 0.8,
+              "files": [
+                "comp/Clavisynth_G#3_vl2.flac"
+              ]
+            },
+            {
+              "maxVelocity": 1.0,
+              "files": [
+                "comp/Clavisynth_G#3_vl3.flac"
+              ]
+            }
+          ]
+        },
+        {
+          "midi": 84,
+          "layers": [
+            {
+              "maxVelocity": 0.45,
+              "files": [
+                "comp/Clavisynth_C4_vl1.flac"
+              ]
+            },
+            {
+              "maxVelocity": 0.8,
+              "files": [
+                "comp/Clavisynth_C4_vl2.flac"
+              ]
+            },
+            {
+              "maxVelocity": 1.0,
+              "files": [
+                "comp/Clavisynth_C4_vl3.flac"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
