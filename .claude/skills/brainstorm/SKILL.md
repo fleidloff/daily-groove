@@ -127,7 +127,24 @@ that's the answer. Two options ticked → take both if they're compatible and no
 it; otherwise ask which. An answer contradicts an earlier logged decision →
 surface the conflict rather than silently preferring the newer one.
 
-## 7. Diagram only where it helps
+## 7. Keep the feature index current
+
+`specs/features.md` holds one table row per feature with a single-sentence
+summary. A reconcile cycle can change what the feature *is* — an answer that
+cuts a capability, adds one, or redefines the core interaction.
+
+After folding answers in, reread the feature's row:
+
+- Still true → leave it. Most cycles change detail, not identity, and churning
+  the index for every PRD edit makes it useless as a change signal.
+- No longer true → rewrite the summary to match the settled PRDs.
+- Row missing entirely → add one, in feature-number order:
+  `| [N](feature-N/) | <short name> | <one-sentence summary> |`
+
+Never expand the row into epic-level detail; the index stays one line per
+feature.
+
+## 8. Diagram only where it helps
 
 A diagram earns its place when it shows something prose states clumsily — a
 branching flow, a lifecycle, a multi-actor exchange, a set of relations. One
@@ -135,8 +152,9 @@ that restates a bulleted list is noise that now needs maintaining. Most simple
 PRDs need zero or one. See [references/uml.md](references/uml.md) for choosing a
 type and the Mermaid syntax.
 
-## 8. Report back
+## 9. Report back
 
 Per epic: the file written or updated, the answers folded in and where they
 landed, anything an answer contradicted and how you resolved it, and the count
-of questions now open — or that the PRD is settled.
+of questions now open — or that the PRD is settled. Mention the
+`specs/features.md` row only if you changed it.

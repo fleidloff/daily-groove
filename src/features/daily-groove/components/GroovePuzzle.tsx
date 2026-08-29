@@ -17,9 +17,9 @@ import {
 import { createAudioPlayer, type AudioPlayer } from '../lib/audio'
 import { toArchiveEntries } from '../lib/archive'
 import { dotStates, selectFeedback, shouldShowNudge } from '../lib/feedback'
-import { flavourOptions, parseScale, ROOTS } from '../lib/music'
+import { answerOf, flavourOptions, ROOTS } from '../lib/music'
 import { isoDate, selectGrooveForDate } from '../lib/selectGroove'
-import { GROOVES } from '../lib/seed'
+import { GROOVES } from '../lib/grooves.generated'
 import { useProgress } from '../hooks/useProgress'
 import { ArchiveStrip } from './ArchiveStrip'
 import { GrooveCard } from './GrooveCard'
@@ -70,7 +70,8 @@ function createTransport(src: string): Transport {
 
   function ensurePlayer(): AudioPlayer {
     if (!player) {
-      player = createAudioPlayer(src)
+      // The groove repeats until the player stops it (R17).
+      player = createAudioPlayer(src, { loop: true })
       unsubscribe = player.subscribe(notify)
     }
     return player
@@ -156,8 +157,9 @@ function GroovePuzzleView({ groove }: { groove: Groove }) {
   const { streak, history, todayResult, loaded, recordAttempt } =
     useProgress(todayIso)
 
-  // The answer is derived from the groove's own `scale` — one source of truth.
-  const answer = useMemo(() => parseScale(groove.scale), [groove.scale])
+  // The answer is the groove's own `root` and `flavour` fields — the values
+  // the generator wrote next to the audio, not a parse of its `scale` string.
+  const answer = useMemo(() => answerOf(groove), [groove])
 
   // One store instance per puzzle, created once. Held in state (not a ref) so it
   // is stable across renders without reading a ref during render. It is created

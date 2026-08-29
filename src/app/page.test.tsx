@@ -7,10 +7,9 @@ import Home from "./page";
 import { selectGrooveForDate } from "@/features/daily-groove/lib/selectGroove";
 import {
   flavourOptions,
-  parseScale,
   ROOTS,
 } from "@/features/daily-groove/lib/music";
-import { GROOVES } from "@/features/daily-groove/lib/seed";
+import { GROOVES } from "@/features/daily-groove/lib/grooves.generated";
 
 // Audio is mocked so rendering never touches jsdom media playback.
 vi.mock("@/features/daily-groove/lib/audio", () => ({
@@ -100,7 +99,7 @@ describe("Home route", () => {
         .getAllByRole("button")
         .map((b) => b.textContent),
     ).toEqual(expected);
-    expect(expected).toContain(parseScale(groove.scale).flavour);
+    expect(expected).toContain(groove.flavour);
   });
 
   it("offers all twelve roots, in the design's order", async () => {

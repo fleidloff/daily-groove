@@ -141,7 +141,22 @@ are the roadmap's load-bearing guesses.
 Omit `Assumptions` or `Open questions` if genuinely empty. Keep the prose
 tight; this is a document someone will act on, not a proposal to sell.
 
-## 5. Ask what you don't know
+## 5. Update the feature index
+
+`specs/features.md` is the one-page index of every feature — one table row each,
+a single sentence of summary. Keep it in step with the roadmap you just wrote.
+
+- **No row for this feature yet** → add one, in feature-number order:
+  `| [N](feature-N/) | <short name> | <one-sentence summary> |`
+- **Row exists** → rewrite the summary if the roadmap sharpened, widened, or
+  narrowed what the feature actually is. If it still reads true, leave it alone.
+- **No `specs/features.md` at all** → create it with the same table shape.
+
+The summary describes the feature's outcome in one sentence — what a person can
+do afterwards that they couldn't before. Not the epic list, not the phasing;
+that's what the roadmap is for. Keep it to a line so the index stays scannable.
+
+## 6. Ask what you don't know
 
 Write down every question where you are less than ~90% confident and where the
 answer would change the roadmap's shape — epic boundaries, ordering, scope,
@@ -172,7 +187,8 @@ When none of the four fits, the user will write their own; that's expected.
 Write the roadmap even when questions remain. State the assumption you proceeded
 under so the document stands on its own, and let the answers refine it.
 
-## 6. Report back
+## 7. Report back
 
-Tell the user the path you wrote, the epic names in wave order, and the count of
-open questions — pointing them at the bottom of the file to answer.
+Tell the user the path you wrote, the epic names in wave order, whether you
+added or updated the `specs/features.md` row, and the count of open questions —
+pointing them at the bottom of the file to answer.

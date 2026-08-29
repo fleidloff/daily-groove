@@ -1,0 +1,82 @@
+[
+  {
+    "id": "groove-01",
+    "template": "straight-funk",
+    "seed": 1
+  },
+  {
+    "id": "groove-02",
+    "template": "straight-funk",
+    "seed": 2
+  },
+  {
+    "id": "groove-03",
+    "template": "straight-funk",
+    "seed": 3
+  },
+  {
+    "id": "groove-04",
+    "template": "straight-funk",
+    "seed": 4
+  },
+  {
+    "id": "groove-05",
+    "template": "shuffle",
+    "seed": 5
+  },
+  {
+    "id": "groove-06",
+    "template": "shuffle",
+    "seed": 6
+  },
+  {
+    "id": "groove-07",
+    "template": "shuffle",
+    "seed": 7
+  },
+  {
+    "id": "groove-08",
+    "template": "shuffle",
+    "seed": 8
+  },
+  {
+    "id": "groove-09",
+    "template": "bright-straight",
+    "seed": 9
+  },
+  {
+    "id": "groove-10",
+    "template": "bright-straight",
+    "seed": 10
+  },
+  {
+    "id": "groove-11",
+    "template": "bright-straight",
+    "seed": 13
+  },
+  {
+    "id": "groove-12",
+    "template": "bright-straight",
+    "seed": 14
+  },
+  {
+    "id": "groove-13",
+    "template": "half-time",
+    "seed": 11
+  },
+  {
+    "id": "groove-14",
+    "template": "half-time",
+    "seed": 12
+  },
+  {
+    "id": "groove-15",
+    "template": "half-time",
+    "seed": 16
+  },
+  {
+    "id": "groove-16",
+    "template": "half-time",
+    "seed": 22
+  }
+]

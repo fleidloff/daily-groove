@@ -8,7 +8,11 @@
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "grooves": "node scripts/grooves/cli.ts",
+    "grooves:add": "node scripts/grooves/add-cli.ts",
+    "grooves:verify": "node scripts/grooves/verify-cli.ts",
+    "prebuild": "npm run grooves:verify"
   },
   "dependencies": {
     "next": "16.3.1",

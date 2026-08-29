@@ -1,24 +1,32 @@
 import { describe, it, expect } from 'vitest'
-import { GROOVES } from './seed'
-import { ROOTS, flavourOptions, flavourPool, parseScale } from './music'
+import { GROOVES } from './grooves.generated'
+import { ROOTS, answerOf, flavourOptions, flavourPool } from './music'
 
-describe('parseScale', () => {
-  it('splits a scale into its root and title-cased flavour', () => {
-    expect(parseScale('A dorian')).toEqual({ root: 'A', flavour: 'Dorian' })
+describe('answerOf', () => {
+  it("reads the answer from the groove's own root and flavour fields", () => {
+    const groove = { ...GROOVES[0], root: 'A' as const, flavour: 'Dorian' }
+    expect(answerOf(groove)).toEqual({ root: 'A', flavour: 'Dorian' })
   })
 
-  it('parses the design example', () => {
-    expect(parseScale('G mixolydian')).toEqual({
-      root: 'G',
-      flavour: 'Mixolydian',
-    })
-  })
-
-  it('keeps a multi-word flavour intact by splitting on the first space only', () => {
-    expect(parseScale('E♭ harmonic minor')).toEqual({
-      root: 'E♭',
+  it('keeps a two-word flavour intact, which a parse of `scale` would not', () => {
+    // 'E\u266d harmonic minor' split on the first space gives flavour
+    // 'harmonic minor' but a naive split gives root 'harmonic'. Reading the
+    // fields cannot go wrong either way.
+    const groove = {
+      ...GROOVES[0],
+      scale: 'E\u266d harmonic minor',
+      root: 'E\u266d' as const,
+      flavour: 'Harmonic minor',
+    }
+    expect(answerOf(groove)).toEqual({
+      root: 'E\u266d',
       flavour: 'Harmonic minor',
     })
+  })
+
+  it('ignores the display string entirely', () => {
+    const groove = { ...GROOVES[0], scale: 'nonsense', root: 'G' as const, flavour: 'Major' }
+    expect(answerOf(groove)).toEqual({ root: 'G', flavour: 'Major' })
   })
 })
 
@@ -29,11 +37,11 @@ describe('ROOTS', () => {
   })
 })
 
-describe('every seeded groove', () => {
-  it.each(GROOVES.map((g) => [g.id, g.scale] as const))(
-    '%s (%s) parses to a known root and a non-empty flavour',
-    (_id, scale) => {
-      const answer = parseScale(scale)
+describe('every groove in the catalogue', () => {
+  it.each(GROOVES.map((g) => [g.id, g] as const))(
+    '%s answers to a known root and a non-empty flavour',
+    (_id, groove) => {
+      const answer = answerOf(groove)
       expect(ROOTS).toContain(answer.root)
       expect(answer.flavour.length).toBeGreaterThan(0)
     },
@@ -41,12 +49,15 @@ describe('every seeded groove', () => {
 })
 
 describe('flavourPool', () => {
-  it('is derived from the seed data', () => {
-    const pool = flavourPool(GROOVES)
-    expect(pool).toContain('Dorian')
-    expect(pool).toContain('Locrian')
-    expect(pool).not.toContain('Blues')
-    expect(pool).not.toContain('Harmonic minor')
+  it('is exactly the set of flavours the catalogue actually uses', () => {
+    // Asserted as a property of the data rather than against a fixed list, so
+    // the test keeps its meaning when the generated catalogue changes.
+    const used = GROOVES.map((g) => g.flavour)
+    expect(flavourPool(GROOVES)).toEqual([...new Set(used)].sort())
+  })
+
+  it('omits a flavour no groove uses', () => {
+    expect(flavourPool(GROOVES)).not.toContain('Whole tone')
   })
 
   it('has no duplicates', () => {
@@ -55,8 +66,10 @@ describe('flavourPool', () => {
   })
 
   it('widens automatically when a groove uses a new flavour', () => {
-    const extra = { ...GROOVES[0], id: 'extra', scale: 'C blues' }
-    expect(flavourPool([...GROOVES, extra])).toContain('Blues')
+    // A flavour no real groove carries, so this cannot pass vacuously.
+    const extra = { ...GROOVES[0], id: 'extra', scale: 'C whole tone', flavour: 'Whole tone' }
+    expect(flavourPool(GROOVES)).not.toContain('Whole tone')
+    expect(flavourPool([...GROOVES, extra])).toContain('Whole tone')
   })
 })
 
@@ -72,7 +85,7 @@ describe('flavourOptions', () => {
       const groove = GROOVES[2]
       const options = flavourOptions(date, groove)
       expect(options).toHaveLength(4)
-      expect(options).toContain(parseScale(groove.scale).flavour)
+      expect(options).toContain(groove.flavour)
       expect(new Set(options).size).toBe(4)
     },
   )

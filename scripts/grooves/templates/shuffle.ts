@@ -1,0 +1,51 @@
+import type { FeelTemplate } from '../types.ts'
+
+/**
+ * A medium shuffle: eighth notes swung nearly all the way to triplets.
+ *
+ * `swing: 0.64` is the number that makes this a shuffle rather than a lightly
+ * pushed straight feel. `applySwing` delays each off-beat by `swing × half a
+ * step`, so on an eighth-note grid 0.64 puts the "and" at 0.66 of the beat —
+ * within a hair of the 2:1 triplet a drummer plays. Anything under about 0.4
+ * reads as a straight eighth with a lean; 1.0 would collapse the off-beat onto
+ * the next on-beat.
+ *
+ * The kit is a ride-and-hats shuffle with no cross-stick: the shuffle's
+ * character is in the hand pattern, and a rim on top of it only clutters the
+ * bar. The humanize bounds are the loosest of the four — a shuffle that is
+ * metronomically exact stops swinging.
+ *
+ * `flavours` carries blues and minor. This is the pairing R2 is really about:
+ * a shuffle is where the blues scale and the natural minor live, and a player
+ * who hears the feel has already narrowed the answer honestly.
+ */
+export const shuffle: FeelTemplate = {
+  id: 'shuffle',
+  tempoRange: [78, 92],
+  subdivision: 8,
+  swing: 0.64,
+  flavours: ['blues', 'minor'],
+  voices: ['kick', 'snare', 'hatClosed', 'hatOpen', 'bass', 'comp'],
+  humanize: { timingMs: 16, velocity: 0.13 },
+  // Bass and kick carry the weight; the comp sits back so the hand pattern
+  // stays the loudest thing above the backbeat.
+  gain: {
+    kick: -5,
+    snare: -5,
+    hatClosed: -12,
+    hatOpen: -11,
+    bass: -4,
+    comp: -12,
+  },
+  // The mirror image of straight-funk's kit: hats to the left, comp to the
+  // right, so two shuffles and two funks in a row do not sound like one room.
+  pan: {
+    kick: 0,
+    snare: 0.06,
+    hatClosed: -0.32,
+    hatOpen: -0.38,
+    bass: 0,
+    comp: 0.28,
+  },
+  density: { minPerBar: 16, maxPerBar: 38 },
+}

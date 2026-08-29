@@ -55,6 +55,20 @@ export const FLAVOUR_INTERVALS: Record<Flavour, number[]> = {
   Mixolydian: [0, 2, 4, 5, 7, 9, 10],
   Minor: [0, 2, 3, 5, 7, 8, 10],
   Locrian: [0, 1, 3, 5, 6, 8, 10],
+  'Harmonic minor': [0, 2, 3, 5, 7, 8, 11],
+  Blues: [0, 3, 5, 6, 7, 10],
+}
+
+/**
+ * Which letter each degree takes, for scales that are not seven notes.
+ *
+ * The one-letter-per-degree rule that spells the modes correctly cannot spell
+ * the blues scale: it has six degrees, and its ♭5 and 5 share a letter — C blues
+ * is C E♭ F G♭ G B♭, with two Gs and no A or D. So a scale whose length is not
+ * seven declares its letters explicitly, as offsets from the root's letter.
+ */
+export const FLAVOUR_LETTER_STEPS: Record<string, number[]> = {
+  Blues: [0, 2, 3, 4, 4, 6],
 }
 
 /** Thrown when a flavour has no interval entry, so the gap fails loudly. */
@@ -81,9 +95,10 @@ function lookup<T>(table: Record<Flavour, T>, flavour: Flavour): T | undefined {
 }
 
 /**
- * The seven spelled notes of an answer's scale, in ascending order from the
- * root. Throws rather than returning a short array, so an unknown flavour
- * surfaces in tests instead of as a broken column in production.
+ * The spelled notes of an answer's scale, in ascending order from the root —
+ * seven for the modes, six for the blues. Throws rather than returning a short
+ * array, so an unknown flavour surfaces in tests instead of as a broken column
+ * in production.
  */
 export function scaleNotes(answer: Answer): string[] {
   const intervals = lookup(FLAVOUR_INTERVALS, answer.flavour)
@@ -93,9 +108,13 @@ export function scaleNotes(answer: Answer): string[] {
   const rootLetterIndex = LETTERS.indexOf(letter as (typeof LETTERS)[number])
   const rootPitch = (NATURAL[letter] + offset + 12) % 12
 
+  const letterSteps = FLAVOUR_LETTER_STEPS[answer.flavour]
+
   return intervals.map((semitones, degree) => {
-    // One letter per degree, ascending from the root's own letter.
-    const noteLetter = LETTERS[(rootLetterIndex + degree) % LETTERS.length]
+    // One letter per degree, ascending from the root's own letter — unless the
+    // flavour declares its own letters, as the blues scale must.
+    const step = letterSteps ? letterSteps[degree] : degree
+    const noteLetter = LETTERS[(rootLetterIndex + step) % LETTERS.length]
     const target = (rootPitch + semitones) % 12
     // Signed distance from the natural letter to the pitch we need, folded into
     // -6..+5 so a wrap across C does not read as an eleven-semitone leap.

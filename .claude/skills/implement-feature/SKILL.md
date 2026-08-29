@@ -168,7 +168,32 @@ Verification stays in `/verify-epic` and repair stays here, deliberately: a
 verifier that can also fix is a verifier that can talk itself into a green
 report.
 
-## 10. Report
+## 10. Mark the feature done in `specs/features.md`
+
+`specs/features.md` carries a **Status** column running 📋 Planned → 🛠 Ready to
+implement → 🔨 In progress → ✅ Done. This step moves the row off whatever
+`/writespec` left it on, using the verified results — never the sense that the
+run went well.
+
+- **Every epic in the feature passed `/verify-epic` clean, and every AC is
+  marked Done** → set the status to ✅ Done.
+- **Some epics done, others not started or not clean** → 🔨 In progress.
+- **A single AC is Partly or Not done** → the feature is not Done. Leave it
+  🔨 In progress and say so in the report.
+
+Run narrowed to one epic (`/implement-feature feature-8 epic-2`)? Only the
+epics you ran can change status. The rest of the feature is untouched, so unless
+this was the last outstanding epic the row stays 🔨 In progress.
+
+Untested is not done. An AC with no passing test behind it may well work, but
+nothing will tell you when it stops — and a ✅ that means "probably" makes the
+whole index worthless for planning. That is the one thing this column is for.
+
+Leave the summary text alone. Implementation reports status, not scope; a
+briefing that turned out to describe something different is a conversation to
+have, not a row to quietly rewrite.
+
+## 11. Report
 
 Write the run report to `specs/<feature>/.implement/report.md` and summarize it
 in chat, using
@@ -186,3 +211,6 @@ them from memory or re-grade them more kindly. Every AC from every PRD, marked:
 Only ever mark Done what a passing test actually demonstrates. This table is the
 deliverable of the whole run; an inflated one makes every later decision worse,
 and the user cannot tell without redoing the work themselves.
+
+Close by stating the feature's status in `specs/features.md` and whether this
+run changed it.

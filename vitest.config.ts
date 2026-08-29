@@ -10,9 +10,28 @@ export default defineConfig({
     },
   },
   test: {
-    environment: 'jsdom',
-    globals: true,
-    setupFiles: ['./vitest.setup.ts'],
-    include: ['src/**/*.{test,spec}.{ts,tsx}'],
+    projects: [
+      {
+        plugins: [react()],
+        resolve: {
+          alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
+        },
+        test: {
+          name: 'app',
+          environment: 'jsdom',
+          globals: true,
+          setupFiles: ['./vitest.setup.ts'],
+          include: ['src/**/*.{test,spec}.{ts,tsx}'],
+        },
+      },
+      {
+        test: {
+          name: 'generator',
+          environment: 'node',
+          globals: true,
+          include: ['scripts/**/*.{test,spec}.ts'],
+        },
+      },
+    ],
   },
 })

@@ -8,6 +8,8 @@ type FakeAudio = {
   duration: number
   play: ReturnType<typeof vi.fn>
   pause: ReturnType<typeof vi.fn>
+  addEventListener: ReturnType<typeof vi.fn>
+  removeEventListener: ReturnType<typeof vi.fn>
 }
 
 let instances: FakeAudio[]
@@ -39,6 +41,8 @@ beforeEach(() => {
       duration: NaN,
       play: vi.fn().mockResolvedValue(undefined),
       pause: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
     }
     instances.push(el)
     return el
@@ -73,10 +77,77 @@ describe('createAudioPlayer', () => {
     player.dispose()
   })
 
-  // Step C2 — playback loops.
-  it('loops the element', () => {
-    const player = createAudioPlayer('/grooves/x.mp3')
+  // Step C2 / Step D1 — playback loops, but only when the caller asks.
+  it('loops the element when asked (R17, AC11)', () => {
+    const player = createAudioPlayer('/grooves/x.mp3', { loop: true })
     expect(instances[0].loop).toBe(true)
+    player.dispose()
+  })
+
+  it('does not loop by default (R17)', () => {
+    const player = createAudioPlayer('/grooves/x.mp3')
+    expect(instances[0].loop).toBe(false)
+    player.dispose()
+  })
+
+  it('does not loop when the option is absent or false (R17)', () => {
+    const withEmpty = createAudioPlayer('/grooves/x.mp3', {})
+    expect(instances[0].loop).toBe(false)
+    withEmpty.dispose()
+
+    const withFalse = createAudioPlayer('/grooves/x.mp3', { loop: false })
+    expect(instances[1].loop).toBe(false)
+    withFalse.dispose()
+  })
+
+  // AC11 — the wrap is the element's own, so there is no gap at the loop point.
+  it('loops through the element, never by re-triggering on "ended" (R17, AC11)', async () => {
+    const player = createAudioPlayer('/grooves/x.mp3', { loop: true })
+    const el = instances[0]
+
+    await player.play()
+    expect(el.play).toHaveBeenCalledTimes(1)
+
+    // The element reaches the end of the loop and wraps itself.
+    el.duration = 12
+    el.currentTime = 12
+    el.currentTime = 0
+    flushFrames(2)
+
+    // Playback carried on with no second play() and no `ended` handler.
+    expect(el.play).toHaveBeenCalledTimes(1)
+    expect(el.pause).not.toHaveBeenCalled()
+    expect(player.isPlaying()).toBe(true)
+    // ...and the position has restarted from the top.
+    expect(player.getPosition()).toBe(0)
+
+    const endedListeners = el.addEventListener.mock.calls.filter(
+      ([event]) => event === 'ended',
+    )
+    expect(endedListeners).toEqual([])
+
+    player.dispose()
+  })
+
+  // AC12 — stopping a looping groove ends it at once and it stays stopped.
+  it('pause() stops a looping groove immediately and it does not resume (R17, AC12)', async () => {
+    const player = createAudioPlayer('/grooves/x.mp3', { loop: true })
+    const el = instances[0]
+
+    await player.play()
+    el.duration = 12
+    el.currentTime = 6
+
+    player.pause()
+
+    expect(el.pause).toHaveBeenCalledTimes(1)
+    expect(player.isPlaying()).toBe(false)
+
+    // Nothing brings it back on its own: no pending frame, no further play().
+    flushFrames(3)
+    expect(el.play).toHaveBeenCalledTimes(1)
+    expect(player.isPlaying()).toBe(false)
+
     player.dispose()
   })
 

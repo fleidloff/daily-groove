@@ -28,13 +28,16 @@ import { createAudioPlayer } from '../lib/audio'
 import { GroovePuzzle } from './GroovePuzzle'
 import { flavourOptions, ROOTS } from '../lib/music'
 import { isoDate, selectGrooveForDate } from '../lib/selectGroove'
-import { GROOVES } from '../lib/seed'
+import { GROOVES } from '../lib/grooves.generated'
 
 const GROOVE: Groove = {
   id: 'groove-01',
   audioSrc: '/grooves/groove-01.mp3',
   name: 'Test Groove',
   bpm: 90,
+  root: 'C',
+  flavour: 'Minor',
+  bars: 4,
   scale: 'C minor',
   chord: 'Cm7',
   progression: 'Cm–Fm–G7',
@@ -652,6 +655,22 @@ describe('GroovePuzzle', () => {
     expect(player.play).toHaveBeenCalledTimes(2)
     expect(createAudioPlayer).toHaveBeenCalledTimes(1)
     expect(player.dispose).not.toHaveBeenCalled()
+  })
+
+  // Step D2 — the groove repeats until the player stops it.
+  it("creates today's player looped (R17, AC11)", async () => {
+    const player = makePlayer()
+    vi.mocked(createAudioPlayer).mockReturnValue(player)
+
+    const user = userEvent.setup()
+    await renderPuzzle()
+
+    await user.click(screen.getByRole('button', { name: 'Play the loop' }))
+
+    expect(createAudioPlayer).toHaveBeenCalledWith(
+      GROOVE.audioSrc,
+      expect.objectContaining({ loop: true }),
+    )
   })
 
   it("moves the bar highlight with the player's position (D5, AC8)", async () => {

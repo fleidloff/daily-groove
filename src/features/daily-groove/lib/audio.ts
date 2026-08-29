@@ -19,11 +19,17 @@ export type AudioPlayer = {
  * read from the element's `timeupdate` event, which fires roughly four times a
  * second — too coarse to move a bar highlight cleanly. The subscribe/snapshot
  * pair lets React read the player through `useSyncExternalStore`.
+ *
+ * `opts.loop` repeats the source until it is paused. It is the element's own
+ * `loop` property, deliberately: re-triggering playback on `ended` would leave
+ * an audible gap at the loop point.
  */
-export function createAudioPlayer(src: string): AudioPlayer {
+export function createAudioPlayer(
+  src: string,
+  opts?: { loop?: boolean },
+): AudioPlayer {
   const element = new Audio(src)
-  // The groove is a loop: it never ends on its own.
-  element.loop = true
+  element.loop = opts?.loop ?? false
 
   const listeners = new Set<() => void>()
   let playing = false

@@ -40,6 +40,14 @@ export type Groove = {
   scale: string // absolute, e.g. "C minor"
   chord: string // absolute, e.g. "Dmaj7"
   progression: string // absolute, e.g. "Dm–G–C"
+  /**
+   * The answer, carried as its own fields rather than parsed back out of
+   * `scale`. The generator knows both because it rendered them, and a parsed
+   * string is a second source of truth waiting to disagree with the first.
+   */
+  root: Root
+  flavour: Flavour
+  bars: number // loop length, always 4
 }
 
 /** One day's play: the answer, the attempts spent on it, and how it ended. */

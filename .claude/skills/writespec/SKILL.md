@@ -170,8 +170,33 @@ the conflict rather than silently taking the newer one.
 
 Follow [references/tech-spec-template.md](references/tech-spec-template.md).
 
-## 9. Report back
+## 9. Mark the feature ready to implement
+
+`specs/features.md` carries a **Status** column. A feature reaches
+🛠 **Ready to implement** when there is nothing left to decide before building:
+
+- **Every PRD in `specs/<feature>/prd/` has a matching tech spec**, and
+- **no spec has open architectural questions**, and
+- **no PRD has open questions either** — an unsettled requirement invalidates
+  the steps written against it, whatever state the spec is in.
+
+All three hold → set the status to 🛠 Ready to implement. Any one fails → leave
+the row as it is and say in your report exactly what is still outstanding.
+
+A run narrowed to one epic (`/writespec feature-8 epic-2`) usually leaves the
+other epics unspecced, so it usually changes nothing. Check the whole feature
+before setting the status, not just the epic you ran.
+
+The point of the status is that `/implement-feature` can start immediately. Set
+it early — while questions are open or an epic has no spec — and the next person
+to read the index is misled into dispatching agents against requirements that
+are still moving. Leave the summary text alone; specs record how, not what.
+
+## 10. Report back
 
 Per epic: the file written, the tracks and which run in parallel, requirement
 coverage (every R and AC hit by a step), decisions folded in and what they
 changed, and the count of architectural questions still open.
+
+Then, for the feature as a whole: whether it is now 🛠 Ready to implement in
+`specs/features.md`, or what is still blocking that.
