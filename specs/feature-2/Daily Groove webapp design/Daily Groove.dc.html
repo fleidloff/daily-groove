@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;1,6..72,300&family=DM+Sans:opsz,wght@9..40,400;9..40,500&display=swap" rel="stylesheet" />
+<style>
+  html, body { margin: 0; padding: 0; background: #F5F2EA; }
+  * { box-sizing: border-box; }
+  a { color: #4C6B4F; text-decoration: none; }
+  a:hover { color: #2F4433; }
+  @keyframes gr-breathe { 0%,100% { opacity: .45; } 50% { opacity: 1; } }
+</style>
+</helmet>
+<div style="min-height:100vh;background:radial-gradient(120% 80% at 15% 0%, #FBF9F3 0%, #F5F2EA 55%, #EDEBE0 100%);font-family:'DM Sans',system-ui,sans-serif;color:#23291F;padding:44px 56px 64px;">
+
+  <header style="display:flex;align-items:flex-end;justify-content:space-between;gap:32px;max-width:1220px;margin:0 auto 40px;">
+    <div style="display:flex;flex-direction:column;gap:6px;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="width:9px;height:9px;border-radius:9px;background:#7E9B6E;"></div>
+        <span style="font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:#7C8271;">daily&#8202;-&#8202;grooove</span>
+      </div>
+      <h1 style="margin:0;font-family:Newsreader,serif;font-weight:400;font-size:44px;line-height:1.05;letter-spacing:-.015em;color:#23291F;">Today&#8217;s groove</h1>
+    </div>
+    <div style="display:flex;align-items:center;gap:28px;">
+      <div style="display:flex;flex-direction:column;gap:2px;text-align:right;">
+        <span style="font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#98A08B;">Saturday</span>
+        <span style="font-family:Newsreader,serif;font-size:22px;color:#3C4436;">29 August</span>
+      </div>
+      <div style="width:1px;height:38px;background:#DCDACD;"></div>
+      <div style="display:flex;align-items:center;gap:9px;padding:9px 15px;border:1px solid #DFDDD0;border-radius:999px;background:rgba(255,253,248,.7);">
+        <span style="font-size:15px;color:#7E9B6E;">&#9679;</span>
+        <span style="font-size:14px;color:#4E5647;">{{ streak }} day streak</span>
+      </div>
+    </div>
+  </header>
+
+  <div style="display:grid;grid-template-columns:1.35fr 1fr;gap:28px;align-items:start;max-width:1220px;margin:0 auto;">
+
+    <section style="background:#FFFDF8;border:1px solid #E4E2D5;border-radius:22px;padding:34px 36px 30px;box-shadow:0 1px 0 #FFFFFF inset, 0 18px 40px -32px rgba(48,58,42,.45);">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:24px;margin-bottom:26px;">
+        <div style="display:flex;flex-direction:column;gap:5px;">
+          <h2 style="margin:0;font-family:Newsreader,serif;font-weight:400;font-size:30px;line-height:1.1;color:#23291F;">Sunroom Shuffle</h2>
+          <span style="font-size:14px;color:#8A9180;">No. 214 &#183; 4 bars &#183; loops forever</span>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;">
+          <span style="font-family:Newsreader,serif;font-size:24px;line-height:1;color:#3C4436;">84</span>
+          <span style="font-size:10px;letter-spacing:.14em;color:#A0A794;">BPM</span>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:12px;padding:26px 26px 22px;background:#F3F1E6;border:1px solid #E6E4D7;border-radius:16px;">
+        <div style="position:relative;height:8px;border-radius:8px;background:#E4E2D3;overflow:hidden;">
+          <div style="position:absolute;top:0;bottom:0;left:0;border-radius:8px;background:#8FA87C;width:{{ progress }};"></div>
+          <div style="position:absolute;top:0;bottom:0;left:25%;width:1px;background:#F3F1E6;"></div>
+          <div style="position:absolute;top:0;bottom:0;left:50%;width:1px;background:#F3F1E6;"></div>
+          <div style="position:absolute;top:0;bottom:0;left:75%;width:1px;background:#F3F1E6;"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;">
+          <sc-for list="{{ beats }}" as="k" hint-placeholder-count="4">
+            <span style="font-size:11px;letter-spacing:.1em;color:{{ k.color }};">{{ k.label }}</span>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:20px;margin-top:24px;">
+        <button onClick="{{ toggle }}" aria-label="{{ playLabel }}" style="display:flex;align-items:center;justify-content:center;width:52px;height:52px;flex:none;border-radius:999px;border:none;background:#3F5A42;color:#F7F5EC;font-size:15px;cursor:pointer;box-shadow:0 10px 22px -14px rgba(45,66,47,.9);" style-hover="background:#33492F;">
+          <span style="font-size:14px;line-height:1;">{{ playGlyph }}</span>
+        </button>
+        <p style="margin:0;font-size:14px;line-height:1.5;color:#8A9180;max-width:280px;">Play along. Find the note that feels like home.</p>
+      </div>
+    </section>
+
+    <section style="background:#FFFDF8;border:1px solid #E4E2D5;border-radius:22px;padding:32px 34px 30px;box-shadow:0 1px 0 #FFFFFF inset, 0 18px 40px -32px rgba(48,58,42,.45);">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:22px;">
+        <h3 style="margin:0;font-family:Newsreader,serif;font-weight:400;font-size:22px;color:#23291F;">What is it?</h3>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <sc-for list="{{ dots }}" as="d" hint-placeholder-count="3">
+            <div style="width:8px;height:8px;border-radius:8px;background:{{ d.color }};"></div>
+          </sc-for>
+        </div>
+      </div>
+
+      <span style="display:block;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#A0A794;margin-bottom:10px;">Root</span>
+      <div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:24px;">
+        <sc-for list="{{ roots }}" as="r" hint-placeholder-count="12">
+          <button onClick="{{ r.pick }}" style="padding:9px 0;width:60px;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:14px;cursor:pointer;border:1px solid {{ r.bd }};background:{{ r.bg }};color:{{ r.fg }};">{{ r.name }}</button>
+        </sc-for>
+      </div>
+
+      <span style="display:block;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#A0A794;margin-bottom:10px;">Flavour</span>
+      <div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:26px;">
+        <sc-for list="{{ scales }}" as="s" hint-placeholder-count="8">
+          <button onClick="{{ s.pick }}" style="padding:9px 15px;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:14px;cursor:pointer;border:1px solid {{ s.bd }};background:{{ s.bg }};color:{{ s.fg }};">{{ s.name }}</button>
+        </sc-for>
+      </div>
+
+      <button onClick="{{ check }}" style="width:100%;padding:15px;border-radius:14px;border:none;font-family:'DM Sans',sans-serif;font-size:15px;cursor:pointer;background:{{ ctaBg }};color:{{ ctaFg }};">{{ ctaLabel }}</button>
+
+      <p style="margin:18px 0 0;font-size:14.5px;line-height:1.55;color:{{ hintTone }};">{{ hintLine }}</p>
+
+      <sc-if value="{{ showHint }}" hint-placeholder-val="{{ false }}">
+        <div style="margin-top:16px;padding:14px 16px;border-radius:12px;background:#F6F3E7;border:1px solid #E7E3D2;">
+          <span style="display:block;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#B08A5E;margin-bottom:5px;">A nudge</span>
+          <span style="font-size:14px;line-height:1.5;color:#5C6454;">The sixth sounds bright over a minor tonic. That rules a lot out.</span>
+        </div>
+      </sc-if>
+    </section>
+
+    <sc-if value="{{ solved }}" hint-placeholder-val="{{ false }}">
+      <section style="grid-column:1 / -1;background:linear-gradient(160deg,#3F5A42 0%,#33492F 100%);border-radius:22px;padding:36px 40px 34px;color:#EFF1E5;">
+        <div style="display:flex;align-items:baseline;gap:16px;margin-bottom:28px;">
+          <h3 style="margin:0;font-family:Newsreader,serif;font-weight:400;font-size:32px;color:#F7F6EC;">G Dorian</h3>
+          <span style="font-size:14px;color:#B6C4AE;">solved in {{ tries }} &#183; streak now {{ streak }}</span>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1.1fr;gap:36px;">
+          <div style="display:flex;flex-direction:column;gap:12px;">
+            <span style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#9FB097;">The changes</span>
+            <div style="display:flex;flex-wrap:wrap;gap:8px;">
+              <sc-for list="{{ chords }}" as="c" hint-placeholder-count="4">
+                <span style="padding:9px 14px;border-radius:10px;background:rgba(247,246,236,.1);border:1px solid rgba(247,246,236,.18);font-size:15px;color:#F1F3E7;">{{ c }}</span>
+              </sc-for>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:12px;">
+            <span style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#9FB097;">Notes to live in</span>
+            <div style="display:flex;flex-wrap:wrap;gap:8px;">
+              <sc-for list="{{ notes }}" as="n" hint-placeholder-count="7">
+                <span style="width:38px;padding:9px 0;text-align:center;border-radius:10px;background:rgba(247,246,236,.1);border:1px solid rgba(247,246,236,.18);font-size:15px;color:#F1F3E7;">{{ n }}</span>
+              </sc-for>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:12px;">
+            <span style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#9FB097;">Try this</span>
+            <ul style="margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:9px;">
+              <sc-for list="{{ tips }}" as="t" hint-placeholder-count="3">
+                <li style="font-size:14.5px;line-height:1.5;color:#DDE3D6;">{{ t }}</li>
+              </sc-for>
+            </ul>
+          </div>
+        </div>
+      </section>
+    </sc-if>
+
+    <section style="grid-column:1 / -1;padding-top:8px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+        <span style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#A0A794;">Grooves you&#8217;ve played</span>
+        <a href="#" style="font-size:14px;color:#5E7A5F;">All 213 &#8594;</a>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:12px;">
+        <sc-for list="{{ archive }}" as="a" hint-placeholder-count="6">
+          <div style="background:rgba(255,253,248,.66);border:1px solid #E4E2D5;border-radius:16px;padding:16px 18px;display:flex;flex-direction:column;gap:12px;">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;">
+              <span style="font-size:13px;color:#8A9180;">{{ a.day }}</span>
+              <span style="font-size:12px;color:{{ a.markColor }};">{{ a.mark }}</span>
+            </div>
+            <span style="font-family:Newsreader,serif;font-size:19px;color:#3C4436;">{{ a.key }}</span>
+            <div style="display:flex;align-items:flex-end;gap:2px;height:22px;opacity:.55;">
+              <sc-for list="{{ a.spark }}" as="s" hint-placeholder-count="12">
+                <div style="flex:1;border-radius:2px;background:#9BAE8C;height:{{ s }}%;"></div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </section>
+  </div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:1080},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#3F5A42&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;options&quot;:[&quot;#3F5A42&quot;,&quot;#4A6572&quot;,&quot;#8A5A3B&quot;,&quot;#5B5A78&quot;],&quot;section&quot;:&quot;Look&quot;},&quot;attemptsAllowed&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:3,&quot;min&quot;:1,&quot;max&quot;:6,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Play&quot;},&quot;startSolved&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Play&quot;}}">
+const ROOTS = ["C","C\u266F","D","E\u266D","E","F","F\u266F","G","A\u266D","A","B\u266D","B"];
+const SCALES = ["Major","Minor","Dorian","Mixolydian","Lydian","Phrygian","Harmonic minor","Blues"];
+const ANSWER = { root: "G", scale: "Dorian" };
+const SHAPE = [22,38,64,86,52,30,44,70,92,58,34,26,48,76,60,36,28,54,82,66,40,24,46,72,88,50,32,42,68,90,56,30,20,40,62,84,54,28,38,66,94,60,34,24,44,74,58,36,26,50,78,64,42,22,36,68];
+
+class Component extends DCLogic {
+  state = { root: null, scale: null, attempts: [], solved: false, playing: false, pct: 0 };
+
+  componentDidMount() {
+    if (this.props.startSolved) this.setState({ solved: true, root: ANSWER.root, scale: ANSWER.scale, attempts: [1, 2] });
+    this._t = setInterval(() => {
+      if (!this.state.playing) return;
+      const loop = 16 * 60 / this.tempo();
+      this.setState(s => ({ pct: (s.pct + (100 * 0.06) / loop) % 100 }));
+    }, 60);
+  }
+  componentWillUnmount() { clearInterval(this._t); }
+
+  tempo() { return this.state.tempo || this._tempo || 84; }
+  setTempo(v) { this._tempo = Math.max(52, Math.min(160, v)); this.forceUpdate(); }
+
+  chip(sel, active) {
+    const accent = this.props.accent || "#3F5A42";
+    if (active) return { bg: accent, fg: "#F7F5EC", bd: accent };
+    return { bg: "#FBF9F2", fg: "#4E5647", bd: "#E2E0D2" };
+  }
+
+  renderVals() {
+    const s = this.state;
+    const allowed = this.props.attemptsAllowed ?? 3;
+    const wrong = s.attempts.filter(a => a && a.correct === false).length;
+    const ready = !!(s.root && s.scale) && !s.solved;
+    const beatIdx = Math.floor(s.pct / 100 * 16);
+
+    let message = "Loop it a few times. Sing the note that feels like rest \u2014 that\u2019s usually the root.";
+    let msgColor = "#8A9180";
+    if (s.solved) { message = "That\u2019s it. The groove is yours now \u2014 stay in it as long as you like."; msgColor = "#3F5A42"; }
+    else if (s.attempts.length) {
+      const last = s.attempts[s.attempts.length - 1];
+      if (last && last.root === ANSWER.root) { message = "Right home note, wrong colour. Listen again to the third and the sixth."; }
+      else if (last && last.scale === ANSWER.scale) { message = "That flavour is close. But the tonic is somewhere else."; }
+      else { message = "Not it. No penalty \u2014 keep playing and try again."; }
+      msgColor = "#B06A45";
+    }
+
+    return {
+      streak: 12,
+      progress: (s.playing ? s.pct : 0).toFixed(2) + "%",
+      toggle: () => this.setState(st => ({ playing: !st.playing })),
+      playing: s.playing,
+      playGlyph: s.playing ? "\u25A0" : "\u25B6",
+      playLabel: s.playing ? "Pause the loop" : "Play the loop",
+      beats: [1, 2, 3, 4].map((n, i) => ({
+        label: "BAR " + n,
+        color: s.playing && Math.floor(beatIdx / 4) === i ? "#C4714B" : "#A8AF9A"
+      })),
+      dots: Array.from({ length: allowed }, (_, i) => ({
+        color: s.solved && i < s.attempts.length ? "#7E9B6E" : i < wrong ? "#D3A48B" : "#E2E0D2"
+      })),
+      roots: ROOTS.map(n => ({ name: n, ...this.chip(n, s.root === n), pick: () => !s.solved && this.setState({ root: n }) })),
+      scales: SCALES.map(n => ({ name: n, ...this.chip(n, s.scale === n), pick: () => !s.solved && this.setState({ scale: n }) })),
+      ctaLabel: s.solved ? "Solved \u2014 keep jamming" : ready ? "Check " + s.root + " " + s.scale : "Pick a root and a flavour",
+      ctaBg: s.solved ? "#EDF0E4" : ready ? (this.props.accent || "#3F5A42") : "#F1EFE4",
+      ctaFg: s.solved ? "#4C6B4F" : ready ? "#F7F5EC" : "#A8AF9A",
+      check: () => {
+        if (!ready) return;
+        const correct = s.root === ANSWER.root && s.scale === ANSWER.scale;
+        this.setState(st => ({ attempts: st.attempts.concat({ root: st.root, scale: st.scale, correct }), solved: correct }));
+      },
+      hintLine: message,
+      hintTone: msgColor,
+      showHint: !s.solved && wrong >= 2,
+      solved: s.solved,
+      tries: s.attempts.length === 1 ? "one try" : s.attempts.length + " tries",
+      chords: ["Gm9", "C13", "F\u266Fmaj7", "Am7\u266D5"],
+      notes: ["G", "A", "B\u266D", "C", "D", "E", "F"],
+      tips: [
+        "Sit on the natural sixth (E) over the Gm9 \u2014 that\u2019s the whole mood.",
+        "Walk C\u2013D\u2013E\u2013F on the way up, land on G on the downbeat.",
+        "Leave bar 4 empty. The groove is doing the work."
+      ],
+      archive: [
+        { day: "Yesterday", key: "E\u266D Mixolydian", mark: "solved", markColor: "#7E9B6E" },
+        { day: "Thu", key: "A Minor", mark: "solved", markColor: "#7E9B6E" },
+        { day: "Wed", key: "F Lydian", mark: "3 tries", markColor: "#B08A5E" },
+        { day: "Tue", key: "B\u266D Blues", mark: "solved", markColor: "#7E9B6E" },
+        { day: "Mon", key: "C\u266F Phrygian", mark: "missed", markColor: "#C09B8A" },
+        { day: "Sun", key: "D Dorian", mark: "solved", markColor: "#7E9B6E" }
+      ].map((a, i) => ({ ...a, spark: SHAPE.slice(i * 5, i * 5 + 12) }))
+    };
+  }
+}
+
+</script>
+</body>
+</html>

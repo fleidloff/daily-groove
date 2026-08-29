@@ -31,6 +31,27 @@ describe('GROOVES seed set', () => {
       expect(g.progression).toBeTruthy()
     }
   })
+
+  it('every groove has a non-empty name', () => {
+    for (const g of GROOVES) {
+      expect(typeof g.name).toBe('string')
+      expect(g.name.trim()).not.toBe('')
+    }
+  })
+
+  it('every groove has a tempo in a plausible range', () => {
+    for (const g of GROOVES) {
+      expect(typeof g.bpm).toBe('number')
+      expect(Number.isFinite(g.bpm)).toBe(true)
+      expect(g.bpm).toBeGreaterThanOrEqual(40)
+      expect(g.bpm).toBeLessThanOrEqual(200)
+    }
+  })
+
+  it('all names are distinct', () => {
+    const names = GROOVES.map((g) => g.name)
+    expect(new Set(names).size).toBe(names.length)
+  })
 })
 
 describe('SCALE_POOL', () => {

@@ -1,21 +1,22 @@
 'use client'
 
+import { IconButton } from './IconButton'
+
 type PlayControlProps = {
-  onPlay: () => void
   isPlaying: boolean
-  label?: string
+  onToggle: () => void
 }
 
 /**
- * Generic design-system play/replay button. Prop-driven and free of any feature
- * or domain knowledge.
+ * The loop transport toggle. Its accessible name states the action the press
+ * will perform, not the state it is in.
  */
-export function PlayControl({ onPlay, isPlaying, label }: PlayControlProps) {
-  const text = label ?? (isPlaying ? 'Replay' : 'Play')
-
+export function PlayControl({ isPlaying, onToggle }: PlayControlProps) {
   return (
-    <button type="button" onClick={onPlay} aria-pressed={isPlaying}>
-      {text}
-    </button>
+    <IconButton
+      onPress={onToggle}
+      label={isPlaying ? 'Pause the loop' : 'Play the loop'}
+      glyph={isPlaying ? '■' : '▶'}
+    />
   )
 }

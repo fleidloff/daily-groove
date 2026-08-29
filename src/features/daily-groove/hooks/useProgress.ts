@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import type { DailyResult } from '../types'
+import type { Answer, Attempt, DailyResult } from '../types'
 import { createLocalStore, type ResultStore } from '../lib/storage'
 import { computeStreak } from '../lib/streak'
 
@@ -21,20 +21,36 @@ function sortMostRecentFirst(results: DailyResult[]): DailyResult[] {
   )
 }
 
+/**
+ * The day as the puzzle currently knows it. The attempt list comes from the
+ * game store, which is the one place that accumulates it — passing the whole
+ * list rather than the newest attempt keeps this hook from holding a second,
+ * drifting copy of the same sequence.
+ */
+export type DayProgress = {
+  answer: Answer
+  attempts: Attempt[]
+  solved: boolean
+}
+
 export type UseProgress = {
   todayResult: DailyResult | null
   streak: number
   history: DailyResult[]
-  save: (r: DailyResult) => Promise<void>
+  /**
+   * Write the day's record. Called after every check, not only on a solve, so
+   * a reload mid-game comes back to the attempts already spent (R2).
+   */
+  recordAttempt: (day: DayProgress) => Promise<void>
   loaded: boolean
 }
 
 /**
  * Loads the player's saved progress through a `ResultStore` and derives the
  * streak and history from it. On mount it reads all results plus today's result;
- * `save` writes through the store then updates local state so no full reload is
- * needed. Streak and history are derived (never persisted separately), so they
- * always reflect the current result set.
+ * `recordAttempt` writes through the store then updates local state so no full
+ * reload is needed. Streak and history are derived (never persisted separately),
+ * so they always reflect the current result set.
  */
 export function useProgress(
   today: string,
@@ -65,11 +81,20 @@ export function useProgress(
     }
   }, [store, today])
 
-  const save = useCallback(
-    async (r: DailyResult) => {
-      await store.save(r)
-      setAll((prev) => [...prev.filter((x) => x.date !== r.date), r])
-      if (r.date === today) setTodayResult(r)
+  const recordAttempt = useCallback(
+    async ({ answer, attempts, solved }: DayProgress) => {
+      const record: DailyResult = { date: today, answer, attempts, solved }
+      // Session state first, persistence second: a store that throws — quota,
+      // disabled storage — must never cost the player the guess they just made
+      // (R6, AC5). `createLocalStore` already swallows its own write failures;
+      // this guards an injected store that does not.
+      setAll((prev) => [...prev.filter((x) => x.date !== record.date), record])
+      setTodayResult(record)
+      try {
+        await store.save(record)
+      } catch {
+        // Deliberately ignored — see above.
+      }
     },
     [store, today],
   )
@@ -77,5 +102,5 @@ export function useProgress(
   const streak = useMemo(() => computeStreak(all, today), [all, today])
   const history = useMemo(() => sortMostRecentFirst(all), [all])
 
-  return { todayResult, streak, history, save, loaded }
+  return { todayResult, streak, history, recordAttempt, loaded }
 }

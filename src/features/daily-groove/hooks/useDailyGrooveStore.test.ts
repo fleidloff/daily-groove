@@ -1,103 +1,230 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { Groove } from '../types'
-
-// Mock scoring so the store's use of scoreSelected is observable and
-// independent of the real implementation.
-vi.mock('../lib/scoring', () => ({
-  scoreSelected: vi.fn(),
-}))
-
-import { scoreSelected } from '../lib/scoring'
+import { describe, expect, it } from 'vitest'
+import type { Answer, Attempt, DailyResult } from '../types'
 import { createDailyGrooveStore } from './useDailyGrooveStore'
 
-const GROOVE: Groove = {
-  id: 'groove-01',
-  audioSrc: '/grooves/groove-01.mp3',
-  scale: 'C minor',
-  chord: 'Cm7',
-  progression: 'Cm–Fm–G7',
+const ANSWER: Answer = { root: 'G', flavour: 'Dorian' }
+
+function freshStore() {
+  return createDailyGrooveStore(ANSWER)
 }
 
 describe('createDailyGrooveStore', () => {
-  beforeEach(() => {
-    vi.mocked(scoreSelected).mockReset()
+  it('starts with nothing selected, no attempts and unsolved', () => {
+    const state = freshStore().getState()
+    expect(state.selectedRoot).toBeNull()
+    expect(state.selectedFlavour).toBeNull()
+    expect(state.attempts).toEqual([])
+    expect(state.solved).toBe(false)
   })
 
-  it('starts with the groove and empty selection/guesses/result', () => {
-    const store = createDailyGrooveStore(GROOVE)
-    const state = store.getState()
-    expect(state.groove).toBe(GROOVE)
-    expect(state.selectedAttrs).toEqual([])
-    expect(state.guesses).toEqual({})
-    expect(state.submitted).toBe(false)
-    expect(state.result).toBeNull()
+  it('is created per instance, sharing no state between stores', () => {
+    const a = freshStore()
+    const b = freshStore()
+    a.getState().selectRoot('C')
+    expect(a.getState().selectedRoot).toBe('C')
+    expect(b.getState().selectedRoot).toBeNull()
   })
 
-  it('toggleAttribute() adds an attribute, and toggling again removes it', () => {
-    const store = createDailyGrooveStore(GROOVE)
-    store.getState().toggleAttribute('scale')
-    expect(store.getState().selectedAttrs).toEqual(['scale'])
-    store.getState().toggleAttribute('chord')
-    expect(store.getState().selectedAttrs).toEqual(['scale', 'chord'])
-    store.getState().toggleAttribute('scale')
-    expect(store.getState().selectedAttrs).toEqual(['chord'])
+  it('selectRoot() replaces rather than accumulates', () => {
+    const store = freshStore()
+    store.getState().selectRoot('G')
+    expect(store.getState().selectedRoot).toBe('G')
+    store.getState().selectRoot('C')
+    expect(store.getState().selectedRoot).toBe('C')
   })
 
-  it('removing an attribute drops its recorded guess', () => {
-    const store = createDailyGrooveStore(GROOVE)
-    store.getState().toggleAttribute('scale')
-    store.getState().setGuess('scale', 'C minor')
-    expect(store.getState().guesses).toEqual({ scale: 'C minor' })
-    store.getState().toggleAttribute('scale')
-    expect(store.getState().guesses).toEqual({})
+  it('selectFlavour() replaces rather than accumulates', () => {
+    const store = freshStore()
+    store.getState().selectFlavour('Dorian')
+    expect(store.getState().selectedFlavour).toBe('Dorian')
+    store.getState().selectFlavour('Mixolydian')
+    expect(store.getState().selectedFlavour).toBe('Mixolydian')
   })
 
-  it('setGuess() records the value for an attribute', () => {
-    const store = createDailyGrooveStore(GROOVE)
-    store.getState().toggleAttribute('chord')
-    store.getState().setGuess('chord', 'A7')
-    expect(store.getState().guesses).toEqual({ chord: 'A7' })
+  it('the two groups select independently', () => {
+    const store = freshStore()
+    store.getState().selectRoot('G')
+    store.getState().selectFlavour('Dorian')
+    expect(store.getState().selectedRoot).toBe('G')
+    expect(store.getState().selectedFlavour).toBe('Dorian')
   })
 
-  it('submit() with no attribute selected is a no-op', () => {
-    const store = createDailyGrooveStore(GROOVE)
-    store.getState().submit()
-    const state = store.getState()
-    expect(state.submitted).toBe(false)
-    expect(state.result).toBeNull()
-    expect(scoreSelected).not.toHaveBeenCalled()
-  })
-
-  it('submit() builds a result over only the attempted attributes', () => {
-    vi.mocked(scoreSelected).mockReturnValue({ scale: true, chord: false })
-    const store = createDailyGrooveStore(GROOVE)
-    store.getState().toggleAttribute('scale')
-    store.getState().toggleAttribute('chord')
-    store.getState().setGuess('scale', 'C minor')
-    store.getState().setGuess('chord', 'A7')
-    store.getState().submit()
-
-    const state = store.getState()
-    expect(state.submitted).toBe(true)
-    expect(scoreSelected).toHaveBeenCalledWith(GROOVE, {
-      scale: 'C minor',
-      chord: 'A7',
+  describe('canCheck()', () => {
+    it('is false with nothing selected', () => {
+      expect(freshStore().getState().canCheck()).toBe(false)
     })
-    expect(state.result?.guesses).toEqual({ scale: 'C minor', chord: 'A7' })
-    expect(state.result?.correctness).toEqual({ scale: true, chord: false })
-    // Progression was never attempted — no key for it anywhere.
-    expect(Object.keys(state.result?.guesses ?? {})).toEqual(['scale', 'chord'])
-    expect(state.result?.correctness.progression).toBeUndefined()
-    expect(state.result?.date).toMatch(/^\d{4}-\d{2}-\d{2}$/)
+
+    it('is false with only a root selected', () => {
+      const store = freshStore()
+      store.getState().selectRoot('G')
+      expect(store.getState().canCheck()).toBe(false)
+    })
+
+    it('is false with only a flavour selected', () => {
+      const store = freshStore()
+      store.getState().selectFlavour('Dorian')
+      expect(store.getState().canCheck()).toBe(false)
+    })
+
+    it('is true once both halves are chosen', () => {
+      const store = freshStore()
+      store.getState().selectRoot('G')
+      store.getState().selectFlavour('Dorian')
+      expect(store.getState().canCheck()).toBe(true)
+    })
   })
 
-  it('submit() is idempotent once submitted', () => {
-    vi.mocked(scoreSelected).mockReturnValue({ scale: true })
-    const store = createDailyGrooveStore(GROOVE)
-    store.getState().toggleAttribute('scale')
-    store.getState().setGuess('scale', 'C minor')
-    store.getState().submit()
-    store.getState().submit()
-    expect(scoreSelected).toHaveBeenCalledTimes(1)
+  describe('check()', () => {
+    it('records a wrong attempt with its half matches', () => {
+      const store = freshStore()
+      store.getState().selectRoot('G')
+      store.getState().selectFlavour('Mixolydian')
+      store.getState().check()
+
+      const { attempts, solved } = store.getState()
+      expect(attempts).toEqual<Attempt[]>([
+        {
+          root: 'G',
+          flavour: 'Mixolydian',
+          correct: false,
+          rootMatched: true,
+          flavourMatched: false,
+        },
+      ])
+      expect(solved).toBe(false)
+    })
+
+    it('keeps both chips selected after a wrong check', () => {
+      const store = freshStore()
+      store.getState().selectRoot('G')
+      store.getState().selectFlavour('Mixolydian')
+      store.getState().check()
+      expect(store.getState().selectedRoot).toBe('G')
+      expect(store.getState().selectedFlavour).toBe('Mixolydian')
+    })
+
+    it('does nothing when both halves are not chosen', () => {
+      const store = freshStore()
+      store.getState().selectRoot('G')
+      store.getState().check()
+      expect(store.getState().attempts).toEqual([])
+    })
+
+    it('blocks re-checking the same pair until a selection changes', () => {
+      const store = freshStore()
+      store.getState().selectRoot('G')
+      store.getState().selectFlavour('Mixolydian')
+      store.getState().check()
+
+      expect(store.getState().canCheck()).toBe(false)
+      store.getState().check()
+      expect(store.getState().attempts).toHaveLength(1)
+
+      store.getState().selectFlavour('Dorian')
+      expect(store.getState().canCheck()).toBe(true)
+    })
+
+    it('unblocks when the root changes instead', () => {
+      const store = freshStore()
+      store.getState().selectRoot('C')
+      store.getState().selectFlavour('Mixolydian')
+      store.getState().check()
+      expect(store.getState().canCheck()).toBe(false)
+      store.getState().selectRoot('D')
+      expect(store.getState().canCheck()).toBe(true)
+    })
+
+    it('re-blocks when the player returns to the pair just tried', () => {
+      const store = freshStore()
+      store.getState().selectRoot('G')
+      store.getState().selectFlavour('Mixolydian')
+      store.getState().check()
+      store.getState().selectFlavour('Dorian')
+      store.getState().selectFlavour('Mixolydian')
+      expect(store.getState().canCheck()).toBe(false)
+    })
+  })
+
+  describe('once solved', () => {
+    function solvedStore() {
+      const store = freshStore()
+      store.getState().selectRoot('G')
+      store.getState().selectFlavour('Dorian')
+      store.getState().check()
+      return store
+    }
+
+    it('marks the day solved on the correct pair', () => {
+      const store = solvedStore()
+      expect(store.getState().solved).toBe(true)
+      expect(store.getState().attempts.at(-1)?.correct).toBe(true)
+    })
+
+    it('canCheck() is false', () => {
+      expect(solvedStore().getState().canCheck()).toBe(false)
+    })
+
+    it('the chips stop accepting input', () => {
+      const store = solvedStore()
+      store.getState().selectRoot('C')
+      store.getState().selectFlavour('Locrian')
+      expect(store.getState().selectedRoot).toBe('G')
+      expect(store.getState().selectedFlavour).toBe('Dorian')
+    })
+
+    it('check() records no further attempts', () => {
+      const store = solvedStore()
+      store.getState().check()
+      expect(store.getState().attempts).toHaveLength(1)
+    })
+  })
+
+  describe('hydrate()', () => {
+    const attempt: Attempt = {
+      root: 'G',
+      flavour: 'Mixolydian',
+      correct: false,
+      rootMatched: true,
+      flavourMatched: false,
+    }
+    const result: DailyResult = {
+      date: '2026-08-29',
+      answer: ANSWER,
+      attempts: [attempt],
+      solved: false,
+    }
+
+    it('restores a stored day', () => {
+      const store = freshStore()
+      store.getState().hydrate(result)
+      const state = store.getState()
+      expect(state.attempts).toEqual([attempt])
+      expect(state.selectedRoot).toBe('G')
+      expect(state.selectedFlavour).toBe('Mixolydian')
+      expect(state.solved).toBe(false)
+      // The restored pair was already tried, so it cannot be re-checked.
+      expect(state.canCheck()).toBe(false)
+    })
+
+    it('restores a solved day as locked', () => {
+      const store = freshStore()
+      store.getState().hydrate({
+        ...result,
+        attempts: [{ ...attempt, flavour: 'Dorian', correct: true, flavourMatched: true }],
+        solved: true,
+      })
+      expect(store.getState().solved).toBe(true)
+      expect(store.getState().canCheck()).toBe(false)
+    })
+
+    it('hydrating null leaves a clean day', () => {
+      const store = freshStore()
+      store.getState().hydrate(null)
+      const state = store.getState()
+      expect(state.attempts).toEqual([])
+      expect(state.selectedRoot).toBeNull()
+      expect(state.selectedFlavour).toBeNull()
+      expect(state.solved).toBe(false)
+    })
   })
 })

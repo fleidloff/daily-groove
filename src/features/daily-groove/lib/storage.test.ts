@@ -1,54 +1,36 @@
-import { describe, it, expect, beforeEach, beforeAll } from 'vitest'
-import type { DailyResult } from '../types'
+import { describe, it, expect, afterEach, vi } from 'vitest'
+import type { Attempt, DailyResult } from '../types'
 import { createLocalStore } from './storage'
 
-const STORAGE_KEY = 'daily-groove:v1:results'
+const STORAGE_KEY = 'daily-groove:v2:results'
+const LEGACY_KEY = 'daily-groove:v1:results'
 
-// This jsdom setup does not expose a working `localStorage`, so install a small
-// in-memory Storage implementation (the spec allows "in-memory/jsdom
-// localStorage") that createLocalStore reads through the global `localStorage`.
-beforeAll(() => {
-  if (typeof globalThis.localStorage === 'undefined') {
-    const store = new Map<string, string>()
-    const memoryStorage: Storage = {
-      get length() {
-        return store.size
-      },
-      clear: () => store.clear(),
-      getItem: (key: string) => (store.has(key) ? store.get(key)! : null),
-      key: (index: number) => Array.from(store.keys())[index] ?? null,
-      removeItem: (key: string) => {
-        store.delete(key)
-      },
-      setItem: (key: string, value: string) => {
-        store.set(key, String(value))
-      },
-    }
-    Object.defineProperty(globalThis, 'localStorage', {
-      configurable: true,
-      value: memoryStorage,
-    })
+function attempt(root: Attempt['root'], flavour: string, correct: boolean): Attempt {
+  return {
+    root,
+    flavour,
+    correct,
+    rootMatched: correct,
+    flavourMatched: correct,
   }
-})
+}
 
 const resultA: DailyResult = {
   date: '2026-08-21',
-  guesses: { scale: 'C minor', chord: 'Cm' },
-  correctness: { scale: true, chord: false },
+  answer: { root: 'C', flavour: 'Dorian' },
+  attempts: [attempt('D', 'Dorian', false), attempt('C', 'Mixolydian', false)],
+  solved: false,
 }
 
 const resultB: DailyResult = {
   date: '2026-08-20',
-  guesses: { progression: 'Am–D–G' },
-  correctness: { progression: false },
+  answer: { root: 'A', flavour: 'Aeolian' },
+  attempts: [attempt('A', 'Aeolian', true)],
+  solved: true,
 }
 
 describe('createLocalStore', () => {
-  beforeEach(() => {
-    localStorage.clear()
-  })
-
-  it('round-trips a saved result via get(date)', async () => {
+  it('round-trips a saved record via get(date) — answer, attempts and solved (R1, A1)', async () => {
     const store = createLocalStore()
     await store.save(resultA)
     expect(await store.get(resultA.date)).toEqual(resultA)
@@ -59,7 +41,7 @@ describe('createLocalStore', () => {
     expect(await store.get('2000-01-01')).toBeNull()
   })
 
-  it('getAll returns all saved results', async () => {
+  it('getAll includes the saved record intact (R1, A1)', async () => {
     const store = createLocalStore()
     await store.save(resultA)
     await store.save(resultB)
@@ -78,9 +60,9 @@ describe('createLocalStore', () => {
     const store = createLocalStore()
     await store.save(resultA)
     const updated: DailyResult = {
-      date: resultA.date,
-      guesses: { scale: 'D minor' },
-      correctness: { scale: true },
+      ...resultA,
+      attempts: [...resultA.attempts, attempt('C', 'Dorian', true)],
+      solved: true,
     }
     await store.save(updated)
     expect(await store.get(resultA.date)).toEqual(updated)
@@ -97,13 +79,13 @@ describe('createLocalStore', () => {
     expect(await reloaded.getAll()).toHaveLength(2)
   })
 
-  it('writes the versioned envelope shape under the storage key', async () => {
+  it('writes a version-2 envelope under the v2 storage key (R1)', async () => {
     const store = createLocalStore()
     await store.save(resultA)
     const raw = localStorage.getItem(STORAGE_KEY)
     expect(raw).not.toBeNull()
     expect(JSON.parse(raw as string)).toEqual({
-      version: 1,
+      version: 2,
       byDate: { [resultA.date]: resultA },
     })
   })
@@ -119,5 +101,53 @@ describe('createLocalStore', () => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify({ nope: true }))
     const store = createLocalStore()
     expect(await store.getAll()).toEqual([])
+  })
+
+  describe('a feature-1 blob is ignored, not read (R5, AC4, A2)', () => {
+    const v1Envelope = JSON.stringify({
+      version: 1,
+      byDate: {
+        '2026-08-21': {
+          date: '2026-08-21',
+          guesses: { scale: 'C minor' },
+          correctness: { scale: true },
+        },
+      },
+    })
+
+    it('ignores a v1 envelope left under the old key', async () => {
+      localStorage.setItem(LEGACY_KEY, v1Envelope)
+      const store = createLocalStore()
+      expect(await store.getAll()).toEqual([])
+      expect(await store.get('2026-08-21')).toBeNull()
+    })
+
+    it('ignores a v1-shaped blob sitting under the new key, without throwing', async () => {
+      localStorage.setItem(STORAGE_KEY, v1Envelope)
+      const store = createLocalStore()
+      await expect(store.getAll()).resolves.toEqual([])
+      await expect(store.get('2026-08-21')).resolves.toBeNull()
+    })
+
+    it('leaves the v1 blob in place rather than deleting it', async () => {
+      localStorage.setItem(LEGACY_KEY, v1Envelope)
+      const store = createLocalStore()
+      await store.save(resultA)
+      expect(localStorage.getItem(LEGACY_KEY)).toBe(v1Envelope)
+    })
+  })
+
+  describe('a failing write does not throw (R6, AC5, A3)', () => {
+    afterEach(() => {
+      vi.restoreAllMocks()
+    })
+
+    it('resolves rather than rejecting when setItem throws', async () => {
+      vi.spyOn(globalThis.localStorage, 'setItem').mockImplementation(() => {
+        throw new Error('QuotaExceededError')
+      })
+      const store = createLocalStore()
+      await expect(store.save(resultA)).resolves.toBeUndefined()
+    })
   })
 })

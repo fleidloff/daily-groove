@@ -2,11 +2,11 @@ import type { DailyResult } from '../types'
 import { isoDate } from './selectGroove'
 
 /**
- * A day qualifies for the streak when the player got at least one attempted
- * attribute correct — i.e. any value in `correctness` is `true`.
+ * A day qualifies for the streak when it was solved, however many attempts it
+ * took. A past day left unsolved does not qualify, and so breaks the run.
  */
 export function isQualifying(r: DailyResult): boolean {
-  return Object.values(r.correctness).some((correct) => correct === true)
+  return r.solved
 }
 
 /**

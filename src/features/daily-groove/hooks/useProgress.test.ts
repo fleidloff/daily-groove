@@ -1,21 +1,39 @@
 import { describe, it, expect, vi } from 'vitest'
 import { renderHook, act, waitFor } from '@testing-library/react'
-import type { DailyResult } from '../types'
+import type { Answer, Attempt, DailyResult } from '../types'
 import type { ResultStore } from '../lib/storage'
 import { useProgress } from './useProgress'
 
 const TODAY = '2026-08-21'
+const YESTERDAY = '2026-08-20'
+
+const ANSWER: Answer = { root: 'C', flavour: 'Minor' }
+
+function attempt(overrides: Partial<Attempt> = {}): Attempt {
+  return {
+    root: 'C',
+    flavour: 'Dorian',
+    correct: false,
+    rootMatched: true,
+    flavourMatched: false,
+    ...overrides,
+  }
+}
 
 const todayResult: DailyResult = {
   date: TODAY,
-  guesses: { scale: 'C minor', chord: 'Cm7' },
-  correctness: { scale: true, chord: false },
+  answer: ANSWER,
+  attempts: [attempt({ correct: true, flavourMatched: true, flavour: 'Minor' })],
+  solved: true,
 }
 
 const yesterdayResult: DailyResult = {
-  date: '2026-08-20',
-  guesses: { progression: 'Am–D–G' },
-  correctness: { progression: true },
+  date: YESTERDAY,
+  answer: { root: 'G', flavour: 'Dorian' },
+  attempts: [
+    attempt({ root: 'G', flavour: 'Dorian', correct: true, flavourMatched: true }),
+  ],
+  solved: true,
 }
 
 /** A fully-controllable mock `ResultStore`. */
@@ -39,7 +57,7 @@ describe('useProgress', () => {
     expect(result.current.todayResult).toBeNull()
   })
 
-  it("loads today's existing result and derives streak/history (AC1, R3, R4)", async () => {
+  it("loads today's existing result and derives streak/history (R3, R7, AC6)", async () => {
     const store = makeStore({
       get: vi.fn(async () => todayResult),
       getAll: vi.fn(async () => [yesterdayResult, todayResult]),
@@ -48,25 +66,122 @@ describe('useProgress', () => {
 
     await waitFor(() => expect(result.current.loaded).toBe(true))
     expect(result.current.todayResult).toEqual(todayResult)
-    // Both days qualify and are consecutive up to today → streak 2.
+    // Both days were solved and are consecutive up to today → streak 2 (AC6).
     expect(result.current.streak).toBe(2)
     // History is most-recent first.
     expect(result.current.history).toEqual([todayResult, yesterdayResult])
   })
 
-  it('save writes through the store and updates local state (R1)', async () => {
+  it('an unsolved yesterday breaks the streak (R7, AC6)', async () => {
+    const missed: DailyResult = { ...yesterdayResult, solved: false }
+    const store = makeStore({
+      get: vi.fn(async () => todayResult),
+      getAll: vi.fn(async () => [missed, todayResult]),
+    })
+    const { result } = renderHook(() => useProgress(TODAY, store))
+
+    await waitFor(() => expect(result.current.loaded).toBe(true))
+    expect(result.current.streak).toBe(1)
+  })
+
+  // --- C1: the day's record is written after every check, not only on a solve
+
+  it('records the first wrong attempt as a stored record for today (R2, AC1)', async () => {
     const store = makeStore()
     const { result } = renderHook(() => useProgress(TODAY, store))
     await waitFor(() => expect(result.current.loaded).toBe(true))
 
+    const first = attempt()
     await act(async () => {
-      await result.current.save(todayResult)
+      await result.current.recordAttempt({
+        answer: ANSWER,
+        attempts: [first],
+        solved: false,
+      })
     })
 
     expect(store.save).toHaveBeenCalledTimes(1)
-    expect(store.save).toHaveBeenCalledWith(todayResult)
-    expect(result.current.todayResult).toEqual(todayResult)
-    expect(result.current.history).toEqual([todayResult])
+    expect(store.save).toHaveBeenCalledWith({
+      date: TODAY,
+      answer: ANSWER,
+      attempts: [first],
+      solved: false,
+    })
+    // ...and the day is readable back through the hook, before any solve.
+    expect(result.current.todayResult).toEqual({
+      date: TODAY,
+      answer: ANSWER,
+      attempts: [first],
+      solved: false,
+    })
+    // An unsolved day does not count toward the streak.
+    expect(result.current.streak).toBe(0)
+  })
+
+  it('rewrites the day on each further attempt rather than adding a record (R2)', async () => {
+    const store = makeStore()
+    const { result } = renderHook(() => useProgress(TODAY, store))
+    await waitFor(() => expect(result.current.loaded).toBe(true))
+
+    const first = attempt()
+    const second = attempt({ flavour: 'Lydian' })
+
+    await act(async () => {
+      await result.current.recordAttempt({
+        answer: ANSWER,
+        attempts: [first],
+        solved: false,
+      })
+    })
+    await act(async () => {
+      await result.current.recordAttempt({
+        answer: ANSWER,
+        attempts: [first, second],
+        solved: false,
+      })
+    })
+
+    expect(store.save).toHaveBeenCalledTimes(2)
+    expect(result.current.todayResult?.attempts).toEqual([first, second])
+    expect(result.current.history).toHaveLength(1)
+  })
+
+  it('a solving attempt marks the day solved and starts the streak (R2, R7)', async () => {
+    const store = makeStore()
+    const { result } = renderHook(() => useProgress(TODAY, store))
+    await waitFor(() => expect(result.current.loaded).toBe(true))
+
+    const winner = attempt({ flavour: 'Minor', correct: true, flavourMatched: true })
+    await act(async () => {
+      await result.current.recordAttempt({
+        answer: ANSWER,
+        attempts: [winner],
+        solved: true,
+      })
+    })
+
+    expect(result.current.todayResult?.solved).toBe(true)
     expect(result.current.streak).toBe(1)
+  })
+
+  it('a write that throws still leaves the guess in the session (R6, AC5)', async () => {
+    const store = makeStore({
+      save: vi.fn(async () => {
+        throw new Error('quota exceeded')
+      }),
+    })
+    const { result } = renderHook(() => useProgress(TODAY, store))
+    await waitFor(() => expect(result.current.loaded).toBe(true))
+
+    const first = attempt()
+    await act(async () => {
+      await result.current.recordAttempt({
+        answer: ANSWER,
+        attempts: [first],
+        solved: false,
+      })
+    })
+
+    expect(result.current.todayResult?.attempts).toEqual([first])
   })
 })

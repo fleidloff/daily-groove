@@ -9,6 +9,8 @@ export const GROOVES: Groove[] = [
   {
     id: 'groove-01',
     audioSrc: '/grooves/groove-01.mp3',
+    name: 'Cellar Light',
+    bpm: 76,
     scale: 'C minor',
     chord: 'Cm7',
     progression: 'Cm–Fm–G7',
@@ -16,6 +18,8 @@ export const GROOVES: Groove[] = [
   {
     id: 'groove-02',
     audioSrc: '/grooves/groove-02.mp3',
+    name: 'Riverbend Vamp',
+    bpm: 96,
     scale: 'A dorian',
     chord: 'Am7',
     progression: 'Am7–D7–Am7',
@@ -23,6 +27,8 @@ export const GROOVES: Groove[] = [
   {
     id: 'groove-03',
     audioSrc: '/grooves/groove-03.mp3',
+    name: 'Midnight Andaluz',
+    bpm: 92,
     scale: 'E phrygian',
     chord: 'Em',
     progression: 'Em–Am–B7',
@@ -30,6 +36,8 @@ export const GROOVES: Groove[] = [
   {
     id: 'groove-04',
     audioSrc: '/grooves/groove-04.mp3',
+    name: 'Porch Light Boogie',
+    bpm: 112,
     scale: 'G mixolydian',
     chord: 'G7',
     progression: 'G7–C–D7',
@@ -37,6 +45,8 @@ export const GROOVES: Groove[] = [
   {
     id: 'groove-05',
     audioSrc: '/grooves/groove-05.mp3',
+    name: 'Wide Open Morning',
+    bpm: 118,
     scale: 'D major',
     chord: 'Dmaj7',
     progression: 'D–G–A',
@@ -44,6 +54,8 @@ export const GROOVES: Groove[] = [
   {
     id: 'groove-06',
     audioSrc: '/grooves/groove-06.mp3',
+    name: 'Cloudbank Drift',
+    bpm: 68,
     scale: 'F lydian',
     chord: 'Fmaj7',
     progression: 'Fmaj7–G–C',
@@ -51,6 +63,8 @@ export const GROOVES: Groove[] = [
   {
     id: 'groove-07',
     audioSrc: '/grooves/groove-07.mp3',
+    name: 'Vertigo Steps',
+    bpm: 138,
     scale: 'B locrian',
     chord: 'Bm7b5',
     progression: 'Bm7b5–E7–Am',

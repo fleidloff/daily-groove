@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Specs are documentation, not app code. The design canvas under
+    // specs/feature-2/ vendors a bundled support.js that is not ours to fix.
+    "specs/**",
   ]),
 ]);
 

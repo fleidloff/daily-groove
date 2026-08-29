@@ -13,15 +13,20 @@ export type ResultStore = {
   save(result: DailyResult): Promise<void>
 }
 
-const STORAGE_KEY = 'daily-groove:v1:results'
+/**
+ * The version-2 key. Feature-1's records were keyed by scale/chord/progression
+ * attributes that no longer exist, so v2 is a clean break under its own key: the
+ * v1 blob is left in place, never read, and never migrated.
+ */
+const STORAGE_KEY = 'daily-groove:v2:results'
 
 type Envelope = {
-  version: 1
+  version: 2
   byDate: Record<string, DailyResult>
 }
 
 function emptyEnvelope(): Envelope {
-  return { version: 1, byDate: {} }
+  return { version: 2, byDate: {} }
 }
 
 /**
@@ -56,14 +61,14 @@ function readEnvelope(): Envelope {
   if (
     typeof parsed !== 'object' ||
     parsed === null ||
-    (parsed as { version?: unknown }).version !== 1 ||
+    (parsed as { version?: unknown }).version !== 2 ||
     typeof (parsed as { byDate?: unknown }).byDate !== 'object' ||
     (parsed as { byDate?: unknown }).byDate === null
   ) {
     return emptyEnvelope()
   }
 
-  return { version: 1, byDate: (parsed as Envelope).byDate }
+  return { version: 2, byDate: (parsed as Envelope).byDate }
 }
 
 function writeEnvelope(envelope: Envelope): void {
@@ -77,7 +82,7 @@ function writeEnvelope(envelope: Envelope): void {
 
 /**
  * A localStorage-backed `ResultStore`. All results live in one versioned JSON
- * blob under `daily-groove:v1:results`; each call reads/merges/writes that blob.
+ * blob under `daily-groove:v2:results`; each call reads/merges/writes that blob.
  */
 export function createLocalStore(): ResultStore {
   return {
