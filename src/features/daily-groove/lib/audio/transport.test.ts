@@ -1,395 +1,488 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { createPageTransport } from './transport'
+import { installFakeAudioContext } from '../../testing/fakeAudioContext'
 
-// The player is stubbed: these tests assert the transport's source-swapping
-// rules, not playback. No React and no DOM are involved.
-vi.mock('./audio', () => ({
-  createAudioPlayer: vi.fn(),
-}))
+/**
+ * The transport is driven through the *real* player against a fake
+ * `AudioContext`, not against a hand-made stand-in for the player.
+ *
+ * Position is now arithmetic over a clock, and a fake player that reports its
+ * own elapsed time would only prove the transport can divide. The fake context
+ * gives the tests the clock itself: "one loop later" is `advance(10)`, exactly,
+ * and the assertions run over the same code path the browser runs.
+ */
 
-import { createAudioPlayer } from './audio'
-import { HEAD_DELAY_SECONDS, createPageTransport } from './transport'
-
-type FakePlayer = ReturnType<typeof makePlayer>
-
-/** A stand-in for `AudioPlayer` that records what was asked of it. */
-function makePlayer(play: () => Promise<void> = () => Promise.resolve()) {
-  const listeners = new Set<() => void>()
-  let playing = false
-  let position = 0
-  let currentTime = 0
-
-  const notify = () => {
-    for (const listener of Array.from(listeners)) listener()
-  }
-
-  return {
-    play: vi.fn(async () => {
-      playing = true
-      notify()
-      try {
-        await play()
-      } catch (error) {
-        playing = false
-        notify()
-        throw error
-      }
-    }),
-    stop: vi.fn(() => {
-      playing = false
-      position = 0
-      currentTime = 0
-      notify()
-    }),
-    getPosition: vi.fn(() => position),
-    getCurrentTime: vi.fn(() => currentTime),
-    isPlaying: vi.fn(() => playing),
-    subscribe: vi.fn((fn: () => void) => {
-      listeners.add(fn)
-      return () => {
-        listeners.delete(fn)
-      }
-    }),
-    dispose: vi.fn(() => {
-      playing = false
-      listeners.clear()
-    }),
-    // Test-only handles.
-    setPosition(next: number) {
-      position = next
-    },
-    setCurrentTime(next: number) {
-      currentTime = next
-    },
-    emit: notify,
-    listenerCount: () => listeners.size,
-  }
+/** groove-01: 4 bars at 105bpm, in a file with 25ms of encoder delay. */
+const TODAY = {
+  src: '/grooves/groove-01.mp3',
+  loopSeconds: 9.142857,
+  headDelaySeconds: 0.025057,
 }
 
-/** Hands out a fresh fake player per `createAudioPlayer` call, in order. */
-function usePlayers(): FakePlayer[] {
-  const built: FakePlayer[] = []
-  vi.mocked(createAudioPlayer).mockImplementation(() => {
-    const player = makePlayer()
-    built.push(player)
-    return player as unknown as ReturnType<typeof createAudioPlayer>
+/** A round loop, so a position reads as a fraction anyone can check by eye. */
+const TEN_SECOND_LOOP = {
+  src: '/m.mp3',
+  loopSeconds: 10,
+  headDelaySeconds: 0.025057,
+}
+
+/**
+ * Drain the microtask queue, so a press has reached the decode it is waiting
+ * on. A macrotask turn rather than a counted number of `Promise.resolve()`s:
+ * the fetch-then-arrayBuffer-then-decode chain is several ticks long.
+ */
+async function flush() {
+  await new Promise((resolve) => {
+    setTimeout(resolve, 0)
   })
-  return built
 }
 
-const A = { id: 'a', src: '/a.mp3' }
-const B = { id: 'b', src: '/b.mp3' }
+/**
+ * A hand-driven `requestAnimationFrame`, so the player's position poll fires
+ * only when a test says so. Without it the poll would notify on jsdom's own
+ * 16ms timer, and "did the transport forward a notification" would become a
+ * question about wall-clock time.
+ */
+function installFrames() {
+  const pending = new Map<number, FrameRequestCallback>()
+  let nextId = 1
+
+  vi.stubGlobal('requestAnimationFrame', (fn: FrameRequestCallback) => {
+    const id = nextId
+    nextId += 1
+    pending.set(id, fn)
+    return id
+  })
+  vi.stubGlobal('cancelAnimationFrame', (id: number) => {
+    pending.delete(id)
+  })
+
+  return function frame() {
+    const due = Array.from(pending.entries())
+    pending.clear()
+    for (const [, fn] of due) fn(0)
+  }
+}
+
+/** The fake context plus the hand-driven frame loop, installed together. */
+function install(opts?: Parameters<typeof installFakeAudioContext>[0]) {
+  const frame = installFrames()
+  const fake = installFakeAudioContext(opts)
+  return { fake, frame }
+}
+
+afterEach(() => {
+  vi.unstubAllGlobals()
+  vi.restoreAllMocks()
+})
 
 describe('createPageTransport', () => {
-  beforeEach(() => {
-    vi.mocked(createAudioPlayer).mockReset()
+  // Step D1 — R5, R6, AC7
+  it('is built for one source and reports playback as a boolean', async () => {
+    const { fake } = install()
+    const transport = createPageTransport(TODAY)
+
+    expect(transport.isPlaying()).toBe(false)
+    // Nothing touches the audio hardware until the first press.
+    expect(fake.contexts).toHaveLength(0)
+
+    await transport.toggle()
+
+    expect(transport.isPlaying()).toBe(true)
+    expect(fake.contexts).toHaveLength(1)
+    expect(fake.sources).toHaveLength(1)
+    // The file it fetched is the one source it was built for.
+    expect(vi.mocked(fetch).mock.calls[0][0]).toBe(TODAY.src)
+
+    transport.dispose()
   })
 
-  // Step D1 — R3, R4, AC2, AC3, AC4
-  it('starts a source, swaps to another, and stops on a repeat press', async () => {
-    const players = usePlayers()
-    const transport = createPageTransport()
+  // Step D1 — R5, R6: the surface names no groove and accepts none.
+  it('exposes no groove identifier and no way to supply another source', async () => {
+    install()
+    const transport = createPageTransport(TODAY)
 
-    expect(transport.getSoundingId()).toBeNull()
-
-    await transport.toggle(A)
-    expect(transport.getSoundingId()).toBe('a')
-    expect(createAudioPlayer).toHaveBeenCalledTimes(1)
-    expect(vi.mocked(createAudioPlayer).mock.calls[0][0]).toBe('/a.mp3')
-    expect(players[0].play).toHaveBeenCalledTimes(1)
-
-    await transport.toggle(B)
-    expect(transport.getSoundingId()).toBe('b')
-    // The swap must release the old player entirely: a merely-stopped player
-    // keeps its rAF poll and its listener wired up (R4).
-    expect(players[0].stop).toHaveBeenCalledTimes(1)
-    expect(players[0].dispose).toHaveBeenCalledTimes(1)
-    expect(createAudioPlayer).toHaveBeenCalledTimes(2)
-    expect(vi.mocked(createAudioPlayer).mock.calls[1][0]).toBe('/b.mp3')
-    expect(players[1].play).toHaveBeenCalledTimes(1)
-
-    await transport.toggle(B)
-    expect(transport.getSoundingId()).toBeNull()
-    expect(players[1].stop).toHaveBeenCalledTimes(1)
+    expect(Object.keys(transport).sort()).toEqual([
+      'dispose',
+      'getPosition',
+      'isLoading',
+      'isPlaying',
+      'subscribe',
+      'toggle',
+    ])
+    expect('getSoundingId' in transport).toBe(false)
+    // `toggle` declares no parameter, so no caller can point it elsewhere.
+    expect(transport.toggle).toHaveLength(0)
   })
 
-  // Step D1 — R4: one player at a time, never a cache per card.
-  it('never holds more than one player at a time', async () => {
-    const players = usePlayers()
-    const transport = createPageTransport()
+  // Step D1 — R6, R10, AC10
+  it('builds one player, one context and one decode however many times it is toggled', async () => {
+    const { fake } = install()
+    const transport = createPageTransport(TODAY)
 
-    await transport.toggle(A)
-    await transport.toggle(B)
-    await transport.toggle(A)
+    await transport.toggle()
+    await transport.toggle()
+    await transport.toggle()
 
-    expect(players).toHaveLength(3)
-    // Every player but the current one has been disposed.
-    expect(players[0].dispose).toHaveBeenCalledTimes(1)
-    expect(players[1].dispose).toHaveBeenCalledTimes(1)
-    expect(players[2].dispose).not.toHaveBeenCalled()
-    expect(transport.getSoundingId()).toBe('a')
+    expect(fake.contexts).toHaveLength(1)
+    // The decoded buffer is kept, so only the first press pays for it.
+    expect(fake.decodeCalls).toBe(1)
+    expect(fake.fetchCalls).toBe(1)
+    // A buffer source is single-use, so the restart is a second node over the
+    // same buffer — not a second player, and not a second decode.
+    expect(fake.sources).toHaveLength(2)
+    expect(transport.isPlaying()).toBe(true)
+
+    transport.dispose()
   })
 
-  // Step D2 — R3, AC4
-  it('stops the sounding source when it is toggled again', async () => {
-    const players = usePlayers()
-    const transport = createPageTransport()
+  // Step D1 — R5, R8
+  it('stops and rewinds when it is toggled while running', async () => {
+    const { fake } = install()
+    const transport = createPageTransport(TODAY)
 
-    await transport.toggle(A)
-    await transport.toggle(A)
+    await transport.toggle()
+    fake.advance(3)
+    await transport.toggle()
 
-    expect(transport.getSoundingId()).toBeNull()
-    expect(players[0].stop).toHaveBeenCalledTimes(1)
+    expect(transport.isPlaying()).toBe(false)
+    expect(fake.sources[0].stop).toHaveBeenCalledTimes(1)
+    expect(transport.getPosition()).toBe(0)
+
+    transport.dispose()
   })
 
-  // Step D2 — R3: stopping means back to the top. The player itself is
-  // RETAINED, not rebuilt: `stop()` already rewound it, so re-pressing the
-  // same source restarts at bar 1 without constructing a new Audio element.
-  // rather than resuming a held position.
-  it('plays again after being stopped', async () => {
-    const players = usePlayers()
-    const transport = createPageTransport()
-
-    await transport.toggle(A)
-    await transport.toggle(A)
-    await transport.toggle(A)
-
-    expect(transport.getSoundingId()).toBe('a')
-    expect(players[players.length - 1].play).toHaveBeenCalled()
-  })
-
-  // Step D3 — R12, AC14
-  it('constructs every player with loop: true, swaps included', async () => {
-    usePlayers()
-    const transport = createPageTransport()
-
-    await transport.toggle(A)
-    await transport.toggle(B)
-
-    expect(vi.mocked(createAudioPlayer).mock.calls[0][1]).toEqual({ loop: true })
-    expect(vi.mocked(createAudioPlayer).mock.calls[1][1]).toEqual({ loop: true })
-  })
-
-  // Step D4 — R4
-  it('disposes the sounding player, clears listeners and goes silent', async () => {
-    const players = usePlayers()
-    const transport = createPageTransport()
+  it('disposes the player, clears listeners and goes silent', async () => {
+    const { fake, frame } = install()
+    const transport = createPageTransport(TODAY)
     const listener = vi.fn()
     transport.subscribe(listener)
 
-    await transport.toggle(A)
+    await transport.toggle()
     listener.mockClear()
 
     transport.dispose()
 
-    expect(players[0].stop).toHaveBeenCalled()
-    expect(players[0].dispose).toHaveBeenCalledTimes(1)
-    expect(transport.getSoundingId()).toBeNull()
+    expect(fake.sources[0].stop).toHaveBeenCalled()
+    expect(fake.contexts[0].close).toHaveBeenCalledTimes(1)
+    expect(transport.isPlaying()).toBe(false)
 
     // The listener set is empty: a late notification reaches nobody.
-    players[0].emit()
+    frame()
     expect(listener).not.toHaveBeenCalled()
   })
 
-  it('is inert after disposal', async () => {
-    usePlayers()
-    const transport = createPageTransport()
+  it('is inert after disposal', () => {
+    install()
+    const transport = createPageTransport(TODAY)
 
     transport.dispose()
 
-    expect(transport.getSoundingId()).toBeNull()
+    expect(transport.isPlaying()).toBe(false)
+    expect(transport.isLoading()).toBe(false)
     expect(transport.getPosition()).toBe(0)
   })
 
-  describe('position', () => {
-    it('is 0 when nothing sounds', () => {
-      usePlayers()
-      const transport = createPageTransport()
-
-      expect(transport.getPosition()).toBe(0)
-      expect(createAudioPlayer).not.toHaveBeenCalled()
-    })
-
-    it('reads the sounding player, and returns to 0 when it stops', async () => {
-      const players = usePlayers()
-      const transport = createPageTransport()
-
-      await transport.toggle(A)
-      players[0].setPosition(0.42)
-      expect(transport.getPosition()).toBeCloseTo(0.42)
-
-      await transport.toggle(A)
-      expect(transport.getPosition()).toBe(0)
-    })
-  })
-
   describe('subscribe', () => {
-    it('forwards the sounding player’s notifications', async () => {
-      const players = usePlayers()
-      const transport = createPageTransport()
+    it('forwards the player’s notifications', async () => {
+      const { frame } = install()
+      const transport = createPageTransport(TODAY)
       const listener = vi.fn()
       transport.subscribe(listener)
 
-      await transport.toggle(A)
+      await transport.toggle()
       expect(listener).toHaveBeenCalled()
 
+      // Each frame of the position poll is a notification the page needs, or
+      // `useSyncExternalStore` would never re-read a moving position.
       listener.mockClear()
-      players[0].emit()
+      frame()
       expect(listener).toHaveBeenCalledTimes(1)
-    })
 
-    it('forwards from the new player after a swap and not the old one', async () => {
-      const players = usePlayers()
-      const transport = createPageTransport()
-      const listener = vi.fn()
-      transport.subscribe(listener)
-
-      await transport.toggle(A)
-      await transport.toggle(B)
-      listener.mockClear()
-
-      players[0].emit()
-      expect(listener).not.toHaveBeenCalled()
-
-      players[1].emit()
-      expect(listener).toHaveBeenCalledTimes(1)
+      transport.dispose()
     })
 
     it('returns an unsubscribe that stops the notifications', async () => {
-      const players = usePlayers()
-      const transport = createPageTransport()
+      const { frame } = install()
+      const transport = createPageTransport(TODAY)
       const listener = vi.fn()
       const unsubscribe = transport.subscribe(listener)
 
-      await transport.toggle(A)
+      await transport.toggle()
       unsubscribe()
       listener.mockClear()
 
-      players[0].emit()
+      frame()
       expect(listener).not.toHaveBeenCalled()
+
+      transport.dispose()
     })
 
-    it('notifies when a source starts and when it stops', async () => {
-      usePlayers()
-      const transport = createPageTransport()
+    it('notifies on start and on stop', async () => {
+      install()
+      const transport = createPageTransport(TODAY)
       const listener = vi.fn()
       transport.subscribe(listener)
 
-      await transport.toggle(A)
+      await transport.toggle()
       expect(listener).toHaveBeenCalled()
 
       listener.mockClear()
-      await transport.toggle(A)
+      await transport.toggle()
       expect(listener).toHaveBeenCalled()
-    })
-  })
 
-  describe('a play failure', () => {
-    it('propagates so the caller can offer a retry', async () => {
-      const failing = makePlayer(() => Promise.reject(new Error('no audio')))
-      vi.mocked(createAudioPlayer).mockReturnValue(
-        failing as unknown as ReturnType<typeof createAudioPlayer>,
-      )
-      const transport = createPageTransport()
-
-      await expect(transport.toggle(A)).rejects.toThrow('no audio')
-      // Nothing sounds, so no control is left showing a stop affordance for a
-      // groove that never started.
-      expect(transport.getSoundingId()).toBeNull()
-    })
-
-    it('leaves the transport usable for the next press', async () => {
-      const failing = makePlayer(() => Promise.reject(new Error('no audio')))
-      const working = makePlayer()
-      vi.mocked(createAudioPlayer)
-        .mockReturnValueOnce(
-          failing as unknown as ReturnType<typeof createAudioPlayer>,
-        )
-        .mockReturnValue(
-          working as unknown as ReturnType<typeof createAudioPlayer>,
-        )
-      const transport = createPageTransport()
-
-      await expect(transport.toggle(A)).rejects.toThrow('no audio')
-
-      await transport.toggle(B)
-      expect(transport.getSoundingId()).toBe('b')
-      expect(working.play).toHaveBeenCalledTimes(1)
+      transport.dispose()
     })
   })
 })
 
 /**
- * The bar highlight is drawn by quartering `getPosition()`, so a position taken
- * from the file's own duration puts the bar lines in the wrong place: an mp3
- * carries ~25ms of encoder delay at its head and padding at its tail, and for
- * this catalogue the file runs 26-47ms longer than the music. A source that
- * declares its musical `loopSeconds` gets mapped against that instead.
+ * Step D1 — R7a, AC8b, AC8c. Web Audio has no progressive playback: the press
+ * and the first sound are separated by a fetch and a decode, and the control
+ * has to be able to say so rather than sitting in "Stop" over silence.
  */
-describe('musical position', () => {
-  const TEN_SECOND_LOOP = { id: 'm', src: '/m.mp3', loopSeconds: 10 }
+describe('the busy state (R7a, AC8b, AC8c)', () => {
+  it('is not loading before a press', () => {
+    install()
+    const transport = createPageTransport(TODAY)
 
-  it('reads 0 through the encoder delay, before the music starts', async () => {
-    const players = usePlayers()
-    const transport = createPageTransport()
-    await transport.toggle(TEN_SECOND_LOOP)
+    expect(transport.isLoading()).toBe(false)
+    expect(transport.isPlaying()).toBe(false)
+  })
 
-    players[0].setCurrentTime(0)
+  it('is loading while the decode is pending, and not once it sounds', async () => {
+    const { fake } = install()
+    fake.deferNextDecode()
+    const transport = createPageTransport(TODAY)
+
+    const pressed = transport.toggle()
+    await flush()
+
+    expect(transport.isLoading()).toBe(true)
+    expect(fake.sources).toHaveLength(0)
+
+    fake.releaseDecodes()
+    await pressed
+
+    expect(transport.isLoading()).toBe(false)
+    expect(transport.isPlaying()).toBe(true)
+
+    transport.dispose()
+  })
+
+  it('is not loading again on the press that stops it', async () => {
+    install()
+    const transport = createPageTransport(TODAY)
+
+    await transport.toggle()
+    await transport.toggle()
+
+    expect(transport.isLoading()).toBe(false)
+    expect(transport.isPlaying()).toBe(false)
+
+    transport.dispose()
+  })
+})
+
+/**
+ * Step D2 — R2, R5, AC2, AC3, AC6.
+ *
+ * The bar highlight is drawn by quartering `getPosition()`, so the number has
+ * to describe the *music*: elapsed seconds on the graph's own clock, mapped
+ * onto the loop length the transport was constructed with. It wraps rather than
+ * clamping, because the position is derived on every read instead of counted
+ * forward — the fiftieth repeat reads exactly like the first.
+ */
+describe('musical position (R2, R5)', () => {
+  it('is 0 while nothing plays, and touches no context', () => {
+    const { fake } = install()
+    const transport = createPageTransport(TEN_SECOND_LOOP)
+
     expect(transport.getPosition()).toBe(0)
-    // Still inside the 25ms of leading silence.
-    players[0].setCurrentTime(0.02)
+    expect(fake.contexts).toHaveLength(0)
+  })
+
+  it('is the elapsed fraction of the loop, off the audio clock', async () => {
+    const { fake } = install({ bufferSeconds: 12 })
+    const transport = createPageTransport(TEN_SECOND_LOOP)
+    await transport.toggle()
+
+    fake.advance(3.75)
+
+    // Three eighths of the loop — which quarters into bar 2 (AC3).
+    expect(transport.getPosition()).toBeCloseTo(0.375, 6)
+    expect(Math.floor(transport.getPosition() * 4)).toBe(1)
+
+    transport.dispose()
+  })
+
+  // AC2: past one full loop the position wraps to near zero, not to a clamp.
+  it('wraps at the loop boundary rather than clamping at 1', async () => {
+    const { fake } = install({ bufferSeconds: 12 })
+    const transport = createPageTransport(TEN_SECOND_LOOP)
+    await transport.toggle()
+
+    fake.advance(3.75)
+    expect(transport.getPosition()).toBeCloseTo(0.375, 6)
+
+    // One whole loop later, the same point in the bar.
+    fake.advance(10)
+    expect(transport.getPosition()).toBeCloseTo(0.375, 6)
+
+    // ...and on the fiftieth repeat too.
+    fake.advance(10 * 47)
+    expect(transport.getPosition()).toBeCloseTo(0.375, 6)
+
+    // Exactly on the boundary it reads the top of the loop, never 1.
+    fake.advance(10 - 3.75)
+    expect(transport.getPosition()).toBeCloseTo(0, 6)
+
+    transport.dispose()
+  })
+
+  // R3 reaches the page through here: the correction is the player's, and the
+  // transport must not undo it by counting from the press instead.
+  it('reads 0 until the first audio has reached the listener', async () => {
+    const { fake } = install({ bufferSeconds: 12, outputLatency: 0.2 })
+    const transport = createPageTransport(TEN_SECOND_LOOP)
+    await transport.toggle()
+
+    fake.advance(0.2)
     expect(transport.getPosition()).toBe(0)
+
+    fake.advance(2.5)
+    expect(transport.getPosition()).toBeCloseTo(0.25, 6)
+
+    transport.dispose()
   })
 
-  it('puts the halfway point at the middle of the music, not the file', async () => {
-    const players = usePlayers()
-    const transport = createPageTransport()
-    await transport.toggle(TEN_SECOND_LOOP)
+  // AC6 — nothing is held: a stop returns the number to zero at once.
+  it('returns to 0 when the source is stopped', async () => {
+    const { fake } = install({ bufferSeconds: 12 })
+    const transport = createPageTransport(TEN_SECOND_LOOP)
+    await transport.toggle()
+    fake.advance(2.5)
+    expect(transport.getPosition()).toBeCloseTo(0.25, 6)
 
-    // Encoder delay plus half of a ten-second loop.
-    players[0].setCurrentTime(HEAD_DELAY_SECONDS + 5)
-    expect(transport.getPosition()).toBeCloseTo(0.5, 6)
-  })
-
-  it('puts each bar line a quarter through the music', async () => {
-    const players = usePlayers()
-    const transport = createPageTransport()
-    await transport.toggle(TEN_SECOND_LOOP)
-
-    for (const quarter of [1, 2, 3]) {
-      players[0].setCurrentTime(HEAD_DELAY_SECONDS + 2.5 * quarter)
-      expect(transport.getPosition()).toBeCloseTo(quarter / 4, 6)
-    }
-  })
-
-  it('clamps to 1 across the file\'s trailing padding', async () => {
-    const players = usePlayers()
-    const transport = createPageTransport()
-    await transport.toggle(TEN_SECOND_LOOP)
-
-    players[0].setCurrentTime(HEAD_DELAY_SECONDS + 10)
-    expect(transport.getPosition()).toBe(1)
-    // Past the music, still inside the file.
-    players[0].setCurrentTime(HEAD_DELAY_SECONDS + 10.04)
-    expect(transport.getPosition()).toBe(1)
-  })
-
-  it('falls back to the file position when a source declares no loop length', async () => {
-    const players = usePlayers()
-    const transport = createPageTransport()
-    await transport.toggle(A)
-
-    players[0].setPosition(0.42)
-    players[0].setCurrentTime(999)
-    expect(transport.getPosition()).toBe(0.42)
-  })
-
-  it('reads 0 when nothing is sounding', async () => {
-    const players = usePlayers()
-    const transport = createPageTransport()
-    await transport.toggle(TEN_SECOND_LOOP)
-    players[0].setCurrentTime(HEAD_DELAY_SECONDS + 5)
-
-    await transport.toggle(TEN_SECOND_LOOP)
+    await transport.toggle()
     expect(transport.getPosition()).toBe(0)
+
+    // ...and the clock running on does not revive it.
+    fake.advance(5)
+    expect(transport.getPosition()).toBe(0)
+
+    transport.dispose()
+  })
+
+  // AC9 — the next press begins at bar 1, not where the last one stopped.
+  it('starts the next press from the top', async () => {
+    const { fake } = install({ bufferSeconds: 12 })
+    const transport = createPageTransport(TEN_SECOND_LOOP)
+
+    await transport.toggle()
+    fake.advance(7.5)
+    await transport.toggle()
+
+    fake.advance(1)
+    await transport.toggle()
+    expect(transport.getPosition()).toBe(0)
+
+    fake.advance(2.5)
+    expect(transport.getPosition()).toBeCloseTo(0.25, 6)
+
+    transport.dispose()
+  })
+
+  // `loopSecondsOf` returns 0 for a groove with a nonsensical bpm, so a
+  // zero-length loop is reachable without any caller doing anything odd. There
+  // is no file position to fall back on any more — the player reports elapsed
+  // seconds, and a loop of no length maps them nowhere.
+  it('is 0 when the loop length is unusable', async () => {
+    const { fake } = install()
+    const transport = createPageTransport({
+      src: '/m.mp3',
+      loopSeconds: 0,
+      headDelaySeconds: 0.025057,
+    })
+    await transport.toggle()
+
+    fake.advance(999)
+    expect(transport.getPosition()).toBe(0)
+
+    transport.dispose()
+  })
+})
+
+/**
+ * Step D3 — R7, AC8, AC8d. Every way a press can fail lands in the same place:
+ * the transport rolls back, clears the busy state and rethrows, so the page
+ * raises the one error state with its retry affordance.
+ */
+describe('a failed press (R7, AC8, AC8d)', () => {
+  it('rolls back and rethrows when the decode fails', async () => {
+    const { fake } = install()
+    fake.failNextDecode()
+    const transport = createPageTransport(TODAY)
+
+    await expect(transport.toggle()).rejects.toThrow(/decode/i)
+
+    // Nothing sounds, so no control is left showing a stop affordance for a
+    // groove that never started — and none is left showing a wait either.
+    expect(transport.isPlaying()).toBe(false)
+    expect(transport.isLoading()).toBe(false)
+    expect(fake.sources).toHaveLength(0)
+
+    transport.dispose()
+  })
+
+  it('rolls back and rethrows when the fetch fails', async () => {
+    install()
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => {
+        throw new Error('network down')
+      }),
+    )
+    const transport = createPageTransport(TODAY)
+
+    await expect(transport.toggle()).rejects.toThrow('network down')
+
+    expect(transport.isPlaying()).toBe(false)
+    expect(transport.isLoading()).toBe(false)
+
+    transport.dispose()
+  })
+
+  it('rejects rather than throwing where there is no AudioContext', async () => {
+    install()
+    vi.stubGlobal('AudioContext', undefined)
+    const transport = createPageTransport(TODAY)
+
+    // The press itself must not throw synchronously: the page awaits it.
+    const pressed = transport.toggle()
+    await expect(pressed).rejects.toThrow(/unavailable/i)
+
+    expect(transport.isPlaying()).toBe(false)
+    expect(transport.isLoading()).toBe(false)
+
+    transport.dispose()
+  })
+
+  it('leaves the transport usable for the next press', async () => {
+    const { fake } = install()
+    fake.failNextDecode()
+    const transport = createPageTransport(TODAY)
+
+    await expect(transport.toggle()).rejects.toThrow(/decode/i)
+
+    await transport.toggle()
+
+    expect(transport.isPlaying()).toBe(true)
+    expect(fake.sources).toHaveLength(1)
+    // The failed press did not cost a player: the retry reused the context.
+    expect(fake.contexts).toHaveLength(1)
+    expect(fake.decodeCalls).toBe(2)
+
+    transport.dispose()
   })
 })

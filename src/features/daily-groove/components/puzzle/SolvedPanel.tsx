@@ -26,16 +26,27 @@ function triesLabel(tries: number): string {
   return tries === 1 ? 'one try' : `${tries} tries`
 }
 
+// The two columns hold rows of different shapes, so they are laid out
+// differently. `grid` gives the seven scale notes equal columns, which is what
+// makes a row of short, uniform labels read as even. `row` is for "The
+// changes": a gapped flex row of two items already *is* content-sized columns,
+// and equal columns would hand a two-character chord symbol as much of the
+// panel as a four-chord progression, with a gulf of empty space between them.
+const LAYOUT = {
+  grid: 'grid grid-cols-4 md:grid-cols-7 gap-2',
+  row: 'flex flex-wrap gap-2',
+} as const
+
 /** A row of read-only values, drawn for the inverted surface. */
 function ValueChips({
   values,
-  width,
+  layout,
 }: {
   values: string[]
-  width: 'auto' | 'fixed'
+  layout: keyof typeof LAYOUT
 }) {
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className={LAYOUT[layout]}>
       {values.map((value) => (
         <Chip
           key={value}
@@ -43,7 +54,6 @@ function ValueChips({
           selected={false}
           disabled
           onSelect={() => {}}
-          width={width}
           tone="inverted"
         />
       ))}
@@ -87,10 +97,10 @@ export function SolvedPanel({
         </div>
         <PanelColumns>
           <LabelledColumn label="The changes">
-            <ValueChips values={[chord, progression]} width="auto" />
+            <ValueChips values={[chord, progression]} layout="row" />
           </LabelledColumn>
           <LabelledColumn label="Notes to live in">
-            <ValueChips values={notes} width="fixed" />
+            <ValueChips values={notes} layout="grid" />
           </LabelledColumn>
         </PanelColumns>
       </Panel>

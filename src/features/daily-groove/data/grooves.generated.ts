@@ -20,6 +20,7 @@ export const GROOVES: Groove[] = [
     root: 'C',
     flavour: 'Mixolydian',
     bars: 4,
+    headDelaySeconds: 0.025057,
   },
   {
     id: 'groove-02',
@@ -32,6 +33,7 @@ export const GROOVES: Groove[] = [
     root: 'E',
     flavour: 'Dorian',
     bars: 4,
+    headDelaySeconds: 0.025057,
   },
   {
     id: 'groove-03',
@@ -44,6 +46,7 @@ export const GROOVES: Groove[] = [
     root: 'E♭',
     flavour: 'Dorian',
     bars: 4,
+    headDelaySeconds: 0.025057,
   },
   {
     id: 'groove-04',
@@ -56,6 +59,7 @@ export const GROOVES: Groove[] = [
     root: 'E',
     flavour: 'Mixolydian',
     bars: 4,
+    headDelaySeconds: 0.025057,
   },
   {
     id: 'groove-05',
@@ -68,6 +72,7 @@ export const GROOVES: Groove[] = [
     root: 'E♭',
     flavour: 'Blues',
     bars: 4,
+    headDelaySeconds: 0.025057,
   },
   {
     id: 'groove-06',
@@ -80,6 +85,7 @@ export const GROOVES: Groove[] = [
     root: 'A',
     flavour: 'Blues',
     bars: 4,
+    headDelaySeconds: 0.025057,
   },
   {
     id: 'groove-07',
@@ -92,6 +98,7 @@ export const GROOVES: Groove[] = [
     root: 'G',
     flavour: 'Minor',
     bars: 4,
+    headDelaySeconds: 0.025057,
   },
   {
     id: 'groove-08',
@@ -104,6 +111,7 @@ export const GROOVES: Groove[] = [
     root: 'F♯',
     flavour: 'Minor',
     bars: 4,
+    headDelaySeconds: 0.025057,
   },
   {
     id: 'groove-09',
@@ -116,6 +124,7 @@ export const GROOVES: Groove[] = [
     root: 'C♯',
     flavour: 'Lydian',
     bars: 4,
+    headDelaySeconds: 0.025057,
   },
   {
     id: 'groove-10',
@@ -128,6 +137,7 @@ export const GROOVES: Groove[] = [
     root: 'F',
     flavour: 'Lydian',
     bars: 4,
+    headDelaySeconds: 0.025057,
   },
   {
     id: 'groove-11',
@@ -140,6 +150,7 @@ export const GROOVES: Groove[] = [
     root: 'B',
     flavour: 'Major',
     bars: 4,
+    headDelaySeconds: 0.025057,
   },
   {
     id: 'groove-12',
@@ -152,6 +163,7 @@ export const GROOVES: Groove[] = [
     root: 'A',
     flavour: 'Major',
     bars: 4,
+    headDelaySeconds: 0.025057,
   },
   {
     id: 'groove-13',
@@ -164,6 +176,7 @@ export const GROOVES: Groove[] = [
     root: 'A♭',
     flavour: 'Phrygian',
     bars: 4,
+    headDelaySeconds: 0.025057,
   },
   {
     id: 'groove-14',
@@ -176,6 +189,7 @@ export const GROOVES: Groove[] = [
     root: 'D',
     flavour: 'Phrygian',
     bars: 4,
+    headDelaySeconds: 0.025057,
   },
   {
     id: 'groove-15',
@@ -188,6 +202,7 @@ export const GROOVES: Groove[] = [
     root: 'A♭',
     flavour: 'Harmonic minor',
     bars: 4,
+    headDelaySeconds: 0.025057,
   },
   {
     id: 'groove-16',
@@ -200,6 +215,7 @@ export const GROOVES: Groove[] = [
     root: 'G',
     flavour: 'Harmonic minor',
     bars: 4,
+    headDelaySeconds: 0.025057,
   },
 ]
 

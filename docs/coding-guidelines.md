@@ -35,8 +35,8 @@ the one-line test.**
 | Group | Holds today | The test |
 | :-- | :-- | :-- |
 | `layout/` | `Container`, `PageShell`, `Row`, `Stack`, `LabelledColumn` | Does it only arrange its children — spacing, direction, the page frame — and render no content of its own? |
-| `surfaces/` | `Card`, `MiniCard`, `Panel` | Is it a background other content sits *on*: a border, a fill, a gradient? |
-| `controls/` | `Button`, `IconButton`, `Chip`, `ChipGroup`, `PlayControl` | Does the user press, toggle or select it? |
+| `surfaces/` | `Card`, `Panel` | Is it a background other content sits *on*: a border, a fill, a gradient? |
+| `controls/` | `Button`, `Chip`, `ChipGroup`, `PlayControl` | Does the user press, toggle or select it? |
 | `typography/` | `Heading`, `Text`, `EyebrowLabel`, `SectionLabel` | Is it text styling and nothing else? |
 | `display/` | `Pill`, `ProgressTrack` | Does it render a value read-only — no input, no children to arrange? |
 
@@ -90,8 +90,8 @@ import { EyebrowLabel } from '../typography/EyebrowLabel'
 ```
 
 `src/components/typography/SectionLabel.tsx` and
-`src/components/controls/PlayControl.tsx` show the same-group half:
-`./EyebrowLabel` and `./IconButton` stay relative because they do not cross.
+`src/components/controls/ChipGroup.tsx` show the same-group half:
+`./EyebrowLabel` and `./Chip` stay relative because they do not cross.
 
 *human-checked* — motivated by `src/components/controls/ChipGroup.tsx`,
 `src/components/layout/Row.tsx` and `src/components/layout/Stack.tsx`; asserted

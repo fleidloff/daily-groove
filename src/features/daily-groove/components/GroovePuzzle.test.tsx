@@ -1,16 +1,13 @@
 import type { ReactElement } from 'react'
-import { HEAD_DELAY_SECONDS } from '../lib/audio/transport'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import type { Attempt, DailyResult, Groove, Root } from '../types'
 
-// Audio is mocked so the composition can be driven without real playback.
-// Scoring is NOT mocked: the flow below runs through the real store and the
-// real `scoreAttempt`, which is the point of Step C8.
-vi.mock('../lib/audio/audio', () => ({
-  createAudioPlayer: vi.fn(),
-}))
+// The audio module is NOT mocked, and neither is scoring: the flows below run
+// through the real Web Audio player, the real store and the real
+// `scoreAttempt`. Playback is driven by stubbing the browser instead — see
+// `installFakeAudioContext` below.
 
 // Mock the persistence seam so useProgress reads/writes a controllable store —
 // no real localStorage. useProgress defaults to this module-singleton store.
@@ -25,12 +22,15 @@ vi.mock('../lib/persistence/storage', () => ({
   createLocalStore: () => mockStore,
 }))
 
-import { createAudioPlayer } from '../lib/audio/audio'
 import { GroovePuzzle } from './GroovePuzzle'
 import { flavourOptions, ROOTS } from '../lib/theory/music'
 import { isoDate, selectGrooveForDate } from '../lib/puzzle/selectGroove'
 import { GROOVES } from '../data/grooves.generated'
 import { renderFeature } from '../testing/renderFeature'
+import {
+  installFakeAudioContext,
+  type FakeContext,
+} from '../testing/fakeAudioContext'
 
 const GROOVE: Groove = {
   id: 'groove-01',
@@ -43,6 +43,7 @@ const GROOVE: Groove = {
   scale: 'C minor',
   chord: 'Cm7',
   progression: 'Cm–Fm–G7',
+  headDelaySeconds: 0.025057,
 }
 
 /** The day's four flavour chips, resolved exactly as the component resolves them. */
@@ -54,7 +55,6 @@ const otherWrongFlavour = () =>
   flavours().filter((f) => f !== 'Minor' && f !== wrongFlavour())[0]
 
 const TODAY = () => isoDate(new Date())
-const YESTERDAY = () => isoDate(new Date(Date.now() - 24 * 60 * 60 * 1000))
 
 function miss(root: Root, flavour: string, rootMatched: boolean): Attempt {
   return { root, flavour, correct: false, rootMatched, flavourMatched: false }
@@ -69,70 +69,64 @@ const SOLVING: Attempt = {
 }
 
 /**
- * A stand-in for the real AudioPlayer that keeps just enough state for the
- * component to observe: a playing flag, a position, and a listener set. It
- * deliberately mirrors the real player's optimistic ordering — `play()` flips
- * `isPlaying()` before the underlying promise settles and reverts on rejection.
- *
- * `stop()` mirrors the real player too: it halts *and* rewinds, so the position
- * the component reads through `useSyncExternalStore` returns to zero on its own.
- */
-/**
  * The loop length of `GROOVE`, which is what the transport divides elapsed
  * seconds by. Kept in step with the fixture: 4 bars of 4/4 at 90bpm.
  */
 const GROOVE_LOOP_SECONDS = (4 * 4 * 60) / 90
 
-function makePlayer(
-  play: () => Promise<void> = () => Promise.resolve(),
-  loopSeconds: number = GROOVE_LOOP_SECONDS,
-) {
-  const listeners = new Set<() => void>()
-  let playing = false
-  let position = 0
+/**
+ * The page is driven through the *real* player against a fake `AudioContext`,
+ * rather than through a stand-in for the player.
+ *
+ * Position is now arithmetic over an audio clock, and a hand-made player that
+ * reported its own position would only prove the page can read a number back
+ * out of one. The fake context gives the tests the clock itself, so "three
+ * eighths of the way through the loop" is an exact number of seconds and the
+ * assertion runs over the same code path the browser runs.
+ */
+let fake: FakeContext
+let frame: () => void
 
-  const notify = () => {
-    for (const listener of Array.from(listeners)) listener()
-  }
+/**
+ * A hand-driven `requestAnimationFrame`, so the player's position poll fires
+ * only when a test says so — and never outside `act`.
+ */
+function installFrames() {
+  const pending = new Map<number, FrameRequestCallback>()
+  let nextId = 1
 
-  return {
-    play: vi.fn(async () => {
-      playing = true
-      notify()
-      try {
-        await play()
-      } catch (error) {
-        playing = false
-        notify()
-        throw error
-      }
-    }),
-    stop: vi.fn(() => {
-      playing = false
-      position = 0
-      notify()
-    }),
-    getPosition: vi.fn(() => position),
-    // The real element reports seconds into the *file*, so the fake adds the
-    // encoder delay the transport subtracts back off. `seek(0.5)` therefore
-    // still means "half way through the music", as it always did.
-    getCurrentTime: vi.fn(() =>
-      position === 0 ? 0 : HEAD_DELAY_SECONDS + position * loopSeconds,
-    ),
-    isPlaying: vi.fn(() => playing),
-    subscribe: vi.fn((fn: () => void) => {
-      listeners.add(fn)
-      return () => {
-        listeners.delete(fn)
-      }
-    }),
-    dispose: vi.fn(),
-    // Test-only seam: move the loop position and notify, as the rAF poll would.
-    seek: (next: number) => {
-      position = next
-      notify()
-    },
+  vi.stubGlobal('requestAnimationFrame', (fn: FrameRequestCallback) => {
+    const id = nextId
+    nextId += 1
+    pending.set(id, fn)
+    return id
+  })
+  vi.stubGlobal('cancelAnimationFrame', (id: number) => {
+    pending.delete(id)
+  })
+
+  return function runFrame() {
+    const due = Array.from(pending.entries())
+    pending.clear()
+    for (const [, fn] of due) fn(0)
   }
+}
+
+/** Seconds into a loop of `GROOVE`, as a fraction of it. */
+const loopFraction = (fraction: number) => GROOVE_LOOP_SECONDS * fraction
+
+/** Move the audio clock, then let the page repaint from where it now reads. */
+async function advance(seconds: number) {
+  fake.advance(seconds)
+  await act(async () => {
+    frame()
+  })
+}
+
+/** Press the control, and wait for the groove to be sounding. */
+async function play(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(screen.getByRole('button', { name: 'Play the loop' }))
+  await screen.findByRole('button', { name: 'Stop the loop' })
 }
 
 /**
@@ -177,12 +171,18 @@ async function guess(
 
 describe('GroovePuzzle', () => {
   beforeEach(() => {
-    vi.mocked(createAudioPlayer).mockReset()
     // Default persistence: empty store, save resolves.
     mockStore.get.mockReset().mockResolvedValue(null)
     mockStore.getAll.mockReset().mockResolvedValue([])
     mockStore.save.mockReset().mockResolvedValue(undefined)
-    vi.mocked(createAudioPlayer).mockReturnValue(makePlayer())
+    // A buffer a little longer than the music, as the real files are: the mp3
+    // carries encoder delay at its head and padding at its tail.
+    frame = installFrames()
+    fake = installFakeAudioContext({ bufferSeconds: GROOVE_LOOP_SECONDS + 0.1 })
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
   })
 
   it('renders a play control and the guessing card (R1, R2, AC1)', async () => {
@@ -193,6 +193,45 @@ describe('GroovePuzzle', () => {
     expect(within(flavourGroup()).getAllByRole('button')).toHaveLength(4)
     // The retired subset-guessing model is gone.
     expect(screen.queryAllByRole('checkbox')).toHaveLength(0)
+  })
+
+  // Epic 4, Step I1 — the jazz face is the page's masthead and nothing else.
+  // The h1 takes it; every heading inside the page, the groove's own name
+  // included, stays on the serif. Asserted through the composed page because
+  // the split only means anything here, where several sizes appear at once.
+  it('sets only the page title in the jazz face (E4 R1, AC1b)', async () => {
+    await renderPuzzle()
+
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'Daily Groove' }).className,
+    ).toMatch(/font-jazz/)
+  })
+
+  it('leaves every heading inside the page on the serif (E4 R1a, R2, AC1b)', async () => {
+    await renderPuzzle()
+
+    for (const heading of [
+      screen.getByRole('heading', { level: 2, name: 'Test Groove' }),
+      screen.getByRole('heading', { level: 3, name: 'What is it?' }),
+    ]) {
+      expect(heading.className, heading.textContent ?? '').toMatch(/font-display/)
+      expect(heading.className, heading.textContent ?? '').not.toMatch(/font-jazz/)
+    }
+  })
+
+  it('leaves the nudge’s revealed root on the serif (E4 R2, AC2)', async () => {
+    const user = userEvent.setup()
+    await renderPuzzle()
+    const wrong = wrongFlavour()
+
+    await guess(user, 'C', wrong)
+    await guess(user, 'G', wrong)
+
+    // A hand-lettered E♭ at 15px is the one place legibility outweighs
+    // character, so the revealed root keeps `--font-display`.
+    const root = within(nudge() as HTMLElement).getByText('C')
+    expect(root.className).toMatch(/font-display/)
+    expect(root.className).not.toMatch(/font-jazz/)
   })
 
   it("offers the day's deterministic flavour options, including the answer (R3, R4)", async () => {
@@ -520,137 +559,6 @@ describe('GroovePuzzle', () => {
     ).toHaveAttribute('aria-pressed', 'true')
   })
 
-  it("names the groove on each archive card, not just its answer", async () => {
-    // Pinned by id rather than by date, so the expected name is the one the day
-    // actually played and not whatever today's catalogue hashes to.
-    const played = GROOVES[3]
-    const yesterday: DailyResult = {
-      date: YESTERDAY(),
-      answer: { root: 'G', flavour: 'Dorian' },
-      attempts: [miss('G', 'Dorian', true)],
-      solved: true,
-      grooveId: played.id,
-    }
-    mockStore.get.mockResolvedValue(null)
-    mockStore.getAll.mockResolvedValue([yesterday])
-
-    await renderPuzzle()
-
-    const archive = screen
-      .getByText(/grooves you.{0,3}ve played/i)
-      .closest('section') as HTMLElement
-
-    expect(within(archive).getByText(played.name)).toBeInTheDocument()
-    // The answer is still there — the name is an addition, not a replacement.
-    expect(within(archive).getByText('G Dorian')).toBeInTheDocument()
-  })
-
-  it('shows past days, and today once it is finished (E4 R1, R3, R8, AC5, AC7, AC10)', async () => {
-    const yesterday: DailyResult = {
-      date: YESTERDAY(),
-      answer: { root: 'G', flavour: 'Dorian' },
-      attempts: [miss('C', 'Lydian', false)],
-      solved: false,
-    }
-    mockStore.get.mockResolvedValue(null)
-    mockStore.getAll.mockResolvedValue([yesterday])
-
-    const user = userEvent.setup()
-    await renderPuzzle()
-
-    const archiveEl = () =>
-      screen.getByText(/grooves you.{0,3}ve played/i).closest('section') as HTMLElement
-
-    // Before the day is finished the row holds yesterday alone.
-    expect(within(archiveEl()).getByText('Yesterday')).toBeInTheDocument()
-    // A past miss still shows its answer (E4 AC6d, AC11).
-    expect(within(archiveEl()).getByText('G Dorian')).toBeInTheDocument()
-    expect(within(archiveEl()).getByText('missed')).toBeInTheDocument()
-    expect(within(archiveEl()).queryByText('Today')).not.toBeInTheDocument()
-
-    // Solving today puts it in the row immediately — no reload (E4 R1, AC7).
-    await guess(user, 'C', 'Minor')
-
-    const archive = archiveEl()
-    const labels = within(archive)
-      .getAllByText(/^(Today|Yesterday)$/)
-      .map((el) => el.textContent)
-    // Today sorts ahead of every past day (E4 R3, AC5).
-    expect(labels).toEqual(['Today', 'Yesterday'])
-    // Solved on the first try, and its answer is on the card (E4 R6a).
-    expect(within(archive).getByText('C Minor')).toBeInTheDocument()
-    expect(within(archive).getByText('solved')).toBeInTheDocument()
-    // The row carries no "All N" count: it shows one week and nothing more,
-    // so there is no remainder for a count to stand in for (E4 R8).
-    expect(archive.textContent).not.toMatch(/All\s*\d/)
-  })
-
-  it('shows today "In play" without its answer, and keeps the day playable (E4 R5, R6a, R6b, AC6a, AC6c, AC7)', async () => {
-    // The fixture is adversarial on purpose: yesterday's answer shares neither
-    // root nor flavour with today's, so a leak cannot be excused as another
-    // card's legitimate text.
-    const yesterday: DailyResult = {
-      date: YESTERDAY(),
-      answer: { root: 'G', flavour: 'Dorian' },
-      attempts: [miss('D', 'Lydian', false)],
-      solved: false,
-    }
-    expect(yesterday.answer.root).not.toBe(GROOVE.root)
-    expect(yesterday.answer.flavour).not.toBe(GROOVE.flavour)
-
-    mockStore.get.mockResolvedValue(null)
-    mockStore.getAll.mockResolvedValue([yesterday])
-
-    const user = userEvent.setup()
-    await renderPuzzle()
-
-    const wrong = wrongFlavour()
-    const other = otherWrongFlavour()
-
-    await guess(user, 'C', wrong)
-    await guess(user, 'G', wrong)
-    await guess(user, 'G', other)
-
-    const archive = screen
-      .getByText(/grooves you.{0,3}ve played/i)
-      .closest('section') as HTMLElement
-
-    // The day is in the row, marked as still winnable (E4 R6b, AC6c).
-    expect(within(archive).getByText('Today')).toBeInTheDocument()
-    expect(within(archive).getByText('In play')).toBeInTheDocument()
-    // ...showing a placeholder where the answer will go (E4 R6a, AC6a).
-    expect(within(archive).getByText('—')).toBeInTheDocument()
-
-    // Adversarial sweep. The row prints answers — yesterday's is right there —
-    // so the absence below is a masking rule, not an empty section.
-    expect(within(archive).getByText('G Dorian')).toBeInTheDocument()
-    expect(archive.textContent).not.toContain(GROOVE.root)
-    expect(archive.textContent).not.toContain(GROOVE.flavour)
-    expect(archive.textContent).not.toContain(
-      `${GROOVE.root} ${GROOVE.flavour}`,
-    )
-
-    // Three spent attempts do NOT lock the day (E4 R5, AC7): changing a half
-    // hands the control back...
-    expect(dotStates()).toEqual(['spent', 'spent', 'spent'])
-    await user.click(within(rootGroup()).getByRole('button', { name: 'D' }))
-    expect(control()).toBeEnabled()
-
-    // ...and the fourth guess is accepted and recorded.
-    await user.click(control())
-    expect(mockStore.save).toHaveBeenCalledTimes(4)
-    expect(mockStore.save.mock.calls[3][0].attempts).toHaveLength(4)
-    expect(dotStates()).toEqual(['spent', 'spent', 'spent'])
-    // Still in play, still masked, after the fourth miss.
-    expect(within(archive).getByText('In play')).toBeInTheDocument()
-    expect(archive.textContent).not.toContain(GROOVE.flavour)
-  })
-
-  it('shows the designed empty archive state on a first run (E5 R12, AC11)', async () => {
-    await renderPuzzle()
-    expect(screen.getByText(/no grooves behind you yet/i)).toBeInTheDocument()
-  })
-
   it('starts the day fresh when storage holds nothing readable (E5 R5, AC4)', async () => {
     // A feature-1 blob reads back as "no results" through the v2 store.
     mockStore.get.mockResolvedValue(null)
@@ -663,7 +571,9 @@ describe('GroovePuzzle', () => {
     expect(screen.getByLabelText(/current streak/i)).toHaveTextContent(
       /no streak yet/i,
     )
-    expect(screen.getByText(/no grooves behind you yet/i)).toBeInTheDocument()
+    // The row's empty state went with the row: a first-time player sees the
+    // puzzle and nothing below it (E6 R1, AC2).
+    expect(screen.queryByText(/no grooves behind you yet/i)).toBeNull()
   })
 
   it('keeps the guess in the session when the write fails (E5 R6, AC5)', async () => {
@@ -680,9 +590,9 @@ describe('GroovePuzzle', () => {
   // --- Epic 1/2 regressions -------------------------------------------------
 
   it('shows an error with retry when playback rejects, the card stays (R7)', async () => {
-    vi.mocked(createAudioPlayer).mockReturnValue(
-      makePlayer(() => Promise.reject(new Error('load failed'))),
-    )
+    // A decode that rejects. Fetch failure and a browser with no AudioContext
+    // land in the same place — there is one playback path and one error (R7).
+    fake.failNextDecode()
     const user = userEvent.setup()
     await renderPuzzle()
 
@@ -699,75 +609,87 @@ describe('GroovePuzzle', () => {
     expect(screen.getByRole('progressbar')).toBeInTheDocument()
   })
 
-  it('clears the error and plays again on retry (D6, AC9)', async () => {
-    let fail = true
-    const player = makePlayer(() =>
-      fail ? Promise.reject(new Error('load failed')) : Promise.resolve(),
-    )
-    vi.mocked(createAudioPlayer).mockReturnValue(player)
-
+  it("clears the error and replays today's groove on retry (E6 R4, AC6)", async () => {
+    fake.failNextDecode()
     const user = userEvent.setup()
     await renderPuzzle()
 
     await user.click(screen.getByRole('button', { name: /play the loop/i }))
     expect(await screen.findByRole('alert')).toBeInTheDocument()
 
-    fail = false
     await user.click(screen.getByRole('button', { name: /retry/i }))
 
-    await waitFor(() =>
-      expect(screen.queryByRole('alert')).not.toBeInTheDocument(),
-    )
-    expect(
-      screen.getByRole('button', { name: 'Stop the loop' }),
-    ).toBeInTheDocument()
-  })
-
-  it('plays, stops and restarts on successive presses (E2 R6, AC5)', async () => {
-    const player = makePlayer()
-    vi.mocked(createAudioPlayer).mockReturnValue(player)
-
-    const user = userEvent.setup()
-    await renderPuzzle()
-
-    // 1 — starts the loop and now offers to stop.
-    await user.click(screen.getByRole('button', { name: 'Play the loop' }))
-    expect(player.play).toHaveBeenCalledTimes(1)
     expect(
       await screen.findByRole('button', { name: 'Stop the loop' }),
     ).toBeInTheDocument()
+    await waitFor(() =>
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument(),
+    )
+    // Retry is the same press as the control: it asks the transport to play,
+    // and the only groove it could mean is today's (E6 R4, AC6). A failed
+    // press costs no player — the retry reuses the one context.
+    expect(fake.contexts).toHaveLength(1)
+    expect(fake.sources).toHaveLength(1)
+    expect(vi.mocked(fetch).mock.calls.map((call) => call[0])).toEqual([
+      GROOVE.audioSrc,
+      GROOVE.audioSrc,
+    ])
+  })
+
+  it('plays, stops and restarts on successive presses (E2 R6, AC5)', async () => {
+    const user = userEvent.setup()
+    await renderPuzzle()
+
+    // 1 — starts one looping source and now offers to stop.
+    await play(user)
+    expect(fake.sources).toHaveLength(1)
+    expect(fake.sources[0].start).toHaveBeenCalledTimes(1)
+    expect(fake.sources[0].loop).toBe(true)
 
     // 2 — partway through the loop...
-    await act(async () => player.seek(0.5))
-    expect(player.getPosition()).toBe(0.5)
+    await advance(loopFraction(0.5))
+    expect(screen.getByRole('progressbar')).toHaveAttribute(
+      'aria-valuenow',
+      '50',
+    )
 
     // ...a press halts playback and rewinds it (AC5). Nothing is held.
     await user.click(screen.getByRole('button', { name: 'Stop the loop' }))
-    expect(player.stop).toHaveBeenCalledTimes(1)
-    expect(player.isPlaying()).toBe(false)
-    expect(player.getPosition()).toBe(0)
+    expect(fake.sources[0].stop).toHaveBeenCalledTimes(1)
+    expect(screen.getByRole('progressbar')).toHaveAttribute(
+      'aria-valuenow',
+      '0',
+    )
     expect(
       await screen.findByRole('button', { name: 'Play the loop' }),
     ).toBeInTheDocument()
 
-    // 3 — the next press starts from the beginning, not from bar three. The
-    // player is never re-created and nothing is disposed.
-    await user.click(screen.getByRole('button', { name: 'Play the loop' }))
-    expect(player.play).toHaveBeenCalledTimes(2)
-    expect(player.getPosition()).toBe(0)
-    expect(createAudioPlayer).toHaveBeenCalledTimes(1)
-    expect(player.dispose).not.toHaveBeenCalled()
+    // 3 — the next press starts from the beginning, not from bar three (AC9).
+    // A buffer source is single-use, so it is a second node over the *same*
+    // decoded buffer: one context, one fetch, one decode.
+    await play(user)
+    expect(fake.sources).toHaveLength(2)
+    expect(screen.getByRole('progressbar')).toHaveAttribute(
+      'aria-valuenow',
+      '0',
+    )
+    expect(fake.contexts).toHaveLength(1)
+    expect(fake.fetchCalls).toBe(1)
+    expect(fake.decodeCalls).toBe(1)
   })
 
-  it('returns the progress track to the start on stop (E2 R6a, AC5a)', async () => {
-    const player = makePlayer()
-    vi.mocked(createAudioPlayer).mockReturnValue(player)
-
+  // Step C5 — R5, AC6: the fill, not only the highlight. `isPlaying` used to
+  // gate the highlighted segment alone while the fill swept regardless, which
+  // is how a groove nobody was listening to drew the picture.
+  it('returns the progress track to the start on stop (E2 R6a, AC5a, AC6)', async () => {
     const user = userEvent.setup()
     await renderPuzzle()
 
-    await user.click(screen.getByRole('button', { name: 'Play the loop' }))
-    await act(async () => player.seek(0.5))
+    // Before any press the fill is empty, not merely unhighlighted.
+    expect(screen.getByTestId('progress-fill')).toHaveAttribute('width', '0%')
+
+    await play(user)
+    await advance(loopFraction(0.5))
 
     // The track reads the sounding position...
     expect(screen.getByRole('progressbar')).toHaveAttribute(
@@ -781,21 +703,24 @@ describe('GroovePuzzle', () => {
 
     await user.click(screen.getByRole('button', { name: 'Stop the loop' }))
 
-    // ...and returns to the start, because the player rewound.
+    // ...and returns to the start: no segment highlighted, and the fill itself
+    // back to zero rather than holding its last value (AC6).
     expect(screen.getByRole('progressbar')).toHaveAttribute(
       'aria-valuenow',
       '0',
     )
     expect(screen.queryByTestId('progress-active')).not.toBeInTheDocument()
+    expect(screen.getByTestId('progress-fill')).toHaveAttribute('width', '0%')
+
+    // The clock running on does not revive it either.
+    await advance(loopFraction(0.25))
+    expect(screen.getByTestId('progress-fill')).toHaveAttribute('width', '0%')
   })
 
   it('reads "■ Stop" while the groove sounds (E2 R4a, AC3a)', async () => {
     // The words are supplied by this feature, not by the design system, so the
     // sounding half of that pair is only asserted here. Without this, a
     // regression that dropped `text.stop` would leave the whole suite green.
-    const player = makePlayer()
-    vi.mocked(createAudioPlayer).mockReturnValue(player)
-
     const user = userEvent.setup()
     await renderPuzzle()
 
@@ -825,14 +750,11 @@ describe('GroovePuzzle', () => {
   // `hooks/useTransport.test.ts`: it asserts on the audio adapter it was handed,
   // not on anything rendered.
 
-  it("moves the bar highlight with the player's position (D5, AC8)", async () => {
-    const player = makePlayer()
-    vi.mocked(createAudioPlayer).mockReturnValue(player)
-
+  it("moves the bar highlight with the player's position (D5, AC8, AC2, AC3)", async () => {
     const user = userEvent.setup()
     await renderPuzzle()
 
-    await user.click(screen.getByRole('button', { name: 'Play the loop' }))
+    await play(user)
     // The sounding bar is the highlighted segment on the track; the bar labels
     // that used to carry it were removed with the rest of the card's chrome.
     expect(screen.getByTestId('progress-active')).toHaveAttribute(
@@ -840,10 +762,29 @@ describe('GroovePuzzle', () => {
       '0',
     )
 
-    await act(async () => player.seek(0.6))
+    // Three eighths of the way through the loop is bar 2 (AC3).
+    await advance(loopFraction(0.375))
+    expect(screen.getByTestId('progress-active')).toHaveAttribute(
+      'data-segment',
+      '1',
+    )
+
+    await advance(loopFraction(0.6 - 0.375))
     expect(screen.getByTestId('progress-active')).toHaveAttribute(
       'data-segment',
       '2',
+    )
+
+    // A whole loop later it is back in the same bar, not pinned at the end:
+    // the position wraps rather than clamping at 1 (AC2).
+    await advance(loopFraction(1))
+    expect(screen.getByTestId('progress-active')).toHaveAttribute(
+      'data-segment',
+      '2',
+    )
+    expect(screen.getByRole('progressbar')).toHaveAttribute(
+      'aria-valuenow',
+      '60',
     )
   })
 
@@ -929,22 +870,57 @@ describe('GroovePuzzle', () => {
     expect(rootGroup()).toBeInTheDocument()
   })
 
-  // --- Epic 5: replay any groove you've played ------------------------------
+  // --- Feature 6, Epic 1: the page ends at the puzzle -----------------------
 
-  const archiveSection = () =>
-    screen
-      .getByText(/grooves you.{0,3}ve played/i)
-      .closest('section') as HTMLElement
-
-  /** The archive cards, most recent first. */
-  const archiveCards = () => {
-    const grid = archiveSection().querySelector('[class*="grid-cols"]')
-    return grid ? (Array.from(grid.children) as HTMLElement[]) : []
+  /** A solved day, N days back, played against a known groove. */
+  function solvedDay(daysAgo: number): DailyResult {
+    return {
+      date: isoDate(new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000)),
+      answer: { root: 'G', flavour: 'Dorian' },
+      attempts: [SOLVING],
+      solved: true,
+      grooveId: 'groove-02',
+    }
   }
 
-  /** One control per card, in the same order. */
-  const archiveControls = () =>
-    archiveCards().map((card) => within(card).getByRole('button'))
+  /** Enough history that a played-grooves row would be unmissable. */
+  const fiveSolvedDays = () => [1, 2, 3, 4, 5].map(solvedDay)
+
+  /** The puzzle's own landmark — the whole of what the page renders. */
+  const page = () => screen.getByRole('region', { name: 'Daily Groove' })
+
+  it('renders no played-grooves section, however deep the history (E6 R1, AC1)', async () => {
+    mockStore.get.mockResolvedValue(null)
+    mockStore.getAll.mockResolvedValue(fiveSolvedDays())
+
+    await renderFeature()
+
+    expect(screen.queryByText(/Grooves you.{0,3}ve played/)).toBeNull()
+    // Nothing renders below the cards: the archive was the page's only nested
+    // section, so its absence is what "the page ends at the puzzle" means.
+    expect(page().querySelectorAll('section')).toHaveLength(0)
+  })
+
+  it('renders no empty-state card on a first run either (E6 R1, AC2)', async () => {
+    await renderFeature()
+
+    expect(screen.queryByText(/Grooves you.{0,3}ve played/)).toBeNull()
+    expect(screen.queryByText(/no grooves behind you yet/i)).toBeNull()
+    expect(page().querySelectorAll('section')).toHaveLength(0)
+  })
+
+  it('puts exactly one play control on the page (E6 R2, AC3)', async () => {
+    mockStore.get.mockResolvedValue(null)
+    mockStore.getAll.mockResolvedValue(fiveSolvedDays())
+
+    await renderFeature()
+
+    expect(
+      screen.getAllByRole('button', { name: /play|stop/i }),
+    ).toHaveLength(1)
+  })
+
+  // --- Today's groove, through the page transport ---------------------------
 
   const nameOf = (el: HTMLElement) => el.getAttribute('aria-label')
 
@@ -960,225 +936,74 @@ describe('GroovePuzzle', () => {
   const todayControl = () =>
     screen.getByRole('button', { name: /^(Play|Stop) the loop$/ })
 
-  const grooveIn = (id: string) => GROOVES.find((g) => g.id === id)!
-
-  /** A past day, N days back, played against a known groove. */
-  function pastDay(daysAgo: number, grooveId: string | undefined): DailyResult {
-    return {
-      date: isoDate(new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000)),
-      answer: { root: 'G', flavour: 'Dorian' },
-      attempts: [miss('D', 'Lydian', false)],
-      solved: false,
-      ...(grooveId === undefined ? {} : { grooveId }),
-    }
-  }
-
-  /**
-   * A fresh player per source, kept by src so a swap can be observed from both
-   * sides. The transport disposes the outgoing one, so the map holds the most
-   * recent player built for each source.
-   */
-  function playersBySource() {
-    const made = new Map<string, ReturnType<typeof makePlayer>>()
-    vi.mocked(createAudioPlayer).mockImplementation((src: string) => {
-      const player = makePlayer()
-      made.set(src, player)
-      return player
-    })
-    return made
-  }
-
   it("plays today's groove through the page transport (E5 R3, R4, AC3)", async () => {
-    const made = playersBySource()
     const user = userEvent.setup()
     await renderPuzzle()
 
     await user.click(todayControl())
+    await screen.findByRole('button', { name: 'Stop the loop' })
 
-    // The source handed to the transport is today's groove, looped (R12).
-    expect(createAudioPlayer).toHaveBeenCalledWith(
-      GROOVE.audioSrc,
-      expect.objectContaining({ loop: true }),
-    )
-    expect(made.get(GROOVE.audioSrc)?.play).toHaveBeenCalledTimes(1)
+    // The file the page fetched is today's groove, and one source sounds it,
+    // looping between that groove's own boundaries (R12).
+    expect(fetch).toHaveBeenCalledWith(GROOVE.audioSrc)
+    expect(fake.sources).toHaveLength(1)
+    expect(fake.sources[0].loop).toBe(true)
     expect(nameOf(todayControl())).toBe('Stop the loop')
 
     // ...and pressing it again stops that same source rather than a second one.
     await user.click(todayControl())
-    expect(made.get(GROOVE.audioSrc)?.stop).toHaveBeenCalledTimes(1)
-    expect(createAudioPlayer).toHaveBeenCalledTimes(1)
+    expect(fake.sources[0].stop).toHaveBeenCalledTimes(1)
+    expect(fake.contexts).toHaveLength(1)
     expect(soundingControls()).toEqual([])
   })
 
-  it('gives every card in the row a play control naming its day (E5 R1, R6, AC1, AC6)', async () => {
-    mockStore.getAll.mockResolvedValue([pastDay(1, 'groove-02'), pastDay(2, 'groove-03')])
-    await renderPuzzle()
-
-    const controls = archiveControls()
-    expect(controls).toHaveLength(2)
-    expect(nameOf(controls[0])).toBe("Play Yesterday's groove")
-    expect(nameOf(controls[1])).toMatch(/^Play .+'s groove$/)
-    expect(nameOf(controls[0])).not.toBe(nameOf(controls[1]))
-    for (const c of controls) expect(c).toBeEnabled()
-  })
-
-  it("presses a card's control and hears that day's groove (E5 R2, AC1)", async () => {
-    const made = playersBySource()
-    mockStore.getAll.mockResolvedValue([pastDay(1, 'groove-02')])
+  // Step C4 — R7a, AC8b, AC8c. Web Audio has no progressive playback, so a
+  // press means fetch, then decode, then sound. The control has to say so
+  // rather than sitting in "Stop" over silence.
+  it('shows an inert loading control until the first sound (E2 R7a, AC8b, AC8c)', async () => {
+    fake.deferNextDecode()
     const user = userEvent.setup()
     await renderPuzzle()
 
-    await user.click(archiveControls()[0])
+    await user.click(screen.getByRole('button', { name: 'Play the loop' }))
 
-    const yesterday = grooveIn('groove-02')
-    expect(createAudioPlayer).toHaveBeenCalledWith(
-      yesterday.audioSrc,
-      expect.objectContaining({ loop: true }),
-    )
-    expect(made.get(yesterday.audioSrc)?.play).toHaveBeenCalledTimes(1)
-    expect(nameOf(archiveControls()[0])).toBe("Stop Yesterday's groove")
+    const busy = await screen.findByRole('button', { name: 'Loading…' })
+    expect(busy).toBeDisabled()
+    expect(busy).toHaveTextContent('Loading…')
+    // Nothing sounds yet, and a further press starts nothing (R10, AC10).
+    expect(fake.sources).toHaveLength(0)
+    await user.click(busy)
+    expect(fake.sources).toHaveLength(0)
+
+    await act(async () => {
+      fake.releaseDecodes()
+    })
+
+    const stop = await screen.findByRole('button', { name: 'Stop the loop' })
+    expect(stop).toBeEnabled()
+    expect(stop).toHaveTextContent('■ Stop')
+    expect(fake.sources).toHaveLength(1)
   })
 
-  it('never sounds two grooves at once, in either direction (E5 R3, R5, AC2, AC3, AC4, AC5)', async () => {
-    const made = playersBySource()
-    mockStore.getAll.mockResolvedValue([
-      pastDay(1, 'groove-02'),
-      pastDay(2, 'groove-03'),
-    ])
+  // Step I0 — R4, AC5: the head delay is the groove's own, off its manifest
+  // entry. No constant is shared across the catalogue, so a groove minted
+  // under a different encoder loops correctly with no code change.
+  it("starts the loop at this groove's own head delay (R4, AC5)", async () => {
     const user = userEvent.setup()
-    await renderPuzzle()
-
-    const first = grooveIn('groove-02')
-    const second = grooveIn('groove-03')
-
-    // 1 — today's loop is running, and it is the only thing sounding.
-    await user.click(todayControl())
-    expect(soundingControls().map(nameOf)).toEqual(['Stop the loop'])
-
-    // 2 — a card's control takes over: today stops, the card sounds (AC2).
-    await user.click(archiveControls()[0])
-    expect(made.get(GROOVE.audioSrc)?.stop).toHaveBeenCalled()
-    expect(made.get(first.audioSrc)?.play).toHaveBeenCalledTimes(1)
-    expect(soundingControls().map(nameOf)).toEqual(["Stop Yesterday's groove"])
-    expect(nameOf(todayControl())).toBe('Play the loop')
-
-    // 3 — a second card takes over from the first (AC4).
-    await user.click(archiveControls()[1])
-    expect(made.get(first.audioSrc)?.stop).toHaveBeenCalled()
-    expect(made.get(second.audioSrc)?.play).toHaveBeenCalledTimes(1)
-    expect(soundingControls()).toHaveLength(1)
-    expect(nameOf(soundingControls()[0])).toBe(nameOf(archiveControls()[1]))
-    expect(nameOf(archiveControls()[0])).toBe("Play Yesterday's groove")
-
-    // 4 — today's control takes it back off the card (AC3).
-    await user.click(todayControl())
-    expect(made.get(second.audioSrc)?.stop).toHaveBeenCalled()
-    expect(soundingControls().map(nameOf)).toEqual(['Stop the loop'])
-    for (const c of archiveControls()) expect(nameOf(c)).toMatch(/^Play /)
-  })
-
-  it("today's two controls agree, because both are bound to one source (E5 R5, R11, AC5a, AC13)", async () => {
-    const made = playersBySource()
-    const user = userEvent.setup()
-    await renderPuzzle()
-
-    // Finish the day so today joins the row, and the record it writes carries
-    // the groove it played — which is what puts today's card on that source.
-    await guess(user, 'C', 'Minor')
-    expect(mockStore.save).toHaveBeenLastCalledWith(
-      expect.objectContaining({ grooveId: GROOVE.id }),
+    await renderPuzzle(
+      <GroovePuzzle groove={{ ...GROOVE, headDelaySeconds: 0.05 }} />,
     )
 
-    const todayCard = archiveCards()[0]
-    expect(todayCard.textContent).toContain('Today')
-    const cardControl = () => within(archiveCards()[0]).getByRole('button')
-    expect(nameOf(cardControl())).toBe("Play Today's groove")
+    await play(user)
 
-    // 1 — the full-width button starts it; BOTH controls show the sounding
-    // affordance, and they are the only two on the page that do.
-    await user.click(todayControl())
-    expect(soundingControls().map(nameOf)).toEqual([
-      'Stop the loop',
-      "Stop Today's groove",
-    ])
-
-    // 2 — and the card's control stops the same source the button started.
-    await user.click(cardControl())
-    expect(soundingControls()).toEqual([])
-    expect(nameOf(todayControl())).toBe('Play the loop')
-    expect(nameOf(cardControl())).toBe("Play Today's groove")
-
-    // One source, so one player: the card never built a second one.
-    expect(createAudioPlayer).toHaveBeenCalledTimes(1)
-    expect(made.get(GROOVE.audioSrc)?.play).toHaveBeenCalledTimes(1)
-  })
-
-  it('disables the control of a day whose groove has left the catalogue (E5 R10, AC12)', async () => {
-    playersBySource()
-    // An id that is not in the catalogue: it must not fall back to the date and
-    // play some other groove under this day's answer.
-    mockStore.getAll.mockResolvedValue([
-      pastDay(1, 'groove-99'),
-      pastDay(2, 'groove-03'),
-    ])
-    const user = userEvent.setup()
-    await renderPuzzle()
-
-    const gone = archiveControls()[0]
-    expect(gone).toBeDisabled()
-    expect(nameOf(gone)).toBe("Yesterday's groove is unavailable")
-
-    await user.click(gone)
-    expect(createAudioPlayer).not.toHaveBeenCalled()
-    expect(soundingControls()).toEqual([])
-
-    // The card itself still renders the day and its answer...
-    expect(archiveCards()[0].textContent).toContain('Yesterday')
-    expect(archiveCards()[0].textContent).toContain('G Dorian')
-    // ...and its neighbour is unaffected.
-    expect(archiveControls()[1]).toBeEnabled()
-  })
-
-  it('still replays a day saved before groove ids existed (E5 R8, AC8)', async () => {
-    const made = playersBySource()
-    // No grooveId at all: the day resolves by date, exactly as the page did.
-    const legacy = pastDay(1, undefined)
-    mockStore.getAll.mockResolvedValue([legacy])
-    const user = userEvent.setup()
-    await renderPuzzle()
-
-    const control = archiveControls()[0]
-    expect(control).toBeEnabled()
-    await user.click(control)
-
-    const expected = selectGrooveForDate(
-      new Date(Date.now() - 24 * 60 * 60 * 1000),
-      GROOVES,
+    const source = fake.sources[0]
+    expect(source.loopStart).toBeCloseTo(0.05, 6)
+    expect(source.loopEnd - source.loopStart).toBeCloseTo(
+      GROOVE_LOOP_SECONDS,
+      5,
     )
-    expect(made.get(expected.audioSrc)?.play).toHaveBeenCalledTimes(1)
-  })
-
-  it('writes nothing to a record when a day is replayed (E5 R9, AC11)', async () => {
-    playersBySource()
-    mockStore.getAll.mockResolvedValue([
-      pastDay(1, 'groove-02'),
-      pastDay(2, 'groove-03'),
-    ])
-    const user = userEvent.setup()
-    await renderPuzzle()
-
-    const before = archiveCards().map((c) => c.textContent)
-
-    await user.click(archiveControls()[0])
-    await user.click(archiveControls()[1])
-    await user.click(todayControl())
-    await user.click(todayControl())
-
-    // Replay is listening only: no record is written, and no card's day,
-    // answer or mark moved.
-    expect(mockStore.save).not.toHaveBeenCalled()
-    expect(archiveCards().map((c) => c.textContent)).toEqual(before)
-    expect(dotStates()).toEqual(['unspent', 'unspent', 'unspent'])
+    // The first pass skips the encoder delay too, not only the repeats.
+    expect(source.start).toHaveBeenCalledWith(0, 0.05)
   })
 
   it('shows the same day in the header that it used to pick the groove (R5, AC3)', async () => {

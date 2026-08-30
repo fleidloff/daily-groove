@@ -42,233 +42,191 @@ describe('PlayControl', () => {
     expect(onToggle).toHaveBeenCalledTimes(1)
   })
 
-  describe('size="lg"', () => {
-    it('renders full-width with the glyph and its text (A1, R1, R4a, AC1, AC3a)', () => {
-      render(<PlayControl size="lg" isPlaying={false} onToggle={() => {}} />)
+  // D1 — R9, AC8a. The one form the control has left: there is no size to pick.
+  it('renders the full-width button form with no size given (D1, R9, AC8a)', () => {
+    render(<PlayControl isPlaying={false} onToggle={() => {}} />)
 
-      const button = screen.getByRole('button')
-      expect(button).toHaveTextContent('▶ Play')
-      expect(button.className).toContain('w-full')
-    })
-
-    it('renders caller-supplied words in BOTH states (R4a, AC3a)', () => {
-      // The design system carries no domain vocabulary (globals I5), so the
-      // words arrive as a prop. Both halves must be honoured: a control that
-      // used `text.play` and ignored `text.stop` passed the whole suite before
-      // this assertion existed.
-      // Both words differ from the component's own defaults ('Play' / 'Stop').
-      // A fixture reusing a default cannot distinguish "the prop was honoured"
-      // from "the prop was ignored" — it passes either way.
-      const text = { play: 'Start it', stop: 'Halt it' }
-
-      const { rerender } = render(
-        <PlayControl size="lg" isPlaying={false} onToggle={() => {}} text={text} />,
-      )
-      expect(screen.getByRole('button')).toHaveTextContent('▶ Start it')
-
-      rerender(<PlayControl size="lg" isPlaying onToggle={() => {}} text={text} />)
-      expect(screen.getByRole('button')).toHaveTextContent('■ Halt it')
-    })
-
-    it("inherits the solve button's geometry rather than restating it (A1, R1, AC1)", () => {
-      render(<PlayControl size="lg" isPlaying={false} onToggle={() => {}} />)
-
-      const className = screen.getByRole('button').className
-      for (const geometry of ['w-full', 'rounded-control', 'px-4', 'py-[15px]', 'text-[15px]']) {
-        expect(className).toContain(geometry)
-      }
-    })
-
-    it('swaps to the stop glyph and text while sounding (A2, R4b, AC3a)', () => {
-      render(<PlayControl size="lg" isPlaying onToggle={() => {}} />)
-
-      expect(screen.getByRole('button')).toHaveTextContent('■ Stop')
-    })
-
-    it('differs between the two states in glyph and text only (A2, R4b, AC3b)', () => {
-      const classOf = (isPlaying: boolean) =>
-        (
-          render(<PlayControl size="lg" isPlaying={isPlaying} onToggle={() => {}} />)
-            .container.firstElementChild as HTMLElement
-        ).className
-
-      const stopped = classOf(false)
-      const playing = classOf(true)
-
-      expect(playing).toBe(stopped)
-    })
-
-    it('states the action, not the state, in its accessible name (A3, R5, AC4)', () => {
-      const { rerender } = render(
-        <PlayControl size="lg" isPlaying={false} onToggle={() => {}} />,
-      )
-      expect(screen.getByRole('button')).toHaveAccessibleName('Play the loop')
-
-      rerender(<PlayControl size="lg" isPlaying onToggle={() => {}} />)
-      expect(screen.getByRole('button')).toHaveAccessibleName('Stop the loop')
-    })
-
-    it('calls onToggle when pressed', async () => {
-      const user = userEvent.setup()
-      const onToggle = vi.fn()
-      render(<PlayControl size="lg" isPlaying={false} onToggle={onToggle} />)
-
-      await user.click(screen.getByRole('button'))
-
-      expect(onToggle).toHaveBeenCalledTimes(1)
-    })
+    const button = screen.getByRole('button', { name: 'Play the loop' })
+    expect(button).toHaveTextContent('▶ Play')
+    expect(button.className).toContain('w-full')
+    expect(button).toBeEnabled()
   })
 
-  describe('size="sm"', () => {
-    it('is the default when no size is given, and stays the circular control (A4, R3, AC2)', () => {
-      const { container } = render(<PlayControl isPlaying={false} onToggle={() => {}} />)
+  it('renders full-width with the glyph and its text (A1, R1, R4a, AC1, AC3a)', () => {
+    render(<PlayControl isPlaying={false} onToggle={() => {}} />)
 
-      const className = (container.firstElementChild as HTMLElement).className
-      for (const geometry of ['h-[52px]', 'w-[52px]', 'rounded-full']) {
-        expect(className).toContain(geometry)
-      }
-    })
-
-    it('renders the glyph alone, with no text beside it (A4, R3, AC2)', () => {
-      render(<PlayControl isPlaying={false} onToggle={() => {}} />)
-      expect(screen.getByRole('button')).toHaveTextContent('▶')
-      expect(screen.getByRole('button').textContent?.trim()).toBe('▶')
-
-      render(<PlayControl size="sm" isPlaying onToggle={() => {}} />)
-      const [, playing] = screen.getAllByRole('button')
-      expect(playing.textContent?.trim()).toBe('■')
-    })
-
-    it('renders identically whether size is omitted or passed explicitly (A4, R3, AC2)', () => {
-      const implicit = render(<PlayControl isPlaying={false} onToggle={() => {}} />)
-        .container.innerHTML
-      const explicit = render(
-        <PlayControl size="sm" isPlaying={false} onToggle={() => {}} />,
-      ).container.innerHTML
-
-      expect(explicit).toBe(implicit)
-    })
+    const button = screen.getByRole('button')
+    expect(button).toHaveTextContent('▶ Play')
+    expect(button.className).toContain('w-full')
   })
 
-  describe('label override (C1, R6, AC6)', () => {
-    it('overrides the accessible name at size="sm"', () => {
-      render(
-        <PlayControl
-          size="sm"
-          isPlaying={false}
-          onToggle={() => {}}
-          label="Play Tuesday's loop"
-        />,
-      )
+  it('renders caller-supplied words in BOTH states (R4a, AC3a)', () => {
+    // The design system carries no domain vocabulary (globals I5), so the
+    // words arrive as a prop. Both halves must be honoured: a control that
+    // used `text.play` and ignored `text.stop` passed the whole suite before
+    // this assertion existed.
+    // Both words differ from the component's own defaults ('Play' / 'Stop').
+    // A fixture reusing a default cannot distinguish "the prop was honoured"
+    // from "the prop was ignored" — it passes either way.
+    const text = { play: 'Start it', stop: 'Halt it', loading: 'Fetching…' }
 
-      expect(screen.getByRole('button')).toHaveAccessibleName("Play Tuesday's loop")
-    })
+    const { rerender } = render(
+      <PlayControl isPlaying={false} onToggle={() => {}} text={text} />,
+    )
+    expect(screen.getByRole('button')).toHaveTextContent('▶ Start it')
 
-    it('overrides the accessible name at size="lg"', () => {
-      render(
-        <PlayControl
-          size="lg"
-          isPlaying={false}
-          onToggle={() => {}}
-          label="Play Tuesday's loop"
-        />,
-      )
-
-      expect(screen.getByRole('button')).toHaveAccessibleName("Play Tuesday's loop")
-    })
-
-    it('overrides the sounding name too, at both sizes', () => {
-      render(<PlayControl size="sm" isPlaying label="Stop Tuesday's loop" onToggle={() => {}} />)
-      render(<PlayControl size="lg" isPlaying label="Stop Tuesday's loop" onToggle={() => {}} />)
-
-      const [small, large] = screen.getAllByRole('button')
-      expect(small).toHaveAccessibleName("Stop Tuesday's loop")
-      expect(large).toHaveAccessibleName("Stop Tuesday's loop")
-    })
-
-    it('falls back to the derived name when no label is given, at both sizes', () => {
-      render(<PlayControl size="sm" isPlaying={false} onToggle={() => {}} />)
-      render(<PlayControl size="lg" isPlaying={false} onToggle={() => {}} />)
-
-      const [small, large] = screen.getAllByRole('button')
-      expect(small).toHaveAccessibleName('Play the loop')
-      expect(large).toHaveAccessibleName('Play the loop')
-    })
-
-    it('keeps the visible text of the large control unchanged by the label', () => {
-      render(
-        <PlayControl
-          size="lg"
-          isPlaying={false}
-          onToggle={() => {}}
-          label="Play Tuesday's loop"
-        />,
-      )
-
-      expect(screen.getByRole('button')).toHaveTextContent('▶ Play')
-    })
+    rerender(<PlayControl isPlaying onToggle={() => {}} text={text} />)
+    expect(screen.getByRole('button')).toHaveTextContent('■ Halt it')
   })
 
-  describe('disabled (C2, R10, AC12)', () => {
-    it('renders a disabled button at size="sm"', () => {
-      render(
-        <PlayControl
-          size="sm"
-          isPlaying={false}
-          onToggle={() => {}}
-          disabled
-          label="Tuesday's loop is unavailable"
-        />,
-      )
+  it("inherits the solve button's geometry rather than restating it (A1, R1, AC1)", () => {
+    render(<PlayControl isPlaying={false} onToggle={() => {}} />)
 
-      expect(
-        screen.getByRole('button', { name: "Tuesday's loop is unavailable" }),
-      ).toBeDisabled()
-    })
-
-    it('renders a disabled button at size="lg"', () => {
-      render(
-        <PlayControl
-          size="lg"
-          isPlaying={false}
-          onToggle={() => {}}
-          disabled
-          label="Tuesday's loop is unavailable"
-        />,
-      )
-
-      expect(
-        screen.getByRole('button', { name: "Tuesday's loop is unavailable" }),
-      ).toBeDisabled()
-    })
-
-    it('does not call onToggle when pressed while disabled, at size="sm"', async () => {
-      const user = userEvent.setup()
-      const onToggle = vi.fn()
-      render(<PlayControl size="sm" isPlaying={false} onToggle={onToggle} disabled />)
-
-      await user.click(screen.getByRole('button'))
-
-      expect(onToggle).not.toHaveBeenCalled()
-    })
-
-    it('does not call onToggle when pressed while disabled, at size="lg"', async () => {
-      const user = userEvent.setup()
-      const onToggle = vi.fn()
-      render(<PlayControl size="lg" isPlaying={false} onToggle={onToggle} disabled />)
-
-      await user.click(screen.getByRole('button'))
-
-      expect(onToggle).not.toHaveBeenCalled()
-    })
-
-    it('stays enabled when disabled is omitted, at both sizes', () => {
-      render(<PlayControl size="sm" isPlaying={false} onToggle={() => {}} />)
-      render(<PlayControl size="lg" isPlaying={false} onToggle={() => {}} />)
-
-      for (const button of screen.getAllByRole('button')) {
-        expect(button).toBeEnabled()
-      }
-    })
+    const className = screen.getByRole('button').className
+    for (const geometry of ['w-full', 'rounded-control', 'px-4', 'py-[15px]', 'text-[15px]']) {
+      expect(className).toContain(geometry)
+    }
   })
+
+  it('swaps to the stop glyph and text while sounding (A2, R4b, AC3a)', () => {
+    render(<PlayControl isPlaying onToggle={() => {}} />)
+
+    expect(screen.getByRole('button')).toHaveTextContent('■ Stop')
+  })
+
+  it('differs between the two states in glyph and text only (A2, R4b, AC3b)', () => {
+    const classOf = (isPlaying: boolean) =>
+      (
+        render(<PlayControl isPlaying={isPlaying} onToggle={() => {}} />)
+          .container.firstElementChild as HTMLElement
+      ).className
+
+    const stopped = classOf(false)
+    const playing = classOf(true)
+
+    expect(playing).toBe(stopped)
+  })
+
+  it('states the action, not the state, in its accessible name (A3, R5, AC4)', () => {
+    const { rerender } = render(<PlayControl isPlaying={false} onToggle={() => {}} />)
+    expect(screen.getByRole('button')).toHaveAccessibleName('Play the loop')
+
+    rerender(<PlayControl isPlaying onToggle={() => {}} />)
+    expect(screen.getByRole('button')).toHaveAccessibleName('Stop the loop')
+  })
+
+  it('keeps its own name whatever words the caller supplies (D1, R9, AC8a)', () => {
+    // With `label` gone the accessible name is the control's alone: the text
+    // prop names the thing being played, it does not rename the action.
+    render(
+      <PlayControl
+        isPlaying={false}
+        onToggle={() => {}}
+        text={{ play: 'Play the whole thing', stop: 'Stop', loading: 'Fetching…' }}
+      />,
+    )
+
+    expect(screen.getByRole('button')).toHaveAccessibleName('Play the loop')
+  })
+
+  // Step C1 — R7a, AC8b. Web Audio cannot play progressively: the first press
+  // has to fetch and decode before any sound exists. The control says so
+  // rather than flipping to "Stop" over silence.
+  it('renders inert with the caller-supplied loading word while busy (C1, R7a, AC8b)', async () => {
+    const user = userEvent.setup()
+    const onToggle = vi.fn()
+    render(
+      <PlayControl
+        isPlaying={false}
+        busy
+        onToggle={onToggle}
+        text={{ play: 'Start it', stop: 'Halt it', loading: 'Fetching…' }}
+      />,
+    )
+
+    const button = screen.getByRole('button')
+    expect(button).toBeDisabled()
+    expect(button).toHaveTextContent('Fetching…')
+    expect(button).not.toHaveTextContent('Start it')
+
+    await user.click(button)
+
+    expect(onToggle).not.toHaveBeenCalled()
+  })
+
+  it('says it is loading in its accessible name while busy (C1, R7a, AC8b)', () => {
+    // "Inert and labelled as loading" (AC8b) is about what a screen reader
+    // hears too: an aria-label still naming the press would leave the state
+    // visible only to sighted users.
+    render(
+      <PlayControl
+        isPlaying={false}
+        busy
+        onToggle={() => {}}
+        text={{ play: 'Start it', stop: 'Halt it', loading: 'Fetching…' }}
+      />,
+    )
+
+    expect(screen.getByRole('button')).toHaveAccessibleName('Fetching…')
+  })
+
+  it('is busy over either state, and busy without words falls back (C1, R7a, AC8b)', () => {
+    // The design system names the act, never the thing: the default word is
+    // as generic as 'Play' and 'Stop' beside it.
+    const { rerender } = render(<PlayControl isPlaying busy onToggle={() => {}} />)
+
+    expect(screen.getByRole('button')).toBeDisabled()
+    expect(screen.getByRole('button')).toHaveTextContent('Loading…')
+    expect(screen.getByRole('button')).not.toHaveTextContent('Stop')
+
+    rerender(<PlayControl isPlaying={false} busy onToggle={() => {}} />)
+
+    expect(screen.getByRole('button')).toBeDisabled()
+    expect(screen.getByRole('button')).toHaveTextContent('Loading…')
+  })
+
+  // Step C2 — R7a, AC8c, AC8d. `busy` is a prop, never state: it cannot latch.
+  it('leaves the busy state when the prop clears while playing (C2, R7a, AC8c)', async () => {
+    const user = userEvent.setup()
+    const onToggle = vi.fn()
+    const text = { play: 'Start it', stop: 'Halt it', loading: 'Fetching…' }
+    const { rerender } = render(
+      <PlayControl isPlaying={false} busy onToggle={onToggle} text={text} />,
+    )
+
+    rerender(<PlayControl isPlaying busy={false} onToggle={onToggle} text={text} />)
+
+    const button = screen.getByRole('button')
+    expect(button).toBeEnabled()
+    expect(button).toHaveTextContent('■ Halt it')
+    expect(button).toHaveAccessibleName('Stop the loop')
+
+    await user.click(button)
+
+    expect(onToggle).toHaveBeenCalledTimes(1)
+  })
+
+  it('leaves the busy state when a failed press clears the prop (C2, R7a, AC8d)', () => {
+    // A press that rejects never starts audio, so `isPlaying` stays false and
+    // the control must return to offering the press, not sit inert forever.
+    const text = { play: 'Start it', stop: 'Halt it', loading: 'Fetching…' }
+    const { rerender } = render(
+      <PlayControl isPlaying={false} busy onToggle={() => {}} text={text} />,
+    )
+
+    rerender(<PlayControl isPlaying={false} busy={false} onToggle={() => {}} text={text} />)
+
+    const button = screen.getByRole('button')
+    expect(button).toBeEnabled()
+    expect(button).toHaveTextContent('▶ Start it')
+    expect(button).toHaveAccessibleName('Play the loop')
+  })
+
+  it('is the default when busy is omitted (C1, R7a)', () => {
+    render(<PlayControl isPlaying={false} onToggle={() => {}} />)
+
+    expect(screen.getByRole('button')).toBeEnabled()
+    expect(screen.getByRole('button')).toHaveTextContent('▶ Play')
+  })
+
 })

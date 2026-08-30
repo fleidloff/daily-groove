@@ -16,6 +16,7 @@ const ENTRY: Groove = {
   root: 'C♯',
   flavour: 'Harmonic minor',
   bars: 4,
+  headDelaySeconds: 0.025057,
 }
 
 const SECOND: Groove = {
@@ -29,6 +30,7 @@ const SECOND: Groove = {
   root: 'E♭',
   flavour: 'Dorian',
   bars: 4,
+  headDelaySeconds: 0.026122,
 }
 
 const dirs: string[] = []
@@ -98,13 +100,24 @@ describe('renderManifest', () => {
     expect(source).toContain('export const GROOVES: Groove[] = [')
   })
 
-  // AC7: every entry carries all ten fields, with the right values.
-  it('writes all ten fields of every entry', () => {
+  // AC7: every entry carries all eleven fields, with the right values.
+  it('writes all eleven fields of every entry', () => {
     const grooves = evaluate(renderManifest([ENTRY, SECOND]))
     expect(grooves).toEqual([ENTRY, SECOND])
     for (const groove of grooves) {
       expect(Object.keys(groove).sort()).toEqual(Object.keys(ENTRY).sort())
     }
+  })
+
+  // Epic 2, Step E3: the measured head delay is rendered like any other field,
+  // after `bars`. A field the renderer does not list is silently dropped, and
+  // the app would then be reading a manifest that had lost it.
+  it("writes each entry's measured head delay, after its bar count", () => {
+    const source = renderManifest([ENTRY])
+    expect(source).toMatch(/^ {4}headDelaySeconds: 0\.025057,$/m)
+    expect(source.indexOf('bars: 4,')).toBeLessThan(
+      source.indexOf('headDelaySeconds: 0.025057,'),
+    )
   })
 
   it('escapes a quote inside a value rather than breaking the literal', () => {

@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs'
+import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, statSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
@@ -10,6 +10,12 @@ import type { GateFailure, GrooveSpec } from './types.ts'
 const ROOT = join(process.cwd(), 'scripts', 'grooves')
 const REAL_LOCK = join(ROOT, 'grooves.lock.json')
 const REAL_CATALOGUE = join(ROOT, 'catalogue.json')
+/**
+ * A committed mp3, copied in as the stand-in for audio an earlier run minted.
+ * A mint measures the head delay of every file it describes, so the fixture's
+ * already-minted audio has to be audio.
+ */
+const REAL_MP3 = join(process.cwd(), 'public', 'grooves', 'groove-01.mp3')
 const COMMITTED = {
   lock: readFileSync(REAL_LOCK, 'utf8'),
   catalogue: readFileSync(REAL_CATALOGUE, 'utf8'),
@@ -38,7 +44,7 @@ function fixture() {
   mkdirSync(outDir, { recursive: true })
   const cataloguePath = join(dir, 'catalogue.json')
   writeCatalogue(SPECS, cataloguePath)
-  for (const spec of SPECS) writeFileSync(join(outDir, `${spec.id}.mp3`), spec.id)
+  for (const spec of SPECS) copyFileSync(REAL_MP3, join(outDir, `${spec.id}.mp3`))
   return {
     outDir,
     cataloguePath,

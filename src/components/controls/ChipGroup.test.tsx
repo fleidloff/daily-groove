@@ -1,9 +1,20 @@
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { ChipGroup } from './ChipGroup'
+import type { ChipColumns } from './ChipGroup'
 
 const OPTIONS = ['One', 'Two', 'Three']
+
+// Arbitrary strings on purpose: a primitive is exercised with labels that mean
+// nothing, so the test cannot quietly teach it a domain concept.
+const TWELVE = [
+  'One', 'Two', 'Three', 'Four', 'Five', 'Six',
+  'Seven', 'Eight', 'Nine', 'Ten', 'Eleven', 'Twelve',
+]
+const FOUR = ['Alpha', 'Beta', 'Gamma', 'a considerably longer label']
 
 function renderGroup(overrides: Partial<Parameters<typeof ChipGroup>[0]> = {}) {
   const props = {
@@ -13,9 +24,18 @@ function renderGroup(overrides: Partial<Parameters<typeof ChipGroup>[0]> = {}) {
     onSelect: () => {},
     disabled: false,
     name: 'group',
+    columns: { base: 4, wide: 6 } as ChipColumns,
     ...overrides,
   }
   return render(<ChipGroup {...props} />)
+}
+
+/** The element the chips are laid out on, by the id the group gives it. */
+function chipList(label = 'Group'): HTMLElement {
+  const group = screen.getByRole('radiogroup', { name: label })
+  const list = group.querySelector('[data-testid="chip-list"]')
+  expect(list).not.toBeNull()
+  return list as HTMLElement
 }
 
 describe('ChipGroup', () => {
@@ -67,6 +87,7 @@ describe('ChipGroup', () => {
         onSelect={() => {}}
         disabled={false}
         name="group"
+        columns={{ base: 4, wide: 6 }}
       />,
     )
 
@@ -104,30 +125,98 @@ describe('ChipGroup', () => {
     expect(onSelect).not.toHaveBeenCalled()
   })
 
-  it('passes a fixed width down to every chip when asked', () => {
-    const { container } = renderGroup({ width: 'fixed' })
+  // --- Step A1/A2 — the cell owns the width now (R6, AC7) -------------------
+
+  it('passes no width to its chips (R6, AC7)', () => {
+    const { container } = renderGroup({ options: TWELVE })
     const chips = [...container.querySelectorAll('button')] as HTMLElement[]
 
-    expect(chips).toHaveLength(OPTIONS.length)
-    for (const chip of chips) expect(chip.className).toMatch(/\bw-\[/)
+    expect(chips).toHaveLength(TWELVE.length)
+    for (const chip of chips) expect(chip.className).not.toMatch(/\bw-\[/)
   })
 
-  it('lets its chips hug their labels by default', () => {
-    const { container } = renderGroup()
+  it('declares no width prop (R6, AC7)', () => {
+    const source = readFileSync(
+      resolve(process.cwd(), 'src/components/controls/ChipGroup.tsx'),
+      'utf8',
+    )
+
+    expect(source).not.toContain('ChipWidth')
+    expect(source).not.toMatch(/^\s*width\??:/m)
+  })
+
+  // --- Step A2 — the row is a grid, not a wrapping flex row (R1, R3, AC1) ---
+
+  it('lays its chips out on a grid at the base column count (R1, R3, AC1)', () => {
+    renderGroup({ options: TWELVE, columns: { base: 4, wide: 6 } })
+    const list = chipList()
+
+    expect(list.className).toMatch(/\bgrid\b/)
+    expect(list.className).toContain('grid-cols-4')
+    expect(list.className).not.toContain('flex-wrap')
+  })
+
+  it('lets each chip fill its cell rather than hug its label (R3, AC1)', () => {
+    const { container } = renderGroup({ options: TWELVE })
+
+    // Nothing on the chip constrains it, so the cell it sits in sets its width.
     for (const chip of [...container.querySelectorAll('button')]) {
       expect(chip.className).not.toMatch(/\bw-\[/)
+      expect(chip.className).not.toMatch(/\bmax-w-/)
     }
   })
 
-  it('wraps its chips instead of overflowing', () => {
-    renderGroup()
-    const group = screen.getByRole('radiogroup', { name: 'Group' })
-    const list = group.querySelector('[data-testid="chip-list"]') as HTMLElement
+  it('never makes its own row wider than its container (R8)', () => {
+    renderGroup({ options: TWELVE })
+    const list = chipList()
 
-    expect(list).not.toBeNull()
-    expect(list.className).toContain('flex-wrap')
     expect(list.className).not.toMatch(/\bw-\[/)
     expect(list.className).not.toMatch(/\bmin-w-/)
     expect(list.className).not.toMatch(/overflow-x/)
+  })
+
+  // --- Step A3 — the count rises above the breakpoint (R2a, AC2, AC3) -------
+
+  it('gives a twelve-option group 4 columns, rising to 6 (R2a, AC2)', () => {
+    renderGroup({ options: TWELVE, columns: { base: 4, wide: 6 } })
+    const list = chipList()
+
+    expect(list.className).toContain('grid-cols-4')
+    expect(list.className).toContain('md:grid-cols-6')
+  })
+
+  it('gives a four-option group 2 columns, rising to 4 (R2a, AC3)', () => {
+    renderGroup({ options: FOUR, columns: { base: 2, wide: 4 } })
+    const list = chipList()
+
+    expect(list.className).toContain('grid-cols-2')
+    expect(list.className).toContain('md:grid-cols-4')
+  })
+
+  // --- Step A4 — no group leaves a partial row (R2, R2a, AC2, AC3) ---------
+  //
+  // A guard rather than a discovery: it passes as soon as A3 lands, and stands
+  // so a later column change cannot silently strand an orphan row.
+
+  it.each([
+    { options: 12, columns: { base: 4, wide: 6 } as ChipColumns },
+    { options: 4, columns: { base: 2, wide: 4 } as ChipColumns },
+  ])(
+    'divides $options options evenly at both column counts (R2, R2a)',
+    ({ options, columns }) => {
+      expect(options % columns.base).toBe(0)
+      expect(options % columns.wide).toBe(0)
+    },
+  )
+
+  // --- Step A5 — group semantics and tab order survive the grid (R7, AC8) ---
+
+  it('renders its chips in the order it was given (R7, AC8)', () => {
+    renderGroup({ options: TWELVE, columns: { base: 4, wide: 6 } })
+
+    const labels = [...chipList().querySelectorAll('button')].map(
+      (chip) => chip.textContent,
+    )
+    expect(labels).toEqual(TWELVE)
   })
 })

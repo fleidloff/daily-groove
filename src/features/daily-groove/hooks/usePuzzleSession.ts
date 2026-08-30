@@ -2,14 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useStore } from 'zustand'
-import type {
-  Answer,
-  Attempt,
-  DailyResult,
-  Flavour,
-  Groove,
-  Root,
-} from '../types'
+import type { Answer, Attempt, Flavour, Groove, Root } from '../types'
 import {
   createDailyGrooveStore,
   type DailyGrooveState,
@@ -39,8 +32,6 @@ export type UsePuzzleSession = {
   answer: Answer
   /** The player's current streak, derived from the saved results. */
   streak: number
-  /** Every saved day, most recent first. */
-  history: DailyResult[]
 }
 
 /**
@@ -52,14 +43,14 @@ export type UsePuzzleSession = {
  * stays in `state/`, so it keeps its own unit test.
  *
  * Progress lives behind the same seam. `check` writes the day through
- * `useProgress`, and the streak and history that write updates are returned
- * with it, so there is exactly one `useProgress` instance per puzzle and no
- * second, drifting copy of the saved results.
+ * `useProgress`, and the streak that write updates is returned with it, so
+ * there is exactly one `useProgress` instance per puzzle and no second,
+ * drifting copy of the saved results. The saved days themselves are not handed
+ * out — nothing renders them, and the store still holds every one (E6 R3a).
  */
 export function usePuzzleSession(groove: Groove, today: Date): UsePuzzleSession {
   const todayIso = isoDate(today)
-  const { streak, history, todayResult, loaded, recordAttempt } =
-    useProgress(todayIso)
+  const { streak, todayResult, loaded, recordAttempt } = useProgress(todayIso)
 
   // The answer is the groove's own `root` and `flavour` fields — the values
   // the generator wrote next to the audio, not a parse of its `scale` string.
@@ -134,6 +125,5 @@ export function usePuzzleSession(groove: Groove, today: Date): UsePuzzleSession 
     check,
     answer,
     streak,
-    history,
   }
 }

@@ -3,9 +3,9 @@ import type { Groove } from '../../types'
 import { selectGrooveForDate, isoDate } from './selectGroove'
 
 const grooves: Groove[] = [
-  { id: 'a', audioSrc: '/grooves/a.mp3', name: 'Test Groove', bpm: 90, root: 'C', flavour: 'Minor', bars: 4, scale: 'C minor', chord: 'Cm', progression: 'Cm–F–G' },
-  { id: 'b', audioSrc: '/grooves/b.mp3', name: 'Test Groove', bpm: 90, root: 'A', flavour: 'Dorian', bars: 4, scale: 'A dorian', chord: 'Am7', progression: 'Am–D–G' },
-  { id: 'c', audioSrc: '/grooves/c.mp3', name: 'Test Groove', bpm: 90, root: 'E', flavour: 'Phrygian', bars: 4, scale: 'E phrygian', chord: 'Em', progression: 'Em–Am–B7' },
+  { id: 'a', audioSrc: '/grooves/a.mp3', name: 'Test Groove', bpm: 90, root: 'C', flavour: 'Minor', bars: 4, scale: 'C minor', chord: 'Cm', progression: 'Cm–F–G', headDelaySeconds: 0.025057 },
+  { id: 'b', audioSrc: '/grooves/b.mp3', name: 'Test Groove', bpm: 90, root: 'A', flavour: 'Dorian', bars: 4, scale: 'A dorian', chord: 'Am7', progression: 'Am–D–G', headDelaySeconds: 0.025057 },
+  { id: 'c', audioSrc: '/grooves/c.mp3', name: 'Test Groove', bpm: 90, root: 'E', flavour: 'Phrygian', bars: 4, scale: 'E phrygian', chord: 'Em', progression: 'Em–Am–B7', headDelaySeconds: 0.025057 },
 ]
 
 describe('isoDate', () => {
@@ -61,6 +61,7 @@ const sweepGroove = (id: string): Groove => ({
   scale: 's',
   chord: 'c',
   progression: 'p',
+  headDelaySeconds: 0.025057,
 })
 
 const SWEEP_START = new Date(2026, 0, 1)

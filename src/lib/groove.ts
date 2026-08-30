@@ -52,4 +52,9 @@ export type Groove = {
   root: Root
   flavour: Flavour
   bars: number // loop length, always 4
+  /**
+   * Seconds of encoder delay at the head of this file, measured from the mp3
+   * itself at mint time. The music begins here, not at 0.
+   */
+  headDelaySeconds: number
 }

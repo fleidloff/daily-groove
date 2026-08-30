@@ -4,7 +4,8 @@ import { useId } from 'react'
 import { Chip } from './Chip'
 import { EyebrowLabel } from '@/components/typography/EyebrowLabel'
 
-type ChipWidth = 'auto' | 'fixed'
+/** Columns at the base width, and above the `md` breakpoint. */
+export type ChipColumns = { base: 2 | 4; wide: 4 | 6 | 7 }
 
 type ChipGroupProps = {
   label: string
@@ -13,15 +14,35 @@ type ChipGroupProps = {
   onSelect: (option: string) => void
   disabled: boolean
   name: string
-  width?: ChipWidth
+  columns: ChipColumns
+}
+
+// Tailwind's JIT only sees literal class strings, so the column count maps
+// through a lookup rather than being interpolated into `grid-cols-${n}`.
+// `ChipColumns` is a union of the counts in use, so a count with no class here
+// is a type error rather than a silently missing class.
+const COLUMN_CLASS: Record<number, string> = {
+  2: 'grid-cols-2',
+  4: 'grid-cols-4',
+  6: 'grid-cols-6',
+  7: 'grid-cols-7',
+}
+
+const WIDE_CLASS: Record<number, string> = {
+  4: 'md:grid-cols-4',
+  6: 'md:grid-cols-6',
+  7: 'md:grid-cols-7',
 }
 
 /**
  * A labelled single-select row of chips. Only `value` reads as pressed, so
  * choosing another option replaces the selection rather than adding to it.
- * The row wraps, so a narrow viewport reflows instead of overflowing.
- * `width` is passed straight through to every chip, so a group of short,
- * equal-length labels can line up on a common width.
+ *
+ * The chips sit on a grid of equal columns, so the row spreads across its
+ * container and a trailing short row leaves empty cells instead of stretching.
+ * `columns` carries counts, not row names: the caller is what knows how many
+ * options it has, and a group that had learned what its rows mean would have
+ * stopped being a primitive.
  */
 export function ChipGroup({
   label,
@@ -30,16 +51,17 @@ export function ChipGroup({
   onSelect,
   disabled,
   name,
-  width = 'auto',
+  columns,
 }: ChipGroupProps) {
   const labelId = useId()
+  const layout = `grid ${COLUMN_CLASS[columns.base]} ${WIDE_CLASS[columns.wide]} gap-[7px]`
 
   return (
     <div role="radiogroup" aria-labelledby={labelId}>
       <span id={labelId}>
         <EyebrowLabel>{label}</EyebrowLabel>
       </span>
-      <div data-testid="chip-list" className="mt-[10px] flex flex-wrap gap-[7px]">
+      <div data-testid="chip-list" className={`mt-[10px] ${layout}`}>
         {options.map((option) => (
           <Chip
             key={`${name}-${option}`}
@@ -47,7 +69,6 @@ export function ChipGroup({
             selected={value === option}
             disabled={disabled}
             onSelect={() => onSelect(option)}
-            width={width}
           />
         ))}
       </div>

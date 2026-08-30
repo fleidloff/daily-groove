@@ -1,17 +1,14 @@
 'use client'
 
-import { useCallback, useMemo, useRef, useState, useSyncExternalStore } from 'react'
+import { useCallback, useMemo, useState, useSyncExternalStore } from 'react'
 import type { Groove } from '../types'
-import { toArchiveEntries, type ArchiveEntry } from '../lib/presentation/archive'
-import { resolveGrooveForResult } from '../lib/puzzle/resolveGroove'
 import type { PlayableSource } from '../lib/audio/transport'
 import { dotStates, selectFeedback, shouldShowNudge } from '../lib/presentation/feedback'
 import { flavourOptions, ROOTS, loopSecondsOf } from '../lib/theory/music'
-import { isoDate, selectGrooveForDate } from '../lib/puzzle/selectGroove'
+import { selectGrooveForDate } from '../lib/puzzle/selectGroove'
 import { GROOVES } from '../data/grooves.generated'
 import { usePuzzleSession } from '../hooks/usePuzzleSession'
 import { useTransport } from '../hooks/useTransport'
-import { ArchiveStrip, type ArchiveStripEntry } from './archive/ArchiveStrip'
 import { GrooveCard } from './puzzle/GrooveCard'
 import { GrooveHeader } from './header/GrooveHeader'
 import { GuessCard } from './puzzle/GuessCard'
@@ -76,7 +73,6 @@ function GroovePuzzleView({ groove }: { groove: Groove }) {
   // Today, resolved once on the client. The same day both selects the groove
   // and seeds the flavour options, and is what the header displays (R4, R5).
   const [today] = useState(() => new Date())
-  const todayIso = isoDate(today)
 
   const {
     selectedRoot,
@@ -90,10 +86,31 @@ function GroovePuzzleView({ groove }: { groove: Groove }) {
     check,
     answer,
     streak,
-    history,
   } = usePuzzleSession(groove, today)
 
-  const { soundingId, position, error: audioError, toggle } = useTransport()
+  // What the page plays: today's groove, its musical loop length, and where
+  // inside its own file the music starts. The head delay is per-groove data,
+  // measured from that mp3 at mint time — no constant is shared across the
+  // catalogue (R4). Memoised on the groove so the transport, which captures
+  // its source at construction, is handed a stable value.
+  const source = useMemo<PlayableSource>(
+    () => ({
+      src: groove.audioSrc,
+      loopSeconds: loopSecondsOf(groove),
+      headDelaySeconds: groove.headDelaySeconds,
+    }),
+    [groove],
+  )
+
+  // One groove on the page, so the transport's own boolean is the answer — no
+  // control has to ask whether the sounding groove is the one it belongs to.
+  const {
+    isPlaying,
+    loading,
+    position,
+    error: audioError,
+    toggle,
+  } = useTransport(source)
 
   // Epic 3's three derivations. All pure functions of the attempt list, so
   // nothing about feedback, the nudge or the dots is stored or latched.
@@ -107,33 +124,6 @@ function GroovePuzzleView({ groove }: { groove: Groove }) {
   )
   const dots = useMemo(() => dotStates(attempts, solved), [attempts, solved])
 
-  // The groove behind each played day, resolved once per record. By id when the
-  // record carries one — the path that survives the catalogue growing — and by
-  // date only for records saved before the id existed. `null` is a real state:
-  // the groove has left the catalogue, and the card's control says so (R10).
-  const groovesByDate = useMemo(() => {
-    const byDate = new Map<string, Groove | null>()
-    for (const result of history) {
-      byDate.set(result.date, resolveGrooveForResult(result, GROOVES))
-    }
-    return byDate
-  }, [history])
-
-  // Every past day, most recent first. The strip caps what it draws; the count
-  // it shows is this full tally, not the number of cards.
-  const archiveEntries = useMemo<ArchiveStripEntry[]>(
-    () =>
-      toArchiveEntries(history, todayIso).map((entry) => {
-        const resolved = groovesByDate.get(entry.date)
-        return {
-          ...entry,
-          grooveId: resolved?.id ?? null,
-          grooveName: resolved?.name ?? null,
-        }
-      }),
-    [history, todayIso, groovesByDate],
-  )
-
   // The day's four flavour options: deterministic for the date, always
   // including the answer (R3, R4).
   const flavours = useMemo(
@@ -141,58 +131,9 @@ function GroovePuzzleView({ groove }: { groove: Groove }) {
     [today, groove],
   )
 
-  // The question every control on the page asks, today's two included: is the
-  // sounding groove mine? (R5)
-  const isPlaying = soundingId === groove.id
-
-  // What a retry retries. The transport rolls its sounding id back on a
-  // rejection, so re-toggling the same source starts it rather than stopping it.
-  const lastSource = useRef<PlayableSource | null>(null)
-
-  const toggleSource = useCallback(
-    (source: PlayableSource) => {
-      lastSource.current = source
-      void toggle(source)
-    },
-    [toggle],
-  )
-
   const handleToggle = useCallback(() => {
-    toggleSource({
-      id: groove.id,
-      src: groove.audioSrc,
-      loopSeconds: loopSecondsOf(groove),
-    })
-  }, [toggleSource, groove])
-
-  /**
-   * A card's control. The strip is presentational, so the puzzle turns the
-   * entry back into the source it resolved for that day. An unresolvable day
-   * never gets here — its control is disabled — but the guard keeps the handler
-   * honest rather than relying on that.
-   */
-  const handleArchiveToggle = useCallback(
-    (entry: ArchiveEntry) => {
-      const played = groovesByDate.get(entry.date)
-      if (!played) return
-      toggleSource({
-        id: played.id,
-        src: played.audioSrc,
-        loopSeconds: loopSecondsOf(played),
-      })
-    },
-    [groovesByDate, toggleSource],
-  )
-
-  const handleRetry = useCallback(() => {
-    toggleSource(
-      lastSource.current ?? {
-        id: groove.id,
-        src: groove.audioSrc,
-        loopSeconds: loopSecondsOf(groove),
-      },
-    )
-  }, [toggleSource, groove])
+    void toggle()
+  }, [toggle])
 
   // No fresh-game frame may paint before the saved day is in the store: a day
   // already in progress would flash as untouched, and a solved day as unplayed.
@@ -208,7 +149,7 @@ function GroovePuzzleView({ groove }: { groove: Groove }) {
             <Card tone="inset">
               <Row gap="md" align="center" justify="between">
                 <Text tone="muted">Couldn&apos;t play the groove.</Text>
-                <button type="button" onClick={handleRetry}>
+                <button type="button" onClick={handleToggle}>
                   Retry
                 </button>
               </Row>
@@ -226,7 +167,13 @@ function GroovePuzzleView({ groove }: { groove: Groove }) {
           <div className="min-w-0 w-full flex-1 md:w-auto">
             <GrooveCard groove={groove}>
               <Stack gap="lg">
-                <TransportPanel position={position} isPlaying={isPlaying} />
+                {/* Zero unless something is sounding: the panel cannot draw
+                    a position for audio that is not playing, so nothing is
+                    held or left decaying after a stop (R5, AC6). */}
+                <TransportPanel
+                  position={isPlaying ? position : 0}
+                  isPlaying={isPlaying}
+                />
                 {/* The control leads and the caption follows it, rather than
                     sitting beside it in a row (E2 R4, AC3). */}
                 <Stack gap="sm">
@@ -234,10 +181,14 @@ function GroovePuzzleView({ groove }: { groove: Groove }) {
                       a primitive that knows what a groove is has stopped
                       being reusable (see globals.test.ts I5). */}
                   <PlayControl
-                    size="lg"
                     isPlaying={isPlaying}
                     onToggle={handleToggle}
-                    text={{ play: 'Play the groove', stop: 'Stop' }}
+                    busy={loading}
+                    text={{
+                      play: 'Play the groove',
+                      stop: 'Stop',
+                      loading: 'Loading…',
+                    }}
                   />
                   <Text tone="muted" size="sm">
                     Play along. Find the note that feels like home.
@@ -276,12 +227,6 @@ function GroovePuzzleView({ groove }: { groove: Groove }) {
             progression={groove.progression}
           />
         )}
-
-        <ArchiveStrip
-          entries={archiveEntries}
-          soundingId={soundingId}
-          onToggle={handleArchiveToggle}
-        />
       </Stack>
     </section>
   )

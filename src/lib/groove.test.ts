@@ -24,6 +24,7 @@ describe('src/lib/groove', () => {
       root: 'C♯',
       flavour: 'Harmonic minor',
       bars: 4,
+      headDelaySeconds: 0.025057,
     } satisfies Groove
 
     expect(Object.keys(groove).sort()).toEqual([
@@ -32,12 +33,37 @@ describe('src/lib/groove', () => {
       'bpm',
       'chord',
       'flavour',
+      'headDelaySeconds',
       'id',
       'name',
       'progression',
       'root',
       'scale',
     ])
+  })
+
+  it('rejects a Groove that carries no measured head delay', () => {
+    // The head delay is measured per file at mint time, so a Groove without
+    // one is not a Groove: nothing downstream may fall back to a shared
+    // constant. If the field is ever made optional, this directive becomes
+    // unused and `tsc` fails on it.
+    // @ts-expect-error headDelaySeconds is missing.
+    const incomplete: Groove = {
+      id: 'groove-01',
+      audioSrc: '/grooves/groove-01.mp3',
+      name: 'Velvet Pocket',
+      bpm: 98,
+      scale: 'C♯ minor',
+      chord: 'C♯m7',
+      progression: 'C♯m–F♯m–G♯7',
+      root: 'C♯',
+      flavour: 'Harmonic minor',
+      bars: 4,
+    }
+    expect(incomplete.id).toBe('groove-01')
+
+    const complete: Groove = { ...incomplete, headDelaySeconds: 0.025057 }
+    expect(complete.headDelaySeconds).toBeCloseTo(0.025057, 6)
   })
 
   it('rejects a root outside the twelve chromatic spellings', () => {

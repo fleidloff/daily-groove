@@ -12,7 +12,7 @@ describe('the generated groove catalogue', () => {
     expect(GROOVES.length).toBeGreaterThan(0)
   })
 
-  it('gives every entry all ten fields, correctly typed', () => {
+  it('gives every entry all eleven fields, correctly typed', () => {
     for (const g of GROOVES) {
       expect(typeof g.id).toBe('string')
       expect(typeof g.audioSrc).toBe('string')
@@ -24,7 +24,24 @@ describe('the generated groove catalogue', () => {
       expect(typeof g.root).toBe('string')
       expect(typeof g.flavour).toBe('string')
       expect(typeof g.bars).toBe('number')
+      expect(typeof g.headDelaySeconds).toBe('number')
     }
+  })
+
+  // Epic 2, Step E6: the head delay is measured from each mp3 by ffprobe at
+  // render time. The app reads the number it was given rather than inferring
+  // one, so a manifest that lost it is a manifest the player cannot use.
+  it('carries a measured head delay for every entry', () => {
+    for (const g of GROOVES) {
+      expect(Number.isFinite(g.headDelaySeconds), g.id).toBe(true)
+      expect(g.headDelaySeconds, g.id).toBeGreaterThanOrEqual(0)
+    }
+    // Sixteen zeroes would pass every assertion above while meaning the probe
+    // silently failed on every file, so at least one must be a real offset.
+    expect(
+      GROOVES.some((g) => g.headDelaySeconds > 0),
+      'every head delay is zero — the probe measured nothing',
+    ).toBe(true)
   })
 
   it('gives every entry a non-empty name and a plausible tempo', () => {

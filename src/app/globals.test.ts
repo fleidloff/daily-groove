@@ -77,10 +77,25 @@ describe('globals.css @theme token layer', () => {
     expect(missing).toEqual([])
   })
 
-  it('maps the display and body font tokens', () => {
+  it('maps the display, jazz and body font tokens', () => {
     const defined = customPropertyNames(themeBody)
     expect(defined.has('--font-display')).toBe(true)
+    expect(defined.has('--font-jazz')).toBe(true)
     expect(defined.has('--font-sans')).toBe(true)
+  })
+
+  it('resolves --font-jazz through the local face and falls back to a serif', () => {
+    const declaration = themeBody.match(/--font-jazz\s*:\s*([^;]+);/)
+    expect(declaration, 'no --font-jazz declaration found').not.toBeNull()
+    const value = declaration![1]
+    expect(value).toContain('--font-jazz-hand')
+    expect(value).toMatch(/serif\s*$/)
+  })
+
+  it('leaves --font-display pointing at the serif', () => {
+    const declaration = themeBody.match(/--font-display\s*:\s*([^;]+);/)
+    expect(declaration, 'no --font-display declaration found').not.toBeNull()
+    expect(declaration![1]).toContain('--font-newsreader')
   })
 
   it('paints the body from the three paper tokens', () => {

@@ -17,7 +17,7 @@ const BANNER = `/**
  * change the catalogue or the generator instead.
  */`
 
-/** The ten fields of a Groove, in the order the type declares them. */
+/** The eleven fields of a Groove, in the order the type declares them. */
 const FIELDS = [
   'id',
   'audioSrc',
@@ -29,6 +29,7 @@ const FIELDS = [
   'root',
   'flavour',
   'bars',
+  'headDelaySeconds',
 ] as const
 
 /**

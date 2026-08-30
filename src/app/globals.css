@@ -35,6 +35,9 @@
   --shadow-card: 0 1px 0 #ffffff inset, 0 18px 40px -32px rgba(48, 58, 42, 0.45);
 
   --font-display: var(--font-newsreader), Georgia, "Times New Roman", serif;
+  /* The hand-lettered face the two display sizes use. It falls back through the
+     serif so a heading never lands on the browser default. */
+  --font-jazz: var(--font-jazz-hand), var(--font-newsreader), Georgia, serif;
   --font-sans: var(--font-dm-sans), system-ui, -apple-system, sans-serif;
 }
 

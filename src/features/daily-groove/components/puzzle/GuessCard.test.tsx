@@ -49,6 +49,9 @@ function props(overrides: Partial<Props> = {}): Props {
 
 const rootGroup = () => screen.getByRole('radiogroup', { name: 'Root' })
 const flavourGroup = () => screen.getByRole('radiogroup', { name: 'Flavour' })
+/** The element a chip group lays its chips out on. */
+const chipList = (group: HTMLElement) =>
+  group.querySelector('[data-testid="chip-list"]') as HTMLElement
 const dotStates = () =>
   Array.from(document.querySelectorAll('[data-dot-state]')).map((el) =>
     el.getAttribute('data-dot-state'),
@@ -447,6 +450,56 @@ describe('GuessCard', () => {
     expect(
       screen.getByRole('img', { name: '2 of 3 attempts spent' }),
     ).toBeInTheDocument()
+  })
+
+  // --- Epic 3 C1/C2: the card supplies each row's column count -------------
+
+  // Step C1 — R2a, R4, AC4. The counts live here because the caller is what
+  // knows how many options it has; `ChipGroup` only knows numbers.
+  it('lays the twelve roots out on 4 columns, rising to 6 (R2a, R4, AC4)', () => {
+    render(<GuessCard {...props()} />)
+    const list = chipList(rootGroup())
+
+    expect(list.className).toMatch(/\bgrid\b/)
+    expect(list.className).toContain('grid-cols-4')
+    expect(list.className).toContain('md:grid-cols-6')
+  })
+
+  it('lays the four flavours out on 2 columns, rising to 4 (R2a, R4, AC4)', () => {
+    render(<GuessCard {...props()} />)
+    const list = chipList(flavourGroup())
+
+    expect(list.className).toMatch(/\bgrid\b/)
+    expect(list.className).toContain('grid-cols-2')
+    expect(list.className).toContain('md:grid-cols-4')
+  })
+
+  it('asks for no chip width on either row (R6, AC7)', () => {
+    render(<GuessCard {...props()} />)
+
+    for (const chip of screen.getAllByRole('button')) {
+      expect(chip.className).not.toMatch(/\bw-\[/)
+    }
+  })
+
+  // Step C2 — R4, AC4. A guard: it passes once C1 has landed, and stands so
+  // the two rows cannot drift into different layouts.
+  it('lays both rows out through the same component (R4, AC4)', () => {
+    render(<GuessCard {...props()} />)
+    const root = chipList(rootGroup())
+    const flavour = chipList(flavourGroup())
+
+    for (const list of [root, flavour]) {
+      expect(list.className).toMatch(/\bgrid\b/)
+      expect(list.className).toMatch(/\bgrid-cols-\d+\b/)
+      expect(list.className).toMatch(/\bmd:grid-cols-\d+\b/)
+      expect(list.className).not.toContain('flex-wrap')
+    }
+
+    // Same layout shape, differing only in the counts the card supplies.
+    const shape = (list: HTMLElement) =>
+      list.className.replace(/grid-cols-\d+/g, 'grid-cols-N')
+    expect(shape(root)).toBe(shape(flavour))
   })
 
   // --- C6: chord and progression stay hidden --------------------------------

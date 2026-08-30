@@ -8,8 +8,8 @@ const GROUPS = ['controls', 'display', 'layout', 'surfaces', 'typography']
 
 const COMPONENTS: Record<string, string[]> = {
   layout: ['Container', 'PageShell', 'Row', 'Stack', 'LabelledColumn'],
-  surfaces: ['Card', 'MiniCard', 'Panel'],
-  controls: ['Button', 'IconButton', 'Chip', 'ChipGroup', 'PlayControl'],
+  surfaces: ['Card', 'Panel'],
+  controls: ['Button', 'Chip', 'ChipGroup', 'PlayControl'],
   typography: ['Heading', 'Text', 'EyebrowLabel', 'SectionLabel'],
   display: ['Pill', 'ProgressTrack'],
 }
@@ -81,6 +81,48 @@ describe('design system structure', () => {
     }
 
     expect(missing).toEqual([])
+  })
+
+  // Step D2, D3 — R7, R10, AC8
+  it('has no component file its role folder does not list', () => {
+    // The converse of the assertion above. Without it a deletion is not
+    // provable: dropping a name from COMPONENTS while the file stays on disk
+    // would leave every assertion green.
+    const unlisted: string[] = []
+
+    for (const [group, names] of Object.entries(COMPONENTS)) {
+      const present = new Set(
+        readdirSync(join(componentsDir, group))
+          .filter((file) => /\.tsx?$/.test(file))
+          .map((file) => file.replace(/(\.test)?\.tsx?$/, '')),
+      )
+      for (const name of present) {
+        if (!names.includes(name)) unlisted.push(`${group}/${name}`)
+      }
+    }
+
+    expect(unlisted.sort()).toEqual([])
+  })
+
+  // Step D1 — R9, AC8a
+  // Step D1 widened by Epic 2 Step C1 — R7a, AC8b: `busy` joins them, because
+  // the page has a pending press to report. The rule is unchanged — a prop no
+  // caller can reach does not survive — so the list stays exact.
+  it('gives PlayControl only the four props its one caller can reach', () => {
+    const source = readFileSync(join(componentsDir, 'controls/PlayControl.tsx'), 'utf8')
+
+    const block = source.match(/type PlayControlProps = \{([\s\S]*?)\n\}/)
+    expect(block).not.toBeNull()
+
+    const props = [...(block as RegExpMatchArray)[1].matchAll(/^\s{2}(\w+)\??:/gm)].map(
+      (match) => match[1],
+    )
+    expect(props).toEqual(['isPlaying', 'onToggle', 'busy', 'text'])
+
+    // `size` is gone, and with it the branch that rendered `IconButton`.
+    expect(source).not.toContain('PlayControlSize')
+    expect(source).not.toContain('IconButton')
+    expect(source).not.toMatch(/\bsize\b/)
   })
 
   // Step A3 — R10, AC8

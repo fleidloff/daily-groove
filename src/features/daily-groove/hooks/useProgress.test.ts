@@ -54,7 +54,7 @@ function makeStore(overrides: Partial<ResultStore> = {}): ResultStore {
 }
 
 describe('useProgress', () => {
-  it('empty store → loaded, streak 0, empty history, no today result (AC5)', async () => {
+  it('empty store → loaded, streak 0, no stored record, no today result (AC5)', async () => {
     const store = makeStore()
     const { result } = renderHook(() => useProgress(TODAY, store))
 
@@ -62,11 +62,13 @@ describe('useProgress', () => {
     // Still 0 under the anchor-shift rule (Epic 3): today is unsolved so the
     // anchor falls back to yesterday, and yesterday is absent too.
     expect(result.current.streak).toBe(0)
-    expect(result.current.history).toEqual([])
     expect(result.current.todayResult).toBeNull()
+    // The emptiness the streak is derived from: the hook no longer hands the
+    // record list out, so the store is where "there is nothing yet" is read.
+    await expect(store.getAll()).resolves.toEqual([])
   })
 
-  it("loads today's existing result and derives streak/history (R3, R7, AC6)", async () => {
+  it("loads today's existing result and derives the streak from every record (E6 R3, AC4)", async () => {
     const store = makeStore({
       get: vi.fn(async () => todayResult),
       getAll: vi.fn(async () => [yesterdayResult, todayResult]),
@@ -76,11 +78,10 @@ describe('useProgress', () => {
     await waitFor(() => expect(result.current.loaded).toBe(true))
     expect(result.current.todayResult).toEqual(todayResult)
     // Both days were solved and are consecutive up to today → streak 2 (AC6).
-    // Unchanged by the anchor-shift rule (Epic 3): today qualifies, so the
-    // anchor stays on today and the walk is the one it always was.
+    // Two, and not one, is what proves both stored records reached the derive:
+    // the walk only gets to yesterday if `getAll()`'s full list feeds it.
     expect(result.current.streak).toBe(2)
-    // History is most-recent first.
-    expect(result.current.history).toEqual([todayResult, yesterdayResult])
+    expect(store.getAll).toHaveBeenCalled()
   })
 
   it('an unsolved yesterday breaks the streak (R7, AC6)', async () => {
@@ -180,7 +181,11 @@ describe('useProgress', () => {
 
     expect(store.save).toHaveBeenCalledTimes(2)
     expect(result.current.todayResult?.attempts).toEqual([first, second])
-    expect(result.current.history).toHaveLength(1)
+    // One record, not two: both writes carry today's date, so the second
+    // rewrites the day rather than adding a second row to the record set.
+    expect(
+      vi.mocked(store.save).mock.calls.map(([record]) => record.date),
+    ).toEqual([TODAY, TODAY])
   })
 
   it('a solving attempt marks the day solved and starts the streak (R2, R7)', async () => {
@@ -256,7 +261,7 @@ describe('useProgress', () => {
     expect(result.current.todayResult?.grooveId).toBe('groove-03')
   })
 
-  it('carries the groove id through to the history it derives (E5 R7, AC7)', async () => {
+  it('carries the groove id through to the day it derives (E5 R7, AC7)', async () => {
     const store = makeStore()
     const { result } = renderHook(() => useProgress(TODAY, store))
     await waitFor(() => expect(result.current.loaded).toBe(true))
@@ -270,7 +275,7 @@ describe('useProgress', () => {
       })
     })
 
-    expect(result.current.history.map((r) => r.grooveId)).toEqual(['groove-11'])
+    expect(result.current.todayResult?.grooveId).toBe('groove-11')
   })
 
   it('exposes no write path replay could reach (E5 R9, AC11)', async () => {
@@ -282,7 +287,6 @@ describe('useProgress', () => {
     await waitFor(() => expect(result.current.loaded).toBe(true))
 
     expect(Object.keys(result.current).sort()).toEqual([
-      'history',
       'loaded',
       'recordAttempt',
       'streak',

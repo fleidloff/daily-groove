@@ -20,6 +20,7 @@ const ENTRIES: Groove[] = [
     root: 'C',
     flavour: 'Blues',
     bars: 4,
+    headDelaySeconds: 0.025057,
   },
   {
     id: 'groove-02',
@@ -32,6 +33,7 @@ const ENTRIES: Groove[] = [
     root: 'E',
     flavour: 'Minor',
     bars: 4,
+    headDelaySeconds: 0.025057,
   },
   {
     id: 'groove-03',
@@ -44,6 +46,7 @@ const ENTRIES: Groove[] = [
     root: 'E♭',
     flavour: 'Harmonic minor',
     bars: 4,
+    headDelaySeconds: 0.025057,
   },
 ]
 

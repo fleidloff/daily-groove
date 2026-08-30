@@ -122,17 +122,16 @@ describe('feature components sit in screen regions', () => {
       'NudgeBox',
       'SolvedPanel',
     ],
-    archive: ['ArchiveStrip'],
   }
 
   const entries = () => readdirSync(COMPONENTS, { withFileTypes: true })
 
-  it('contains exactly the three region directories', () => {
+  it('contains exactly the two region directories', () => {
     const dirs = entries()
       .filter((entry) => entry.isDirectory())
       .map((entry) => entry.name)
       .sort()
-    expect(dirs).toEqual(['archive', 'header', 'puzzle'])
+    expect(dirs).toEqual(['header', 'puzzle'])
   })
 
   it('holds only the root component at the components/ root', () => {
@@ -183,6 +182,35 @@ describe('design-system consumers use grouped paths', () => {
       }
     }
 
+    expect(offenders).toEqual([])
+  })
+})
+
+// Feature 6, Epic 1, Step A3 — R8: `GroovePuzzle` composes one groove and one
+// player. The archive plumbing it grew to hand a single player between today's
+// card and a row of past days is gone, and the names below are how it was
+// spelled. Read from the source rather than through a render, because the rule
+// is about what the component no longer holds, not about what it draws.
+describe('GroovePuzzle holds no archive plumbing', () => {
+  const REMOVED = [
+    'groovesByDate',
+    'archiveEntries',
+    'handleArchiveToggle',
+    'toggleSource',
+    'lastSource',
+  ]
+
+  it('names none of the removed archive bindings', () => {
+    const source = readFileSync(join(COMPONENTS, 'GroovePuzzle.tsx'), 'utf8')
+    const present = REMOVED.filter((name) => source.includes(name))
+    expect(present).toEqual([])
+  })
+
+  it('imports nothing from the deleted archive modules', () => {
+    const source = readFileSync(join(COMPONENTS, 'GroovePuzzle.tsx'), 'utf8')
+    const offenders = importSpecifiers(source).filter((specifier) =>
+      /archive|resolveGroove/.test(specifier),
+    )
     expect(offenders).toEqual([])
   })
 })

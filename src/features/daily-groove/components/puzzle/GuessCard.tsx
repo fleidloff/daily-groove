@@ -87,7 +87,7 @@ export function GuessCard({
           value={selectedRoot}
           onSelect={(option) => onSelectRoot(option as Root)}
           disabled={solved}
-          width="fixed"
+          columns={{ base: 4, wide: 6 }}
         />
 
         <ChipGroup
@@ -97,6 +97,7 @@ export function GuessCard({
           value={selectedFlavour}
           onSelect={(option) => onSelectFlavour(option)}
           disabled={solved}
+          columns={{ base: 2, wide: 4 }}
         />
 
         {/*

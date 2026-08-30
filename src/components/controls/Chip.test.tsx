@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
@@ -65,16 +67,30 @@ describe('Chip', () => {
     expect(selected.className).toContain('bg-accent')
   })
 
-  it('takes a fixed width when asked, and hugs its label otherwise', () => {
-    const auto = render(
-      <Chip label="Longer label" selected={false} disabled={false} onSelect={() => {}} />,
-    ).container.firstElementChild as HTMLElement
-    const fixed = render(
-      <Chip label="C" selected={false} disabled={false} onSelect={() => {}} width="fixed" />,
+  // Step A1 — R6, AC7. The grid cell the chip sits in owns the width now, so
+  // the chip carries neither the 60px cap nor the padding reset that came with
+  // it, and it can no longer be asked for either.
+  it('leaves its width to the cell it sits in (R6, AC7)', () => {
+    const chip = render(
+      <Chip label="C" selected={false} disabled={false} onSelect={() => {}} />,
     ).container.firstElementChild as HTMLElement
 
-    expect(auto.className).not.toMatch(/\bw-\[/)
-    expect(fixed.className).toMatch(/\bw-\[/)
+    expect(chip.className).not.toContain('w-[60px]')
+    expect(chip.className).not.toMatch(/\bpx-0\b/)
+    expect(chip.className).not.toMatch(/\bw-\[/)
+  })
+
+  // AC7 is about the prop surface, not about a rendered class, so it is read
+  // off the module the way the structural tests read the tree.
+  it('declares no width prop (R6, AC7)', () => {
+    const source = readFileSync(
+      resolve(process.cwd(), 'src/components/controls/Chip.tsx'),
+      'utf8',
+    )
+
+    expect(source).not.toContain('ChipWidth')
+    expect(source).not.toMatch(/^\s*width\??:/m)
+    expect(source).not.toContain('w-[60px]')
   })
 
   it('defaults to the default tone', () => {

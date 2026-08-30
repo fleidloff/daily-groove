@@ -1,6 +1,5 @@
 'use client'
 
-type ChipWidth = 'auto' | 'fixed'
 type ChipTone = 'default' | 'inverted'
 
 type ChipProps = {
@@ -8,18 +7,13 @@ type ChipProps = {
   selected: boolean
   disabled: boolean
   onSelect: () => void
-  width?: ChipWidth
   tone?: ChipTone
 }
 
+// The chip carries its own padding and nothing else about its size: the row it
+// sits in is a grid, so the cell decides how wide the chip is.
 const BASE =
-  'inline-flex cursor-pointer items-center justify-center rounded-chip border py-[9px] text-[14px] transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-default'
-
-// Fixed-width chips line up in a grid-like row; auto chips hug their label.
-const WIDTH: Record<ChipWidth, string> = {
-  auto: 'px-[15px]',
-  fixed: 'w-[60px] px-0',
-}
+  'inline-flex cursor-pointer items-center justify-center rounded-chip border px-[15px] py-[9px] text-[14px] transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-default'
 
 // A locked idle chip recedes; a locked selected chip stays fully legible,
 // because it is the answer the player is looking at.
@@ -50,13 +44,15 @@ const TONE: Record<ChipTone, { idle: string; selected: string }> = {
  *
  * `tone` picks the surface the chip is drawn for: `default` on paper, and
  * `inverted` on an inverted panel.
+ *
+ * It takes no width. A chip stretches to the grid cell it is placed in, and
+ * hugs its label in a flex row — which is what its caller's layout is for.
  */
 export function Chip({
   label,
   selected,
   disabled,
   onSelect,
-  width = 'auto',
   tone = 'default',
 }: ChipProps) {
   const palette = TONE[tone]
@@ -67,7 +63,7 @@ export function Chip({
       onClick={onSelect}
       disabled={disabled}
       aria-pressed={selected}
-      className={`${BASE} ${WIDTH[width]} ${selected ? palette.selected : palette.idle}`}
+      className={`${BASE} ${selected ? palette.selected : palette.idle}`}
     >
       {label}
     </button>

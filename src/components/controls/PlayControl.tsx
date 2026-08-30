@@ -1,60 +1,48 @@
 'use client'
 
 import { Button } from './Button'
-import { IconButton } from './IconButton'
-
-export type PlayControlSize = 'sm' | 'lg'
 
 type PlayControlProps = {
   isPlaying: boolean
   onToggle: () => void
-  /** 'sm' is the circular control; 'lg' is the full-width one. Defaults to 'sm'. */
-  size?: PlayControlSize
-  /** Overrides the accessible name. Falls back to "Play/Stop the loop". */
-  label?: string
-  /** Renders the control inert, for a source that cannot be played. */
-  disabled?: boolean
+  /** Inert, showing the loading word, until audio starts. */
+  busy?: boolean
   /**
-   * Visible words for the two states. Defaults to the generic pair: naming
-   * what is being played is the caller's business, not the design system's.
+   * Visible words for the three states. Defaults to the generic set: naming
+   * what is being played, or loaded, is the caller's business, not the design
+   * system's.
    */
-  text?: { play: string; stop: string }
+  text?: { play: string; stop: string; loading: string }
 }
 
 /** Glyph and word swap together, so they live side by side. */
-const GLYPH = { play: '▶', stop: '■' } as const
-const TEXT = { play: 'Play', stop: 'Stop' } as const
+const GLYPH = { play: '▶', stop: '■', loading: '◌' } as const
+const TEXT = { play: 'Play', stop: 'Stop', loading: 'Loading…' } as const
 const NAME = { play: 'Play the loop', stop: 'Stop the loop' } as const
 
 /**
  * The loop transport toggle. Its accessible name states the action the press
- * will perform, not the state it is in — unless a caller overrides it with
- * `label`, which several controls in a row need to stay distinguishable.
+ * will perform, not the state it is in — except while `busy`, where there is
+ * no action to offer and the name reports the wait instead.
  *
- * The size picks the host primitive: `'lg'` renders `Button`, inheriting the
- * solve button's geometry rather than restating it; `'sm'` renders the
- * circular `IconButton`.
+ * `busy` is a prop, never state: it lasts exactly as long as the caller says
+ * it does, and clearing it returns the control to the state `isPlaying` names.
+ *
+ * It renders `Button`, inheriting the solve button's geometry rather than
+ * restating it. There is one page and one loop, so there is one form.
  */
-export function PlayControl({
-  isPlaying,
-  onToggle,
-  size = 'sm',
-  label,
-  disabled = false,
-  text = TEXT,
-}: PlayControlProps) {
-  const state = isPlaying ? 'stop' : 'play'
-  const name = label ?? NAME[state]
-
-  if (size === 'lg') {
-    return (
-      <Button tone="ready" disabled={disabled} onPress={onToggle} label={name}>
-        {`${GLYPH[state]} ${text[state]}`}
-      </Button>
-    )
-  }
+export function PlayControl({ isPlaying, onToggle, busy = false, text = TEXT }: PlayControlProps) {
+  const action = isPlaying ? 'stop' : 'play'
+  const state = busy ? 'loading' : action
 
   return (
-    <IconButton onPress={onToggle} label={name} glyph={GLYPH[state]} disabled={disabled} />
+    <Button
+      tone="ready"
+      disabled={busy}
+      onPress={onToggle}
+      label={busy ? text.loading : NAME[action]}
+    >
+      {`${GLYPH[state]} ${text[state]}`}
+    </Button>
   )
 }

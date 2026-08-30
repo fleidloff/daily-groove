@@ -56,7 +56,9 @@ describe('useProgress + createLocalStore (real storage)', () => {
     // rule (Epic 3): an unsolved today moves the anchor to yesterday, and this
     // fixture has no yesterday record for the walk to find.
     expect(second.result.current.streak).toBe(0)
-    expect(second.result.current.history).toEqual([expected])
+    // The record itself is still in storage, complete — the hook stops handing
+    // the list out (E6 R3a), the store keeps every row the streak reads (AC5b).
+    await expect(secondStore.getAll()).resolves.toEqual([expected])
   })
 
   it('the groove id survives the reload with the rest of the record (E5 R7, R8, AC7, AC9)', async () => {
@@ -82,7 +84,10 @@ describe('useProgress + createLocalStore (real storage)', () => {
     // The id is what makes the day replayable after the catalogue grows: the
     // date alone would re-resolve to some other groove (E5 AC10).
     expect(second.result.current.todayResult?.grooveId).toBe('groove-09')
-    expect(second.result.current.history[0].grooveId).toBe('groove-09')
+    // And on the stored row the streak is derived from, not only on today's.
+    expect((await secondStore.getAll()).map((r) => r.grooveId)).toEqual([
+      'groove-09',
+    ])
     expect(second.result.current.todayResult?.attempts).toEqual([miss])
   })
 

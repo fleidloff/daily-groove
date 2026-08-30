@@ -1,8 +1,9 @@
-import { existsSync, mkdtempSync, readFileSync, statSync, writeFileSync } from 'node:fs'
+import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { readCatalogue } from './catalogue.ts'
+import { readLock, sha256File } from './lock.ts'
 import { decodeAudioFile } from './decode.ts'
 import { buildEvents } from './events.ts'
 import { mixTracks, PEAK_CEILING, SEAM_THRESHOLD, truePeak } from './mix.ts'
@@ -15,6 +16,8 @@ import { placeholderPack } from './testing/placeholderPack.ts'
 import type { GrooveSpec } from './types.ts'
 
 const REAL_LOCK = join(process.cwd(), 'scripts', 'grooves', 'grooves.lock.json')
+/** A committed mp3, used where a test needs a file with a real head delay. */
+const REAL_MP3 = join(process.cwd(), 'public', 'grooves', 'groove-01.mp3')
 
 const SPECS: GrooveSpec[] = [
   { id: 'groove-01', template: 'straight-funk', seed: 1 },
@@ -61,7 +64,7 @@ describe('generate', () => {
     for (const e of entries) expect(manifest).toContain(e.name)
   })
 
-  it('describes each groove with all ten fields', async () => {
+  it('describes each groove with all eleven fields', async () => {
     const opts = tempRun()
     writeFileSync(opts.cataloguePath, JSON.stringify(SPECS))
     const { entries } = await generate(opts)
@@ -74,6 +77,47 @@ describe('generate', () => {
       expect(e.scale.toLowerCase()).toContain(e.flavour.toLowerCase())
       expect(e.chord.length).toBeGreaterThan(0)
       expect(e.progression.length).toBeGreaterThan(0)
+      // Step E4: measured from the mp3 this run just encoded, not assumed.
+      expect(e.headDelaySeconds).toBeGreaterThan(0)
+      expect(e.headDelaySeconds).toBeCloseTo(0.025057, 6)
+    }
+  })
+
+  // Step E5: the manifest can be re-rendered without re-encoding a single
+  // groove. Encoders differ between ffmpeg builds, so re-encoding to pick up a
+  // metadata change would rewrite audio for reasons unrelated to the music.
+  it('re-renders the manifest and the lock from existing audio, writing no mp3', async () => {
+    const opts = tempRun()
+    writeFileSync(opts.cataloguePath, JSON.stringify(SPECS))
+    mkdirSync(opts.outDir, { recursive: true })
+    for (const spec of SPECS) copyFileSync(REAL_MP3, join(opts.outDir, `${spec.id}.mp3`))
+    const before = Object.fromEntries(
+      SPECS.map((s) => [s.id, readFileSync(join(opts.outDir, `${s.id}.mp3`))]),
+    )
+
+    const { entries } = await generate({ ...opts, encode: false })
+
+    // Not one byte of audio was written.
+    for (const spec of SPECS) {
+      expect(
+        readFileSync(join(opts.outDir, `${spec.id}.mp3`)).equals(before[spec.id]),
+        `${spec.id}.mp3 was re-encoded`,
+      ).toBe(true)
+    }
+    expect(readdirSync(opts.outDir).filter((f) => f.endsWith('.mp3'))).toHaveLength(SPECS.length)
+
+    // The manifest was rendered, carrying the delay measured from those files.
+    const manifest = readFileSync(opts.manifestPath, 'utf8')
+    expect(manifest).toContain('export const GROOVES')
+    for (const e of entries) expect(e.headDelaySeconds).toBeCloseTo(0.025057, 6)
+    expect(manifest).toMatch(/^ {4}headDelaySeconds: 0\.025057,$/m)
+
+    // And the lock was written from the files already on disk.
+    const lock = readLock(opts.lockPath)
+    expect(lock).not.toBeNull()
+    expect(lock!.grooves.map((g) => g.id)).toEqual(SPECS.map((s) => s.id))
+    for (const entry of lock!.grooves) {
+      expect(entry.sha256).toBe(sha256File(join(opts.outDir, `${entry.id}.mp3`)))
     }
   })
 
@@ -136,6 +180,24 @@ describe('the committed render', () => {
   })
 })
 
+// Step E4: the entry carries the number it was measured with, untouched.
+describe('toGroove', () => {
+  it('carries the head delay it was measured with onto the entry', () => {
+    const music = {
+      bpm: 96,
+      bars: 4,
+      root: 'A',
+      flavour: 'harmonic-minor',
+      scale: 'A harmonic minor',
+      chord: 'AmMaj7',
+      progression: 'Am–Dm–E7',
+    } as const
+    expect(toGroove(SPECS[0], music, 0.025057).headDelaySeconds).toBe(0.025057)
+    // A different file, a different number: nothing here is shared.
+    expect(toGroove(SPECS[1], music, 0.031111).headDelaySeconds).toBe(0.031111)
+  })
+})
+
 describe('displayFlavour', () => {
   it('title-cases the generator flavour into the app spelling', () => {
     expect(displayFlavour('dorian')).toBe('Dorian')
@@ -152,7 +214,7 @@ describe('displayFlavour', () => {
       scale: 'A harmonic minor',
       chord: 'AmMaj7',
       progression: 'Am–Dm–E7',
-    })
+    }, 0.025057)
     // The app's parseScale() splits on the first space and title-cases the rest.
     const rest = groove.scale.slice(groove.scale.indexOf(' ') + 1)
     expect(groove.flavour).toBe(rest.charAt(0).toUpperCase() + rest.slice(1))

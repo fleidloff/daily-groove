@@ -1,43 +1,106 @@
-export type AudioPlayer = {
-  /** Starts the loop from wherever the element stands — the top, after a stop. */
-  play(): Promise<void>
-  /** Halts playback and returns the loop to its start. Replaces `pause`. */
-  stop(): void
-  /** Position through the loop, 0..1. Zero when nothing has played yet. */
-  getPosition(): number
+import { deriveLoopWindow } from './loop'
+
+/** The one groove this player sounds: what to fetch, and where its music is. */
+export type PlayableSource = {
+  src: string
+  /** Musical loop length in seconds, from `loopSecondsOf(groove)`. */
+  loopSeconds: number
   /**
-   * Elapsed seconds into the file. The transport needs raw time to map onto the
-   * musical loop, because the file is longer than the music it carries.
+   * Seconds of encoder delay at the head of this file, off the groove's own
+   * manifest entry. Per file, never shared across the catalogue.
    */
-  getCurrentTime(): number
+  headDelaySeconds: number
+}
+
+export type AudioPlayer = {
+  /** Fetch and decode. Idempotent and safe to call concurrently. */
+  load(): Promise<void>
+  /** Starts a looping source from the top. Loads first if needed. */
+  play(): Promise<void>
+  stop(): void
+  /** True between the first press and the first sound. */
+  isLoading(): boolean
   isPlaying(): boolean
-  /** Subscribes to position/state changes. Returns an unsubscribe. */
+  /** Latency-corrected seconds since the source started. 0 when stopped. */
+  getElapsed(): number
   subscribe(fn: () => void): () => void
   dispose(): void
 }
 
-/**
- * Wraps an HTML5 `Audio` element. Nothing outside this module touches the
- * element directly.
- *
- * Position is polled with `requestAnimationFrame` while playing rather than
- * read from the element's `timeupdate` event, which fires roughly four times a
- * second — too coarse to move a bar highlight cleanly. The subscribe/snapshot
- * pair lets React read the player through `useSyncExternalStore`.
- *
- * `opts.loop` repeats the source until it is stopped. It is the element's own
- * `loop` property, deliberately: re-triggering playback on `ended` would leave
- * an audible gap at the loop point.
- */
-export function createAudioPlayer(
-  src: string,
-  opts?: { loop?: boolean },
-): AudioPlayer {
-  const element = new Audio(src)
-  element.loop = opts?.loop ?? false
+type AudioContextConstructor = new () => AudioContext
 
+/**
+ * What the browser reports about the gap between the graph and the ear. Both
+ * are optional at runtime whatever `lib.dom` says: Safari exposes only
+ * `baseLatency`, and an older engine neither.
+ */
+type LatencyReporting = {
+  outputLatency?: number
+  baseLatency?: number
+}
+
+/**
+ * Seconds between a sample leaving the graph and reaching the listener: 10–40ms
+ * wired, 150–300ms over Bluetooth. Whatever the context reports, uncorrected
+ * where it reports nothing — the page never calibrates it (R3, AC4a).
+ */
+function latencyOf(context: AudioContext): number {
+  const reported = context as LatencyReporting
+  const latency = reported.outputLatency ?? reported.baseLatency ?? 0
+  return Number.isFinite(latency) && latency > 0 ? latency : 0
+}
+
+/**
+ * The constructor, looked up at press time rather than at module load.
+ *
+ * A browser without Web Audio gets a plain `Error` from inside an async
+ * function, so the press *rejects* and lands in the error state the retry
+ * affordance already handles. There is no second playback path (R7, AC8a).
+ */
+function audioContextConstructor(): AudioContextConstructor {
+  const ctor = (globalThis as { AudioContext?: AudioContextConstructor })
+    .AudioContext
+  if (typeof ctor !== 'function') {
+    throw new Error('Audio playback is unavailable in this browser')
+  }
+  return ctor
+}
+
+/**
+ * Plays one groove through Web Audio: fetch the mp3, decode it once, and run it
+ * through an `AudioBufferSourceNode` whose loop points bracket the *music*.
+ *
+ * Three things follow from not being an `HTMLAudioElement`:
+ *
+ * - The loop wraps at `loopEnd`, which is the end of the groove, not the end of
+ *   the file. The mp3s carry encoder delay at the head and padding at the tail,
+ *   so `element.loop` inserted ~25ms of silence into every repeat and the groove
+ *   slid later the longer it ran (R1).
+ * - Elapsed time comes from the graph's own clock minus the output latency, so
+ *   it describes audio that has reached the listener rather than audio that has
+ *   been handed to the device (R2, R3).
+ * - Nothing is audible until the whole file has been decoded, which is why
+ *   `isLoading()` exists: Web Audio has no progressive playback, so the press
+ *   and the first sound are separated by a gap the control has to show (R7a).
+ *
+ * Position is *derived* on every read rather than counted, so a frozen
+ * animation loop — a backgrounded tab — costs nothing: the next frame reads the
+ * truth and the highlight snaps to it.
+ *
+ * No `AudioContext` is constructed until the first `load()`, so none exists
+ * during render or a server prerender (R6, AC7).
+ */
+export function createAudioPlayer(source: PlayableSource): AudioPlayer {
   const listeners = new Set<() => void>()
-  let playing = false
+
+  let context: AudioContext | null = null
+  let buffer: AudioBuffer | null = null
+  /** The single in-flight decode, shared by every concurrent caller (R10). */
+  let pending: Promise<AudioBuffer> | null = null
+  /** The sounding node. A buffer source is single-use, so this is per press. */
+  let node: AudioBufferSourceNode | null = null
+  let startedAt: number | null = null
+  let loading = false
   let frame: number | null = null
 
   function notify() {
@@ -45,12 +108,16 @@ export function createAudioPlayer(
     for (const listener of Array.from(listeners)) listener()
   }
 
+  // React reads position through `useSyncExternalStore`, so something has to
+  // say "look again" every frame while the clock is moving. The player owns
+  // that loop because it owns the clock.
   function tick() {
     frame = requestAnimationFrame(tick)
     notify()
   }
 
   function startPolling() {
+    if (typeof requestAnimationFrame !== 'function') return
     if (frame === null) frame = requestAnimationFrame(tick)
   }
 
@@ -61,51 +128,114 @@ export function createAudioPlayer(
     }
   }
 
+  async function decode(): Promise<AudioBuffer> {
+    const ctor = audioContextConstructor()
+    const ctx = context ?? new ctor()
+    context = ctx
+
+    const response = await fetch(source.src)
+    if (!response.ok) {
+      throw new Error(`Could not fetch ${source.src}: ${response.status}`)
+    }
+    return await ctx.decodeAudioData(await response.arrayBuffer())
+  }
+
+  /** Resolves once the buffer is in hand. Every failure clears the busy state. */
+  async function ensureBuffer(): Promise<AudioBuffer> {
+    if (buffer) return buffer
+
+    if (!pending) {
+      loading = true
+      notify()
+      pending = decode()
+    }
+
+    try {
+      buffer = await pending
+      return buffer
+    } catch (error) {
+      // A failed press is retryable: drop the in-flight promise so the next one
+      // starts a fresh fetch rather than re-awaiting the rejection.
+      pending = null
+      throw error
+    } finally {
+      if (loading) {
+        loading = false
+        notify()
+      }
+    }
+  }
+
+  function releaseNode() {
+    if (!node) return
+    try {
+      node.stop()
+    } catch {
+      // A node that never started, or already ended, throws. Nothing to undo.
+    }
+    node.disconnect()
+    node = null
+  }
+
   return {
+    async load() {
+      await ensureBuffer()
+    },
+
     async play() {
-      // No reset here: `stop()` owns the rewind, so a press always starts the
-      // loop from the top without play() having to say so.
-      const started = Promise.resolve(element.play())
-      playing = true
+      const decoded = await ensureBuffer()
+      const ctx = context
+      if (!ctx) throw new Error('Audio playback is unavailable in this browser')
+
+      // Two presses that raced through the same decode must not produce two
+      // voices: the first one to arrive owns the node (R10, AC10).
+      if (node) return
+
+      if (ctx.state === 'suspended') await ctx.resume()
+
+      const { loopStart, loopEnd } = deriveLoopWindow(
+        source.headDelaySeconds,
+        source.loopSeconds,
+        decoded.duration,
+      )
+
+      const next = ctx.createBufferSource()
+      next.buffer = decoded
+      next.loop = true
+      next.loopStart = loopStart
+      next.loopEnd = loopEnd
+      next.connect(ctx.destination)
+      // Offset by `loopStart`: the first pass through must skip the encoder
+      // delay too, not only the repeats.
+      next.start(0, loopStart)
+
+      node = next
+      startedAt = ctx.currentTime
       startPolling()
       notify()
-
-      try {
-        await started
-      } catch (error) {
-        // Load/play failures propagate so the UI can surface a retry.
-        playing = false
-        stopPolling()
-        notify()
-        throw error
-      }
     },
 
     stop() {
-      // Halts and rewinds: there is no held position for the next press to
-      // resume from, and `getPosition()` reads 0 straight away.
-      element.currentTime = 0
-      element.pause()
-      playing = false
+      // Halts and rewinds. There is no held position for the next press to
+      // resume from, so `getElapsed()` reads 0 straight away (R8, AC9).
+      releaseNode()
+      startedAt = null
       stopPolling()
       notify()
     },
 
-    getPosition() {
-      const { duration, currentTime } = element
-      if (!Number.isFinite(duration) || duration <= 0) return 0
-      const position = currentTime / duration
-      if (!Number.isFinite(position)) return 0
-      return Math.min(Math.max(position, 0), 1)
-    },
-
-    getCurrentTime() {
-      const { currentTime } = element
-      return Number.isFinite(currentTime) && currentTime > 0 ? currentTime : 0
+    isLoading() {
+      return loading
     },
 
     isPlaying() {
-      return playing
+      return node !== null
+    },
+
+    getElapsed() {
+      if (!context || startedAt === null) return 0
+      const elapsed = context.currentTime - startedAt - latencyOf(context)
+      return Number.isFinite(elapsed) && elapsed > 0 ? elapsed : 0
     },
 
     subscribe(fn: () => void) {
@@ -117,11 +247,14 @@ export function createAudioPlayer(
 
     dispose() {
       stopPolling()
-      playing = false
+      releaseNode()
+      startedAt = null
+      loading = false
       listeners.clear()
-      element.pause()
-      // Release the media resource.
-      element.src = ''
+      buffer = null
+      pending = null
+      void context?.close()
+      context = null
     },
   }
 }

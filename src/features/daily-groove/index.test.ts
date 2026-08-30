@@ -100,6 +100,7 @@ describe('daily-groove public surface', () => {
       root,
       flavour,
       bars: 4,
+      headDelaySeconds: 0.025057,
     }
 
     expect(answer).toEqual({ root: 'G', flavour: 'Dorian' })

@@ -1,4 +1,5 @@
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs'
+import { execFileSync } from 'node:child_process'
+import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, statSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
@@ -44,6 +45,32 @@ function audioFingerprint(dir: string): string {
     .join(',')
 }
 
+/**
+ * A real mp3 standing in for audio an earlier run minted. It is encoded
+ * without the Xing header on purpose, so ffprobe reports a head delay of 0 for
+ * it — a different number from the 0.025057 libmp3lame writes into a groove
+ * this run encodes. A mint that shared one delay across the catalogue would
+ * agree with itself while disagreeing with the files it describes.
+ */
+const STAND_IN = join(mkdtempSync(join(tmpdir(), 'grooves-standin-')), 'stand-in.mp3')
+execFileSync('ffmpeg', [
+  '-hide_banner', '-loglevel', 'error', '-y',
+  '-f', 'lavfi', '-i', 'sine=frequency=440:duration=0.4',
+  '-ac', '2', '-c:a', 'libmp3lame', '-write_xing', '0',
+  STAND_IN,
+])
+
+/** Every entry's measured head delay, read back out of a rendered manifest. */
+function headDelays(manifest: string): Record<string, number> {
+  const out: Record<string, number> = {}
+  for (const m of manifest.matchAll(
+    /id: '([^']+)',[\s\S]*?headDelaySeconds: ([\d.e+-]+),/g,
+  )) {
+    out[m[1]] = Number(m[2])
+  }
+  return out
+}
+
 const FIVE: GrooveSpec[] = [
   { id: 'groove-01', template: 'straight-funk', seed: 1 },
   { id: 'groove-02', template: 'straight-funk', seed: 2 },
@@ -66,9 +93,10 @@ function fixture(specs: readonly GrooveSpec[] = TWO) {
   mkdirSync(outDir, { recursive: true })
   const cataloguePath = join(dir, 'catalogue.json')
   writeCatalogue(specs, cataloguePath)
-  // Stand-ins for the already-minted audio. Their bytes must survive a mint.
+  // Stand-ins for the already-minted audio. Their bytes must survive a mint,
+  // and they are real mp3s because the mint measures every file it describes.
   for (const spec of specs) {
-    writeFileSync(join(outDir, `${spec.id}.mp3`), `already minted ${spec.id}`)
+    copyFileSync(STAND_IN, join(outDir, `${spec.id}.mp3`))
   }
   return {
     dir,
@@ -127,6 +155,23 @@ describe('addGrooves', () => {
 
     const manifest = readFileSync(f.manifestPath, 'utf8')
     for (const spec of [...TWO, ...minted]) expect(manifest).toContain(spec.id)
+  })
+
+  // Step E4: the manifest a mint writes describes the audio on disk, one
+  // measurement per file, so a groove minted under a different encoder
+  // configuration carries a different, correct number.
+  it("measures every mp3 it describes, giving each entry its own file's head delay", async () => {
+    const f = fixture()
+    const minted = await addGrooves(2, { startSeed: 1300, gate: PASS, ...f })
+
+    const delays = headDelays(readFileSync(f.manifestPath, 'utf8'))
+    expect(Object.keys(delays).sort()).toEqual(
+      [...TWO, ...minted].map((s) => s.id).sort(),
+    )
+    // Freshly encoded: libmp3lame's 1105-sample priming, at 44.1kHz.
+    for (const spec of minted) expect(delays[spec.id]).toBeCloseTo(0.025057, 6)
+    // Already on disk, written by a different encoder configuration.
+    for (const spec of TWO) expect(delays[spec.id]).toBe(0)
   })
 
   it('never reuses an id or a seed across successive runs', async () => {

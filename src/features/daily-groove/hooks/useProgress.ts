@@ -12,16 +12,6 @@ import { computeStreak } from '../lib/persistence/streak'
 const defaultStore: ResultStore = createLocalStore()
 
 /**
- * Sort results most-recent first by ISO date. ISO `YYYY-MM-DD` strings sort
- * lexicographically, so a plain string compare is a date compare.
- */
-function sortMostRecentFirst(results: DailyResult[]): DailyResult[] {
-  return [...results].sort((a, b) =>
-    a.date < b.date ? 1 : a.date > b.date ? -1 : 0,
-  )
-}
-
-/**
  * The day as the puzzle currently knows it. The attempt list comes from the
  * game store, which is the one place that accumulates it — passing the whole
  * list rather than the newest attempt keeps this hook from holding a second,
@@ -44,7 +34,6 @@ export type DayProgress = {
 export type UseProgress = {
   todayResult: DailyResult | null
   streak: number
-  history: DailyResult[]
   /**
    * Write the day's record. Called after every check, not only on a solve, so
    * a reload mid-game comes back to the attempts already spent (R2).
@@ -55,10 +44,12 @@ export type UseProgress = {
 
 /**
  * Loads the player's saved progress through a `ResultStore` and derives the
- * streak and history from it. On mount it reads all results plus today's result;
+ * streak from it. On mount it reads all results plus today's result;
  * `recordAttempt` writes through the store then updates local state so no full
- * reload is needed. Streak and history are derived (never persisted separately),
- * so they always reflect the current result set.
+ * reload is needed. The full record list stays in state because `computeStreak`
+ * needs every record and `recordAttempt` updates it optimistically — but it is
+ * not handed out: the streak is derived (never persisted separately), so it
+ * always reflects the current result set.
  */
 export function useProgress(
   today: string,
@@ -114,7 +105,6 @@ export function useProgress(
   )
 
   const streak = useMemo(() => computeStreak(all, today), [all, today])
-  const history = useMemo(() => sortMostRecentFirst(all), [all])
 
-  return { todayResult, streak, history, recordAttempt, loaded }
+  return { todayResult, streak, recordAttempt, loaded }
 }

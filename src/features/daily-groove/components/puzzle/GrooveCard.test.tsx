@@ -17,6 +17,7 @@ const GROOVE: Groove = {
   scale: 'G dorian',
   chord: 'Gm9',
   progression: 'Gm9–C13',
+  headDelaySeconds: 0.025057,
 }
 
 describe('GrooveCard', () => {

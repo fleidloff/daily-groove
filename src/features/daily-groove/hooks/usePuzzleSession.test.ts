@@ -30,6 +30,7 @@ const GROOVE: Groove = {
   scale: 'C minor',
   chord: 'Cm7',
   progression: 'Cm–Fm–G7',
+  headDelaySeconds: 0.025057,
 }
 
 /** The day the session is played on, fixed so the record's date is knowable. */
@@ -313,7 +314,7 @@ describe('usePuzzleSession', () => {
     expect(result.current.attempts).toEqual([miss('C', wrong, true)])
   })
 
-  it('exposes the streak and the history the day is played against (AC1)', async () => {
+  it('exposes the streak the day is played against, and no record list (AC1, E6 R3a)', async () => {
     const yesterday: DailyResult = {
       date: YESTERDAY(),
       answer: { root: 'G', flavour: 'Dorian' },
@@ -325,16 +326,16 @@ describe('usePuzzleSession', () => {
 
     const { result } = await renderSession()
 
-    expect(result.current.history).toEqual([yesterday])
+    // Yesterday was left unsolved, so it starts no run.
     expect(result.current.streak).toBe(0)
 
-    // Solving today lands in the history immediately — no reload.
+    // Solving today moves the streak immediately — no reload. That the derive
+    // still sees every stored record is what the number proves.
     await guess(result, 'C', 'Minor')
-    expect(result.current.history.map((r) => r.date)).toEqual([
-      TODAY(),
-      YESTERDAY(),
-    ])
     expect(result.current.streak).toBe(1)
+
+    // The list of past records is not handed out any more (E6 R3a, AC5a).
+    expect(Object.keys(result.current)).not.toContain('history')
   })
 
   it("derives the day's answer from the groove's own fields (AC1)", async () => {

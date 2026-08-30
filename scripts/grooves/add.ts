@@ -17,6 +17,7 @@ import { buildLock, writeLock } from './lock.ts'
 import { writeManifest } from './manifest.ts'
 import { mixTracks } from './mix.ts'
 import { loadPack } from './pack.ts'
+import { probeHeadDelaySeconds } from './probe.ts'
 import { buildPools } from './pools.ts'
 import { selectSeeds } from './select.ts'
 import { allTemplates } from './templates/index.ts'
@@ -212,9 +213,16 @@ async function writeBatch(
   const catalogue = [...existing, ...minted.map((m) => m.spec)]
   writeCatalogue(catalogue, paths.cataloguePath)
 
-  const entries = catalogue.map((spec) => {
+  // Every entry's head delay is measured from its own file — the ones this run
+  // encoded and the ones an earlier run did — so no number is ever shared
+  // across the catalogue.
+  const delays = await Promise.all(
+    catalogue.map((spec) => probeHeadDelaySeconds(join(paths.outDir, `${spec.id}.mp3`))),
+  )
+
+  const entries = catalogue.map((spec, i) => {
     const template = templateFor(templates, spec.template)
-    return toGroove(spec, buildEvents(spec, template).music)
+    return toGroove(spec, buildEvents(spec, template).music, delays[i])
   })
   writeManifest(entries, paths.manifestPath, buildPools(entries))
 
