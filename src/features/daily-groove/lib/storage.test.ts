@@ -90,6 +90,72 @@ describe('createLocalStore', () => {
     })
   })
 
+  // --- Epic 5: the groove a day played --------------------------------------
+
+  describe('the groove id a day played (E5 R7, R8)', () => {
+    const withId: DailyResult = { ...resultA, grooveId: 'groove-07' }
+
+    it('round-trips a stored groove id through get and getAll (E5 R7, AC7, AC9)', async () => {
+      const store = createLocalStore()
+      await store.save(withId)
+
+      expect(await store.get(withId.date)).toEqual(withId)
+      expect((await store.get(withId.date))?.grooveId).toBe('groove-07')
+      expect(await store.getAll()).toContainEqual(withId)
+      expect((await store.getAll())[0].grooveId).toBe('groove-07')
+    })
+
+    it('keeps the v2 key and version — the field is additive, not a migration (E5 R8)', async () => {
+      const store = createLocalStore()
+      await store.save(withId)
+
+      const raw = localStorage.getItem(STORAGE_KEY)
+      expect(JSON.parse(raw as string)).toEqual({
+        version: 2,
+        byDate: { [withId.date]: withId },
+      })
+    })
+
+    it('loads a record written without a groove id, every other field intact (E5 R8, AC8, AC9)', async () => {
+      // A v2 envelope written by hand, exactly as a pre-Epic-5 session left it.
+      const legacy = {
+        date: '2026-08-19',
+        answer: { root: 'B\u266d', flavour: 'Lydian' },
+        attempts: [attempt('B\u266d', 'Lydian', true)],
+        solved: true,
+      }
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({ version: 2, byDate: { [legacy.date]: legacy } }),
+      )
+
+      const store = createLocalStore()
+      const [loaded] = await store.getAll()
+
+      expect(loaded).toEqual(legacy)
+      expect(loaded.grooveId).toBeUndefined()
+      expect('grooveId' in loaded).toBe(false)
+      expect(loaded.answer).toEqual(legacy.answer)
+      expect(loaded.attempts).toEqual(legacy.attempts)
+      expect(loaded.solved).toBe(true)
+      expect(await store.get(legacy.date)).toEqual(legacy)
+    })
+
+    it('round-trips both record shapes side by side (E5 R8, AC9)', async () => {
+      const store = createLocalStore()
+      await store.save(withId)
+      await store.save(resultB)
+
+      const all = await store.getAll()
+      expect(all).toHaveLength(2)
+      expect(all).toContainEqual(withId)
+      expect(all).toContainEqual(resultB)
+      expect(await store.get(withId.date)).toEqual(withId)
+      expect(await store.get(resultB.date)).toEqual(resultB)
+      expect((await store.get(resultB.date))?.grooveId).toBeUndefined()
+    })
+  })
+
   it('returns empty state when storage holds corrupt JSON', async () => {
     localStorage.setItem(STORAGE_KEY, 'not-json{')
     const store = createLocalStore()

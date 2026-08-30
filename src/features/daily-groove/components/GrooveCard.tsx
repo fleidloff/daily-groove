@@ -1,8 +1,6 @@
 import type { ReactNode } from 'react'
 import { Card } from '@/components/Card'
-import { EyebrowLabel } from '@/components/EyebrowLabel'
 import { Heading } from '@/components/Heading'
-import { Row } from '@/components/Row'
 import { Stack } from '@/components/Stack'
 import type { Groove } from '../types'
 
@@ -15,27 +13,18 @@ type GrooveCardProps = {
 /**
  * Today's groove, in the raised cream card.
  *
- * The header region carries exactly two things: the groove's name and its
- * tempo. The canvas' meta line ("No. 214 · 4 bars · loops forever") is dropped
- * rather than filled, since none of it is backed by real data.
+ * The header region carries the groove's name alone. The tempo is display-only
+ * data that drives nothing on screen, so it is not rendered; the canvas' meta
+ * line ("No. 214 · 4 bars · loops forever") is dropped rather than filled,
+ * since none of it is backed by real data.
  */
 export function GrooveCard({ groove, children }: GrooveCardProps) {
   return (
     <Card>
       <Stack gap="lg">
-        <Row gap="md" align="start" justify="between">
-          <Heading level={2} size="lg">
-            {groove.name}
-          </Heading>
-          <div className="text-right">
-            <Stack gap="xs">
-              <span className="font-display text-[24px] leading-none text-text">
-                {groove.bpm}
-              </span>
-              <EyebrowLabel>BPM</EyebrowLabel>
-            </Stack>
-          </div>
-        </Row>
+        <Heading level={2} size="lg">
+          {groove.name}
+        </Heading>
         {children}
       </Stack>
     </Card>

@@ -18,13 +18,13 @@ export function MiniCard({ children }: MiniCardProps) {
 }
 
 /**
- * The grid the mini cards sit in. Narrow is the base and the six-column row is
- * the override, so a small viewport gets the reflowed layout by default rather
- * than having to undo a wide one.
+ * The grid the mini cards sit in. Narrow is the base and the seven-column row
+ * is the override, so a small viewport gets the reflowed layout by default
+ * rather than having to undo a wide one.
  */
 export function MiniCardGrid({ children }: MiniCardGridProps) {
   return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-7">
       {children}
     </div>
   )

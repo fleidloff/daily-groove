@@ -7,9 +7,21 @@ describe('TransportPanel', () => {
     render(<TransportPanel position={0.3} isPlaying />)
 
     expect(screen.getAllByTestId('progress-divider')).toHaveLength(3)
-    for (const label of ['BAR 1', 'BAR 2', 'BAR 3', 'BAR 4']) {
-      expect(screen.getByText(label)).toBeInTheDocument()
-    }
+  })
+
+  it('renders no bar labels beneath the track (R6, AC6)', () => {
+    render(<TransportPanel position={0.3} isPlaying />)
+
+    expect(screen.queryByText(/^BAR /)).toBeNull()
+    expect(screen.getByRole('progressbar')).toBeInTheDocument()
+  })
+
+  it('keeps the track inside its inset card (R6, AC6)', () => {
+    const { container } = render(<TransportPanel position={0.3} isPlaying />)
+
+    const card = container.firstElementChild
+    expect(card).toHaveClass('bg-surface-inset')
+    expect(card).toContainElement(screen.getByRole('progressbar'))
   })
 
   it('reflects the real playback position on the bar (R11)', () => {
@@ -28,21 +40,30 @@ describe('TransportPanel', () => {
 
   it('highlights the sounding bar and moves with the position (AC8)', () => {
     const { rerender } = render(<TransportPanel position={0.1} isPlaying />)
-    expect(screen.getByText('BAR 1')).toHaveAttribute('aria-current', 'true')
-    expect(screen.getByText('BAR 2')).not.toHaveAttribute('aria-current')
+    expect(screen.getByTestId('progress-active')).toHaveAttribute(
+      'data-segment',
+      '0',
+    )
 
     rerender(<TransportPanel position={0.3} isPlaying />)
-    expect(screen.getByText('BAR 2')).toHaveAttribute('aria-current', 'true')
-    expect(screen.getByText('BAR 1')).not.toHaveAttribute('aria-current')
+    expect(screen.getByTestId('progress-active')).toHaveAttribute(
+      'data-segment',
+      '1',
+    )
   })
 
   it('returns the highlight to the first bar when the loop wraps (AC8)', () => {
     const { rerender } = render(<TransportPanel position={0.99} isPlaying />)
-    expect(screen.getByText('BAR 4')).toHaveAttribute('aria-current', 'true')
+    expect(screen.getByTestId('progress-active')).toHaveAttribute(
+      'data-segment',
+      '3',
+    )
 
     rerender(<TransportPanel position={0.01} isPlaying />)
-    expect(screen.getByText('BAR 1')).toHaveAttribute('aria-current', 'true')
-    expect(screen.getByText('BAR 4')).not.toHaveAttribute('aria-current')
+    expect(screen.getByTestId('progress-active')).toHaveAttribute(
+      'data-segment',
+      '0',
+    )
   })
 
   it('highlights no bar while paused or stopped (R11)', () => {

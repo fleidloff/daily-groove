@@ -11,7 +11,9 @@ type StreakBadgeProps = {
  */
 export function StreakBadge({ streak }: StreakBadgeProps) {
   const label =
-    streak === 0 ? 'No streak yet' : `${streak} day${streak === 1 ? '' : 's'}`
+    streak === 0
+      ? 'No streak yet'
+      : `${streak} day${streak === 1 ? '' : 's'} streak`
 
   return (
     // The pill's own text is deliberately short, so the accessible name carries

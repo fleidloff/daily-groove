@@ -1,9 +1,7 @@
-* make it more clear
-* probably remove the "Bar 1 Bar 2 Bar 3 Bar 4"
-* come up with a way (especially for new users) to know exactly what to do when opening the app
-* add light / dark mode toggle (that is also persisted)
-* remove the bpm number
-* make the play button larger and more prominent
-* better display when you got something wrong (and also right)
-* the title of the page is repetitve and boring. what could we do here?
-* 
+* code refactoring
+* put the components into better sub folders so the overview is more clear
+* put the features into better sub folders so the overview is more clear
+* look for architectural anti-patterns and come up with a solution
+* store all code refactorings in a new coding-guidelines.md file in the docs folder
+* fill the coding guidelines with rules that are derived from the project
+* add eslint rules (use a well accepted standard, maybe airbnb)

@@ -9,7 +9,6 @@ import { Button } from '@/components/Button'
 import { Card } from '@/components/Card'
 import { ChipGroup } from '@/components/ChipGroup'
 import { Heading } from '@/components/Heading'
-import { Row } from '@/components/Row'
 import { Stack } from '@/components/Stack'
 
 type GuessCardProps = {
@@ -77,12 +76,9 @@ export function GuessCard({
   return (
     <Card>
       <Stack gap="lg">
-        <Row gap="md" align="center" justify="between">
-          <Heading level={3} size="md">
-            What is it?
-          </Heading>
-          <AttemptDots states={dots} />
-        </Row>
+        <Heading level={3} size="md">
+          What is it?
+        </Heading>
 
         <ChipGroup
           label="Root"
@@ -102,6 +98,15 @@ export function GuessCard({
           onSelect={(option) => onSelectFlavour(option)}
           disabled={solved}
         />
+
+        {/*
+          The dots read as progress on the control, not as decoration on the
+          heading: a right-aligned row of dots alone, directly above the button
+          they describe (R7, R7a).
+        */}
+        <div className="flex justify-end">
+          <AttemptDots states={dots} />
+        </div>
 
         <Button onPress={onCheck} disabled={!canCheck} tone={tone}>
           {label}

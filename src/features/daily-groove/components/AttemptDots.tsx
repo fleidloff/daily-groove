@@ -29,7 +29,8 @@ function labelFor(states: DotState[]): string {
 }
 
 /**
- * The attempt dots beside the guessing card's heading. It marks par, not lives:
+ * The attempt dots above the guessing card's check button. They mark par, not
+ * lives:
  * the row is however long `dotStates` says, which is always three, so a fourth
  * miss leaves it full rather than extending it.
  */

@@ -163,15 +163,10 @@ describe('GuessCard', () => {
 
   // --- Epic 3 C1: the card shows dots, feedback and the nudge ---------------
 
-  it('renders the attempt dots it is given, in the card header (R1, AC1)', () => {
+  it('renders the attempt dots it is given (R1, AC1)', () => {
     render(<GuessCard {...props()} />)
 
-    // The dot row sits with the heading, per the canvas.
-    const heading = screen.getByRole('heading', { name: 'What is it?' })
-    const header = heading.parentElement as HTMLElement
-    expect(within(header).getByRole('img')).toHaveAccessibleName(
-      '0 of 3 attempts spent',
-    )
+    expect(screen.getByRole('img')).toHaveAccessibleName('0 of 3 attempts spent')
     expect(dotStates()).toEqual(UNSPENT)
   })
 
@@ -404,6 +399,51 @@ describe('GuessCard', () => {
     expect(control).toBeDisabled()
     // A distinct tone from the live "ready" control, not just a relabel.
     expect(control.className).not.toBe(readyClass)
+  })
+
+  // --- Epic 1 C1-C3: the dots sit above the check button, alone -------------
+
+  it('puts the attempt dots directly above the check button, not beside the heading (R7, AC7)', () => {
+    render(<GuessCard {...props()} />)
+
+    const control = screen.getByRole('button', {
+      name: 'Pick a root and a flavour',
+    })
+    const dotsRow = control.previousElementSibling as HTMLElement
+
+    // The row immediately above the control is the dot row itself.
+    expect(dotsRow.querySelectorAll('[data-dot-state]')).toHaveLength(3)
+    expect(within(dotsRow).getByRole('img')).toHaveAccessibleName(
+      '0 of 3 attempts spent',
+    )
+
+    // ...and it sits after the flavour chips, so it has left the heading row.
+    expect(
+      flavourGroup().compareDocumentPosition(dotsRow) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy()
+    expect(
+      screen.getByRole('heading', { level: 3, name: 'What is it?' })
+        .nextElementSibling,
+    ).not.toBe(dotsRow)
+  })
+
+  it('REGRESSION GUARD: the dot row carries no counter text or label (R7a, AC7)', () => {
+    render(<GuessCard {...props({ dots: ['spent', 'spent', 'unspent'] })} />)
+
+    const dotsRow = screen.getByRole('button', {
+      name: 'Pick a root and a flavour',
+    }).previousElementSibling as HTMLElement
+
+    expect(dotsRow.textContent).toBe('')
+  })
+
+  it('REGRESSION GUARD: the moved dots keep their accessible name (R8, AC8)', () => {
+    render(<GuessCard {...props({ dots: ['spent', 'spent', 'unspent'] })} />)
+
+    expect(
+      screen.getByRole('img', { name: '2 of 3 attempts spent' }),
+    ).toBeInTheDocument()
   })
 
   // --- C6: chord and progression stay hidden --------------------------------

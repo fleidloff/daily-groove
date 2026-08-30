@@ -59,4 +59,9 @@ export type DailyResult = {
   attempts: Attempt[]
   /** Whether the day was solved. */
   solved: boolean
+  /**
+   * The id of the groove this day played. Optional: records saved before
+   * feature-4 have none, and resolve their groove by date instead.
+   */
+  grooveId?: string
 }

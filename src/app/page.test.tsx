@@ -15,7 +15,7 @@ import { GROOVES } from "@/features/daily-groove/lib/grooves.generated";
 vi.mock("@/features/daily-groove/lib/audio", () => ({
   createAudioPlayer: () => ({
     play: vi.fn().mockResolvedValue(undefined),
-    pause: vi.fn(),
+    stop: vi.fn(),
     getPosition: vi.fn(() => 0),
     isPlaying: vi.fn(() => false),
     subscribe: vi.fn(() => () => {}),
@@ -47,15 +47,17 @@ describe("Home route", () => {
   it("renders the designed shell with a play control and the guessing card", async () => {
     await renderHome();
 
-    // The brand mark and the page title come from the feature's header.
-    expect(screen.getByText("daily-groove")).toBeInTheDocument();
+    // The wordmark cluster is gone; the date and the title lead the row (E1 AC1).
+    expect(screen.queryByText("daily-groove")).toBeNull();
     expect(
-      screen.getByRole("heading", { level: 1, name: "Today's groove" }),
+      screen.getByRole("heading", { level: 1, name: "Daily Groove" }),
     ).toBeInTheDocument();
-    // Play control present.
-    expect(
-      screen.getByRole("button", { name: "Play the loop" }),
-    ).toBeInTheDocument();
+    // The play control leads the groove card: full width, glyph and words, with
+    // an accessible name that states the action (E2 R1, R4a, AC3a, AC4).
+    const play = screen.getByRole("button", { name: "Play the loop" });
+    expect(play).toBeInTheDocument();
+    expect(play).toHaveTextContent("\u25b6 Play the groove");
+    expect(play).toHaveClass("w-full");
 
     // The player names a root and a flavour: twelve chips and four (AC1).
     const roots = screen.getByRole("radiogroup", { name: "Root" });
@@ -74,8 +76,6 @@ describe("Home route", () => {
     expect(
       screen.getByRole("heading", { name: groove.name }),
     ).toBeInTheDocument();
-    expect(screen.getByText(String(groove.bpm))).toBeInTheDocument();
-    expect(screen.getByText("BPM")).toBeInTheDocument();
     expect(screen.getByRole("progressbar")).toBeInTheDocument();
   });
 
@@ -165,6 +165,111 @@ describe("Home route", () => {
     expect(
       screen.getByText(/no grooves behind you yet/i),
     ).toBeInTheDocument();
+  });
+
+  // --- Epic 5: replaying a played groove from the route ----------------------
+
+  const STORAGE_KEY = "daily-groove:v2:results";
+
+  /** An ISO day N days back, as `lib/selectGroove` formats one. */
+  function daysAgo(n: number): string {
+    const date = new Date(Date.now() - n * 24 * 60 * 60 * 1000);
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${date.getFullYear()}-${month}-${day}`;
+  }
+
+  /** Two past days already in real storage, each remembering its groove. */
+  function seedTwoPastDays() {
+    const record = (date: string, grooveId: string) => ({
+      date,
+      answer: { root: "G", flavour: "Dorian" },
+      attempts: [
+        {
+          root: "D",
+          flavour: "Lydian",
+          correct: false,
+          rootMatched: false,
+          flavourMatched: false,
+        },
+      ],
+      solved: false,
+      grooveId,
+    });
+
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        version: 2,
+        byDate: {
+          [daysAgo(1)]: record(daysAgo(1), "groove-02"),
+          [daysAgo(2)]: record(daysAgo(2), "groove-03"),
+        },
+      }),
+    );
+  }
+
+  const archiveCards = () => {
+    const section = screen
+      .getByText(/grooves you.{0,3}ve played/i)
+      .closest("section") as HTMLElement;
+    const grid = section.querySelector('[class*="grid-cols"]');
+    return grid ? (Array.from(grid.children) as HTMLElement[]) : [];
+  };
+
+  /** Every control on the page currently offering to stop. */
+  const soundingControls = () =>
+    screen
+      .getAllByRole("button")
+      .filter((b) => /^Stop\b/.test(b.getAttribute("aria-label") ?? ""));
+
+  it("puts a play control on every card in the played row (E5 R1, R2, AC1, AC6)", async () => {
+    seedTwoPastDays();
+    await renderHome();
+
+    const cards = archiveCards();
+    expect(cards).toHaveLength(2);
+
+    const names = cards.map((card) =>
+      within(card).getByRole("button").getAttribute("aria-label"),
+    );
+    // One control per card, each naming its own day and each live.
+    expect(names.every((name) => /^Play .+'s groove$/.test(name ?? ""))).toBe(
+      true,
+    );
+    expect(new Set(names).size).toBe(2);
+    for (const card of cards) {
+      expect(within(card).getByRole("button")).toBeEnabled();
+    }
+  });
+
+  it("leaves exactly one groove sounding as the row is played through (E5 R3, R5, AC4, AC5)", async () => {
+    seedTwoPastDays();
+    const user = userEvent.setup();
+    await renderHome();
+
+    const controlIn = (index: number) =>
+      within(archiveCards()[index]).getByRole("button");
+
+    // Nothing sounds until something is pressed.
+    expect(soundingControls()).toEqual([]);
+
+    // Press the first card: it alone shows the sounding affordance.
+    await user.click(controlIn(0));
+    expect(soundingControls()).toHaveLength(1);
+    expect(soundingControls()[0]).toBe(controlIn(0));
+
+    // Press the second: the first hands over rather than joining it (AC4).
+    await user.click(controlIn(1));
+    expect(soundingControls()).toHaveLength(1);
+    expect(soundingControls()[0]).toBe(controlIn(1));
+    expect(controlIn(0).getAttribute("aria-label")).toMatch(/^Play /);
+
+    // Today's full-width control takes it back off the card (AC3).
+    await user.click(screen.getByRole("button", { name: "Play the loop" }));
+    expect(soundingControls().map((b) => b.getAttribute("aria-label"))).toEqual([
+      "Stop the loop",
+    ]);
   });
 
   it("waits for the day's saved record rather than flashing a fresh game", async () => {

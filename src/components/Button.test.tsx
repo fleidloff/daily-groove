@@ -77,4 +77,28 @@ describe('Button', () => {
     )
     expect((container.firstElementChild as HTMLElement).className).toContain('w-full')
   })
+
+  it('takes its accessible name from label while keeping its visible text (A0, R5, AC4)', () => {
+    render(
+      <Button label="Play the loop" onPress={() => {}} disabled={false} tone="ready">
+        ▶ Play the loop
+      </Button>,
+    )
+
+    const button = screen.getByRole('button')
+    expect(button).toHaveAccessibleName('Play the loop')
+    expect(button).toHaveTextContent('▶ Play the loop')
+  })
+
+  it('falls back to its children for the accessible name when label is omitted (A0, R5)', () => {
+    render(
+      <Button onPress={() => {}} disabled={false} tone="ready">
+        ▶ Play the loop
+      </Button>,
+    )
+
+    const button = screen.getByRole('button')
+    expect(button).toHaveAccessibleName('▶ Play the loop')
+    expect(button).not.toHaveAttribute('aria-label')
+  })
 })

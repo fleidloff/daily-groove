@@ -51,15 +51,15 @@ describe('MiniCardGrid', () => {
     expect(Number(base[0].replace('grid-cols-', ''))).toBeLessThanOrEqual(2)
   })
 
-  it('reaches six columns only above the base breakpoint', () => {
+  it('reaches seven columns only above the base breakpoint', () => {
     const { container } = render(<MiniCardGrid>Alpha</MiniCardGrid>)
     const root = container.firstElementChild as HTMLElement
 
-    const six = root.className
+    const wide = root.className
       .split(' ')
-      .filter((token) => token.endsWith('grid-cols-6'))
+      .filter((token) => token.endsWith('grid-cols-7'))
 
-    expect(six).toHaveLength(1)
-    expect(six[0]).toContain(':')
+    expect(wide).toHaveLength(1)
+    expect(wide[0]).toContain(':')
   })
 })

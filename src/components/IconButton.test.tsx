@@ -34,4 +34,34 @@ describe('IconButton', () => {
     render(<IconButton onPress={() => {}} label="Play the loop" glyph="▶" />)
     expect(screen.getByRole('button')).toHaveAttribute('type', 'button')
   })
+
+  describe('disabled', () => {
+    it('sets the disabled attribute when disabled', () => {
+      render(<IconButton onPress={() => {}} label="Play the loop" glyph="▶" disabled />)
+      expect(screen.getByRole('button', { name: 'Play the loop' })).toBeDisabled()
+    })
+
+    it('blocks onPress while disabled', async () => {
+      const user = userEvent.setup()
+      const onPress = vi.fn()
+      render(<IconButton onPress={onPress} label="Play the loop" glyph="▶" disabled />)
+
+      await user.click(screen.getByRole('button', { name: 'Play the loop' }))
+
+      expect(onPress).not.toHaveBeenCalled()
+    })
+
+    it('is enabled when the prop is omitted', () => {
+      render(<IconButton onPress={() => {}} label="Play the loop" glyph="▶" />)
+      expect(screen.getByRole('button')).toBeEnabled()
+    })
+
+    it("carries the design system's disabled styling", () => {
+      render(<IconButton onPress={() => {}} label="Play the loop" glyph="▶" disabled />)
+
+      const className = screen.getByRole('button').className
+      expect(className).toContain('disabled:cursor-default')
+      expect(className).toContain('disabled:opacity-60')
+    })
+  })
 })

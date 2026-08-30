@@ -9,6 +9,8 @@ type ButtonProps = {
   onPress: () => void
   disabled: boolean
   tone: ButtonTone
+  /** Sets aria-label. Without it the accessible name stays the children. */
+  label?: string
 }
 
 const BASE =
@@ -24,12 +26,13 @@ const TONE: Record<ButtonTone, string> = {
  * The full-width call to action. `idle` is the waiting state, `ready` the
  * live one, `solved` the finished one.
  */
-export function Button({ children, onPress, disabled, tone }: ButtonProps) {
+export function Button({ children, onPress, disabled, tone, label }: ButtonProps) {
   return (
     <button
       type="button"
       onClick={onPress}
       disabled={disabled}
+      aria-label={label}
       className={`${BASE} ${TONE[tone]}`}
     >
       {children}

@@ -130,7 +130,7 @@ describe('createAudioPlayer', () => {
   })
 
   // AC12 — stopping a looping groove ends it at once and it stays stopped.
-  it('pause() stops a looping groove immediately and it does not resume (R17, AC12)', async () => {
+  it('stop() halts a looping groove immediately and it does not resume (R17, AC12)', async () => {
     const player = createAudioPlayer('/grooves/x.mp3', { loop: true })
     const el = instances[0]
 
@@ -138,7 +138,7 @@ describe('createAudioPlayer', () => {
     el.duration = 12
     el.currentTime = 6
 
-    player.pause()
+    player.stop()
 
     expect(el.pause).toHaveBeenCalledTimes(1)
     expect(player.isPlaying()).toBe(false)
@@ -151,36 +151,68 @@ describe('createAudioPlayer', () => {
     player.dispose()
   })
 
-  // Step C3 — pause holds position and play resumes.
-  it('pause() holds the position and stops playing', async () => {
+  // Step B1 — stopping halts playback and returns the loop to its start.
+  it('stop() rewinds the loop to the start and stops playing (R6, AC5)', async () => {
     const player = createAudioPlayer('/grooves/x.mp3')
     const el = instances[0]
 
     await player.play()
     expect(player.isPlaying()).toBe(true)
 
-    el.currentTime = 4.2
-    player.pause()
+    el.duration = 12
+    el.currentTime = 6
+    expect(player.getPosition()).toBe(0.5)
+
+    player.stop()
 
     expect(el.pause).toHaveBeenCalledTimes(1)
-    expect(el.currentTime).toBe(4.2)
+    expect(el.currentTime).toBe(0)
+    expect(player.getPosition()).toBe(0)
     expect(player.isPlaying()).toBe(false)
 
     player.dispose()
   })
 
-  it('play() resumes from the held position rather than restarting', async () => {
+  // Step B2 — the next press starts the loop again; it does not resume.
+  it('play() restarts from the beginning after a stop (R6, AC5)', async () => {
     const player = createAudioPlayer('/grooves/x.mp3')
     const el = instances[0]
 
     await player.play()
-    el.currentTime = 4.2
-    player.pause()
+    el.duration = 12
+    el.currentTime = 6
+    player.stop()
+
+    // Where the element stands at the moment playback is asked for again.
+    let positionAtPlay = -1
+    el.play.mockImplementationOnce(async () => {
+      positionAtPlay = el.currentTime
+    })
     await player.play()
 
-    expect(el.currentTime).toBe(4.2)
+    expect(positionAtPlay).toBe(0)
+    expect(el.currentTime).toBe(0)
     expect(el.play).toHaveBeenCalledTimes(2)
     expect(player.isPlaying()).toBe(true)
+
+    player.dispose()
+  })
+
+  // Step B3 — a groove left running still repeats until it is stopped.
+  it('keeps the element looping across a play/stop/play cycle (R6, AC6)', async () => {
+    const player = createAudioPlayer('/grooves/x.mp3', { loop: true })
+    const el = instances[0]
+
+    await player.play()
+    expect(el.loop).toBe(true)
+
+    el.duration = 12
+    el.currentTime = 6
+    player.stop()
+    expect(el.loop).toBe(true)
+
+    await player.play()
+    expect(el.loop).toBe(true)
 
     player.dispose()
   })
@@ -238,7 +270,7 @@ describe('createAudioPlayer', () => {
     unsubscribe()
     const afterUnsubscribe = listener.mock.calls.length
     flushFrames()
-    player.pause()
+    player.stop()
     expect(listener.mock.calls.length).toBe(afterUnsubscribe)
 
     player.dispose()
@@ -257,12 +289,12 @@ describe('createAudioPlayer', () => {
     flushFrames(3)
     expect(frames.size).toBe(1)
 
-    player.pause()
+    player.stop()
     expect(frames.size).toBe(0)
 
-    const afterPause = listener.mock.calls.length
+    const afterStop = listener.mock.calls.length
     flushFrames()
-    expect(listener.mock.calls.length).toBe(afterPause)
+    expect(listener.mock.calls.length).toBe(afterStop)
 
     player.dispose()
   })

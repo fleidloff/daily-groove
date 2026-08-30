@@ -71,6 +71,9 @@ const SOLVING: Attempt = {
  * component to observe: a playing flag, a position, and a listener set. It
  * deliberately mirrors the real player's optimistic ordering — `play()` flips
  * `isPlaying()` before the underlying promise settles and reverts on rejection.
+ *
+ * `stop()` mirrors the real player too: it halts *and* rewinds, so the position
+ * the component reads through `useSyncExternalStore` returns to zero on its own.
  */
 function makePlayer(play: () => Promise<void> = () => Promise.resolve()) {
   const listeners = new Set<() => void>()
@@ -93,8 +96,9 @@ function makePlayer(play: () => Promise<void> = () => Promise.resolve()) {
         throw error
       }
     }),
-    pause: vi.fn(() => {
+    stop: vi.fn(() => {
       playing = false
+      position = 0
       notify()
     }),
     getPosition: vi.fn(() => position),
@@ -449,6 +453,8 @@ describe('GroovePuzzle', () => {
       answer: { root: 'C', flavour: 'Minor' },
       attempts: [miss('C', wrong, true)],
       solved: false,
+      // The day now records the groove it played (E5 R7, AC7).
+      grooveId: GROOVE.id,
     })
 
     await guess(user, 'C', 'Minor')
@@ -459,6 +465,7 @@ describe('GroovePuzzle', () => {
       answer: { root: 'C', flavour: 'Minor' },
       attempts: [miss('C', wrong, true), SOLVING],
       solved: true,
+      grooveId: GROOVE.id,
     })
   })
 
@@ -521,35 +528,130 @@ describe('GroovePuzzle', () => {
     ).toHaveAttribute('aria-pressed', 'true')
   })
 
-  it('shows past days in the archive, and today only as the puzzle (E5 R8-R11, AC7, AC9)', async () => {
+  it("names the groove on each archive card, not just its answer", async () => {
+    // Pinned by id rather than by date, so the expected name is the one the day
+    // actually played and not whatever today's catalogue hashes to.
+    const played = GROOVES[3]
     const yesterday: DailyResult = {
       date: YESTERDAY(),
       answer: { root: 'G', flavour: 'Dorian' },
-      attempts: [miss('C', 'Lydian', false)],
-      solved: false,
-    }
-    const today: DailyResult = {
-      date: TODAY(),
-      answer: { root: 'C', flavour: 'Minor' },
-      attempts: [SOLVING],
+      attempts: [miss('G', 'Dorian', true)],
       solved: true,
+      grooveId: played.id,
     }
-    mockStore.get.mockResolvedValue(today)
-    mockStore.getAll.mockResolvedValue([yesterday, today])
+    mockStore.get.mockResolvedValue(null)
+    mockStore.getAll.mockResolvedValue([yesterday])
 
     await renderPuzzle()
 
     const archive = screen
       .getByText(/grooves you.{0,3}ve played/i)
       .closest('section') as HTMLElement
-    expect(within(archive).getByText('Yesterday')).toBeInTheDocument()
-    // A missed day still shows its answer (AC9).
+
+    expect(within(archive).getByText(played.name)).toBeInTheDocument()
+    // The answer is still there — the name is an addition, not a replacement.
     expect(within(archive).getByText('G Dorian')).toBeInTheDocument()
-    expect(within(archive).getByText('missed')).toBeInTheDocument()
-    // Today is the puzzle above, not an archive card.
-    expect(within(archive).queryByText('C Minor')).not.toBeInTheDocument()
-    // The count is the full past-day tally, not the number of cards shown.
-    expect(within(archive).getByText('All 1')).toBeInTheDocument()
+  })
+
+  it('shows past days, and today once it is finished (E4 R1, R3, R8, AC5, AC7, AC10)', async () => {
+    const yesterday: DailyResult = {
+      date: YESTERDAY(),
+      answer: { root: 'G', flavour: 'Dorian' },
+      attempts: [miss('C', 'Lydian', false)],
+      solved: false,
+    }
+    mockStore.get.mockResolvedValue(null)
+    mockStore.getAll.mockResolvedValue([yesterday])
+
+    const user = userEvent.setup()
+    await renderPuzzle()
+
+    const archiveEl = () =>
+      screen.getByText(/grooves you.{0,3}ve played/i).closest('section') as HTMLElement
+
+    // Before the day is finished the row holds yesterday alone.
+    expect(within(archiveEl()).getByText('Yesterday')).toBeInTheDocument()
+    // A past miss still shows its answer (E4 AC6d, AC11).
+    expect(within(archiveEl()).getByText('G Dorian')).toBeInTheDocument()
+    expect(within(archiveEl()).getByText('missed')).toBeInTheDocument()
+    expect(within(archiveEl()).queryByText('Today')).not.toBeInTheDocument()
+
+    // Solving today puts it in the row immediately — no reload (E4 R1, AC7).
+    await guess(user, 'C', 'Minor')
+
+    const archive = archiveEl()
+    const labels = within(archive)
+      .getAllByText(/^(Today|Yesterday)$/)
+      .map((el) => el.textContent)
+    // Today sorts ahead of every past day (E4 R3, AC5).
+    expect(labels).toEqual(['Today', 'Yesterday'])
+    // Solved on the first try, and its answer is on the card (E4 R6a).
+    expect(within(archive).getByText('C Minor')).toBeInTheDocument()
+    expect(within(archive).getByText('solved')).toBeInTheDocument()
+    // The row carries no "All N" count: it shows one week and nothing more,
+    // so there is no remainder for a count to stand in for (E4 R8).
+    expect(archive.textContent).not.toMatch(/All\s*\d/)
+  })
+
+  it('shows today "In play" without its answer, and keeps the day playable (E4 R5, R6a, R6b, AC6a, AC6c, AC7)', async () => {
+    // The fixture is adversarial on purpose: yesterday's answer shares neither
+    // root nor flavour with today's, so a leak cannot be excused as another
+    // card's legitimate text.
+    const yesterday: DailyResult = {
+      date: YESTERDAY(),
+      answer: { root: 'G', flavour: 'Dorian' },
+      attempts: [miss('D', 'Lydian', false)],
+      solved: false,
+    }
+    expect(yesterday.answer.root).not.toBe(GROOVE.root)
+    expect(yesterday.answer.flavour).not.toBe(GROOVE.flavour)
+
+    mockStore.get.mockResolvedValue(null)
+    mockStore.getAll.mockResolvedValue([yesterday])
+
+    const user = userEvent.setup()
+    await renderPuzzle()
+
+    const wrong = wrongFlavour()
+    const other = otherWrongFlavour()
+
+    await guess(user, 'C', wrong)
+    await guess(user, 'G', wrong)
+    await guess(user, 'G', other)
+
+    const archive = screen
+      .getByText(/grooves you.{0,3}ve played/i)
+      .closest('section') as HTMLElement
+
+    // The day is in the row, marked as still winnable (E4 R6b, AC6c).
+    expect(within(archive).getByText('Today')).toBeInTheDocument()
+    expect(within(archive).getByText('In play')).toBeInTheDocument()
+    // ...showing a placeholder where the answer will go (E4 R6a, AC6a).
+    expect(within(archive).getByText('—')).toBeInTheDocument()
+
+    // Adversarial sweep. The row prints answers — yesterday's is right there —
+    // so the absence below is a masking rule, not an empty section.
+    expect(within(archive).getByText('G Dorian')).toBeInTheDocument()
+    expect(archive.textContent).not.toContain(GROOVE.root)
+    expect(archive.textContent).not.toContain(GROOVE.flavour)
+    expect(archive.textContent).not.toContain(
+      `${GROOVE.root} ${GROOVE.flavour}`,
+    )
+
+    // Three spent attempts do NOT lock the day (E4 R5, AC7): changing a half
+    // hands the control back...
+    expect(dotStates()).toEqual(['spent', 'spent', 'spent'])
+    await user.click(within(rootGroup()).getByRole('button', { name: 'D' }))
+    expect(control()).toBeEnabled()
+
+    // ...and the fourth guess is accepted and recorded.
+    await user.click(control())
+    expect(mockStore.save).toHaveBeenCalledTimes(4)
+    expect(mockStore.save.mock.calls[3][0].attempts).toHaveLength(4)
+    expect(dotStates()).toEqual(['spent', 'spent', 'spent'])
+    // Still in play, still masked, after the fourth miss.
+    expect(within(archive).getByText('In play')).toBeInTheDocument()
+    expect(archive.textContent).not.toContain(GROOVE.flavour)
   })
 
   it('shows the designed empty archive state on a first run (E5 R12, AC11)', async () => {
@@ -625,36 +727,106 @@ describe('GroovePuzzle', () => {
       expect(screen.queryByRole('alert')).not.toBeInTheDocument(),
     )
     expect(
-      screen.getByRole('button', { name: 'Pause the loop' }),
+      screen.getByRole('button', { name: 'Stop the loop' }),
     ).toBeInTheDocument()
   })
 
-  it('plays, pauses and resumes on successive presses (D5, R10, AC7)', async () => {
+  it('plays, stops and restarts on successive presses (E2 R6, AC5)', async () => {
     const player = makePlayer()
     vi.mocked(createAudioPlayer).mockReturnValue(player)
 
     const user = userEvent.setup()
     await renderPuzzle()
 
-    // 1 — starts the loop and now offers to pause.
+    // 1 — starts the loop and now offers to stop.
     await user.click(screen.getByRole('button', { name: 'Play the loop' }))
     expect(player.play).toHaveBeenCalledTimes(1)
     expect(
-      await screen.findByRole('button', { name: 'Pause the loop' }),
+      await screen.findByRole('button', { name: 'Stop the loop' }),
     ).toBeInTheDocument()
 
-    // 2 — pauses, holding position, and offers to play again.
-    await user.click(screen.getByRole('button', { name: 'Pause the loop' }))
-    expect(player.pause).toHaveBeenCalledTimes(1)
+    // 2 — partway through the loop...
+    await act(async () => player.seek(0.5))
+    expect(player.getPosition()).toBe(0.5)
+
+    // ...a press halts playback and rewinds it (AC5). Nothing is held.
+    await user.click(screen.getByRole('button', { name: 'Stop the loop' }))
+    expect(player.stop).toHaveBeenCalledTimes(1)
+    expect(player.isPlaying()).toBe(false)
+    expect(player.getPosition()).toBe(0)
     expect(
       await screen.findByRole('button', { name: 'Play the loop' }),
     ).toBeInTheDocument()
 
-    // 3 — resumes. The player is never re-created and nothing is reset.
+    // 3 — the next press starts from the beginning, not from bar three. The
+    // player is never re-created and nothing is disposed.
     await user.click(screen.getByRole('button', { name: 'Play the loop' }))
     expect(player.play).toHaveBeenCalledTimes(2)
+    expect(player.getPosition()).toBe(0)
     expect(createAudioPlayer).toHaveBeenCalledTimes(1)
     expect(player.dispose).not.toHaveBeenCalled()
+  })
+
+  it('returns the progress track to the start on stop (E2 R6a, AC5a)', async () => {
+    const player = makePlayer()
+    vi.mocked(createAudioPlayer).mockReturnValue(player)
+
+    const user = userEvent.setup()
+    await renderPuzzle()
+
+    await user.click(screen.getByRole('button', { name: 'Play the loop' }))
+    await act(async () => player.seek(0.5))
+
+    // The track reads the sounding position...
+    expect(screen.getByRole('progressbar')).toHaveAttribute(
+      'aria-valuenow',
+      '50',
+    )
+    expect(screen.getByTestId('progress-active')).toHaveAttribute(
+      'data-segment',
+      '2',
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Stop the loop' }))
+
+    // ...and returns to the start, because the player rewound.
+    expect(screen.getByRole('progressbar')).toHaveAttribute(
+      'aria-valuenow',
+      '0',
+    )
+    expect(screen.queryByTestId('progress-active')).not.toBeInTheDocument()
+  })
+
+  it('reads "■ Stop" while the groove sounds (E2 R4a, AC3a)', async () => {
+    // The words are supplied by this feature, not by the design system, so the
+    // sounding half of that pair is only asserted here. Without this, a
+    // regression that dropped `text.stop` would leave the whole suite green.
+    const player = makePlayer()
+    vi.mocked(createAudioPlayer).mockReturnValue(player)
+
+    const user = userEvent.setup()
+    await renderPuzzle()
+
+    await user.click(screen.getByRole('button', { name: 'Play the loop' }))
+
+    const control = await screen.findByRole('button', { name: 'Stop the loop' })
+    expect(control).toHaveTextContent('■ Stop')
+  })
+
+  it('stacks the caption below the control rather than beside it (E2 R4, AC3)', async () => {
+    await renderPuzzle()
+
+    const play = screen.getByRole('button', { name: 'Play the loop' })
+    // Full-width, with glyph and words (E2 R1, R4a, AC3a).
+    expect(play).toHaveTextContent('▶ Play the groove')
+    expect(play).toHaveClass('w-full')
+
+    // The caption follows the control in document order, in a column — not as a
+    // sibling within a row.
+    const region = play.parentElement as HTMLElement
+    expect(region).toHaveClass('flex-col')
+    expect(region).not.toHaveClass('flex-row')
+    expect(play.nextElementSibling).toHaveTextContent(/Play along/)
   })
 
   // Step D2 — the groove repeats until the player stops it.
@@ -681,28 +853,67 @@ describe('GroovePuzzle', () => {
     await renderPuzzle()
 
     await user.click(screen.getByRole('button', { name: 'Play the loop' }))
-    expect(screen.getByText('BAR 1')).toHaveAttribute('aria-current', 'true')
+    // The sounding bar is the highlighted segment on the track; the bar labels
+    // that used to carry it were removed with the rest of the card's chrome.
+    expect(screen.getByTestId('progress-active')).toHaveAttribute(
+      'data-segment',
+      '0',
+    )
 
     await act(async () => player.seek(0.6))
-    expect(screen.getByText('BAR 3')).toHaveAttribute('aria-current', 'true')
+    expect(screen.getByTestId('progress-active')).toHaveAttribute(
+      'data-segment',
+      '2',
+    )
   })
 
-  it('renders the groove card header and the transport (D1, D2)', async () => {
+  it('renders the groove card header and the transport, with no tempo (E1 R5, AC5)', async () => {
     await renderPuzzle()
     expect(
       screen.getByRole('heading', { name: GROOVE.name }),
     ).toBeInTheDocument()
-    expect(screen.getByText(String(GROOVE.bpm))).toBeInTheDocument()
-    expect(screen.getByText('BPM')).toBeInTheDocument()
+    expect(screen.queryByText(String(GROOVE.bpm))).not.toBeInTheDocument()
+    expect(screen.queryByText('BPM')).not.toBeInTheDocument()
     expect(screen.getByRole('progressbar')).toBeInTheDocument()
   })
 
-  it('renders the header with the streak beside the puzzle (D3, D4)', async () => {
+  it('renders the header with the streak beside the puzzle (E1 R1a, R2, R3, AC1a, AC2, AC3)', async () => {
+    vi.useFakeTimers()
+    try {
+      vi.setSystemTime(new Date(2026, 7, 29, 12, 0, 0))
+      await renderPuzzle()
+
+      expect(
+        screen.getByRole('heading', { level: 1, name: 'Daily Groove' }),
+      ).toBeInTheDocument()
+      // The date is one line, and no longer a weekday element of its own.
+      expect(screen.getByText('Saturday, 29 August')).toBeInTheDocument()
+      expect(screen.queryByText('Saturday')).not.toBeInTheDocument()
+      // The wordmark cluster went with it (E1 R1, AC1).
+      expect(screen.queryByText('daily-groove')).not.toBeInTheDocument()
+      expect(screen.getByLabelText(/current streak/i)).toHaveTextContent(
+        /no streak yet/i,
+      )
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('reads "N days streak" once a day has been won (E1 R3, AC3)', async () => {
+    const stored: DailyResult = {
+      date: TODAY(),
+      answer: { root: 'C', flavour: 'Minor' },
+      attempts: [SOLVING],
+      solved: true,
+    }
+    mockStore.get.mockResolvedValue(stored)
+    mockStore.getAll.mockResolvedValue([stored])
+
     await renderPuzzle()
-    expect(
-      screen.getByRole('heading', { level: 1, name: "Today's groove" }),
-    ).toBeInTheDocument()
-    expect(screen.getByLabelText(/current streak/i)).toBeInTheDocument()
+
+    expect(screen.getByLabelText(/current streak/i)).toHaveTextContent(
+      '1 day streak',
+    )
   })
 
   it('stacks its columns by default and only splits higher up (D8, R15, AC12)', async () => {
@@ -715,10 +926,279 @@ describe('GroovePuzzle', () => {
     expect(split).not.toHaveClass('flex-row')
   })
 
+  it('gives each column the full width once stacked (R15)', async () => {
+    const { container } = await renderPuzzle()
+
+    const split = container.querySelector('.md\\:flex-row') as HTMLElement
+    const columns = Array.from(split.children) as HTMLElement[]
+
+    expect(columns).toHaveLength(2)
+    for (const column of columns) {
+      // The row aligns to `start`, which on the stacked (column) axis is the
+      // horizontal one — so without `w-full` each card shrinks to its content
+      // instead of spanning. Above `md` the flex basis governs and the width
+      // returns to auto.
+      expect(column).toHaveClass('w-full')
+      expect(column).toHaveClass('md:w-auto')
+    }
+  })
+
   it("falls back to today's groove when no prop is given", async () => {
     await renderPuzzle(<GroovePuzzle />)
     expect(screen.getByRole('button', { name: /play/i })).toBeInTheDocument()
     expect(rootGroup()).toBeInTheDocument()
+  })
+
+  // --- Epic 5: replay any groove you've played ------------------------------
+
+  const archiveSection = () =>
+    screen
+      .getByText(/grooves you.{0,3}ve played/i)
+      .closest('section') as HTMLElement
+
+  /** The archive cards, most recent first. */
+  const archiveCards = () => {
+    const grid = archiveSection().querySelector('[class*="grid-cols"]')
+    return grid ? (Array.from(grid.children) as HTMLElement[]) : []
+  }
+
+  /** One control per card, in the same order. */
+  const archiveControls = () =>
+    archiveCards().map((card) => within(card).getByRole('button'))
+
+  const nameOf = (el: HTMLElement) => el.getAttribute('aria-label')
+
+  /**
+   * Every control on the page currently offering to stop. The single-sounding
+   * invariant is asserted against this, not against one button at a time.
+   */
+  const soundingControls = () =>
+    screen
+      .getAllByRole('button')
+      .filter((b) => /^Stop\b/.test(b.getAttribute('aria-label') ?? ''))
+
+  const todayControl = () =>
+    screen.getByRole('button', { name: /^(Play|Stop) the loop$/ })
+
+  const grooveIn = (id: string) => GROOVES.find((g) => g.id === id)!
+
+  /** A past day, N days back, played against a known groove. */
+  function pastDay(daysAgo: number, grooveId: string | undefined): DailyResult {
+    return {
+      date: isoDate(new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000)),
+      answer: { root: 'G', flavour: 'Dorian' },
+      attempts: [miss('D', 'Lydian', false)],
+      solved: false,
+      ...(grooveId === undefined ? {} : { grooveId }),
+    }
+  }
+
+  /**
+   * A fresh player per source, kept by src so a swap can be observed from both
+   * sides. The transport disposes the outgoing one, so the map holds the most
+   * recent player built for each source.
+   */
+  function playersBySource() {
+    const made = new Map<string, ReturnType<typeof makePlayer>>()
+    vi.mocked(createAudioPlayer).mockImplementation((src: string) => {
+      const player = makePlayer()
+      made.set(src, player)
+      return player
+    })
+    return made
+  }
+
+  it("plays today's groove through the page transport (E5 R3, R4, AC3)", async () => {
+    const made = playersBySource()
+    const user = userEvent.setup()
+    await renderPuzzle()
+
+    await user.click(todayControl())
+
+    // The source handed to the transport is today's groove, looped (R12).
+    expect(createAudioPlayer).toHaveBeenCalledWith(
+      GROOVE.audioSrc,
+      expect.objectContaining({ loop: true }),
+    )
+    expect(made.get(GROOVE.audioSrc)?.play).toHaveBeenCalledTimes(1)
+    expect(nameOf(todayControl())).toBe('Stop the loop')
+
+    // ...and pressing it again stops that same source rather than a second one.
+    await user.click(todayControl())
+    expect(made.get(GROOVE.audioSrc)?.stop).toHaveBeenCalledTimes(1)
+    expect(createAudioPlayer).toHaveBeenCalledTimes(1)
+    expect(soundingControls()).toEqual([])
+  })
+
+  it('gives every card in the row a play control naming its day (E5 R1, R6, AC1, AC6)', async () => {
+    mockStore.getAll.mockResolvedValue([pastDay(1, 'groove-02'), pastDay(2, 'groove-03')])
+    await renderPuzzle()
+
+    const controls = archiveControls()
+    expect(controls).toHaveLength(2)
+    expect(nameOf(controls[0])).toBe("Play Yesterday's groove")
+    expect(nameOf(controls[1])).toMatch(/^Play .+'s groove$/)
+    expect(nameOf(controls[0])).not.toBe(nameOf(controls[1]))
+    for (const c of controls) expect(c).toBeEnabled()
+  })
+
+  it("presses a card's control and hears that day's groove (E5 R2, AC1)", async () => {
+    const made = playersBySource()
+    mockStore.getAll.mockResolvedValue([pastDay(1, 'groove-02')])
+    const user = userEvent.setup()
+    await renderPuzzle()
+
+    await user.click(archiveControls()[0])
+
+    const yesterday = grooveIn('groove-02')
+    expect(createAudioPlayer).toHaveBeenCalledWith(
+      yesterday.audioSrc,
+      expect.objectContaining({ loop: true }),
+    )
+    expect(made.get(yesterday.audioSrc)?.play).toHaveBeenCalledTimes(1)
+    expect(nameOf(archiveControls()[0])).toBe("Stop Yesterday's groove")
+  })
+
+  it('never sounds two grooves at once, in either direction (E5 R3, R5, AC2, AC3, AC4, AC5)', async () => {
+    const made = playersBySource()
+    mockStore.getAll.mockResolvedValue([
+      pastDay(1, 'groove-02'),
+      pastDay(2, 'groove-03'),
+    ])
+    const user = userEvent.setup()
+    await renderPuzzle()
+
+    const first = grooveIn('groove-02')
+    const second = grooveIn('groove-03')
+
+    // 1 — today's loop is running, and it is the only thing sounding.
+    await user.click(todayControl())
+    expect(soundingControls().map(nameOf)).toEqual(['Stop the loop'])
+
+    // 2 — a card's control takes over: today stops, the card sounds (AC2).
+    await user.click(archiveControls()[0])
+    expect(made.get(GROOVE.audioSrc)?.stop).toHaveBeenCalled()
+    expect(made.get(first.audioSrc)?.play).toHaveBeenCalledTimes(1)
+    expect(soundingControls().map(nameOf)).toEqual(["Stop Yesterday's groove"])
+    expect(nameOf(todayControl())).toBe('Play the loop')
+
+    // 3 — a second card takes over from the first (AC4).
+    await user.click(archiveControls()[1])
+    expect(made.get(first.audioSrc)?.stop).toHaveBeenCalled()
+    expect(made.get(second.audioSrc)?.play).toHaveBeenCalledTimes(1)
+    expect(soundingControls()).toHaveLength(1)
+    expect(nameOf(soundingControls()[0])).toBe(nameOf(archiveControls()[1]))
+    expect(nameOf(archiveControls()[0])).toBe("Play Yesterday's groove")
+
+    // 4 — today's control takes it back off the card (AC3).
+    await user.click(todayControl())
+    expect(made.get(second.audioSrc)?.stop).toHaveBeenCalled()
+    expect(soundingControls().map(nameOf)).toEqual(['Stop the loop'])
+    for (const c of archiveControls()) expect(nameOf(c)).toMatch(/^Play /)
+  })
+
+  it("today's two controls agree, because both are bound to one source (E5 R5, R11, AC5a, AC13)", async () => {
+    const made = playersBySource()
+    const user = userEvent.setup()
+    await renderPuzzle()
+
+    // Finish the day so today joins the row, and the record it writes carries
+    // the groove it played — which is what puts today's card on that source.
+    await guess(user, 'C', 'Minor')
+    expect(mockStore.save).toHaveBeenLastCalledWith(
+      expect.objectContaining({ grooveId: GROOVE.id }),
+    )
+
+    const todayCard = archiveCards()[0]
+    expect(todayCard.textContent).toContain('Today')
+    const cardControl = () => within(archiveCards()[0]).getByRole('button')
+    expect(nameOf(cardControl())).toBe("Play Today's groove")
+
+    // 1 — the full-width button starts it; BOTH controls show the sounding
+    // affordance, and they are the only two on the page that do.
+    await user.click(todayControl())
+    expect(soundingControls().map(nameOf)).toEqual([
+      'Stop the loop',
+      "Stop Today's groove",
+    ])
+
+    // 2 — and the card's control stops the same source the button started.
+    await user.click(cardControl())
+    expect(soundingControls()).toEqual([])
+    expect(nameOf(todayControl())).toBe('Play the loop')
+    expect(nameOf(cardControl())).toBe("Play Today's groove")
+
+    // One source, so one player: the card never built a second one.
+    expect(createAudioPlayer).toHaveBeenCalledTimes(1)
+    expect(made.get(GROOVE.audioSrc)?.play).toHaveBeenCalledTimes(1)
+  })
+
+  it('disables the control of a day whose groove has left the catalogue (E5 R10, AC12)', async () => {
+    playersBySource()
+    // An id that is not in the catalogue: it must not fall back to the date and
+    // play some other groove under this day's answer.
+    mockStore.getAll.mockResolvedValue([
+      pastDay(1, 'groove-99'),
+      pastDay(2, 'groove-03'),
+    ])
+    const user = userEvent.setup()
+    await renderPuzzle()
+
+    const gone = archiveControls()[0]
+    expect(gone).toBeDisabled()
+    expect(nameOf(gone)).toBe("Yesterday's groove is unavailable")
+
+    await user.click(gone)
+    expect(createAudioPlayer).not.toHaveBeenCalled()
+    expect(soundingControls()).toEqual([])
+
+    // The card itself still renders the day and its answer...
+    expect(archiveCards()[0].textContent).toContain('Yesterday')
+    expect(archiveCards()[0].textContent).toContain('G Dorian')
+    // ...and its neighbour is unaffected.
+    expect(archiveControls()[1]).toBeEnabled()
+  })
+
+  it('still replays a day saved before groove ids existed (E5 R8, AC8)', async () => {
+    const made = playersBySource()
+    // No grooveId at all: the day resolves by date, exactly as the page did.
+    const legacy = pastDay(1, undefined)
+    mockStore.getAll.mockResolvedValue([legacy])
+    const user = userEvent.setup()
+    await renderPuzzle()
+
+    const control = archiveControls()[0]
+    expect(control).toBeEnabled()
+    await user.click(control)
+
+    const expected = selectGrooveForDate(
+      new Date(Date.now() - 24 * 60 * 60 * 1000),
+      GROOVES,
+    )
+    expect(made.get(expected.audioSrc)?.play).toHaveBeenCalledTimes(1)
+  })
+
+  it('writes nothing to a record when a day is replayed (E5 R9, AC11)', async () => {
+    playersBySource()
+    mockStore.getAll.mockResolvedValue([
+      pastDay(1, 'groove-02'),
+      pastDay(2, 'groove-03'),
+    ])
+    const user = userEvent.setup()
+    await renderPuzzle()
+
+    const before = archiveCards().map((c) => c.textContent)
+
+    await user.click(archiveControls()[0])
+    await user.click(archiveControls()[1])
+    await user.click(todayControl())
+    await user.click(todayControl())
+
+    // Replay is listening only: no record is written, and no card's day,
+    // answer or mark moved.
+    expect(mockStore.save).not.toHaveBeenCalled()
+    expect(archiveCards().map((c) => c.textContent)).toEqual(before)
+    expect(dotStates()).toEqual(['unspent', 'unspent', 'unspent'])
   })
 
   it('shows the same day in the header that it used to pick the groove (R5, AC3)', async () => {
@@ -734,7 +1214,7 @@ describe('GroovePuzzle', () => {
       await renderPuzzle(<GroovePuzzle />)
 
       // The header renders the day...
-      expect(screen.getByText('29 August')).toBeInTheDocument()
+      expect(screen.getByText('Saturday, 29 August')).toBeInTheDocument()
       // ...and the card names the groove that same day selects.
       expect(
         screen.getByRole('heading', { name: expected.name }),

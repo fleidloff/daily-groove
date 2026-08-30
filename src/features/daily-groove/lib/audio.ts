@@ -1,8 +1,8 @@
 export type AudioPlayer = {
-  /** Starts the loop, or resumes it from the held position. */
+  /** Starts the loop from wherever the element stands — the top, after a stop. */
   play(): Promise<void>
-  /** Pauses at the current position; it is not reset. */
-  pause(): void
+  /** Halts playback and returns the loop to its start. Replaces `pause`. */
+  stop(): void
   /** Position through the loop, 0..1. Zero when nothing has played yet. */
   getPosition(): number
   isPlaying(): boolean
@@ -20,7 +20,7 @@ export type AudioPlayer = {
  * second — too coarse to move a bar highlight cleanly. The subscribe/snapshot
  * pair lets React read the player through `useSyncExternalStore`.
  *
- * `opts.loop` repeats the source until it is paused. It is the element's own
+ * `opts.loop` repeats the source until it is stopped. It is the element's own
  * `loop` property, deliberately: re-triggering playback on `ended` would leave
  * an audible gap at the loop point.
  */
@@ -58,7 +58,8 @@ export function createAudioPlayer(
 
   return {
     async play() {
-      // Deliberately no `currentTime = 0`: play resumes, it does not restart.
+      // No reset here: `stop()` owns the rewind, so a press always starts the
+      // loop from the top without play() having to say so.
       const started = Promise.resolve(element.play())
       playing = true
       startPolling()
@@ -75,7 +76,10 @@ export function createAudioPlayer(
       }
     },
 
-    pause() {
+    stop() {
+      // Halts and rewinds: there is no held position for the next press to
+      // resume from, and `getPosition()` reads 0 straight away.
+      element.currentTime = 0
       element.pause()
       playing = false
       stopPolling()

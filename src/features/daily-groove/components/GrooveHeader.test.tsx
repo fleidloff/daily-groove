@@ -8,33 +8,34 @@ import { GrooveHeader } from './GrooveHeader'
 const DATE = new Date(2026, 7, 29)
 
 describe('GrooveHeader', () => {
-  it('carries the brand mark and the wordmark (R4, AC3)', () => {
+  it('drops the wordmark in favour of the date (R1, AC1)', () => {
     render(<GrooveHeader date={DATE} streak={12} />)
-    expect(screen.getByText('daily-groove')).toBeInTheDocument()
+    expect(screen.queryByText('daily-groove')).toBeNull()
+    expect(screen.getByText('Saturday, 29 August')).toBeInTheDocument()
   })
 
-  it('sets the page title (R4, AC3)', () => {
+  it('sets the page title (R2, AC2)', () => {
     render(<GrooveHeader date={DATE} streak={12} />)
     expect(
-      screen.getByRole('heading', { level: 1, name: "Today's groove" }),
+      screen.getByRole('heading', { level: 1, name: 'Daily Groove' }),
     ).toBeInTheDocument()
   })
 
-  it('shows the weekday and the day and month it was given (R5, AC3)', () => {
+  it('shows the date it was given as one line (R1a, AC1a)', () => {
     render(<GrooveHeader date={DATE} streak={12} />)
-    expect(screen.getByText('Saturday')).toBeInTheDocument()
-    expect(screen.getByText('29 August')).toBeInTheDocument()
+    expect(screen.getByText('Saturday, 29 August')).toBeInTheDocument()
+    // The weekday is no longer an element of its own.
+    expect(screen.queryByText('Saturday')).toBeNull()
   })
 
   it('formats a different date from the same props', () => {
     render(<GrooveHeader date={new Date(2026, 0, 1)} streak={0} />)
-    expect(screen.getByText('Thursday')).toBeInTheDocument()
-    expect(screen.getByText('1 January')).toBeInTheDocument()
+    expect(screen.getByText('Thursday, 1 January')).toBeInTheDocument()
   })
 
-  it('carries the streak pill (R6)', () => {
+  it('carries the streak pill (R3)', () => {
     render(<GrooveHeader date={DATE} streak={12} />)
     const badge = screen.getByLabelText(/current streak/i)
-    expect(badge).toHaveTextContent('12 days')
+    expect(badge).toHaveTextContent('12 days streak')
   })
 })

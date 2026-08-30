@@ -31,6 +31,14 @@ export type DayProgress = {
   answer: Answer
   attempts: Attempt[]
   solved: boolean
+  /**
+   * The id of the groove the day was played against. Required here, optional on
+   * the stored record: every day written from now on knows its groove, and only
+   * records saved before feature-4 lack one. Without it the day would have to be
+   * re-resolved by date, which re-points at a different groove the moment the
+   * catalogue grows (R7).
+   */
+  grooveId: string
 }
 
 export type UseProgress = {
@@ -82,8 +90,14 @@ export function useProgress(
   }, [store, today])
 
   const recordAttempt = useCallback(
-    async ({ answer, attempts, solved }: DayProgress) => {
-      const record: DailyResult = { date: today, answer, attempts, solved }
+    async ({ answer, attempts, solved, grooveId }: DayProgress) => {
+      const record: DailyResult = {
+        date: today,
+        answer,
+        attempts,
+        solved,
+        grooveId,
+      }
       // Session state first, persistence second: a store that throws — quota,
       // disabled storage — must never cost the player the guess they just made
       // (R6, AC5). `createLocalStore` already swallows its own write failures;

@@ -24,10 +24,13 @@ describe('GrooveCard', () => {
     ).toBeInTheDocument()
   })
 
-  it('shows the tempo as a figure labelled BPM (D1, AC5)', () => {
-    render(<GrooveCard groove={GROOVE} />)
-    expect(screen.getByText('84')).toBeInTheDocument()
-    expect(screen.getByText('BPM')).toBeInTheDocument()
+  it('renders no tempo figure and no BPM label (R5, AC5)', () => {
+    render(<GrooveCard groove={{ ...GROOVE, bpm: 96 }} />)
+    expect(screen.queryByText('96')).toBeNull()
+    expect(screen.queryByText('BPM')).toBeNull()
+    expect(
+      screen.getByRole('heading', { name: 'Sunroom Shuffle' }),
+    ).toBeInTheDocument()
   })
 
   it('renders no meta line beneath the name (R9, AC5)', () => {

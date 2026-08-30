@@ -1,4 +1,3 @@
-import { EyebrowLabel } from '@/components/EyebrowLabel'
 import { Heading } from '@/components/Heading'
 import { Row } from '@/components/Row'
 import { Stack } from '@/components/Stack'
@@ -23,42 +22,28 @@ const DAY_MONTH = new Intl.DateTimeFormat('en-GB', {
   month: 'long',
 })
 
+// Two formatters composed rather than one Intl call: en-GB's combined
+// weekday/day/month format omits the comma this line needs.
+const DATE_LINE = (d: Date) => `${WEEKDAY.format(d)}, ${DAY_MONTH.format(d)}`
+
 /**
- * The page header: brand mark and wordmark, the title, and a right-hand cluster
- * of the date and the streak pill.
+ * The page header: the date on the left, the title beneath it, and the streak
+ * pill on the right.
  */
 export function GrooveHeader({ date, streak }: GrooveHeaderProps) {
   return (
     <header>
       <Row gap="lg" align="start" justify="between" collapseBelow="sm">
         <Stack gap="xs">
-          <Row gap="sm" align="center">
-            <span
-              aria-hidden="true"
-              className="h-[9px] w-[9px] shrink-0 rounded-full bg-accent-soft"
-            />
-            <EyebrowLabel>daily-groove</EyebrowLabel>
-          </Row>
+          <span className="text-[14px] leading-none text-text-muted">
+            {DATE_LINE(date)}
+          </span>
           <Heading level={1} size="xl">
-            Today&apos;s groove
+            Daily Groove
           </Heading>
         </Stack>
 
-        <Row gap="lg" align="center">
-          <div className="text-right">
-            <Stack gap="xs">
-              <EyebrowLabel>{WEEKDAY.format(date)}</EyebrowLabel>
-              <span className="font-display text-[22px] leading-none text-text">
-                {DAY_MONTH.format(date)}
-              </span>
-            </Stack>
-          </div>
-          <span
-            aria-hidden="true"
-            className="hidden h-[38px] w-px shrink-0 bg-border-strong sm:block"
-          />
-          <StreakBadge streak={streak} />
-        </Row>
+        <StreakBadge streak={streak} />
       </Row>
     </header>
   )
