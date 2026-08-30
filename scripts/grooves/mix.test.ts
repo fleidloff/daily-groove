@@ -19,7 +19,7 @@ function template(
     tempoRange: [96, 100],
     subdivision: 16,
     swing: 0,
-    flavours: ['minor'],
+    flavours: ['aeolian'],
     voices: ['kick', 'snare', 'bass'],
     humanize: { timingMs: 0, velocity: 0 },
     gain,

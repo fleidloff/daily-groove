@@ -278,6 +278,49 @@ describe('useProgress', () => {
     expect(result.current.todayResult?.grooveId).toBe('groove-11')
   })
 
+  // --- Epic 4 (feature-7), Step C4: a retired groove's record still loads ----
+
+  it('loads a record naming a groove that has left the catalogue (E4 R10, AC10)', async () => {
+    // `groove-05` was one of the two Blues grooves Epic 4 deleted from
+    // catalogue.json outright — no retirement flag, no allowlist, the row is
+    // simply gone. Nothing resolves a `grooveId` back to a `Groove` (feature-6
+    // deleted `resolveGroove.ts` along with the archive), so a stored id with
+    // no matching entry is inert rather than dangling: the day still loads and
+    // still counts. This pins that, so a future lookup-by-id cannot be added
+    // without a failing test explaining what it breaks.
+    const retiredYesterday: DailyResult = {
+      date: YESTERDAY,
+      // The answer is kept verbatim too — stored answers are never migrated.
+      answer: { root: 'C', flavour: 'Blues' },
+      attempts: [attempt({ root: 'C', flavour: 'Blues', correct: true, flavourMatched: true })],
+      solved: true,
+      grooveId: 'groove-05',
+    }
+    const retiredToday: DailyResult = {
+      date: TODAY,
+      answer: { root: 'A♭', flavour: 'Harmonic minor' },
+      attempts: [
+        attempt({ root: 'A♭', flavour: 'Harmonic minor', correct: true, flavourMatched: true }),
+      ],
+      solved: true,
+      grooveId: 'groove-15',
+    }
+
+    const store = makeStore({
+      get: vi.fn(async () => retiredToday),
+      getAll: vi.fn(async () => [retiredYesterday, retiredToday]),
+    })
+    const { result } = renderHook(() => useProgress(TODAY, store))
+
+    await waitFor(() => expect(result.current.loaded).toBe(true))
+    // Loaded, intact, and nothing threw on the way.
+    expect(result.current.todayResult).toEqual(retiredToday)
+    expect(result.current.todayResult?.grooveId).toBe('groove-15')
+    // Both retired days count: the streak reads `solved` and `date`, never the
+    // groove the day was played against.
+    expect(result.current.streak).toBe(2)
+  })
+
   it('exposes no write path replay could reach (E5 R9, AC11)', async () => {
     // A structural guard, not a behavioural one: replay must never gain a way
     // to touch the record, so the hook's surface is pinned. A new mutator here
@@ -319,5 +362,59 @@ describe('useProgress', () => {
     })
 
     expect(result.current.todayResult?.attempts).toEqual([first])
+  })
+  // --- Epic 3 (feature-7): a given-up day is recorded distinguishably -------
+
+  // Step B4 — E3 R9, R13
+  it('records a given-up day with the reveal flag (E3 R9)', async () => {
+    const store = makeStore()
+    const { result } = renderHook(() => useProgress(TODAY, store))
+    await waitFor(() => expect(result.current.loaded).toBe(true))
+
+    const spent = [attempt(), attempt({ flavour: 'Lydian' }), attempt({ flavour: 'Ionian' })]
+    await act(async () => {
+      await result.current.recordAttempt({
+        answer: ANSWER,
+        grooveId: GROOVE_ID,
+        attempts: spent,
+        solved: false,
+        revealed: true,
+      })
+    })
+
+    expect(store.save).toHaveBeenCalledWith({
+      date: TODAY,
+      answer: ANSWER,
+      attempts: spent,
+      // Given up is not solved — the two endings stay distinguishable.
+      solved: false,
+      grooveId: GROOVE_ID,
+      revealed: true,
+    })
+    expect(result.current.todayResult?.revealed).toBe(true)
+    // Giving up is not a win, so it starts no run.
+    expect(result.current.streak).toBe(0)
+  })
+
+  it('leaves the flag off a day that was not given up (E3 R13)', async () => {
+    const store = makeStore()
+    const { result } = renderHook(() => useProgress(TODAY, store))
+    await waitFor(() => expect(result.current.loaded).toBe(true))
+
+    await act(async () => {
+      await result.current.recordAttempt({
+        answer: ANSWER,
+        grooveId: GROOVE_ID,
+        attempts: [attempt()],
+        solved: false,
+      })
+    })
+
+    const [record] = vi.mocked(store.save).mock.calls[0]
+    // Absent, not `false`: a record written before this epic and an unrevealed
+    // one written after it are the same record.
+    expect(record.revealed).toBeUndefined()
+    expect('revealed' in record).toBe(false)
+    expect(result.current.todayResult?.revealed).toBeUndefined()
   })
 })

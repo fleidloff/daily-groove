@@ -20,10 +20,15 @@ else. That is the difference between a caption and a longer title.
 ```
 Card
 └── Stack gap="lg"
-    ├── Heading level={2} size="lg"   ← groove.name        (unchanged)
-    ├── <p> muted, small              ← `${groove.bpm} bpm` (new)
-    └── {children}                     ← TransportPanel + PlayControl
+    ├── Heading level={2} size="lg"  ← groove.name                        (unchanged)
+    ├── Text muted, small            ← `${groove.bpm} bpm · ${dateLine(date)}`  (new)
+    └── {children}                   ← TransportPanel + PlayControl
 ```
+
+The day is the one the header already shows. Its wording lives in
+`lib/presentation/date.ts` and both callers import it, so "Sunday, 30 August"
+cannot become "30 Aug" in one place and not the other. That module is where the
+`Intl` formatters moved to; `GrooveHeader` no longer owns them.
 
 The caption uses `Text` from the design system with `tone="muted"` and
 `size="sm"` — the same pair the play control's caption already uses one level
@@ -36,14 +41,18 @@ knowing what a groove is.
 
 ## Contracts
 
-Nothing changes.
+`GrooveCard` gains one prop; the day's formatter becomes shared.
 
 ```ts
 // src/features/daily-groove/components/puzzle/GrooveCard.tsx
 type GrooveCardProps = {
   groove: Groove
+  date: Date          // the day to repeat beside the tempo
   children?: ReactNode
 }
+
+// src/features/daily-groove/lib/presentation/date.ts
+export function dateLine(date: Date): string   // "Sunday, 30 August"
 ```
 
 `Groove.bpm: number` already exists in `src/lib/groove.ts` and is already
@@ -112,6 +121,28 @@ Covers: R2, AC2
 - **Green when** — the text is present before and after.
 - **Refactor** — none.
 
+#### Step A5 — The card repeats the day
+
+Covers: R6, R7, AC5, AC6, AC7
+
+- **Test first** — `lib/presentation/date.test.ts`: assert
+  `dateLine(new Date(2026, 7, 30))` is `'Sunday, 30 August'` and that a
+  single-digit day is not padded. Then in `GrooveCard.test.tsx`, render with
+  `date={new Date(2026, 7, 30)}` and assert one node reads
+  `105 bpm · Sunday, 30 August`. Run them: the first fails with
+  `dateLine is not a function`; the second with `Unable to find an element with
+  the text`.
+- **Implement** — move the two `Intl` formatters out of `GrooveHeader.tsx` into
+  `lib/presentation/date.ts` as `dateLine(date)`; import it in both the header
+  and the card. `GrooveCard` gains a required `date` prop and renders
+  `` `${groove.bpm} bpm · ${dateLine(date)}` `` in the one muted `Text`.
+  `GroovePuzzle` passes `date={today}` — the same `today` that selects the
+  groove and feeds the header.
+- **Green when** — both assertions pass, and `GrooveHeader`'s existing date test
+  stays green untouched, proving the formatter moved rather than changed.
+- **Refactor** — none. Assert the shared output rather than a second literal, so
+  the header and card cannot drift.
+
 #### Step A4 — The stale comment goes
 
 Covers: R1
@@ -144,12 +175,15 @@ Covers: R1
 | R3 | A2 |
 | R4 | A2 |
 | R5 | A1 |
-| R6 | A1 |
+| R6 | A1, A5 |
+| R7 | A5 |
 | AC1 | A1 |
 | AC2 | A3 |
 | AC3 | A2 |
 | AC4 | A1 |
 | AC5 | A1 |
+| AC6 | A5 |
+| AC7 | A5, I1 |
 
 ## Assumptions
 

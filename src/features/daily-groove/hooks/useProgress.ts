@@ -29,6 +29,12 @@ export type DayProgress = {
    * catalogue grows (R7).
    */
   grooveId: string
+  /**
+   * The day was given up on. Omitted on a day that was not — the flag is
+   * absent rather than `false` on the record, so a day written before
+   * feature-7 and an unrevealed one written after it read the same (E3 R13).
+   */
+  revealed?: boolean
 }
 
 export type UseProgress = {
@@ -81,13 +87,16 @@ export function useProgress(
   }, [store, today])
 
   const recordAttempt = useCallback(
-    async ({ answer, attempts, solved, grooveId }: DayProgress) => {
+    async ({ answer, attempts, solved, grooveId, revealed }: DayProgress) => {
       const record: DailyResult = {
         date: today,
         answer,
         attempts,
         solved,
         grooveId,
+        // Written only when the day was given up on, so the field stays absent
+        // on every other record (E3 R9, R13).
+        ...(revealed ? { revealed } : {}),
       }
       // Session state first, persistence second: a store that throws — quota,
       // disabled storage — must never cost the player the guess they just made

@@ -35,10 +35,19 @@ isoDate(date)  ──► dayIndexOf(iso) ──┬─► lap      = ⌊dayIndex 
 day regardless of when in it the page is opened.
 
 `orderFor(lap, grooves)` is where the seam guard lives. It shuffles with seed
-`lap:<n>`, compares its first element against the last element of `lap:<n-1>`'s
-order, and on a collision re-shuffles with `lap:<n>:<k>` for k = 1, 2, … . With
-`N ≥ 2` a non-colliding permutation always exists, so the loop terminates; it is
-capped anyway so a future bug cannot hang the page.
+`lap:<n>`, compares its first element against the last element of the previous
+lap's shuffle, and on a collision **swaps `order[0]` with `order[1]`**.
+
+Swapping rather than reshuffling is what keeps the guard cheap and terminating.
+A reshuffle would change the lap's *last* element too, so the next lap's guard
+would need this lap's corrected order — which needs the one before it, and so on
+back to lap 0: ~1,300 stack frames today and one more every day. Swapping the
+first two slots never touches the last, which establishes the invariant *a lap
+always closes on the groove its own shuffle put there*. The guard therefore only
+ever needs the previous lap's raw shuffle: two shuffles, no recursion, constant
+cost, and no retry cap needed. A catalogue of two is a separate branch — strict
+alternation is the only repeat-free sequence, and there is no non-terminal slot
+to swap into.
 
 Nothing reads storage, and `hashString` is imported, never edited — it seeds the
 groove generator too, and `src/lib/hash.test.ts` pins it against a fixed table.
@@ -136,9 +145,14 @@ Covers: R3, AC3
   DST transition. Run it: fails with `dayIndexOf is not a function`.
 - **Implement** — `selectGroove.ts`: add `dayIndexOf(iso)`, parsing the ISO day
   to a local `Date` at 12:00:00 exactly as `streak.ts`'s `parseIsoDate` does,
-  then `Math.round(ms / 86_400_000)`. `Math.round` and not `floor`: the noon
-  anchor puts the value half a day off an integer boundary, which is what makes
-  DST harmless.
+  then `Math.floor(ms / 86_400_000)`. **`Math.floor`, not `Math.round`.** The
+  ratio is `days + (12 - utcOffset)/24`: under `TZ=UTC` the fraction is exactly
+  `0.5`, so `Math.round` returns `1` for `1970-01-01` and fails this step's own
+  assertion — green on a Europe/Berlin laptop, red in a UTC CI. Worse, in
+  Europe/London the fraction crosses `0.5` at the DST transition, collapsing two
+  calendar days onto one index, which is the exact bug this step exists to
+  prevent. The noon anchor does the DST work; the rounding mode must not undo
+  it.
 - **Green when** — all three assertions pass.
 - **Refactor** — none yet. Step B6 revisits the duplication with `streak.ts`.
 
@@ -174,15 +188,19 @@ Covers: R5, AC5
 Covers: R4, AC4
 
 - **Test first** — `selectGroove.test.ts`: for every lap boundary in the first
-  200 days, assert the groove on the boundary day differs from the day before.
-  Run it: fails on at least one boundary — independent shuffles collide roughly
-  one lap in `N`.
-- **Implement** — `selectGroove.ts`: in `orderFor`, compute the previous lap's
-  order and, while `order[0].id === previous[previous.length - 1].id`, reshuffle
-  with `\`lap:${lap}:${k}\`` for increasing `k`. Cap `k` at 32 and return the
-  last order tried, so a pathological catalogue cannot hang the render.
-  Short-circuit for `lap === 0` and for `grooves.length < 2`, which have no
-  previous lap and no alternative respectively.
+  **5,000 days**, assert the groove on the boundary day differs from the day
+  before. Run it: fails on at least one boundary — independent shuffles collide
+  roughly one lap in `N`.
+- **Span matters.** A 200-day window is *vacuous* at 16 or 18 grooves: the first
+  collision falls outside it, so the assertion passes with the guard deleted.
+  Verify by mutation — comment the guard out and confirm the test goes red
+  before trusting it.
+- **Implement** — `selectGroove.ts`: in `orderFor`, take the previous lap's raw
+  shuffle and, if `order[0].id === previous[previous.length - 1].id`, swap
+  `order[0]` with `order[1]`. Never reshuffle, and never touch the last slot —
+  see Architecture for why that would recurse to lap 0 and overflow the stack.
+  Short-circuit for `lap === 0` and branch separately for `grooves.length === 2`,
+  where alternation is forced.
 - **Green when** — all 200 boundaries differ, and B2/B3 stay green — the guard
   reorders a lap, so it must not break the permutation property.
 - **Refactor** — none. `orderFor` recomputing the previous lap doubles the work
@@ -263,9 +281,8 @@ Covers: R6, R6a, AC6
 - `dayIndexOf` lives in `selectGroove.ts` beside `isoDate`, not in `src/lib/`.
   It is puzzle selection, and `src/lib/` is the leaf the generator shares — a
   date helper the generator never calls does not belong there.
-- The seam-guard retry cap is 32. It is unreachable for any real catalogue and
-  exists only so a future bug degrades to a wrong groove rather than a hung
-  render.
+- The seam guard needs no retry cap. A single swap either fixes the collision or
+  the catalogue has fewer than two grooves, so there is no loop to bound.
 - Test catalogues are hand-built `Groove` literals in the test file, not
   imports of `GROOVES` — the pick must be provably size-agnostic, and Epic 4
   changes the real catalogue underneath.

@@ -10,8 +10,8 @@ import type { Root } from '../../src/lib/groove.ts'
 
 /** The eight flavours the game offers, as the generator names them internally. */
 export type Flavour =
-  | 'major'
-  | 'minor'
+  | 'ionian'
+  | 'aeolian'
   | 'dorian'
   | 'mixolydian'
   | 'lydian'

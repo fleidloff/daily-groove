@@ -15,8 +15,8 @@ import type { FeelTemplate } from '../types.ts'
  * bar. The humanize bounds are the loosest of the four — a shuffle that is
  * metronomically exact stops swinging.
  *
- * `flavours` carries blues and minor. This is the pairing R2 is really about:
- * a shuffle is where the blues scale and the natural minor live, and a player
+ * `flavours` carries blues and aeolian. This is the pairing R2 is really about:
+ * a shuffle is where the blues scale and the aeolian mode live, and a player
  * who hears the feel has already narrowed the answer honestly.
  */
 export const shuffle: FeelTemplate = {
@@ -24,7 +24,7 @@ export const shuffle: FeelTemplate = {
   tempoRange: [78, 92],
   subdivision: 8,
   swing: 0.64,
-  flavours: ['blues', 'minor'],
+  flavours: ['blues', 'aeolian'],
   voices: ['kick', 'snare', 'hatClosed', 'hatOpen', 'bass', 'comp'],
   humanize: { timingMs: 16, velocity: 0.13 },
   // Bass and kick carry the weight; the comp sits back so the hand pattern

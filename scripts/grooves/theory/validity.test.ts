@@ -8,7 +8,7 @@ import type { Harmony } from './harmony.ts'
 import { buildHarmony, chordNameFor, pitchClassesOf } from './harmony.ts'
 import { VALIDITY, isValidHarmony, scaleDegreePitchClasses } from './validity.ts'
 
-const MODAL: Flavour[] = ['major', 'minor', 'dorian', 'mixolydian', 'lydian', 'phrygian']
+const MODAL: Flavour[] = ['ionian', 'aeolian', 'dorian', 'mixolydian', 'lydian', 'phrygian']
 
 /** The rule for a flavour, applied to one chord on one degree. */
 function accepts(
@@ -80,8 +80,8 @@ describe('scaleDegreePitchClasses', () => {
   it('lists the scale in degree order, tonic first', () => {
     // Degree indexing is what the rules read, so the array is in scale order,
     // not the sorted order `pitchesOf` returns.
-    expect(scaleDegreePitchClasses('C', 'minor')).toEqual([0, 2, 3, 5, 7, 8, 10])
-    expect(scaleDegreePitchClasses('A', 'minor')).toEqual([9, 11, 0, 2, 4, 5, 7])
+    expect(scaleDegreePitchClasses('C', 'aeolian')).toEqual([0, 2, 3, 5, 7, 8, 10])
+    expect(scaleDegreePitchClasses('A', 'aeolian')).toEqual([9, 11, 0, 2, 4, 5, 7])
     expect(scaleDegreePitchClasses('C', 'blues')).toEqual([0, 3, 5, 6, 7, 10])
   })
 
@@ -125,7 +125,7 @@ describe('the modal flavours', () => {
     // two answers different.
     expect(accepts('dorian', 'C', 0, chordOn('C', 'dorian', 0, [0, 4, 7, 10]))).toBe(false)
     // The raised seventh belongs to harmonic minor, not to natural minor.
-    expect(accepts('minor', 'C', 4, chordOn('C', 'minor', 4, [0, 4, 7, 10]))).toBe(false)
+    expect(accepts('aeolian', 'C', 4, chordOn('C', 'aeolian', 4, [0, 4, 7, 10]))).toBe(false)
   })
 })
 

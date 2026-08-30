@@ -9,7 +9,7 @@ import { renderFeature } from '../../testing/renderFeature'
 import type { DotState, Feedback } from '../../lib/presentation/feedback'
 import { GuessCard } from './GuessCard'
 
-const FLAVOURS: Flavour[] = ['Dorian', 'Mixolydian', 'Lydian', 'Minor']
+const FLAVOURS: Flavour[] = ['Dorian', 'Mixolydian', 'Lydian', 'Aeolian']
 
 const OPENING: Feedback = {
   message: 'Sing the note that feels like rest.',
@@ -43,15 +43,27 @@ function props(overrides: Partial<Props> = {}): Props {
     showNudge: false,
     dots: UNSPENT,
     answerRoot: 'G',
+    revealed: false,
+    showReveal: false,
+    onReveal: vi.fn(),
+    simple: false,
+    onToggleSimple: vi.fn(),
     ...overrides,
   }
 }
 
 const rootGroup = () => screen.getByRole('radiogroup', { name: 'Root' })
-const flavourGroup = () => screen.getByRole('radiogroup', { name: 'Flavour' })
+const flavourGroup = () => screen.getByRole('radiogroup', { name: 'Mode' })
 /** The element a chip group lays its chips out on. */
 const chipList = (group: HTMLElement) =>
   group.querySelector('[data-testid="chip-list"]') as HTMLElement
+const modeSwitch = () => screen.getByRole('switch', { name: /simple mode/i })
+/** True when `a` comes before `b` in document order. */
+const precedes = (a: Element, b: Element) =>
+  Boolean(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING)
+/** The six modes Epic 4 leaves standing, plus the one it retired. */
+const MODE_NAME = /ionian|dorian|phrygian|lydian|mixolydian|aeolian|locrian/i
+const FAMILIES: Flavour[] = ['Major', 'Minor']
 const dotStates = () =>
   Array.from(document.querySelectorAll('[data-dot-state]')).map((el) =>
     el.getAttribute('data-dot-state'),
@@ -59,6 +71,16 @@ const dotStates = () =>
 
 describe('GuessCard', () => {
   // --- C1: twelve roots, four flavours (R1, R2, R3, AC1) --------------------
+
+  // Epic 4, Step D1 (R1, AC1): the row holds modes, so it says so. The
+  // vocabulary on screen is one word, and "Flavour" is not it. `name="flavour"`
+  // stays as it is — a DOM grouping key, never read by a player.
+  it('labels the second chip row "Mode", not "Flavour" (R1, AC1)', () => {
+    render(<GuessCard {...props()} />)
+
+    expect(screen.getByRole('radiogroup', { name: 'Mode' })).toBeInTheDocument()
+    expect(screen.queryByRole('radiogroup', { name: 'Flavour' })).toBeNull()
+  })
 
   it('offers twelve root chips and exactly four flavour chips (AC1)', () => {
     render(<GuessCard {...props()} />)
@@ -121,7 +143,7 @@ describe('GuessCard', () => {
     render(<GuessCard {...props()} />)
 
     expect(
-      screen.getByRole('button', { name: 'Pick a root and a flavour' }),
+      screen.getByRole('button', { name: 'Pick a root and a mode' }),
     ).toBeDisabled()
   })
 
@@ -138,14 +160,14 @@ describe('GuessCard', () => {
 
     expect(screen.getByRole('button', { name: 'Check G Dorian' })).toBeEnabled()
     expect(
-      screen.queryByRole('button', { name: 'Pick a root and a flavour' }),
+      screen.queryByRole('button', { name: 'Pick a root and a mode' }),
     ).not.toBeInTheDocument()
   })
 
   it('keeps prompting while only one half is chosen (R7)', () => {
     render(<GuessCard {...props({ selectedRoot: 'G' as Root })} />)
     expect(
-      screen.getByRole('button', { name: 'Pick a root and a flavour' }),
+      screen.getByRole('button', { name: 'Pick a root and a mode' }),
     ).toBeDisabled()
   })
 
@@ -172,7 +194,9 @@ describe('GuessCard', () => {
   it('renders the attempt dots it is given (R1, AC1)', () => {
     render(<GuessCard {...props()} />)
 
-    expect(screen.getByRole('img')).toHaveAccessibleName('0 of 3 attempts spent')
+    expect(screen.getByRole('img')).toHaveAccessibleName(
+      expect.stringContaining('0 of 3 attempts spent'),
+    )
     expect(dotStates()).toEqual(UNSPENT)
   })
 
@@ -413,14 +437,14 @@ describe('GuessCard', () => {
     render(<GuessCard {...props()} />)
 
     const control = screen.getByRole('button', {
-      name: 'Pick a root and a flavour',
+      name: 'Pick a root and a mode',
     })
     const dotsRow = control.previousElementSibling as HTMLElement
 
     // The row immediately above the control is the dot row itself.
     expect(dotsRow.querySelectorAll('[data-dot-state]')).toHaveLength(3)
     expect(within(dotsRow).getByRole('img')).toHaveAccessibleName(
-      '0 of 3 attempts spent',
+      expect.stringContaining('0 of 3 attempts spent'),
     )
 
     // ...and it sits after the flavour chips, so it has left the heading row.
@@ -438,7 +462,7 @@ describe('GuessCard', () => {
     render(<GuessCard {...props({ dots: ['spent', 'spent', 'unspent'] })} />)
 
     const dotsRow = screen.getByRole('button', {
-      name: 'Pick a root and a flavour',
+      name: 'Pick a root and a mode',
     }).previousElementSibling as HTMLElement
 
     expect(dotsRow.textContent).toBe('')
@@ -448,7 +472,7 @@ describe('GuessCard', () => {
     render(<GuessCard {...props({ dots: ['spent', 'spent', 'unspent'] })} />)
 
     expect(
-      screen.getByRole('img', { name: '2 of 3 attempts spent' }),
+      screen.getByRole('img', { name: /2 of 3 attempts spent/ }),
     ).toBeInTheDocument()
   })
 
@@ -502,6 +526,365 @@ describe('GuessCard', () => {
     expect(shape(root)).toBe(shape(flavour))
   })
 
+  // --- feature-7 Epic 3, Steps C3-C6: the give-up control -------------------
+
+  const GIVE_UP = 'Give up and show the answer'
+  const CONFIRM = 'Yes — end the day and show the answer'
+
+  const giveUp = () => screen.queryByRole('button', { name: GIVE_UP })
+  const confirm = () => screen.queryByRole('button', { name: CONFIRM })
+
+  const REVEAL_READY = {
+    selectedRoot: 'G' as Root,
+    selectedFlavour: 'Dorian' as Flavour,
+    dots: ['spent', 'spent', 'spent'] as DotState[],
+    feedback: ROOT_MATCHED,
+    showNudge: true,
+    showReveal: true,
+  }
+
+  // Step C3 — R6, R6a, AC6, AC8
+  it('offers no way to give up until it is asked for (R6, AC6)', () => {
+    render(<GuessCard {...props({ dots: ['spent', 'spent', 'unspent'] })} />)
+
+    expect(giveUp()).not.toBeInTheDocument()
+    expect(confirm()).not.toBeInTheDocument()
+  })
+
+  it('offers to give up once showReveal is set (R6, AC6)', () => {
+    render(<GuessCard {...props(REVEAL_READY)} />)
+
+    expect(giveUp()).toBeInTheDocument()
+    expect(giveUp()).toBeEnabled()
+  })
+
+  it('asks for confirmation on the first press rather than ending the day (R6a, AC8)', async () => {
+    const user = userEvent.setup()
+    const onReveal = vi.fn()
+    render(<GuessCard {...props({ ...REVEAL_READY, onReveal })} />)
+
+    await user.click(giveUp() as HTMLElement)
+
+    expect(onReveal).not.toHaveBeenCalled()
+    expect(giveUp()).not.toBeInTheDocument()
+    // The armed label names the consequence rather than asking a bare "Sure?".
+    expect(confirm()).toBeInTheDocument()
+
+    // The day is still playable: the chips are live and the answer is not shown.
+    for (const chip of within(rootGroup()).getAllByRole('button')) {
+      expect(chip).toBeEnabled()
+    }
+  })
+
+  // Step C4 — R7, AC8a
+  it('ends the day on the second press, exactly once (R7, AC8a)', async () => {
+    const user = userEvent.setup()
+    const onReveal = vi.fn()
+    render(<GuessCard {...props({ ...REVEAL_READY, onReveal })} />)
+
+    await user.click(giveUp() as HTMLElement)
+    await user.click(confirm() as HTMLElement)
+
+    expect(onReveal).toHaveBeenCalledTimes(1)
+  })
+
+  // Step C5 — R6b, AC8c
+  it('disarms when a root chip is selected instead (R6b, AC8c)', async () => {
+    const user = userEvent.setup()
+    const onReveal = vi.fn()
+    const onSelectRoot = vi.fn()
+    render(
+      <GuessCard {...props({ ...REVEAL_READY, onReveal, onSelectRoot })} />,
+    )
+
+    await user.click(giveUp() as HTMLElement)
+    expect(confirm()).toBeInTheDocument()
+
+    await user.click(within(rootGroup()).getByRole('button', { name: 'C' }))
+
+    expect(onSelectRoot).toHaveBeenCalledWith('C')
+    expect(onReveal).not.toHaveBeenCalled()
+    expect(confirm()).not.toBeInTheDocument()
+    expect(giveUp()).toBeInTheDocument()
+  })
+
+  it('disarms when a flavour chip is selected instead (R6b, AC8c)', async () => {
+    const user = userEvent.setup()
+    const onReveal = vi.fn()
+    const onSelectFlavour = vi.fn()
+    render(
+      <GuessCard {...props({ ...REVEAL_READY, onReveal, onSelectFlavour })} />,
+    )
+
+    await user.click(giveUp() as HTMLElement)
+    await user.click(
+      within(flavourGroup()).getByRole('button', { name: 'Lydian' }),
+    )
+
+    expect(onSelectFlavour).toHaveBeenCalledWith('Lydian')
+    expect(onReveal).not.toHaveBeenCalled()
+    expect(giveUp()).toBeInTheDocument()
+  })
+
+  // Step C5 — R6b, AC8b
+  it('disarms when a guess is checked instead, and still scores it (R6b, AC8b)', async () => {
+    const user = userEvent.setup()
+    const onReveal = vi.fn()
+    const onCheck = vi.fn()
+    render(
+      <GuessCard
+        {...props({ ...REVEAL_READY, canCheck: true, onReveal, onCheck })}
+      />,
+    )
+
+    await user.click(giveUp() as HTMLElement)
+    expect(confirm()).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Check G Dorian' }))
+
+    expect(onCheck).toHaveBeenCalledTimes(1)
+    expect(onReveal).not.toHaveBeenCalled()
+    expect(confirm()).not.toBeInTheDocument()
+    expect(giveUp()).toBeInTheDocument()
+  })
+
+  // Step C6 — R7, AC8a
+  it('goes inert once the day is revealed (R7, AC8a)', async () => {
+    const user = userEvent.setup()
+    const onSelectRoot = vi.fn()
+    const onSelectFlavour = vi.fn()
+    const onCheck = vi.fn()
+    render(
+      <GuessCard
+        {...props({
+          selectedRoot: 'G' as Root,
+          selectedFlavour: 'Dorian',
+          dots: ['spent', 'spent', 'spent'],
+          feedback: ROOT_MATCHED,
+          revealed: true,
+          showReveal: false,
+          canCheck: false,
+          onSelectRoot,
+          onSelectFlavour,
+          onCheck,
+        })}
+      />,
+    )
+
+    for (const chip of within(rootGroup()).getAllByRole('button')) {
+      expect(chip).toBeDisabled()
+    }
+    for (const chip of within(flavourGroup()).getAllByRole('button')) {
+      expect(chip).toBeDisabled()
+    }
+
+    const check = screen.getByRole('button', { name: 'Check G Dorian' })
+    expect(check).toBeDisabled()
+
+    await user.click(within(rootGroup()).getByRole('button', { name: 'C' }))
+    await user.click(
+      within(flavourGroup()).getByRole('button', { name: 'Lydian' }),
+    )
+    await user.click(check)
+    expect(onSelectRoot).not.toHaveBeenCalled()
+    expect(onSelectFlavour).not.toHaveBeenCalled()
+    expect(onCheck).not.toHaveBeenCalled()
+
+    expect(giveUp()).not.toBeInTheDocument()
+    expect(confirm()).not.toBeInTheDocument()
+  })
+
+  it('leaves the check control disabled on a revealed day even if a check would be legal (R7, AC8a)', () => {
+    render(
+      <GuessCard
+        {...props({
+          selectedRoot: 'G' as Root,
+          selectedFlavour: 'Dorian',
+          canCheck: true,
+          revealed: true,
+        })}
+      />,
+    )
+
+    expect(screen.getByRole('button', { name: 'Check G Dorian' })).toBeDisabled()
+  })
+
+  // --- feature-7 Epic 5, Steps C2/C3: the simple-mode switch ----------------
+
+  it('carries a simple-mode switch, under the heading and above both rows (R1, AC1)', () => {
+    render(<GuessCard {...props()} />)
+
+    const toggle = modeSwitch()
+    expect(precedes(screen.getByRole('heading'), toggle)).toBe(true)
+    expect(precedes(toggle, rootGroup())).toBe(true)
+    expect(precedes(toggle, flavourGroup())).toBe(true)
+  })
+
+  it('reports the mode the player asked for, not the one they left (R1, AC1)', async () => {
+    const user = userEvent.setup()
+    const onToggleSimple = vi.fn()
+    render(<GuessCard {...props({ simple: false, onToggleSimple })} />)
+
+    await user.click(modeSwitch())
+
+    expect(onToggleSimple).toHaveBeenCalledWith(true)
+  })
+
+  it('asks to leave simple mode when it is already on (R1, AC1)', async () => {
+    const user = userEvent.setup()
+    const onToggleSimple = vi.fn()
+    render(
+      <GuessCard
+        {...props({ simple: true, flavours: FAMILIES, onToggleSimple })}
+      />,
+    )
+
+    expect(modeSwitch()).toHaveAttribute('aria-checked', 'true')
+    await user.click(modeSwitch())
+    expect(onToggleSimple).toHaveBeenCalledWith(false)
+  })
+
+  it('leaves the switch operable on a day that is already over (R8a, AC8a)', async () => {
+    const user = userEvent.setup()
+    const onToggleSimple = vi.fn()
+    render(
+      <GuessCard
+        {...props({
+          solved: true,
+          selectedRoot: 'G' as Root,
+          selectedFlavour: 'Dorian',
+          feedback: SOLVED,
+          onToggleSimple,
+        })}
+      />,
+    )
+
+    // The chips lock on a finished day; the preference does not (R8a).
+    expect(within(rootGroup()).getAllByRole('button')[0]).toBeDisabled()
+    expect(modeSwitch()).toBeEnabled()
+    await user.click(modeSwitch())
+    expect(onToggleSimple).toHaveBeenCalledWith(true)
+  })
+
+  it('leaves the switch operable on a revealed day too (R8a, AC8a)', async () => {
+    const user = userEvent.setup()
+    const onToggleSimple = vi.fn()
+    render(<GuessCard {...props({ revealed: true, onToggleSimple })} />)
+
+    expect(modeSwitch()).toBeEnabled()
+    await user.click(modeSwitch())
+    expect(onToggleSimple).toHaveBeenCalledWith(true)
+  })
+
+  it('disarms an armed give-up when the mode is switched instead (R6b)', async () => {
+    const user = userEvent.setup()
+    const onReveal = vi.fn()
+    render(<GuessCard {...props({ showReveal: true, onReveal })} />)
+
+    await user.click(
+      screen.getByRole('button', { name: 'Give up and show the answer' }),
+    )
+    await user.click(modeSwitch())
+
+    expect(
+      screen.getByRole('button', { name: 'Give up and show the answer' }),
+    ).toBeInTheDocument()
+    expect(onReveal).not.toHaveBeenCalled()
+  })
+
+  for (const simple of [false, true]) {
+    const flavours = simple ? FAMILIES : FLAVOURS
+    const roots = (simple ? ['C', 'D', 'E', 'G', 'A', 'B'] : ROOTS) as Root[]
+
+    it(`keeps both rows labelled and single-select with simple=${simple} (R11, AC11)`, () => {
+      render(
+        <GuessCard
+          {...props({
+            simple,
+            roots,
+            flavours,
+            selectedRoot: 'G' as Root,
+            selectedFlavour: flavours[1],
+          })}
+        />,
+      )
+
+      const pressed = (group: HTMLElement) =>
+        within(group)
+          .getAllByRole('button')
+          .filter((b) => b.getAttribute('aria-pressed') === 'true')
+          .map((b) => b.textContent)
+
+      // Both rows still answer to their labels, and each holds one selection.
+      expect(pressed(rootGroup())).toEqual(['G'])
+      expect(pressed(flavourGroup())).toEqual([flavours[1]])
+    })
+
+    it(`keeps the switch and both rows keyboard-reachable with simple=${simple} (R11, AC11)`, async () => {
+      const user = userEvent.setup()
+      render(<GuessCard {...props({ simple, roots, flavours })} />)
+
+      const visited: Element[] = []
+      for (let i = 0; i < 25; i += 1) {
+        await user.tab()
+        if (document.activeElement) visited.push(document.activeElement)
+      }
+
+      const toggle = modeSwitch()
+      const firstRoot = within(rootGroup()).getAllByRole('button')[0]
+      const firstFlavour = within(flavourGroup()).getAllByRole('button')[0]
+
+      expect(visited).toContain(toggle)
+      expect(visited).toContain(firstRoot)
+      expect(visited).toContain(firstFlavour)
+      // And in that order: the switch is the first thing in the card.
+      expect(visited.indexOf(toggle)).toBeLessThan(visited.indexOf(firstRoot))
+      expect(visited.indexOf(firstRoot)).toBeLessThan(
+        visited.indexOf(firstFlavour),
+      )
+    })
+  }
+
+  it('offers exactly the two options it is handed in simple mode (R4, AC3)', () => {
+    render(<GuessCard {...props({ simple: true, flavours: FAMILIES })} />)
+
+    expect(
+      within(flavourGroup())
+        .getAllByRole('button')
+        .map((b) => b.textContent),
+    ).toEqual(['Major', 'Minor'])
+  })
+
+  // The label names the question, not the size of the answer set: "Major" and
+  // "Minor" are the mode question narrowed to its two families. A label that
+  // moved with the toggle would change the card's vocabulary mid-day.
+  it('keeps the second row labelled "Mode" in either mode (R4, AC3)', () => {
+    render(<GuessCard {...props({ simple: true, flavours: FAMILIES })} />)
+
+    expect(screen.getByRole('radiogroup', { name: 'Mode' })).toBeInTheDocument()
+    expect(screen.queryByRole('radiogroup', { name: 'Family' })).toBeNull()
+  })
+
+  it('names no mode anywhere on the card in simple mode (R4, AC3)', () => {
+    const { container } = render(
+      <GuessCard
+        {...props({
+          simple: true,
+          flavours: FAMILIES,
+          roots: ['C', 'D', 'E', 'G', 'A', 'B'] as Root[],
+          selectedRoot: 'G' as Root,
+          selectedFlavour: 'Minor',
+          canCheck: true,
+          showNudge: true,
+        })}
+      />,
+    )
+
+    expect(rootGroup().textContent).not.toMatch(MODE_NAME)
+    expect(flavourGroup().textContent).not.toMatch(MODE_NAME)
+    expect(container.textContent).not.toMatch(MODE_NAME)
+  })
+
   // --- C6: chord and progression stay hidden --------------------------------
 
   it('never shows the chord or the progression while unsolved (Epic 4 guard)', () => {
@@ -536,7 +919,7 @@ describe('through the composed page', () => {
     const today = new Date();
     const groove = selectGrooveForDate(today, GROOVES);
     const expected = flavourOptions(today, groove);
-    const flavours = screen.getByRole("radiogroup", { name: "Flavour" });
+    const flavours = screen.getByRole("radiogroup", { name: "Mode" });
 
     expect(
       within(flavours)
@@ -563,11 +946,11 @@ describe('through the composed page', () => {
     const control = () =>
       screen.getByRole("button", { name: /^(Pick a root|Check |Solved$)/ });
 
-    expect(control()).toHaveAccessibleName("Pick a root and a flavour");
+    expect(control()).toHaveAccessibleName("Pick a root and a mode");
     expect(control()).toBeDisabled();
 
     const roots = screen.getByRole("radiogroup", { name: "Root" });
-    const flavours = screen.getByRole("radiogroup", { name: "Flavour" });
+    const flavours = screen.getByRole("radiogroup", { name: "Mode" });
     await user.click(within(roots).getByRole("button", { name: "G" }));
     const firstFlavour = within(flavours).getAllByRole("button")[0];
     await user.click(firstFlavour);

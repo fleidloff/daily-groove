@@ -160,7 +160,7 @@ describe('gateCandidate', () => {
       const music: MusicMeta = {
         ...GOOD.music,
         root: 'C',
-        flavour: 'major',
+        flavour: 'ionian',
         chord: 'C7',
         progression: 'C7',
       }

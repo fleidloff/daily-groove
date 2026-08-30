@@ -46,6 +46,19 @@ export function flavourOptions(date: Date, groove: Groove): Flavour[] {
   return buildOptions(groove.flavour, flavourPool(GROOVES), isoDate(date))
 }
 
+/**
+ * Simple mode's six roots: the day's correct root plus five deterministic
+ * distractors, seeded by the ISO date exactly as the mode row is.
+ *
+ * The same `buildOptions` the mode row uses, with `ROOTS` as the pool and a
+ * count of six. Reusing it is the point: the six are stable for the day and
+ * always contain the answer, so a groove rooted in E\u266d stays answerable — a
+ * fixed six would not.
+ */
+export function simpleRootOptions(date: Date, answer: Answer): Root[] {
+  return buildOptions(answer.root, ROOTS, isoDate(date), 6) as Root[]
+}
+
 /** Beats per bar. Every groove in the catalogue is 4/4. */
 const BEATS_PER_BAR = 4
 

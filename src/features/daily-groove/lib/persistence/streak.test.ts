@@ -167,3 +167,40 @@ describe('computeStreak — attempts and calendar edges (R3, R6)', () => {
     expect(results).toEqual(snapshot)
   })
 })
+
+// --- Epic 3 (feature-7): a day given up on ---------------------------------
+
+describe('computeStreak — a given-up day (E3 R10, AC11)', () => {
+  /** A day the player gave up on: unsolved, and flagged as revealed. */
+  function revealed(date: string): DailyResult {
+    return { ...result(date, false, 3), revealed: true }
+  }
+
+  // The streak never reads the flag: `isQualifying` keys on `solved` alone, so
+  // giving up is judged exactly as any other unsolved day. If someone later
+  // teaches `streak.ts` about `revealed`, these fail.
+  it('does not qualify', () => {
+    expect(isQualifying(revealed(WED))).toBe(false)
+  })
+
+  it('neither extends the run nor is skipped over', () => {
+    const results = [result(WED, true), result(THU, true), revealed(FRI)]
+    // The run ends at Thursday: today was given up on, so the anchor falls back
+    // to yesterday and the walk counts Thursday and Wednesday — the revealed
+    // day adds nothing, and does not act as a gap-free pass either.
+    expect(computeStreak(results, FRI)).toBe(2)
+  })
+
+  it('breaks the run when it is in the past', () => {
+    const results = [result(TUE, true), revealed(WED), result(THU, true)]
+    // Thursday alone: a past day given up on ends the run where it stands,
+    // exactly as a past day left unfinished does.
+    expect(computeStreak(results, FRI)).toBe(1)
+  })
+
+  it('reads identically to the same day without the flag', () => {
+    const withFlag = [result(THU, true), revealed(FRI)]
+    const without = [result(THU, true), result(FRI, false, 3)]
+    expect(computeStreak(withFlag, FRI)).toBe(computeStreak(without, FRI))
+  })
+})

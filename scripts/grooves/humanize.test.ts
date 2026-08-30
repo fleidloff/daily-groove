@@ -13,7 +13,7 @@ function feel(overrides: Partial<FeelTemplate> = {}): FeelTemplate {
     tempoRange: [BPM, BPM],
     subdivision: SUBDIVISION,
     swing: 0,
-    flavours: ['minor'],
+    flavours: ['aeolian'],
     voices: ['kick', 'hatClosed'],
     humanize: { timingMs: 0, velocity: 0 },
     gain: {},

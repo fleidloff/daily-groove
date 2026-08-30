@@ -4,10 +4,10 @@ Feature: [briefing.md](../briefing.md) · [roadmap.md](../roadmap.md)
 
 ## Summary
 
-The groove card shows the tempo under the groove's name. Every groove in the
-catalogue already carries a `bpm`, and nothing on the page has ever shown it —
-so this is a display change with no new data, no new state and no new
-dependency.
+The groove card shows the tempo under the groove's name, with the day repeated
+beside it. Every groove in the catalogue already carries a `bpm`, and the day is
+the one the page header already displays — so this is a display change with no
+new data, no new state and no new dependency.
 
 ## Problem
 
@@ -19,14 +19,17 @@ backed by real data at the time. `bpm` is, and always has been.
 
 ## Scope
 
-- `components/puzzle/GrooveCard.tsx` renders `groove.bpm`.
-- Its doc comment, which currently explains why the tempo is *not* shown, is
-  corrected.
+- `components/puzzle/GrooveCard.tsx` renders `groove.bpm`, followed by the day.
+- The day's wording moves out of `GrooveHeader` into
+  `lib/presentation/date.ts`, so the header and the card cannot drift into two
+  spellings of the same day.
+- `GrooveCard`'s doc comment, which currently explains why the tempo is *not*
+  shown, is corrected.
 
 **Out of scope**
 - **The rest of the meta line** — `4/4`, `4 bars`, `loops until you stop`. The
-  briefing asks for the tempo and only the tempo. All three are equally
-  available if they are wanted later.
+  briefing asks for the tempo, and the day was added beside it by a later
+  request. All three of these remain equally available if wanted later.
 - **The groove number.** `groove.id` would fill the canvas' "No. 214", but a
   visible integer is a lookup key a player can keep notes against, and Epic 1
   makes the sequence more predictable rather than less.
@@ -46,8 +49,13 @@ backed by real data at the time. `bpm` is, and always has been.
   reader announcing the card's heading announces the groove's name alone.
 - **R5** — The tempo is written as the number followed by `bpm` — `105 bpm` —
   never a bare integer and never in another notation.
-- **R6** — `GrooveCard` takes no new props. It already receives the whole
-  `Groove` and reads the field it needs.
+- **R6** — `GrooveCard` receives the day it is to show as a prop, alongside the
+  `Groove` it already receives. It does not read the clock: the route owns
+  "today" — the same day that selects the groove — which keeps the card testable
+  without fake timers, matching `GrooveHeader`.
+- **R7** — The card repeats the day the page header shows, beside the tempo, in
+  the same caption. Both are written by one shared formatter, so the two places
+  cannot spell the same day differently.
 
 ## Acceptance criteria
 
@@ -61,7 +69,12 @@ backed by real data at the time. `bpm` is, and always has been.
 - **AC4** (R5) — Given a groove with a `bpm` of 105, when the card renders, then
   the card shows `105 bpm`.
 - **AC5** (R6) — Given `GrooveCard`'s props, when they are inspected, then they
-  are `groove` and `children`, as before.
+  are `groove`, `date` and `children`, and the card reads the clock nowhere.
+- **AC6** (R7) — Given a groove at 105 bpm shown on 30 August 2026, when the
+  card renders, then one muted line reads `105 bpm · Sunday, 30 August`.
+- **AC7** (R7) — Given the whole page, when it renders, then the day appears
+  twice — once in the header, once on the card — spelled identically, because
+  both call the same formatter.
 
 ## Dependencies
 

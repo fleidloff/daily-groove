@@ -40,4 +40,10 @@ export type DailyResult = {
    * feature-4 have none, and resolve their groove by date instead.
    */
   grooveId?: string
+  /**
+   * The day was given up on: the answer was revealed without being found.
+   * Optional, and absent rather than `false` on a day that was not — records
+   * written before feature-7 have no such field, and must keep loading.
+   */
+  revealed?: boolean
 }

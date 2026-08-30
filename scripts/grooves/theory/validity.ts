@@ -102,8 +102,8 @@ const harmonicMinor: ValidityRule = ({ scalePitchClasses, chordPitchClasses, deg
  * here, never loosening a rule that already holds.
  */
 export const VALIDITY: Record<Flavour, ValidityRule> = {
-  major: strictDiatonic,
-  minor: strictDiatonic,
+  ionian: strictDiatonic,
+  aeolian: strictDiatonic,
   dorian: strictDiatonic,
   mixolydian: strictDiatonic,
   lydian: strictDiatonic,

@@ -125,6 +125,17 @@ describe('design system structure', () => {
     expect(source).not.toMatch(/\bsize\b/)
   })
 
+  // feature-7 Epic 3, Step C2 — R2, AC1. The dot row's explanation is carried
+  // by its own `aria-label` and a native `title`, so the epic adds no
+  // design-system primitive to deliver it.
+  it('has no tooltip component', () => {
+    const tooltips = allFiles
+      .map((f) => f.slice(componentsDir.length + 1))
+      .filter((f) => /Tooltip/.test(f))
+
+    expect(tooltips).toEqual([])
+  })
+
   // Step A3 — R10, AC8
   it('has no import that climbs out of its own folder', () => {
     const offenders: string[] = []

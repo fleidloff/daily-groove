@@ -17,8 +17,12 @@ function mulberry32(seed: number): () => number {
 
 /**
  * Deterministically shuffle a copy of `items` using a seeded Fisher–Yates.
+ *
+ * Exported because it is the feature's only seeded shuffle: `lib/puzzle/
+ * selectGroove.ts` derives each lap's running order with it rather than
+ * growing a second copy of the algorithm two directories away.
  */
-function seededShuffle<T>(items: T[], seed: string): T[] {
+export function seededShuffle<T>(items: T[], seed: string): T[] {
   const rng = mulberry32(hashString(seed))
   const out = items.slice()
   for (let i = out.length - 1; i > 0; i--) {

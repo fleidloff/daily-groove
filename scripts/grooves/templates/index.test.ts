@@ -100,10 +100,10 @@ describe('flavour coverage — R2, R5, AC15', () => {
       'dorian',
       'mixolydian',
     ])
-    expect([...templateById('shuffle').flavours].sort()).toEqual(['blues', 'minor'])
+    expect([...templateById('shuffle').flavours].sort()).toEqual(['aeolian', 'blues'])
     expect([...templateById('bright-straight').flavours].sort()).toEqual([
+      'ionian',
       'lydian',
-      'major',
     ])
     expect([...templateById('half-time').flavours].sort()).toEqual([
       'harmonic-minor',

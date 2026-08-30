@@ -117,6 +117,7 @@ describe('feature components sit in screen regions', () => {
       'GrooveCard',
       'TransportPanel',
       'GuessCard',
+      'ModeToggle',
       'AttemptDots',
       'FeedbackLine',
       'NudgeBox',
@@ -143,6 +144,33 @@ describe('feature components sit in screen regions', () => {
       .sort()
     expect(files).toEqual(['GroovePuzzle.tsx'])
     expect(existsSync(join(COMPONENTS, 'GroovePuzzle.test.tsx'))).toBe(true)
+  })
+
+  // The declared list is only half the rule. Iterating `REGIONS` proves every
+  // *declared* component is on disk; it says nothing about a component that is
+  // on disk and declared nowhere, which is exactly how `ModeToggle` slipped in
+  // silently. This is the reverse direction: the tree may hold nothing the list
+  // does not name (F7 E5 R1, Step D4).
+  it('names every component that exists in a region directory', () => {
+    const undeclared: string[] = []
+
+    for (const [region, names] of Object.entries(REGIONS)) {
+      const declared = new Set(names)
+      const present = readdirSync(join(COMPONENTS, region), { withFileTypes: true })
+        .filter(
+          (entry) =>
+            entry.isFile() &&
+            entry.name.endsWith('.tsx') &&
+            !/\.test\.tsx$/.test(entry.name),
+        )
+        .map((entry) => entry.name.replace(/\.tsx$/, ''))
+
+      for (const name of present) {
+        if (!declared.has(name)) undeclared.push(`${region}/${name}`)
+      }
+    }
+
+    expect(undeclared).toEqual([])
   })
 
   it('places every other component in its region beside its own test', () => {

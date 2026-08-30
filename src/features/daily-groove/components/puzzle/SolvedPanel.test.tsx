@@ -16,6 +16,7 @@ function renderPanel(overrides: Partial<Parameters<typeof SolvedPanel>[0]> = {})
       streak={12}
       chord="Cm7"
       progression="Cm–Fm–G7"
+      revealed={false}
       {...overrides}
     />,
   )
@@ -99,6 +100,55 @@ describe('SolvedPanel', () => {
     const columns = screen.getAllByRole('group')
     expect(columns).toHaveLength(2)
     expect(screen.queryByText(/try this/i)).not.toBeInTheDocument()
+  })
+
+  // --- feature-7 Epic 3, Step C7: a revealed day (R10, R10a, AC10, AC10a) --
+
+  it('shows the whole solution on a revealed day (R10a, AC10a)', () => {
+    renderPanel({ revealed: true, chord: 'Cm7', progression: 'Cm–Fm–G7' })
+
+    expect(screen.getByRole('heading', { name: 'G Dorian' })).toBeInTheDocument()
+
+    const changes = screen.getByRole('group', { name: /the changes/i })
+    expect(within(changes).getByText('Cm7')).toBeInTheDocument()
+    expect(within(changes).getByText('Cm–Fm–G7')).toBeInTheDocument()
+
+    const notes = screen.getByRole('group', { name: /notes to live in/i })
+    expect(
+      within(notes)
+        .getAllByRole('button')
+        .map((c) => c.textContent),
+    ).toEqual(['G', 'A', 'B♭', 'C', 'D', 'E', 'F'])
+  })
+
+  it('claims neither a solve, nor an attempt count, nor a streak (R10, AC10)', () => {
+    renderPanel({ revealed: true, tries: 4, streak: 12 })
+
+    const panel = screen.getByRole('status')
+    expect(panel.textContent).not.toMatch(/solved in/i)
+    expect(panel.textContent).not.toMatch(/streak now/i)
+    expect(panel.textContent).not.toMatch(/tries/i)
+    expect(panel.textContent).not.toMatch(/one try/i)
+    expect(panel.textContent).not.toMatch(/\b12\b/)
+  })
+
+  it('names the day as given up instead (R10, AC10)', () => {
+    renderPanel({ revealed: true })
+    expect(screen.getByText(/given up/i)).toBeInTheDocument()
+  })
+
+  it('draws the given-up line in the existing muted inverted tone, adding no token (R10)', () => {
+    renderPanel({ revealed: true })
+    expect(screen.getByText(/given up/i).className).toContain('on-accent/75')
+  })
+
+  it('brings the tries line back on a genuinely solved day (R10, AC10)', () => {
+    renderPanel({ revealed: false, tries: 3, streak: 12 })
+
+    const meta = screen.getByText(/3 tries/i)
+    expect(meta).toHaveTextContent(/solved in/i)
+    expect(meta).toHaveTextContent(/streak now 12/i)
+    expect(screen.queryByText(/given up/i)).not.toBeInTheDocument()
   })
 
   // --- Epic 3 — the two columns read as even rows --------------------------

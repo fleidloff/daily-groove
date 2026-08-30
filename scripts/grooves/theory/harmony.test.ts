@@ -26,8 +26,8 @@ function musicFor(root: Root, flavour: Flavour, chord: string, progression: stri
 
 describe('buildHarmony', () => {
   it('builds a tonic chord that lives inside the scale', () => {
-    const scale = pitchesOf('C', 'minor')
-    const harmony = buildHarmony('C', 'minor', rngFor('h:minor'))
+    const scale = pitchesOf('C', 'aeolian')
+    const harmony = buildHarmony('C', 'aeolian', rngFor('h:minor'))
     expect(harmony.chordMidi.length).toBeGreaterThanOrEqual(3)
     for (const midi of harmony.chordMidi) {
       expect(scale).toContain(midi % 12)
@@ -35,13 +35,13 @@ describe('buildHarmony', () => {
   })
 
   it('names the minor tonic Cm7', () => {
-    expect(buildHarmony('C', 'minor', rngFor('h:minor')).chordName).toBe('Cm7')
+    expect(buildHarmony('C', 'aeolian', rngFor('h:minor')).chordName).toBe('Cm7')
   })
 
   it('names the dorian and mixolydian tonics', () => {
     expect(buildHarmony('C', 'dorian', rngFor('h:dorian')).chordName).toBe('Cm7')
     expect(buildHarmony('C', 'mixolydian', rngFor('h:mixo')).chordName).toBe('C7')
-    expect(buildHarmony('C', 'major', rngFor('h:major')).chordName).toBe('Cmaj7')
+    expect(buildHarmony('C', 'ionian', rngFor('h:major')).chordName).toBe('Cmaj7')
   })
 
   it('roots the tonic chord on the scale root', () => {
@@ -95,7 +95,7 @@ describe('buildHarmony', () => {
   })
 
   it('joins the progression with en-dashes, not hyphens', () => {
-    const h = buildHarmony('C', 'minor', rngFor('dash'))
+    const h = buildHarmony('C', 'aeolian', rngFor('dash'))
     expect(h.progressionName).toContain('–')
     expect(h.progressionName).not.toMatch(/[A-Za-z0-9]-[A-Z]/)
   })
@@ -110,7 +110,7 @@ describe('buildHarmony', () => {
     const names = new Set(
       Array.from(
         { length: 12 },
-        (_, i) => buildHarmony('C', 'minor', rngFor(`vary-${i}`)).progressionName,
+        (_, i) => buildHarmony('C', 'aeolian', rngFor(`vary-${i}`)).progressionName,
       ),
     )
     expect(names.size).toBeGreaterThan(1)

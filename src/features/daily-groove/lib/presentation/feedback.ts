@@ -19,6 +19,9 @@ const DOT_COUNT = 3
 /** The nudge appears once this many guesses have missed, and then stays. */
 const NUDGE_AFTER_MISSES = 2
 
+/** The reveal is offered from this many misses, and stays until the day ends. */
+const REVEAL_AFTER_MISSES = 3
+
 const OPENING: Feedback = {
   message:
     'Loop it a few times. Sing the note that feels like rest — that’s usually the root.',
@@ -90,6 +93,21 @@ export function selectFeedback(attempts: Attempt[], solved: boolean): Feedback {
  */
 export function shouldShowNudge(attempts: Attempt[], solved: boolean): boolean {
   return !solved && missCount(attempts) >= NUDGE_AFTER_MISSES
+}
+
+/**
+ * Whether the give-up control is on offer. It appears on the third miss and
+ * stays for the rest of the day, exactly as the nudge does — the miss count
+ * only grows, so no latch is needed. It is withdrawn once the day has ended,
+ * whether that was by solving it or by having already given up: there is
+ * nothing left to reveal.
+ */
+export function shouldOfferReveal(
+  attempts: Attempt[],
+  solved: boolean,
+  revealed: boolean,
+): boolean {
+  return !solved && !revealed && missCount(attempts) >= REVEAL_AFTER_MISSES
 }
 
 /**

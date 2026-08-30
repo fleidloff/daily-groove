@@ -48,10 +48,10 @@ describe('scaleNotes', () => {
   it('gives the seeded natural-root scales their conventional accidentals', () => {
     // The old premise held for these by coincidence; keep it asserted where it
     // is actually true, so a regression in the common case still fails.
-    expect(scaleNotes({ root: 'C', flavour: 'Minor' })).toEqual([
+    expect(scaleNotes({ root: 'C', flavour: 'Aeolian' })).toEqual([
       'C', 'D', 'E\u266d', 'F', 'G', 'A\u266d', 'B\u266d',
     ])
-    expect(scaleNotes({ root: 'D', flavour: 'Major' })).toEqual([
+    expect(scaleNotes({ root: 'D', flavour: 'Ionian' })).toEqual([
       'D', 'E', 'F\u266f', 'G', 'A', 'B', 'C\u266f',
     ])
     expect(scaleNotes({ root: 'F', flavour: 'Lydian' })).toEqual([
@@ -93,7 +93,7 @@ describe('scaleNotes', () => {
 
   it('returns seven distinct notes from every chromatic root', () => {
     for (const root of ROOTS) {
-      const notes = scaleNotes({ root, flavour: 'Minor' })
+      const notes = scaleNotes({ root, flavour: 'Aeolian' })
       expect(notes, root).toHaveLength(7)
       expect(new Set(notes).size, root).toBe(7)
     }
@@ -103,7 +103,7 @@ describe('scaleNotes', () => {
     // A diatonic scale never repeats or skips a letter. C\u266f Minor starts on
     // C\u266f \u2014 not its flat twin \u2014 and every degree that follows takes the next
     // letter, whatever accidental that needs.
-    expect(scaleNotes({ root: 'C\u266f', flavour: 'Minor' })).toEqual([
+    expect(scaleNotes({ root: 'C\u266f', flavour: 'Aeolian' })).toEqual([
       'C\u266f',
       'D\u266f',
       'E',

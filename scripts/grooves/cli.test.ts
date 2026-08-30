@@ -12,6 +12,7 @@ import { templateById } from './templates/index.ts'
 import { renderVoices } from './voices.ts'
 import { OVERHANG_BARS, SAMPLE_RATE } from './cli.ts'
 import { DEFAULT_MANIFEST_PATH, DEFAULT_PACK_DIR, displayFlavour, generate, toGroove } from './cli.ts'
+import { FLAVOURS } from './theory/scales.ts'
 import { placeholderPack } from './testing/placeholderPack.ts'
 import type { GrooveSpec } from './types.ts'
 
@@ -203,6 +204,15 @@ describe('displayFlavour', () => {
     expect(displayFlavour('dorian')).toBe('Dorian')
     expect(displayFlavour('harmonic-minor')).toBe('Harmonic minor')
     expect(displayFlavour('blues')).toBe('Blues')
+  })
+
+  // Epic 4, AC3 — the vocabulary the app is handed is modal end to end.
+  it('spells the whole vocabulary modally, with no Major or Minor in it', () => {
+    const displayed = FLAVOURS.map(displayFlavour)
+    expect(displayed).toContain('Ionian')
+    expect(displayed).toContain('Aeolian')
+    expect(displayed).not.toContain('Major')
+    expect(displayed).not.toContain('Minor')
   })
 
   it('agrees with what the app derives from the scale string', () => {

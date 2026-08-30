@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import type { Answer, Attempt, DailyResult } from '../types'
 import { createDailyGrooveStore } from './useDailyGrooveStore'
+import {
+  exactMatch,
+  familyMatch,
+  type FlavourMatcher,
+} from '../lib/puzzle/scoring'
 
 const ANSWER: Answer = { root: 'G', flavour: 'Dorian' }
 
@@ -225,6 +230,253 @@ describe('createDailyGrooveStore', () => {
       expect(state.selectedRoot).toBeNull()
       expect(state.selectedFlavour).toBeNull()
       expect(state.solved).toBe(false)
+    })
+  })
+  // --- Epic 3 (feature-7): the terminal state -------------------------------
+
+  describe('reveal()', () => {
+    // Step B1 — E3 R7, R9, R12
+    it('ends the day without solving it, and spends no attempt', () => {
+      const store = freshStore()
+      store.getState().selectRoot('G')
+      store.getState().selectFlavour('Mixolydian')
+      store.getState().check()
+      const spent = store.getState().attempts
+
+      store.getState().reveal()
+
+      const state = store.getState()
+      expect(state.revealed).toBe(true)
+      // Giving up is not a win, and the reveal itself is not an attempt.
+      expect(state.solved).toBe(false)
+      expect(state.attempts).toEqual(spent)
+    })
+
+    it('starts false on a fresh day', () => {
+      expect(freshStore().getState().revealed).toBe(false)
+    })
+
+    it('takes no further guess once revealed', () => {
+      const store = freshStore()
+      store.getState().selectRoot('G')
+      store.getState().selectFlavour('Mixolydian')
+      store.getState().check()
+
+      store.getState().reveal()
+
+      // A fresh, valid pair — different from the one just tried — is still
+      // refused: the day is over.
+      store.getState().selectFlavour('Dorian')
+      expect(store.getState().canCheck()).toBe(false)
+      store.getState().check()
+      expect(store.getState().attempts).toHaveLength(1)
+    })
+
+    it('is idempotent', () => {
+      const store = freshStore()
+      store.getState().reveal()
+      store.getState().reveal()
+      expect(store.getState().revealed).toBe(true)
+      expect(store.getState().attempts).toEqual([])
+    })
+
+    it('a solved day ignores it', () => {
+      const store = freshStore()
+      store.getState().selectRoot('G')
+      store.getState().selectFlavour('Dorian')
+      store.getState().check()
+      expect(store.getState().solved).toBe(true)
+
+      store.getState().reveal()
+
+      expect(store.getState().revealed).toBe(false)
+      expect(store.getState().solved).toBe(true)
+    })
+  })
+
+  describe("the second miss selects the day's root", () => {
+    /** A day whose root is nothing the test ever guesses. */
+    const E_DORIAN: Answer = { root: 'E', flavour: 'Dorian' }
+
+    // Step B2 — E3 R4, R5, AC3, AC4
+    it('leaves the selection alone on the first miss', () => {
+      const store = createDailyGrooveStore(E_DORIAN)
+      store.getState().selectRoot('C')
+      store.getState().selectFlavour('Mixolydian')
+      store.getState().check()
+
+      expect(store.getState().selectedRoot).toBe('C')
+    })
+
+    it("selects the day's root on the second miss", () => {
+      const store = createDailyGrooveStore(E_DORIAN)
+      store.getState().selectRoot('C')
+      store.getState().selectFlavour('Mixolydian')
+      store.getState().check()
+      store.getState().selectRoot('D')
+      store.getState().check()
+
+      expect(store.getState().attempts).toHaveLength(2)
+      expect(store.getState().selectedRoot).toBe('E')
+      // Only the root is handed over — the flavour is still the player's guess.
+      expect(store.getState().selectedFlavour).toBe('Mixolydian')
+    })
+
+    it('fires once: a later miss does not overwrite the player\'s choice', () => {
+      const store = createDailyGrooveStore(E_DORIAN)
+      store.getState().selectRoot('C')
+      store.getState().selectFlavour('Mixolydian')
+      store.getState().check()
+      store.getState().selectRoot('D')
+      store.getState().check()
+      expect(store.getState().selectedRoot).toBe('E')
+
+      // The selection is the player's to change, and a third miss leaves it be.
+      store.getState().selectRoot('C')
+      store.getState().check()
+
+      expect(store.getState().attempts).toHaveLength(3)
+      expect(store.getState().selectedRoot).toBe('C')
+    })
+
+    // E3 R3, AC2 — guesses stay unlimited: the row marks par, not lives.
+    it('scores and records a fourth miss like the first', () => {
+      const store = createDailyGrooveStore(E_DORIAN)
+      const flavours = ['Mixolydian', 'Lydian', 'Mixolydian', 'Lydian']
+      for (const [i, flavour] of flavours.entries()) {
+        store.getState().selectRoot((['C', 'D', 'F', 'G'] as const)[i])
+        store.getState().selectFlavour(flavour)
+        expect(store.getState().canCheck()).toBe(true)
+        store.getState().check()
+      }
+
+      expect(store.getState().attempts).toHaveLength(4)
+      expect(store.getState().attempts.every((a) => !a.correct)).toBe(true)
+      expect(store.getState().solved).toBe(false)
+    })
+
+    it('does not fire when the second guess solves the day', () => {
+      const store = createDailyGrooveStore(E_DORIAN)
+      store.getState().selectRoot('C')
+      store.getState().selectFlavour('Mixolydian')
+      store.getState().check()
+      store.getState().selectRoot('E')
+      store.getState().selectFlavour('Dorian')
+      store.getState().check()
+
+      // One miss, then a solve: the rule counts misses, not checks.
+      expect(store.getState().solved).toBe(true)
+      expect(store.getState().selectedRoot).toBe('E')
+      expect(store.getState().selectedFlavour).toBe('Dorian')
+    })
+  })
+
+  describe('hydrate() and the reveal (Step B3 — E3 R8, R9, R13, AC9, AC13)', () => {
+    const missed: Attempt = {
+      root: 'C',
+      flavour: 'Mixolydian',
+      correct: false,
+      rootMatched: false,
+      flavourMatched: false,
+    }
+    const stored: DailyResult = {
+      date: '2026-08-30',
+      answer: ANSWER,
+      attempts: [missed, missed, missed],
+      solved: false,
+    }
+
+    it('restores a revealed day as over', () => {
+      const store = freshStore()
+      store.getState().hydrate({ ...stored, revealed: true })
+
+      expect(store.getState().revealed).toBe(true)
+      expect(store.getState().solved).toBe(false)
+      expect(store.getState().canCheck()).toBe(false)
+    })
+
+    it('a record written without the flag loads as an unrevealed day', () => {
+      const store = freshStore()
+      store.getState().hydrate(stored)
+
+      expect(store.getState().revealed).toBe(false)
+    })
+
+    it('clears a reveal when the day is hydrated afresh', () => {
+      const store = freshStore()
+      store.getState().hydrate({ ...stored, revealed: true })
+      store.getState().hydrate(stored)
+      expect(store.getState().revealed).toBe(false)
+
+      store.getState().hydrate({ ...stored, revealed: true })
+      store.getState().hydrate(null)
+      expect(store.getState().revealed).toBe(false)
+    })
+  })
+
+  // Feature 7, Epic 5, Step D2 — R5, R8, AC4, AC5, AC8.
+  //
+  // The comparison on the flavour half is a parameter, so simple mode can
+  // loosen it without the store learning what simple mode is. It is read at
+  // check time rather than captured at creation, which is what lets the puzzle
+  // swap it mid-day without recreating the store and resetting the day.
+  describe('the flavour matcher', () => {
+    it('grades exactly when none is given, as it always has', () => {
+      const store = createDailyGrooveStore(ANSWER)
+      store.getState().selectRoot('G')
+      store.getState().selectFlavour('Minor')
+      store.getState().check()
+
+      const [attempt] = store.getState().attempts
+      expect(attempt.flavourMatched).toBe(false)
+      expect(attempt.correct).toBe(false)
+      expect(store.getState().solved).toBe(false)
+    })
+
+    it("solves a Dorian day from its root and the minor family (AC4)", () => {
+      const store = createDailyGrooveStore(ANSWER, familyMatch)
+      store.getState().selectRoot('G')
+      store.getState().selectFlavour('Minor')
+      store.getState().check()
+
+      const [attempt] = store.getState().attempts
+      expect(attempt.flavourMatched).toBe(true)
+      expect(attempt.correct).toBe(true)
+      expect(store.getState().solved).toBe(true)
+      // What the player pressed is what is recorded, not the mode behind it.
+      expect(attempt.flavour).toBe('Minor')
+    })
+
+    it('misses a major-family guess on a minor day (AC5)', () => {
+      const store = createDailyGrooveStore(ANSWER, familyMatch)
+      store.getState().selectRoot('G')
+      store.getState().selectFlavour('Major')
+      store.getState().check()
+
+      expect(store.getState().attempts[0].correct).toBe(false)
+      expect(store.getState().solved).toBe(false)
+    })
+
+    it('reads the matcher at check time, so swapping it needs no new store', () => {
+      let current: FlavourMatcher = exactMatch
+      const store = createDailyGrooveStore(ANSWER, (answer, guess) =>
+        current(answer, guess),
+      )
+
+      // Under the exact comparison, the family word is just a wrong flavour.
+      store.getState().selectRoot('C')
+      store.getState().selectFlavour('Minor')
+      store.getState().check()
+      expect(store.getState().attempts).toHaveLength(1)
+      expect(store.getState().solved).toBe(false)
+
+      // Swap the comparison on the same store instance: the attempt already
+      // spent is still there, and the next check grades the new way (AC8).
+      current = familyMatch
+      store.getState().selectRoot('G')
+      store.getState().check()
+      expect(store.getState().attempts).toHaveLength(2)
+      expect(store.getState().solved).toBe(true)
     })
   })
 })

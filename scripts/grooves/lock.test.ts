@@ -4,6 +4,7 @@ import {
   mkdirSync,
   mkdtempSync,
   readFileSync,
+  readdirSync,
   rmSync,
   writeFileSync,
 } from 'node:fs'
@@ -284,5 +285,36 @@ describe('Step B3 — the guard needs no audio toolchain (R13, AC11)', () => {
     // The proof that matters: nothing in the verify path decodes or renders.
     const f = fixture()
     expect(verifyLock(f.lock, f.paths)).toEqual([])
+  })
+})
+
+// Step C2 — R5b, AC7a. `verifyLock` walks the lock's entries, so it is blind in
+// one direction: an mp3 whose catalogue row has been deleted stays on disk,
+// passes the build guard, and ships to every visitor. This walks the directory
+// instead, so the committed audio and the committed lock have to agree both
+// ways round.
+describe('Step C2 — public/grooves holds one mp3 per locked groove and no others', () => {
+  const GROOVE_DIR = join(import.meta.dirname, '..', '..', 'public', 'grooves')
+  const LOCK_PATH = join(import.meta.dirname, 'grooves.lock.json')
+
+  const committed = readLock(LOCK_PATH)
+  if (!committed) throw new Error(`no lock at ${LOCK_PATH} — run \`npm run grooves\``)
+  const lockedIds = committed.grooves.map((g) => g.id)
+  const onDisk = readdirSync(GROOVE_DIR)
+    .filter((name) => name.endsWith('.mp3'))
+    .map((name) => name.replace(/\.mp3$/, ''))
+
+  it('leaves no mp3 behind that the lock does not record', () => {
+    const orphans = onDisk.filter((id) => !lockedIds.includes(id))
+    expect(orphans, 'unreferenced audio is shipped to every visitor').toEqual([])
+  })
+
+  it('has an mp3 on disk for every groove the lock records', () => {
+    const missing = lockedIds.filter((id) => !onDisk.includes(id))
+    expect(missing).toEqual([])
+  })
+
+  it('matches the directory to the lock exactly', () => {
+    expect([...onDisk].sort()).toEqual([...lockedIds].sort())
   })
 })

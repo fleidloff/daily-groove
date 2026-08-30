@@ -9,7 +9,7 @@ import { halfTime } from './half-time.ts'
  *
  * The four flavour pairs are disjoint and their union is exactly the eight
  * flavours the game offers (R2, R5, AC15) — dorian and mixolydian on the funk,
- * blues and minor on the shuffle, lydian and major on the bright feel,
+ * blues and aeolian on the shuffle, lydian and ionian on the bright feel,
  * phrygian and harmonic minor on the half-time. `templates/index.test.ts`
  * asserts that, and it is what makes the game's chip row honest.
  */

@@ -7,8 +7,8 @@ import { pitchClassOf } from './notes.ts'
  * present them. A template's `flavours` is a subset of this list.
  */
 export const FLAVOURS: Flavour[] = [
-  'major',
-  'minor',
+  'ionian',
+  'aeolian',
   'dorian',
   'mixolydian',
   'lydian',
@@ -24,8 +24,8 @@ export const FLAVOURS: Flavour[] = [
  * cope with it having one fewer degree.
  */
 export const INTERVALS: Record<Flavour, number[]> = {
-  major: [0, 2, 4, 5, 7, 9, 11],
-  minor: [0, 2, 3, 5, 7, 8, 10],
+  ionian: [0, 2, 4, 5, 7, 9, 11],
+  aeolian: [0, 2, 3, 5, 7, 8, 10],
   dorian: [0, 2, 3, 5, 7, 9, 10],
   mixolydian: [0, 2, 4, 5, 7, 9, 10],
   lydian: [0, 2, 4, 6, 7, 9, 11],

@@ -74,6 +74,40 @@ describe('AttemptDots', () => {
     expect(screen.getByRole('img', { name: /solved/i })).toBeInTheDocument()
   })
 
+  // --- Epic 3 (feature-7) Step C1: the dots say what they mean (R1, R2, AC1)
+
+  it('explains that three is par and guessing continues, in the accessible name (R1, R2, AC1)', () => {
+    render(<AttemptDots states={['spent', 'spent', 'unspent']} />)
+
+    const row = screen.getByRole('img')
+    // The count it always carried...
+    expect(row).toHaveAccessibleName(expect.stringContaining('2 of 3 attempts spent'))
+    // ...plus what the row actually means.
+    expect(row).toHaveAccessibleName(expect.stringMatching(/par/i))
+    expect(row).toHaveAccessibleName(expect.stringMatching(/not a limit/i))
+    expect(row).toHaveAccessibleName(expect.stringMatching(/keep guessing/i))
+  })
+
+  it('carries the same words in a native title, so a pointer gets them too (R2, AC1)', () => {
+    render(<AttemptDots states={['spent', 'unspent', 'unspent']} />)
+
+    const row = screen.getByRole('img')
+    const title = row.getAttribute('title')
+
+    expect(title).not.toBeNull()
+    expect(title).toBe(row.getAttribute('aria-label'))
+    expect(title).toMatch(/par/i)
+    expect(title).toMatch(/keep guessing/i)
+  })
+
+  it('keeps the solved branch short rather than explaining a finished day (R1, AC1)', () => {
+    render(<AttemptDots states={['solved', 'solved', 'solved']} />)
+
+    const row = screen.getByRole('img')
+    expect(row).toHaveAccessibleName('Solved')
+    expect(row).toHaveAttribute('title', 'Solved')
+  })
+
   it('hides the individual dots from assistive technology (R10)', () => {
     const { container } = render(
       <AttemptDots states={['spent', 'unspent', 'unspent']} />,

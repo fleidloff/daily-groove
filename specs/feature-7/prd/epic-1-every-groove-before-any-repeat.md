@@ -122,8 +122,10 @@ once in this feature, and every lap after it holds the full guarantee.
 ## Acceptance criteria
 
 - **AC1** (R1) — Given a rotation of `N` grooves, when the pick is run for `N`
-  consecutive days starting at any date, then the set of grooves returned is the
-  whole rotation and no groove appears twice.
+  consecutive days starting at a lap boundary, then the set of grooves returned
+  is the whole rotation and no groove appears twice. A window starting mid-lap
+  spans two independent permutations and is not covered by R1 — R4 and R5 are
+  what constrain the seam.
 - **AC2** (R2) — Given the same date, when the pick is run repeatedly, in any
   order, with no storage present, then it returns the same groove every time.
 - **AC3** (R3) — Given two times on the same local calendar day, when the pick

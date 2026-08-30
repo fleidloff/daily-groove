@@ -66,17 +66,25 @@ it directly; neither epic needs a seam from the other.
 Frozen before the tracks start.
 
 ```ts
-// scripts/grooves/types.ts — the flavour union, renamed in place, order kept
+// scripts/grooves/types.ts — the flavour union, renamed in place, order kept.
+// NOTE: the internal union is lower-case and hyphenated; `displayFlavour()` in
+// cli.ts title-cases it on the way into the manifest, so renaming the internal
+// member is what makes the displayed `Ionian` / `Aeolian` follow.
 export type Flavour =
-  | 'Blues'          // removed in Track C
-  | 'Dorian'
-  | 'Harmonic minor' // removed in Track C
-  | 'Lydian'
-  | 'Ionian'         // was 'Major'
-  | 'Aeolian'        // was 'Minor'
-  | 'Mixolydian'
-  | 'Phrygian'
+  | 'blues'           // removed in Track C
+  | 'dorian'
+  | 'harmonic-minor'  // removed in Track C
+  | 'lydian'
+  | 'ionian'          // was 'major'
+  | 'aeolian'         // was 'minor'
+  | 'mixolydian'
+  | 'phrygian'
 ```
+
+The flavour draw is `pick(rng, template.flavours)` in `events.ts` — an index into
+the template's own array, with the RNG seeded from
+`` `${spec.template}:${spec.seed}:events` ``, never from the flavour string. That
+is *why* an in-place rename cannot move audio, and why reordering would.
 
 ```ts
 // src/lib/groove.ts — unchanged
@@ -235,6 +243,14 @@ Covers: R4, R5b, AC5
   fails, all four are present.
 - **Implement** — delete those four objects from `catalogue.json`, then
   `npm run grooves` to regenerate the manifest and lock without them.
+- **Also fold in here** — `scripts/grooves/pools.ts`'s `SCALE_DISTRACTORS` is a
+  hand-written list of scale *display* strings still reading `'A major'`,
+  `'C minor'`, `'G major'`, `'F minor'`, `'B minor'`, `'E♭ major'`, `'D major'`.
+  It is not typed `Flavour`, so the rename did not reach it and nothing failed
+  to compile. Left alone, `SCALE_POOL` mixes vocabularies — real answers read
+  `B ionian` while the distractors beside them read `A major`, which is a tell
+  if that row is ever rendered. Rename them to the modal spelling; this step
+  regenerates the manifest anyway, so it costs only `manifestSha256`.
 - **Green when** — the assertion passes and `grooves:verify` is green.
 - **Refactor** — none.
 

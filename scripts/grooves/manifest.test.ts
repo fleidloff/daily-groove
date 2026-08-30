@@ -254,3 +254,64 @@ describe('writeManifest', () => {
     expect(written).not.toContain('groove-01')
   })
 })
+
+// Step C3 — R4, R5, R5a, AC5, AC6, AC6a. The assertions above are about the
+// renderer; these are about the module it actually produced and the app
+// actually imports. The manifest is generated, so a failure here is fixed in
+// `catalogue.json` and a re-render, never by editing the module.
+describe('the committed manifest', () => {
+  const MANIFEST_PATH = join(
+    import.meta.dirname,
+    '..',
+    '..',
+    'src',
+    'features',
+    'daily-groove',
+    'data',
+    'grooves.generated.ts',
+  )
+  const grooves = evaluate(readFileSync(MANIFEST_PATH, 'utf8'))
+
+  function byFlavour(): Map<string, Groove[]> {
+    const groups = new Map<string, Groove[]>()
+    for (const groove of grooves) {
+      const group = groups.get(groove.flavour) ?? []
+      group.push(groove)
+      groups.set(groove.flavour, group)
+    }
+    return groups
+  }
+
+  it('holds eighteen grooves', () => {
+    expect(grooves).toHaveLength(18)
+  })
+
+  it('groups into exactly six modes of three', () => {
+    const groups = byFlavour()
+    expect(groups.size, [...groups.keys()].sort().join(', ')).toBe(6)
+    for (const [flavour, group] of groups) expect(group.length, flavour).toBe(3)
+  })
+
+  it('names the six modes and nothing else', () => {
+    expect([...byFlavour().keys()].sort()).toEqual([
+      'Aeolian',
+      'Dorian',
+      'Ionian',
+      'Lydian',
+      'Mixolydian',
+      'Phrygian',
+    ])
+  })
+
+  it('offers no groove whose flavour is Blues or Harmonic minor', () => {
+    for (const groove of grooves) {
+      expect(['Blues', 'Harmonic minor'], groove.id).not.toContain(groove.flavour)
+    }
+  })
+
+  it('spells every scale modally, with no major or minor left in it', () => {
+    for (const groove of grooves) {
+      expect(groove.scale, groove.id).not.toMatch(/\b(major|minor)\b/)
+    }
+  })
+})

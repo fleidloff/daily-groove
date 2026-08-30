@@ -13,7 +13,7 @@ import type { FeelTemplate } from '../types.ts'
  * balance is what makes this feel read as bright rather than as straight-funk
  * played faster.
  *
- * `flavours` carries lydian and major. Both are major-third modes whose colour
+ * `flavours` carries lydian and ionian. Both are major-third modes whose colour
  * needs air around it, and both would be swallowed by a heavier feel; they
  * differ only in the fourth, which this mix leaves audible.
  */
@@ -22,7 +22,7 @@ export const brightStraight: FeelTemplate = {
   tempoRange: [116, 132],
   subdivision: 8,
   swing: 0.06,
-  flavours: ['lydian', 'major'],
+  flavours: ['lydian', 'ionian'],
   voices: ['kick', 'snare', 'hatClosed', 'rim', 'bass', 'comp'],
   humanize: { timingMs: 6, velocity: 0.05 },
   // Everything a few dB down from the funk kit, and the comp brought up: a

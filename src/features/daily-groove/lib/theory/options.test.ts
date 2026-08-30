@@ -1,5 +1,7 @@
+import { readdirSync, readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { describe, it, expect } from 'vitest'
-import { buildOptions } from './options'
+import { buildOptions, seededShuffle } from './options'
 
 const pool = [
   'C minor',
@@ -53,5 +55,51 @@ describe('buildOptions', () => {
     const opts = buildOptions('C minor', smallPool, 'seed-1', 4)
     expect(new Set(opts).size).toBe(opts.length)
     expect(opts).toContain('C minor')
+  })
+})
+
+describe('seededShuffle', () => {
+  it('is deterministic — the same seed returns the same order', () => {
+    const a = seededShuffle([1, 2, 3, 4, 5], 'lap:0')
+    const b = seededShuffle([1, 2, 3, 4, 5], 'lap:0')
+    expect(a).toEqual(b)
+  })
+
+  it('returns a different order for a different seed', () => {
+    const a = seededShuffle([1, 2, 3, 4, 5], 'lap:0')
+    const b = seededShuffle([1, 2, 3, 4, 5], 'lap:1')
+    expect(a).not.toEqual(b)
+  })
+
+  it('is a permutation — same members, source left untouched', () => {
+    const source = [1, 2, 3, 4, 5]
+    const shuffled = seededShuffle(source, 'lap:7')
+    expect([...shuffled].sort()).toEqual([1, 2, 3, 4, 5])
+    expect(source).toEqual([1, 2, 3, 4, 5])
+  })
+})
+
+/**
+ * R8/AC8: one seeded shuffle exists in the tree, and it is this one. The guard
+ * has to keep itself out of its own search, so the Fisher-Yates marker is
+ * assembled from fragments rather than written as one literal — otherwise this
+ * file would be the second holder it is meant to forbid.
+ */
+const FISHER_YATES = 'for (let i = out.length - ' + '1; i > 0; i--)'
+
+function sourceFilesUnder(dir: string): string[] {
+  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+    const full = join(dir, entry.name)
+    if (entry.isDirectory()) return sourceFilesUnder(full)
+    return /\.tsx?$/.test(entry.name) ? [full] : []
+  })
+}
+
+describe('the seeded shuffle has exactly one implementation', () => {
+  it('appears in options.ts and nowhere else under src/', () => {
+    const holders = sourceFilesUnder(join(process.cwd(), 'src'))
+      .filter((file) => readFileSync(file, 'utf8').includes(FISHER_YATES))
+      .map((file) => file.replace(`${process.cwd()}/`, ''))
+    expect(holders).toEqual(['src/features/daily-groove/lib/theory/options.ts'])
   })
 })

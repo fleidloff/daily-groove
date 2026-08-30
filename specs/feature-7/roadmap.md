@@ -285,8 +285,9 @@ graph LR
 
 ## Assumptions
 
-- **Tempo only.** Epic 2 adds `bpm` and not the rest of the meta line, because
-  that is what the briefing asks for.
+- **Tempo, and the day beside it.** Epic 2 adds `bpm` and, by a later request,
+  repeats the header's day next to it. The rest of the meta line — `4/4`,
+  `4 bars`, `loops until you stop` — is still deliberately absent.
 - **The auto-selected root stays editable.** The player can change it; the
   chips are not locked and `NudgeBox` remains. Handing over a selection is a
   convenience, not a commitment.

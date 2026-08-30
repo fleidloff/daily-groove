@@ -1,6 +1,11 @@
 import { describe, it, expect } from 'vitest'
 import type { Attempt } from '../../types'
-import { selectFeedback, shouldShowNudge, dotStates } from './feedback'
+import {
+  selectFeedback,
+  shouldShowNudge,
+  shouldOfferReveal,
+  dotStates,
+} from './feedback'
 
 /** The day's answer throughout: G Dorian. */
 const attempt = (
@@ -24,6 +29,10 @@ const FLAVOUR_ONLY = attempt('C', 'Dorian', false, true)
 const NEITHER = attempt('C', 'Mixolydian', false, false)
 /** G Dorian against G Dorian. */
 const EXACT = attempt('G', 'Dorian', true, true)
+
+/** A list of exactly `n` missed guesses, cycling the three wrong shapes. */
+const misses = (n: number): Attempt[] =>
+  Array.from({ length: n }, (_, i) => [NEITHER, ROOT_ONLY, FLAVOUR_ONLY][i % 3])
 
 describe('selectFeedback', () => {
   // Step A1 — R4, AC4
@@ -194,5 +203,66 @@ describe('dotStates', () => {
     const attempts = [NEITHER, ROOT_ONLY]
     dotStates(attempts, false)
     expect(attempts).toHaveLength(2)
+  })
+  // Step A3 — E3 R3, AC2: the row marks par, not lives. A fourth miss is
+  // scored and recorded and still leaves the row exactly three dots wide.
+  it('leaves the row full, and three wide, after a fourth miss', () => {
+    const four = dotStates(misses(4), false)
+    expect(four).toHaveLength(3)
+    expect(four.every((dot) => dot === 'spent')).toBe(true)
+  })
+})
+
+describe('shouldOfferReveal', () => {
+  // Step A1 — E3 R6, R11, AC6, AC7
+  it('is not offered before the third miss', () => {
+    expect(shouldOfferReveal([], false, false)).toBe(false)
+    expect(shouldOfferReveal(misses(1), false, false)).toBe(false)
+    expect(shouldOfferReveal(misses(2), false, false)).toBe(false)
+  })
+
+  it('is offered on the third miss', () => {
+    expect(shouldOfferReveal(misses(3), false, false)).toBe(true)
+  })
+
+  it('stays offered on the fourth and later miss', () => {
+    expect(shouldOfferReveal(misses(4), false, false)).toBe(true)
+    expect(shouldOfferReveal(misses(6), false, false)).toBe(true)
+  })
+
+  it('is never offered on a solved day, however many misses came first', () => {
+    expect(shouldOfferReveal(misses(5), true, false)).toBe(false)
+    expect(shouldOfferReveal([...misses(2), EXACT], true, false)).toBe(false)
+  })
+
+  it('counts only failed attempts, not the solving one', () => {
+    // Two misses plus a correct pair is still two misses.
+    expect(shouldOfferReveal([...misses(2), EXACT], false, false)).toBe(false)
+  })
+
+  // Step A2 — E3 R11, R12, AC12
+  it('stops offering once the day has been revealed', () => {
+    expect(shouldOfferReveal(misses(4), false, true)).toBe(false)
+    expect(shouldOfferReveal(misses(9), false, true)).toBe(false)
+  })
+
+  it('is a pure derivation — same input, same answer, no latch', () => {
+    const attempts = misses(3)
+    const first = shouldOfferReveal(attempts, false, false)
+    const second = shouldOfferReveal(attempts, false, false)
+    const third = shouldOfferReveal(attempts, false, false)
+    expect([first, second, third]).toEqual([true, true, true])
+    // Nothing is remembered between calls: revealing and un-revealing the same
+    // list flips the answer back, which a stored flag could not do.
+    expect(shouldOfferReveal(attempts, false, true)).toBe(false)
+    expect(shouldOfferReveal(attempts, false, false)).toBe(true)
+  })
+
+  it('does not mutate the attempts it is given', () => {
+    const attempts = misses(3)
+    const before = JSON.stringify(attempts)
+    shouldOfferReveal(attempts, false, false)
+    expect(JSON.stringify(attempts)).toBe(before)
+    expect(attempts).toHaveLength(3)
   })
 })

@@ -3,11 +3,23 @@
 import { useCallback, useMemo, useState, useSyncExternalStore } from 'react'
 import type { Groove } from '../types'
 import type { PlayableSource } from '../lib/audio/transport'
-import { dotStates, selectFeedback, shouldShowNudge } from '../lib/presentation/feedback'
-import { flavourOptions, ROOTS, loopSecondsOf } from '../lib/theory/music'
+import {
+  dotStates,
+  selectFeedback,
+  shouldOfferReveal,
+  shouldShowNudge,
+} from '../lib/presentation/feedback'
+import {
+  flavourOptions,
+  ROOTS,
+  loopSecondsOf,
+  simpleRootOptions,
+} from '../lib/theory/music'
+import { FAMILIES } from '../lib/theory/families'
 import { selectGrooveForDate } from '../lib/puzzle/selectGroove'
 import { GROOVES } from '../data/grooves.generated'
 import { usePuzzleSession } from '../hooks/usePuzzleSession'
+import { useSimpleMode } from '../hooks/useSimpleMode'
 import { useTransport } from '../hooks/useTransport'
 import { GrooveCard } from './puzzle/GrooveCard'
 import { GrooveHeader } from './header/GrooveHeader'
@@ -74,6 +86,11 @@ function GroovePuzzleView({ groove }: { groove: Groove }) {
   // and seeds the flavour options, and is what the header displays (R4, R5).
   const [today] = useState(() => new Date())
 
+  // The player's own preference, not the day's: it is read from its own store
+  // and survives both a reload and a new day (E5 R7). Everything it changes is
+  // below — two option sets and one comparison. The day itself never sees it.
+  const { simple, setSimple } = useSimpleMode()
+
   const {
     selectedRoot,
     selectedFlavour,
@@ -84,9 +101,11 @@ function GroovePuzzleView({ groove }: { groove: Groove }) {
     selectFlavour,
     canCheck,
     check,
+    revealed,
+    reveal,
     answer,
     streak,
-  } = usePuzzleSession(groove, today)
+  } = usePuzzleSession(groove, today, simple)
 
   // What the page plays: today's groove, its musical loop length, and where
   // inside its own file the music starts. The head delay is per-groove data,
@@ -112,8 +131,9 @@ function GroovePuzzleView({ groove }: { groove: Groove }) {
     toggle,
   } = useTransport(source)
 
-  // Epic 3's three derivations. All pure functions of the attempt list, so
-  // nothing about feedback, the nudge or the dots is stored or latched.
+  // Epic 3's derivations, and feature-7's fourth beside them. All pure
+  // functions of the attempt list and the day's outcome, so nothing about
+  // feedback, the nudge, the dots or the way out is stored or latched (R12).
   const feedback = useMemo(
     () => selectFeedback(attempts, solved),
     [attempts, solved],
@@ -123,13 +143,49 @@ function GroovePuzzleView({ groove }: { groove: Groove }) {
     [attempts, solved],
   )
   const dots = useMemo(() => dotStates(attempts, solved), [attempts, solved])
+  const showReveal = useMemo(
+    () => shouldOfferReveal(attempts, solved, revealed),
+    [attempts, solved, revealed],
+  )
+
+  // The two rows the card offers, and the only thing simple mode changes about
+  // the page. Both narrowings are deterministic for the date and both keep the
+  // answer reachable: the six roots are drawn around it (E5 R2, R3), and every
+  // mode belongs to one of the two families (E5 R4, R5). Switching swaps the
+  // sets and nothing else — not the groove, not the answer, not the attempts.
+  const roots = useMemo(
+    () => (simple ? simpleRootOptions(today, answer) : ROOTS),
+    [simple, today, answer],
+  )
 
   // The day's four flavour options: deterministic for the date, always
   // including the answer (R3, R4).
   const flavours = useMemo(
-    () => flavourOptions(today, groove),
-    [today, groove],
+    () => (simple ? FAMILIES : flavourOptions(today, groove)),
+    [simple, today, groove],
   )
+
+  /**
+   * A selection the current mode no longer offers reads as no selection.
+   *
+   * Switching modes narrows both rows, and the store keeps whatever was chosen
+   * before — deliberately, so toggling back restores the day rather than losing
+   * it (R8). But a pair the player cannot see must not be checkable: without
+   * this, the control would read "Check B Aeolian" in simple mode, sit enabled,
+   * and spend an attempt on a chip that is not on screen.
+   *
+   * Derived, not pruned. Clearing the store on a switch would throw the choice
+   * away and make toggling back lossy; hiding it leaves it to come back intact.
+   */
+  const offeredRoot = selectedRoot !== null && roots.includes(selectedRoot)
+    ? selectedRoot
+    : null
+  const offeredFlavour =
+    selectedFlavour !== null && flavours.includes(selectedFlavour)
+      ? selectedFlavour
+      : null
+  const canCheckOffered =
+    canCheck && offeredRoot !== null && offeredFlavour !== null
 
   const handleToggle = useCallback(() => {
     void toggle()
@@ -165,7 +221,7 @@ function GroovePuzzleView({ groove }: { groove: Groove }) {
             flex basis governs and the width goes back to auto. */}
         <Row gap="lg" align="start" collapseBelow="md">
           <div className="min-w-0 w-full flex-1 md:w-auto">
-            <GrooveCard groove={groove}>
+            <GrooveCard groove={groove} date={today}>
               <Stack gap="lg">
                 {/* Zero unless something is sounding: the panel cannot draw
                     a position for audio that is not playing, so nothing is
@@ -200,31 +256,41 @@ function GroovePuzzleView({ groove }: { groove: Groove }) {
 
           <div className="min-w-0 w-full flex-1 md:w-auto">
             <GuessCard
-              roots={ROOTS}
+              roots={roots}
               flavours={flavours}
-              selectedRoot={selectedRoot}
-              selectedFlavour={selectedFlavour}
+              selectedRoot={offeredRoot}
+              selectedFlavour={offeredFlavour}
               onSelectRoot={selectRoot}
               onSelectFlavour={selectFlavour}
-              canCheck={canCheck}
+              canCheck={canCheckOffered}
               onCheck={check}
               solved={solved}
               feedback={feedback}
               showNudge={showNudge}
               dots={dots}
               answerRoot={answer.root}
+              revealed={revealed}
+              showReveal={showReveal}
+              onReveal={reveal}
+              simple={simple}
+              onToggleSimple={setSimple}
             />
           </div>
         </Row>
 
-        {/* The payoff, below both cards and only once the day is won (R6). */}
-        {solved && (
+        {/*
+          The payoff, below both cards, once the day has ended either way (R6).
+          A revealed day sees the same panel: the solution is what the player
+          asked for. The panel itself drops the claim of a win (E3 R10, R10a).
+        */}
+        {(solved || revealed) && (
           <SolvedPanel
             answer={answer}
             tries={attempts.length}
             streak={streak}
             chord={groove.chord}
             progression={groove.progression}
+            revealed={revealed}
           />
         )}
       </Stack>

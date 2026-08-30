@@ -3,8 +3,8 @@ import type { Flavour } from '../types.ts'
 import { FLAVOURS, INTERVALS, intervalsFor, pitchesOf, scaleName } from './scales.ts'
 
 const ALL: Flavour[] = [
-  'major',
-  'minor',
+  'ionian',
+  'aeolian',
   'dorian',
   'mixolydian',
   'lydian',
@@ -15,7 +15,7 @@ const ALL: Flavour[] = [
 
 describe('intervalsFor', () => {
   it('knows the natural minor', () => {
-    expect(intervalsFor('minor')).toEqual([0, 2, 3, 5, 7, 8, 10])
+    expect(intervalsFor('aeolian')).toEqual([0, 2, 3, 5, 7, 8, 10])
   })
 
   it('knows the blues scale', () => {
@@ -23,7 +23,7 @@ describe('intervalsFor', () => {
   })
 
   it('knows the other six', () => {
-    expect(intervalsFor('major')).toEqual([0, 2, 4, 5, 7, 9, 11])
+    expect(intervalsFor('ionian')).toEqual([0, 2, 4, 5, 7, 9, 11])
     expect(intervalsFor('dorian')).toEqual([0, 2, 3, 5, 7, 9, 10])
     expect(intervalsFor('mixolydian')).toEqual([0, 2, 4, 5, 7, 9, 10])
     expect(intervalsFor('lydian')).toEqual([0, 2, 4, 6, 7, 9, 11])
@@ -50,10 +50,42 @@ describe('intervalsFor', () => {
   })
 })
 
+/**
+ * Epic 4 — the generator speaks modes. `major` and `minor` name the same seven
+ * pitches as `ionian` and `aeolian`; the modal spellings are the ones the game
+ * offers, so the old two must be gone from the vocabulary entirely.
+ */
+describe('the modal vocabulary', () => {
+  it('offers ionian and aeolian, and neither major nor minor', () => {
+    expect(FLAVOURS).toContain('ionian')
+    expect(FLAVOURS).toContain('aeolian')
+    expect(FLAVOURS).not.toContain('major')
+    expect(FLAVOURS).not.toContain('minor')
+  })
+
+  it('keeps the two renamed flavours in the places they held', () => {
+    // Order is what a seed's flavour draw depends on: a reordered list renders
+    // different audio for an unchanged catalogue entry.
+    expect(FLAVOURS[0]).toBe('ionian')
+    expect(FLAVOURS[1]).toBe('aeolian')
+  })
+
+  it('gives ionian the major intervals and aeolian the natural-minor ones', () => {
+    expect(intervalsFor('ionian')).toEqual([0, 2, 4, 5, 7, 9, 11])
+    expect(intervalsFor('aeolian')).toEqual([0, 2, 3, 5, 7, 8, 10])
+  })
+
+  it('still spells harmonic minor with the word minor in it', () => {
+    expect(FLAVOURS).toContain('harmonic-minor')
+    expect(intervalsFor('harmonic-minor')).toEqual([0, 2, 3, 5, 7, 8, 11])
+  })
+})
+
 describe('scaleName', () => {
   it('reads as a display string', () => {
     expect(scaleName('C', 'dorian')).toBe('C dorian')
-    expect(scaleName('E♭', 'minor')).toBe('E♭ minor')
+    expect(scaleName('E♭', 'aeolian')).toBe('E♭ aeolian')
+    expect(scaleName('C', 'ionian')).toBe('C ionian')
   })
 
   it('spells the hyphenated flavour as words', () => {
@@ -63,8 +95,8 @@ describe('scaleName', () => {
 
 describe('pitchesOf', () => {
   it('returns the scale’s pitch classes transposed to the root', () => {
-    expect(pitchesOf('C', 'minor')).toEqual([0, 2, 3, 5, 7, 8, 10])
-    expect(pitchesOf('D', 'major')).toEqual([1, 2, 4, 6, 7, 9, 11])
+    expect(pitchesOf('C', 'aeolian')).toEqual([0, 2, 3, 5, 7, 8, 10])
+    expect(pitchesOf('D', 'ionian')).toEqual([1, 2, 4, 6, 7, 9, 11])
   })
 
   it('always returns 0..11 values, ascending, for every root and flavour', () => {

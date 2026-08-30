@@ -206,15 +206,33 @@ describe('every groove in the catalogue can be spelled', () => {
 })
 
 describe('the catalogue is a real rotation', () => {
-  it('holds sixteen grooves', () => {
-    expect(GROOVES).toHaveLength(16)
+  // Epic 4 (feature-7) took the rotation from sixteen to eighteen: six
+  // replacements minted, then the two `Blues` and two `Harmonic minor` grooves
+  // deleted from `catalogue.json`. The rotation only ever grew — 16 → 22 → 18.
+  it('holds eighteen grooves', () => {
+    expect(GROOVES).toHaveLength(18)
   })
 
-  it('puts exactly two grooves behind every flavour it offers', () => {
+  it('puts exactly three grooves behind each of the six modes it offers', () => {
     const counts = new Map<string, number>()
     for (const g of GROOVES) counts.set(g.flavour, (counts.get(g.flavour) ?? 0) + 1)
-    expect(counts.size).toBe(8)
-    for (const [flavour, n] of counts) expect(n, flavour).toBe(2)
+    expect([...counts.keys()].sort()).toEqual([
+      'Aeolian',
+      'Dorian',
+      'Ionian',
+      'Lydian',
+      'Mixolydian',
+      'Phrygian',
+    ])
+    for (const [flavour, n] of counts) expect(n, flavour).toBe(3)
+  })
+
+  // The retirement is a deletion from the catalogue, not a filter in front of
+  // it: nothing downstream knows these ever existed.
+  it('offers no groove whose flavour is not a mode', () => {
+    for (const g of GROOVES) {
+      expect(['Blues', 'Harmonic minor'], g.id).not.toContain(g.flavour)
+    }
   })
 
   it('asks a different question every day it can', () => {

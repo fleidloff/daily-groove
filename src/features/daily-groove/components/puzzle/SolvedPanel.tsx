@@ -15,6 +15,12 @@ type SolvedPanelProps = {
   streak: number
   chord: string
   progression: string
+  /**
+   * The day was given up on rather than solved. The panel shows the same
+   * solution either way — that is what the player asked to see — but drops the
+   * claim of a win: no attempt count, no streak (R10, R10a).
+   */
+  revealed: boolean
 }
 
 /**
@@ -79,6 +85,7 @@ export function SolvedPanel({
   streak,
   chord,
   progression,
+  revealed,
 }: SolvedPanelProps) {
   const notes = scaleNotes(answer)
 
@@ -91,7 +98,9 @@ export function SolvedPanel({
               {`${answer.root} ${answer.flavour}`}
             </Heading>
             <Text size="sm" tone="inverted-muted">
-              {`solved in ${triesLabel(tries)} · streak now ${streak}`}
+              {revealed
+                ? 'given up · the day is over'
+                : `solved in ${triesLabel(tries)} · streak now ${streak}`}
             </Text>
           </Row>
         </div>

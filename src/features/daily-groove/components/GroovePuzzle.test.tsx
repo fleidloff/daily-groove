@@ -23,7 +23,14 @@ vi.mock('../lib/persistence/storage', () => ({
 }))
 
 import { GroovePuzzle } from './GroovePuzzle'
-import { flavourOptions, ROOTS } from '../lib/theory/music'
+import {
+  answerOf,
+  flavourOptions,
+  ROOTS,
+  simpleRootOptions,
+} from '../lib/theory/music'
+import { createLocalPreferenceStore } from '../lib/persistence/preferences'
+import { dateLine } from '../lib/presentation/date'
 import { isoDate, selectGrooveForDate } from '../lib/puzzle/selectGroove'
 import { GROOVES } from '../data/grooves.generated'
 import { renderFeature } from '../testing/renderFeature'
@@ -38,9 +45,9 @@ const GROOVE: Groove = {
   name: 'Test Groove',
   bpm: 90,
   root: 'C',
-  flavour: 'Minor',
+  flavour: 'Aeolian',
   bars: 4,
-  scale: 'C minor',
+  scale: 'C Aeolian',
   chord: 'Cm7',
   progression: 'Cm–Fm–G7',
   headDelaySeconds: 0.025057,
@@ -49,10 +56,10 @@ const GROOVE: Groove = {
 /** The day's four flavour chips, resolved exactly as the component resolves them. */
 const flavours = () => flavourOptions(new Date(), GROOVE)
 /** A flavour that is on offer today but is not the answer. */
-const wrongFlavour = () => flavours().find((f) => f !== 'Minor') as string
+const wrongFlavour = () => flavours().find((f) => f !== 'Aeolian') as string
 /** A second wrong flavour, so a third guess can differ from the second. */
 const otherWrongFlavour = () =>
-  flavours().filter((f) => f !== 'Minor' && f !== wrongFlavour())[0]
+  flavours().filter((f) => f !== 'Aeolian' && f !== wrongFlavour())[0]
 
 const TODAY = () => isoDate(new Date())
 
@@ -62,7 +69,7 @@ function miss(root: Root, flavour: string, rootMatched: boolean): Attempt {
 
 const SOLVING: Attempt = {
   root: 'C',
-  flavour: 'Minor',
+  flavour: 'Aeolian',
   correct: true,
   rootMatched: true,
   flavourMatched: true,
@@ -149,7 +156,10 @@ async function renderPuzzle(ui: ReactElement = <GroovePuzzle groove={GROOVE} />)
 }
 
 const rootGroup = () => screen.getByRole('radiogroup', { name: 'Root' })
-const flavourGroup = () => screen.getByRole('radiogroup', { name: 'Flavour' })
+// The second row holds modes and says so (F7 E4 R1, AC1). The helper is named
+// for the domain field behind it — `flavour` on the groove — which the rename
+// deliberately left alone.
+const flavourGroup = () => screen.getByRole('radiogroup', { name: 'Mode' })
 const control = () =>
   screen.getByRole('button', { name: /^(Pick a root|Check |Solved$)/ })
 const dotStates = () =>
@@ -246,7 +256,7 @@ describe('GroovePuzzle', () => {
         .map((b) => b.textContent)
 
       expect(rendered).toEqual(expected)
-      expect(rendered).toContain('Minor')
+      expect(rendered).toContain('Aeolian')
     } finally {
       vi.useRealTimers()
     }
@@ -268,12 +278,12 @@ describe('GroovePuzzle', () => {
     const wrong = wrongFlavour()
 
     // 1 — nothing chosen: the control prompts and is disabled (AC6).
-    expect(control()).toHaveAccessibleName('Pick a root and a flavour')
+    expect(control()).toHaveAccessibleName('Pick a root and a mode')
     expect(control()).toBeDisabled()
 
     // 2 — a root alone is not enough (R7).
     await user.click(within(rootGroup()).getByRole('button', { name: 'C' }))
-    expect(control()).toHaveAccessibleName('Pick a root and a flavour')
+    expect(control()).toHaveAccessibleName('Pick a root and a mode')
     expect(control()).toBeDisabled()
 
     // 3 — both chosen: the control names the pair and goes live (R8, AC6).
@@ -293,8 +303,8 @@ describe('GroovePuzzle', () => {
     expect(control()).toBeDisabled()
 
     // 5 — changing the flavour unblocks it again (AC9).
-    await user.click(within(flavourGroup()).getByRole('button', { name: 'Minor' }))
-    expect(control()).toHaveAccessibleName('Check C Minor')
+    await user.click(within(flavourGroup()).getByRole('button', { name: 'Aeolian' }))
+    expect(control()).toHaveAccessibleName('Check C Aeolian')
     expect(control()).toBeEnabled()
 
     // 6 — the right pair solves the day (AC8).
@@ -368,7 +378,13 @@ describe('GroovePuzzle', () => {
     expect(box.textContent).toMatch(/root is C\./)
   })
 
-  it('leaves the chips untouched when the nudge arrives (E3 R6, R7, AC10, AC11)', async () => {
+  // Feature-7 Epic 3 R4: the nudge names the day's root in prose, and from this
+  // epic on it also *presses the chip*. Before, this test asserted the opposite
+  // — that the revealed root was left for the player to go and find — which was
+  // the busywork on already-surrendered information the epic set out to remove.
+  // Everything else the test guarded is unchanged: no chip is filtered away,
+  // locked, or marked as already tried (F7 E3 R5, AC5).
+  it('hands the day\u2019s root over as a selection when the nudge arrives (F7 E3 R4, R5, AC3, AC5)', async () => {
     const user = userEvent.setup()
     await renderPuzzle()
     const wrong = wrongFlavour()
@@ -378,24 +394,59 @@ describe('GroovePuzzle', () => {
     expect(nudge()).toBeInTheDocument()
 
     const chips = within(rootGroup()).getAllByRole('button')
-    // All twelve are still on offer — none filtered away, none locked.
+    // All twelve are still on offer — none filtered away, none locked (AC5).
     expect(chips).toHaveLength(12)
     for (const chip of chips) expect(chip).toBeEnabled()
-    // The revealed root was NOT auto-selected: the only pressed chip is still
-    // the player's own last choice.
+    // The second miss selects the answer's root, replacing the player's own
+    // last choice rather than sitting beside it (AC3).
     expect(
       chips
         .filter((b) => b.getAttribute('aria-pressed') === 'true')
         .map((b) => b.textContent),
-    ).toEqual(['G'])
+    ).toEqual(['C'])
     expect(
-      within(rootGroup()).getByRole('button', { name: 'C' }),
+      within(rootGroup()).getByRole('button', { name: 'G' }),
     ).toHaveAttribute('aria-pressed', 'false')
-    // No chip is marked as already tried (AC11) — 'C' and 'G' have both been
-    // guessed and neither carries any state beyond aria-pressed.
+    // No chip is marked as already tried — 'C' and 'G' have both been guessed
+    // and neither carries any state beyond aria-pressed.
     expect(chips.filter((b) => b.getAttribute('aria-disabled') === 'true')).toEqual(
       [],
     )
+  })
+
+  // Step D2's second half — R5, AC4. The selection is a gift, not a lock: the
+  // rule fires once, and what the player does with the chip afterwards is
+  // theirs, including through a further miss.
+  it('lets the player overrule the auto-selected root, and keeps their choice (F7 E3 R5, AC4)', async () => {
+    const user = userEvent.setup()
+    await renderPuzzle()
+    const wrong = wrongFlavour()
+    const other = otherWrongFlavour()
+
+    await guess(user, 'C', wrong)
+    await guess(user, 'G', wrong)
+    expect(
+      within(rootGroup()).getByRole('button', { name: 'C' }),
+    ).toHaveAttribute('aria-pressed', 'true')
+
+    // The player disagrees, and the chips let them.
+    await user.click(within(rootGroup()).getByRole('button', { name: 'D' }))
+    expect(
+      within(rootGroup()).getByRole('button', { name: 'D' }),
+    ).toHaveAttribute('aria-pressed', 'true')
+    expect(
+      within(rootGroup()).getByRole('button', { name: 'C' }),
+    ).toHaveAttribute('aria-pressed', 'false')
+    // The control follows the selection, so the pair it names is the new one.
+    expect(control()).toHaveAccessibleName(`Check D ${wrong}`)
+
+    // ...and a third miss does not hand the root back: the rule fired once.
+    await user.click(within(flavourGroup()).getByRole('button', { name: other }))
+    await user.click(control())
+    expect(dotStates()).toEqual(['spent', 'spent', 'spent'])
+    expect(
+      within(rootGroup()).getByRole('button', { name: 'D' }),
+    ).toHaveAttribute('aria-pressed', 'true')
   })
 
   it('never locks the player out, however many guesses miss (E3 R8, AC3, AC12)', async () => {
@@ -431,11 +482,134 @@ describe('GroovePuzzle', () => {
     await guess(user, 'G', wrong)
     expect(nudge()).toBeInTheDocument()
 
-    await guess(user, 'C', 'Minor')
+    await guess(user, 'C', 'Aeolian')
 
     expect(nudge()).not.toBeInTheDocument()
     expect(screen.getByText(/the groove is yours now/i)).toBeInTheDocument()
     expect(dotStates()).toEqual(['solved', 'solved', 'solved'])
+  })
+
+  // --- Feature 7, Epic 3: giving up ----------------------------------------
+
+  /**
+   * The way out, in whichever state it is currently in. Queried by role and
+   * name like every other control on the page, so a test never has to know
+   * which of the two labels is showing.
+   */
+  const giveUp = () =>
+    screen.queryByRole('button', {
+      name: /give up and show the answer|end the day and show the answer/i,
+    })
+
+  /**
+   * The answer panel, found through the heading it leads with. The page carries
+   * more than one live region — the transport announces itself too — so the
+   * panel is located by its own content rather than by role alone.
+   */
+  const solutionPanel = () =>
+    screen
+      .getByRole('heading', { name: 'C Aeolian' })
+      .closest('[role="status"]') as HTMLElement
+
+  it('offers the way out only from the third miss, and ends the day on the second press (F7 E3 R6, R7, R8, AC6, AC8a)', async () => {
+    const user = userEvent.setup()
+    await renderPuzzle()
+    const wrong = wrongFlavour()
+
+    // One miss, then two: still no way out on offer (AC6).
+    await guess(user, 'C', wrong)
+    expect(giveUp()).toBeNull()
+    await guess(user, 'G', wrong)
+    expect(giveUp()).toBeNull()
+
+    // The third miss puts it on the card (AC6).
+    await guess(user, 'G', otherWrongFlavour())
+    expect(giveUp()).toHaveAccessibleName('Give up and show the answer')
+
+    // One press only arms it: the answer is still withheld and the day is
+    // still in progress (AC8).
+    await user.click(giveUp() as HTMLElement)
+    expect(giveUp()).toHaveAccessibleName(
+      'Yes \u2014 end the day and show the answer',
+    )
+    expect(
+      screen.queryByRole('heading', { name: 'C Aeolian' }),
+    ).not.toBeInTheDocument()
+
+    // The second press ends it: the whole solution is on screen, without the
+    // claim of a win (AC8a, AC10, AC10a).
+    await user.click(giveUp() as HTMLElement)
+    const panel = solutionPanel()
+    expect(panel).toBeInTheDocument()
+    expect(within(panel).getByText(/given up/i)).toBeInTheDocument()
+    expect(screen.queryByText(/solved in/i)).toBeNull()
+    expect(screen.queryByText(/streak now/i)).toBeNull()
+    expect(panel.textContent).toContain(GROOVE.chord)
+    expect(panel.textContent).toContain(GROOVE.progression)
+
+    // ...the offer itself is gone, and so is the way back in (AC8a).
+    expect(giveUp()).toBeNull()
+    expect(control()).toBeDisabled()
+    await user.click(within(rootGroup()).getByRole('button', { name: 'A' }))
+    expect(
+      within(rootGroup()).getByRole('button', { name: 'A' }),
+    ).toHaveAttribute('aria-pressed', 'false')
+    await user.click(
+      within(flavourGroup()).getByRole('button', { name: 'Aeolian' }),
+    )
+    expect(
+      within(flavourGroup()).getByRole('button', { name: 'Aeolian' }),
+    ).toHaveAttribute('aria-pressed', 'false')
+
+    // The three misses are all it cost: giving up is not a fourth attempt, and
+    // the day was written down as given up (R8, R9).
+    expect(dotStates()).toEqual(['spent', 'spent', 'spent'])
+    const saved = mockStore.save.mock.calls.at(-1)?.[0] as DailyResult
+    expect(saved.attempts).toHaveLength(3)
+    expect(saved.solved).toBe(false)
+    expect(saved.revealed).toBe(true)
+  })
+
+  it('reopens a revealed day on the terminal state, not a fresh puzzle (F7 E3 R8, AC9)', async () => {
+    const wrong = wrongFlavour()
+    const stored: DailyResult = {
+      date: TODAY(),
+      answer: { root: 'C', flavour: 'Aeolian' },
+      attempts: [
+        miss('C', wrong, true),
+        miss('G', wrong, false),
+        miss('G', otherWrongFlavour(), false),
+      ],
+      solved: false,
+      revealed: true,
+    }
+    mockStore.get.mockResolvedValue(stored)
+    mockStore.getAll.mockResolvedValue([stored])
+
+    const user = userEvent.setup()
+    await renderPuzzle()
+
+    // The answer is on screen from the first painted frame, with no win claimed.
+    const panel = solutionPanel()
+    expect(panel).toBeInTheDocument()
+    expect(within(panel).getByText(/given up/i)).toBeInTheDocument()
+    expect(panel.textContent).toContain(GROOVE.chord)
+    expect(
+      within(panel).getByRole('group', { name: /notes to live in/i }),
+    ).toBeInTheDocument()
+    expect(screen.queryByText(/solved in/i)).toBeNull()
+
+    // The puzzle is not playable: nothing to give up on, nothing to check, and
+    // the chips do not move.
+    expect(giveUp()).toBeNull()
+    expect(control()).toBeDisabled()
+    await user.click(within(rootGroup()).getByRole('button', { name: 'A' }))
+    expect(
+      within(rootGroup()).getByRole('button', { name: 'A' }),
+    ).toHaveAttribute('aria-pressed', 'false')
+    expect(dotStates()).toEqual(['spent', 'spent', 'spent'])
+    // Reading the day back writes nothing.
+    expect(mockStore.save).not.toHaveBeenCalled()
   })
 
   // --- Epic 4: the solved panel --------------------------------------------
@@ -452,7 +626,7 @@ describe('GroovePuzzle', () => {
     expect(container.textContent).not.toContain(GROOVE.chord)
     expect(container.textContent).not.toContain(GROOVE.progression)
     expect(
-      screen.queryByRole('heading', { name: 'C Minor' }),
+      screen.queryByRole('heading', { name: 'C Aeolian' }),
     ).not.toBeInTheDocument()
   })
 
@@ -461,10 +635,10 @@ describe('GroovePuzzle', () => {
     const { container } = await renderPuzzle()
 
     await guess(user, 'C', wrongFlavour())
-    await guess(user, 'C', 'Minor')
+    await guess(user, 'C', 'Aeolian')
 
     expect(
-      screen.getByRole('heading', { name: 'C Minor' }),
+      screen.getByRole('heading', { name: 'C Aeolian' }),
     ).toBeInTheDocument()
     // Two attempts were spent, and today's solve is the streak's first day.
     expect(screen.getByText(/solved in 2 tries/i)).toBeInTheDocument()
@@ -492,7 +666,7 @@ describe('GroovePuzzle', () => {
     expect(screen.queryByRole('radiogroup', { name: 'Root' })).not.toBeInTheDocument()
     // ...nor the solved panel.
     expect(
-      screen.queryByRole('heading', { name: 'C Minor' }),
+      screen.queryByRole('heading', { name: 'C Aeolian' }),
     ).not.toBeInTheDocument()
   })
 
@@ -504,7 +678,7 @@ describe('GroovePuzzle', () => {
     const wrong = wrongFlavour()
     const stored: DailyResult = {
       date: TODAY(),
-      answer: { root: 'C', flavour: 'Minor' },
+      answer: { root: 'C', flavour: 'Aeolian' },
       attempts: [miss('C', wrong, true), miss('G', wrong, false)],
       solved: false,
     }
@@ -534,7 +708,7 @@ describe('GroovePuzzle', () => {
   it('reopens a solved day with the panel and the chips locked (E5 R4, AC3)', async () => {
     const stored: DailyResult = {
       date: TODAY(),
-      answer: { root: 'C', flavour: 'Minor' },
+      answer: { root: 'C', flavour: 'Aeolian' },
       attempts: [SOLVING],
       solved: true,
     }
@@ -544,7 +718,7 @@ describe('GroovePuzzle', () => {
     const user = userEvent.setup()
     await renderPuzzle()
 
-    expect(screen.getByRole('heading', { name: 'C Minor' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'C Aeolian' })).toBeInTheDocument()
     expect(screen.getByText(/solved in one try/i)).toBeInTheDocument()
     expect(control()).toHaveAccessibleName('Solved')
     expect(control()).toBeDisabled()
@@ -567,7 +741,7 @@ describe('GroovePuzzle', () => {
     await renderPuzzle()
 
     expect(dotStates()).toEqual(['unspent', 'unspent', 'unspent'])
-    expect(control()).toHaveAccessibleName('Pick a root and a flavour')
+    expect(control()).toHaveAccessibleName('Pick a root and a mode')
     expect(screen.getByLabelText(/current streak/i)).toHaveTextContent(
       /no streak yet/i,
     )
@@ -585,6 +759,226 @@ describe('GroovePuzzle', () => {
 
     expect(dotStates()).toEqual(['spent', 'unspent', 'unspent'])
     expect(screen.getByText(/right home note/i)).toBeInTheDocument()
+  })
+
+  // --- Feature 7, Epic 5: simple mode --------------------------------------
+
+  /** A day whose mode is minor, and a day whose mode is major. */
+  const DORIAN: Groove = { ...GROOVE, flavour: 'Dorian', scale: 'C Dorian' }
+  const MIXOLYDIAN: Groove = {
+    ...GROOVE,
+    flavour: 'Mixolydian',
+    scale: 'C Mixolydian',
+  }
+
+  /**
+   * Turn the preference on before the page reads it, through the same
+   * `PreferenceStore` the hook behind the toggle uses. No hook and no component
+   * is mocked: the page loads the preference the way it will in a browser.
+   */
+  async function enableSimpleMode() {
+    await createLocalPreferenceStore().set({ simpleMode: true })
+  }
+
+  const modeSwitch = () => screen.getByRole('switch', { name: /simple mode/i })
+
+  /** The six roots the day offers in simple mode, resolved as the page does. */
+  const simpleRoots = () => simpleRootOptions(new Date(), answerOf(DORIAN))
+
+  const chipTexts = (group: HTMLElement) =>
+    within(group)
+      .getAllByRole('button')
+      .map((b) => b.textContent)
+
+  const MODE_NAME = /ionian|dorian|phrygian|lydian|mixolydian|aeolian|locrian/i
+
+  it('does not let a switch leave an unofferable pair checkable (E5 R4, R8)', async () => {
+    const user = userEvent.setup()
+    await renderPuzzle(<GroovePuzzle groove={DORIAN} />)
+
+    // Choose a full-puzzle pair whose mode simple mode does not offer, and
+    // whose root the day's six need not contain.
+    const staleRoot = ROOTS.find((r) => !simpleRoots().includes(r)) as Root
+    await user.click(within(rootGroup()).getByRole('button', { name: staleRoot }))
+    await user.click(within(flavourGroup()).getByRole('button', { name: 'Dorian' }))
+    expect(control()).toHaveAccessibleName(`Check ${staleRoot} Dorian`)
+    expect(control()).toBeEnabled()
+
+    await user.click(modeSwitch())
+
+    // Neither half is on offer any more, so neither reads as chosen and the
+    // control cannot spend an attempt on a pair that is not on screen.
+    expect(chipTexts(rootGroup())).not.toContain(staleRoot)
+    expect(
+      within(rootGroup()).queryByRole('button', { pressed: true }),
+    ).toBeNull()
+    expect(
+      within(flavourGroup()).queryByRole('button', { pressed: true }),
+    ).toBeNull()
+    expect(control()).toHaveAccessibleName('Pick a root and a mode')
+    expect(control()).toBeDisabled()
+
+    // The choice was hidden, not thrown away: toggling back restores it, so a
+    // mid-day switch stays lossless (R8).
+    await user.click(modeSwitch())
+    expect(control()).toHaveAccessibleName(`Check ${staleRoot} Dorian`)
+    expect(control()).toBeEnabled()
+  })
+
+  it('narrows both rows to six roots and two families in simple mode (E5 R2, R3, R4, AC2, AC3)', async () => {
+    await enableSimpleMode()
+    await renderPuzzle(<GroovePuzzle groove={DORIAN} />)
+
+    // Six, deterministic for the date, and the answer's root among them — the
+    // same six `simpleRootOptions` resolves for today (AC2).
+    expect(chipTexts(rootGroup())).toEqual(simpleRoots())
+    expect(chipTexts(rootGroup())).toHaveLength(6)
+    expect(chipTexts(rootGroup())).toContain('C')
+
+    // Exactly two, reading `Major` and `Minor` (AC3).
+    expect(chipTexts(flavourGroup())).toEqual(['Major', 'Minor'])
+
+    // ...and no mode name is on screen in either row.
+    expect(rootGroup().textContent).not.toMatch(MODE_NAME)
+    expect(flavourGroup().textContent).not.toMatch(MODE_NAME)
+  })
+
+  it('offers all twelve roots and four modes with simple mode off (E5 R2, R4, AC2, AC3)', async () => {
+    await renderPuzzle(<GroovePuzzle groove={DORIAN} />)
+
+    expect(chipTexts(rootGroup())).toEqual(ROOTS)
+    expect(chipTexts(flavourGroup())).toEqual(flavourOptions(new Date(), DORIAN))
+    expect(chipTexts(flavourGroup())).toHaveLength(4)
+    // The families are not on offer in the full puzzle.
+    expect(chipTexts(flavourGroup())).not.toContain('Minor')
+    expect(chipTexts(flavourGroup())).not.toContain('Major')
+  })
+
+  it('solves a Dorian day from its root and the minor option (E5 R5, AC4)', async () => {
+    await enableSimpleMode()
+    const user = userEvent.setup()
+    await renderPuzzle(<GroovePuzzle groove={DORIAN} />)
+
+    await guess(user, 'C', 'Minor')
+
+    expect(screen.getByText(/the groove is yours now/i)).toBeInTheDocument()
+    expect(control()).toHaveAccessibleName('Solved')
+    // The panel names the day's real mode: simple mode narrowed the question,
+    // not the answer.
+    expect(screen.getByRole('heading', { name: 'C Dorian' })).toBeInTheDocument()
+  })
+
+  it('misses a Mixolydian day guessed minor (E5 R5, AC5)', async () => {
+    await enableSimpleMode()
+    const user = userEvent.setup()
+    await renderPuzzle(<GroovePuzzle groove={MIXOLYDIAN} />)
+
+    await guess(user, 'C', 'Minor')
+
+    expect(screen.queryByText(/the groove is yours now/i)).toBeNull()
+    expect(dotStates()).toEqual(['spent', 'unspent', 'unspent'])
+    // The root half is still reported as the half that matched.
+    expect(screen.getByText(/right home note/i)).toBeInTheDocument()
+
+    // ...and the major option solves the same day.
+    await user.click(within(flavourGroup()).getByRole('button', { name: 'Major' }))
+    await user.click(control())
+    expect(screen.getByText(/the groove is yours now/i)).toBeInTheDocument()
+  })
+
+  it('keeps the day when the toggle is flipped mid-play (E5 R8, R8a, AC8, AC8a)', async () => {
+    const user = userEvent.setup()
+    await renderPuzzle()
+    const wrong = wrongFlavour()
+
+    await guess(user, 'C', wrong)
+    await guess(user, 'G', wrong)
+    expect(dotStates()).toEqual(['spent', 'spent', 'unspent'])
+    const writes = mockStore.save.mock.calls.length
+
+    // The switch is still operable on a day two attempts in (AC8a).
+    expect(modeSwitch()).toBeEnabled()
+    expect(modeSwitch()).toHaveAttribute('aria-checked', 'false')
+    await user.click(modeSwitch())
+    expect(modeSwitch()).toHaveAttribute('aria-checked', 'true')
+
+    // The day survived the switch: the same two dots, the same groove, and no
+    // attempt invented or lost (AC8).
+    expect(dotStates()).toEqual(['spent', 'spent', 'unspent'])
+    expect(mockStore.save.mock.calls).toHaveLength(writes)
+    expect(mockStore.save.mock.calls.at(-1)?.[0].attempts).toHaveLength(2)
+    expect(
+      screen.getByRole('heading', { level: 2, name: 'Test Groove' }),
+    ).toBeInTheDocument()
+    // The nudge those two misses earned is still there.
+    expect(nudge()).toBeInTheDocument()
+
+    // Only the question narrowed.
+    expect(chipTexts(rootGroup())).toHaveLength(6)
+    expect(chipTexts(flavourGroup())).toEqual(['Major', 'Minor'])
+
+    // The third guess is the third attempt, and it is graded the new way.
+    await user.click(within(flavourGroup()).getByRole('button', { name: 'Minor' }))
+    await user.click(control())
+    expect(dotStates()).toEqual(['solved', 'solved', 'solved'])
+    expect(screen.getByText(/the groove is yours now/i)).toBeInTheDocument()
+    expect(mockStore.save.mock.calls.at(-1)?.[0].attempts).toHaveLength(3)
+
+    // ...and the switch is still operable on a day that is over (AC8a).
+    expect(modeSwitch()).toBeEnabled()
+    await user.click(modeSwitch())
+    expect(modeSwitch()).toHaveAttribute('aria-checked', 'false')
+  })
+
+  it('keeps the nudge and the way out at the same thresholds in simple mode (E5 R10, AC10)', async () => {
+    await enableSimpleMode()
+    const user = userEvent.setup()
+    await renderPuzzle()
+    const [wrongRoot, otherWrongRoot] = simpleRoots().filter((r) => r !== 'C')
+
+    await guess(user, wrongRoot, 'Major')
+    expect(nudge()).not.toBeInTheDocument()
+    expect(giveUp()).toBeNull()
+
+    // Two misses: the nudge names the day's root, in prose and as a selection.
+    await guess(user, otherWrongRoot, 'Major')
+    const box = nudge() as HTMLElement
+    expect(box).toBeInTheDocument()
+    expect(box.textContent).toMatch(/root is C\./)
+    expect(
+      within(rootGroup()).getByRole('button', { name: 'C' }),
+    ).toHaveAttribute('aria-pressed', 'true')
+    expect(giveUp()).toBeNull()
+
+    // Three: the way out is offered, at exactly the same point as ever.
+    await user.click(control())
+    expect(dotStates()).toEqual(['spent', 'spent', 'spent'])
+    expect(giveUp()).toHaveAccessibleName('Give up and show the answer')
+  })
+
+  it('records a day solved in simple mode as solved, and counts it (E5 R9, AC9)', async () => {
+    await enableSimpleMode()
+    const user = userEvent.setup()
+    await renderPuzzle(<GroovePuzzle groove={DORIAN} />)
+
+    await guess(user, 'C', 'Minor')
+
+    const saved = mockStore.save.mock.calls.at(-1)?.[0] as DailyResult
+    expect(saved.solved).toBe(true)
+    expect(saved.revealed).toBeUndefined()
+    expect(saved.answer).toEqual({ root: 'C', flavour: 'Dorian' })
+    // A solve is a solve: the day counts toward the streak like any other.
+    expect(screen.getByText(/streak now 1/i)).toBeInTheDocument()
+  })
+
+  it('carries the preference into the page it opens with (E5 R7, AC7)', async () => {
+    await enableSimpleMode()
+    await renderPuzzle(<GroovePuzzle groove={DORIAN} />)
+
+    // No press needed: the stored preference is what the first painted card
+    // shows, so a reload the next day opens in simple mode.
+    expect(modeSwitch()).toHaveAttribute('aria-checked', 'true')
+    expect(chipTexts(flavourGroup())).toEqual(['Major', 'Minor'])
   })
 
   // --- Epic 1/2 regressions -------------------------------------------------
@@ -788,13 +1182,32 @@ describe('GroovePuzzle', () => {
     )
   })
 
-  it('renders the groove card header and the transport, with no tempo (E1 R5, AC5)', async () => {
+  // Feature-7 Epic 2 put the tempo back on the card: it is the one piece of the
+  // retired meta line backed by data worth showing, and a player reading "90
+  // bpm" knows what they are about to hear. The day was later repeated beside
+  // it, so the caption is one line carrying both. The rest of that line stays
+  // gone — `GrooveCard.test.tsx` still holds "renders no meta line beneath the
+  // name".
+  it('renders the groove card header, the tempo, the day and the transport (E1 R5, AC5)', async () => {
     await renderPuzzle()
     expect(
       screen.getByRole('heading', { name: GROOVE.name }),
     ).toBeInTheDocument()
-    expect(screen.queryByText(String(GROOVE.bpm))).not.toBeInTheDocument()
+    // Lower-case `bpm`, as a caption beneath the name — not the old `BPM` cell.
+    // Matched by pattern because the day follows it and the page uses the real
+    // today; `GrooveCard.test.tsx` pins the exact wording against a fixed date.
+    expect(
+      screen.getByText(new RegExp(`^${GROOVE.bpm} bpm · `)),
+    ).toBeInTheDocument()
+    // The day appears twice on purpose — once in the page header, once beside
+    // the tempo — so the card states what it is without a glance upward.
+    expect(screen.getAllByText(new RegExp(dateLine(new Date())))).toHaveLength(2)
     expect(screen.queryByText('BPM')).not.toBeInTheDocument()
+    // The tempo sits outside the heading, so the name is still the whole of the
+    // heading's accessible name.
+    expect(
+      screen.getByRole('heading', { name: GROOVE.name }),
+    ).not.toHaveTextContent('bpm')
     expect(screen.getByRole('progressbar')).toBeInTheDocument()
   })
 
@@ -823,7 +1236,7 @@ describe('GroovePuzzle', () => {
   it('reads "N days streak" once a day has been won (E1 R3, AC3)', async () => {
     const stored: DailyResult = {
       date: TODAY(),
-      answer: { root: 'C', flavour: 'Minor' },
+      answer: { root: 'C', flavour: 'Aeolian' },
       attempts: [SOLVING],
       solved: true,
     }
@@ -1050,7 +1463,7 @@ describe('GroovePuzzle', () => {
 
       // The player names a root and a flavour: twelve chips and four (AC1).
       const roots = screen.getByRole("radiogroup", { name: "Root" });
-      const flavours = screen.getByRole("radiogroup", { name: "Flavour" });
+      const flavours = screen.getByRole("radiogroup", { name: "Mode" });
       expect(within(roots).getAllByRole("button")).toHaveLength(12);
       expect(within(flavours).getAllByRole("button")).toHaveLength(4);
 

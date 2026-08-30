@@ -18,32 +18,38 @@ export type Pools = {
 
 /**
  * Plausible scales the catalogue does not use — spread across the twelve roots
- * and the eight flavours the game offers, in the same notation the renderer
- * emits (Unicode accidentals, lower-case flavour).
+ * and the flavours the game offers, in the same notation the renderer emits
+ * (Unicode accidentals, lower-case flavour).
+ *
+ * Epic 4 (feature-7) spelled these modally: `A major` and `C minor` became
+ * `A ionian` and `C aeolian`. These are display strings rather than `Flavour`
+ * values, so the union rename could not reach them and nothing failed to
+ * compile — but a pool whose real answers read `B ionian` and whose distractors
+ * read `A major` hands the player the answer by its spelling alone.
  */
 const SCALE_DISTRACTORS = [
+  'A aeolian',
   'A dorian',
-  'A major',
-  'A minor',
+  'A ionian',
   'A♭ lydian',
-  'B minor',
+  'B aeolian',
+  'B blues',
   'B♭ lydian',
   'B♭ mixolydian',
-  'B blues',
-  'C major',
-  'C minor',
+  'C aeolian',
+  'C ionian',
   'C mixolydian',
   'C♯ phrygian',
   'D dorian',
   'D harmonic minor',
-  'D major',
+  'D ionian',
   'E blues',
-  'E♭ major',
+  'E♭ ionian',
+  'F aeolian',
   'F lydian',
-  'F minor',
   'F♯ dorian',
   'F♯ harmonic minor',
-  'G major',
+  'G ionian',
   'G mixolydian',
   'G phrygian',
 ] as const
