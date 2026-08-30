@@ -9,19 +9,14 @@
  */
 
 /**
- * Deterministic 32-bit string hash (FNV-1a variant), byte-for-byte the same
- * function as src/features/daily-groove/lib/selectGroove.ts, so the app and the
- * generator can never disagree about what a seed string means.
+ * The app and the generator share one hash, so they can never disagree about
+ * what a seed string means. Imported by relative path with the extension —
+ * the mechanism manifest.ts already uses to reach into src/ — because the `@/`
+ * alias does not resolve from scripts/.
  */
-export function hashString(input: string): number {
-  let hash = 2166136261
-  for (let i = 0; i < input.length; i++) {
-    hash ^= input.charCodeAt(i)
-    hash = Math.imul(hash, 16777619)
-  }
-  // Force to an unsigned 32-bit integer.
-  return hash >>> 0
-}
+import { hashString } from '../../src/lib/hash.ts'
+
+export { hashString }
 
 /** Mulberry32: a small, fast, well-distributed 32-bit PRNG. */
 function mulberry32(seed: number): () => number {

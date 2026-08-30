@@ -37,19 +37,25 @@ describe('rngFor', () => {
 })
 
 describe('hashString', () => {
-  it('matches the app’s FNV-1a, so both sides agree on a seed', () => {
-    // Reference values computed from the same FNV-1a variant used by
-    // src/features/daily-groove/lib/selectGroove.ts.
-    const fnv = (input: string) => {
-      let hash = 2166136261
-      for (let i = 0; i < input.length; i++) {
-        hash ^= input.charCodeAt(i)
-        hash = Math.imul(hash, 16777619)
-      }
-      return hash >>> 0
-    }
-    for (const s of ['', 'a', 'groove-01', '2026-08-29', 'straight-funk:1:events']) {
-      expect(hashString(s)).toBe(fnv(s))
+  /**
+   * The same pin table as src/lib/hash.test.ts. The generator now imports the
+   * app's one copy, so this asserts the import is wired, not that a second
+   * implementation agrees — there is no second implementation.
+   */
+  it('matches the shared pin table, so both sides agree on a seed', () => {
+    const pins: ReadonlyArray<readonly [string, number]> = [
+      ['', 2166136261],
+      ['a', 3826002220],
+      ['2026-08-30', 1258545406],
+      ['groove-01', 699487093],
+      ['groove-16', 884187997],
+      ['E♭ dorian', 2486161818],
+      ['2026-01-01', 2049302883],
+      ['straight-funk:1:events', 3151190932],
+      ['🥁', 2083220512],
+    ]
+    for (const [input, expected] of pins) {
+      expect(hashString(input)).toBe(expected)
     }
   })
 

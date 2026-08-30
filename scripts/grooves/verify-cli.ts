@@ -17,7 +17,7 @@ export const DEFAULT_CATALOGUE_PATH = join(HERE, 'catalogue.json')
 export const DEFAULT_GROOVE_DIR = join(HERE, '../../public/grooves')
 export const DEFAULT_MANIFEST_PATH = join(
   HERE,
-  '../../src/features/daily-groove/lib/grooves.generated.ts',
+  '../../src/features/daily-groove/data/grooves.generated.ts',
 )
 
 export type VerifyOptions = {

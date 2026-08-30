@@ -2,7 +2,7 @@ import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
-import type { Groove } from '../../src/features/daily-groove/types.ts'
+import type { Groove } from '../../src/lib/groove.ts'
 import { renderManifest, writeManifest } from './manifest.ts'
 
 const ENTRY: Groove = {
@@ -85,9 +85,12 @@ describe('renderManifest', () => {
 
   it('imports the Groove type the way the app does', () => {
     const source = renderManifest([ENTRY])
-    expect(source).toContain("import type { Groove } from '../types'")
-    // App-side imports carry no file extension.
-    expect(source).not.toContain("from '../types.ts'")
+    expect(source).toContain("import type { Groove } from '@/lib/groove'")
+    // App-side imports carry no file extension, and go through the `@/` alias:
+    // the generated module is compiled by Next, where the alias resolves. Only
+    // scripts/ needs the relative path with the extension.
+    expect(source).not.toContain("from '@/lib/groove.ts'")
+    expect(source).not.toContain("from '../types'")
   })
 
   it('exports a typed GROOVES array', () => {

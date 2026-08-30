@@ -76,8 +76,11 @@ factory. The briefing asks for feature sub-folders so the overview is clearer.
   is unchanged, so its hash in `grooves.lock.json` still matches and the freeze
   rule in `scripts/grooves/README.md` is not engaged. `npm run grooves:verify`
   passes without `npm run grooves` having been run.
-- **R9** — The manifest keeps its `GENERATED FILE - DO NOT EDIT` header, updated
-  to name its new path.
+- **R9** — The manifest's bytes do not change at all, header included.
+  `scripts/grooves/lock.ts` computes `manifestSha256` over the whole file, so
+  editing the banner would change the hash and break R8. The banner names
+  `scripts/grooves/manifest.ts` and `catalogue.json` — neither of which moves —
+  so it needs no edit to stay accurate.
 - **R10** — No module's logic changes, and no test's assertions change. Files may
   differ only in their import statements and their location on disk.
 - **R11** — The feature-slice section of `docs/coding-guidelines.md` states what
@@ -193,3 +196,12 @@ and the composition tree is unchanged.
 boundary crossings by moving `Root`, `Flavour` and `Groove` to `src/lib/`. R5 is
 amended to name that as later work rather than to claim `types.ts` is untouched
 for good; nothing in this epic's scope changes.
+
+**Correction — 2026-08-30, during implementation.** R9 previously read "the
+manifest keeps its header, updated to name its new path". That was impossible:
+`lock.ts` hashes the whole file including the banner, so editing it changes
+`manifestSha256` and fails `grooves:verify` — contradicting R8 and AC6, which
+exist to prove this epic re-renders nothing. The banner also never named the
+manifest's own path, so the edit had no target. R9 now requires the opposite,
+and the implementation satisfied it by leaving the file untouched: its sha256 is
+still `46888e8c…`, matching the committed lock.

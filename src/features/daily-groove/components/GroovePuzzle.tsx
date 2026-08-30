@@ -1,38 +1,27 @@
 'use client'
 
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  useSyncExternalStore,
-} from 'react'
-import { useStore } from 'zustand'
+import { useCallback, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import type { Groove } from '../types'
-import {
-  createDailyGrooveStore,
-  type DailyGrooveState,
-} from '../hooks/useDailyGrooveStore'
-import { toArchiveEntries, type ArchiveEntry } from '../lib/archive'
-import { resolveGrooveForResult } from '../lib/resolveGroove'
-import { createPageTransport, type PlayableSource } from '../lib/transport'
-import { dotStates, selectFeedback, shouldShowNudge } from '../lib/feedback'
-import { answerOf, flavourOptions, ROOTS } from '../lib/music'
-import { isoDate, selectGrooveForDate } from '../lib/selectGroove'
-import { GROOVES } from '../lib/grooves.generated'
-import { useProgress } from '../hooks/useProgress'
-import { ArchiveStrip, type ArchiveStripEntry } from './ArchiveStrip'
-import { GrooveCard } from './GrooveCard'
-import { GrooveHeader } from './GrooveHeader'
-import { GuessCard } from './GuessCard'
-import { SolvedPanel } from './SolvedPanel'
-import { TransportPanel } from './TransportPanel'
-import { Card } from '@/components/Card'
-import { PlayControl } from '@/components/PlayControl'
-import { Row } from '@/components/Row'
-import { Stack } from '@/components/Stack'
-import { Text } from '@/components/Text'
+import { toArchiveEntries, type ArchiveEntry } from '../lib/presentation/archive'
+import { resolveGrooveForResult } from '../lib/puzzle/resolveGroove'
+import type { PlayableSource } from '../lib/audio/transport'
+import { dotStates, selectFeedback, shouldShowNudge } from '../lib/presentation/feedback'
+import { flavourOptions, ROOTS, loopSecondsOf } from '../lib/theory/music'
+import { isoDate, selectGrooveForDate } from '../lib/puzzle/selectGroove'
+import { GROOVES } from '../data/grooves.generated'
+import { usePuzzleSession } from '../hooks/usePuzzleSession'
+import { useTransport } from '../hooks/useTransport'
+import { ArchiveStrip, type ArchiveStripEntry } from './archive/ArchiveStrip'
+import { GrooveCard } from './puzzle/GrooveCard'
+import { GrooveHeader } from './header/GrooveHeader'
+import { GuessCard } from './puzzle/GuessCard'
+import { SolvedPanel } from './puzzle/SolvedPanel'
+import { TransportPanel } from './puzzle/TransportPanel'
+import { Card } from '@/components/surfaces/Card'
+import { PlayControl } from '@/components/controls/PlayControl'
+import { Row } from '@/components/layout/Row'
+import { Stack } from '@/components/layout/Stack'
+import { Text } from '@/components/typography/Text'
 
 type GroovePuzzleProps = {
   groove?: Groove
@@ -76,59 +65,35 @@ export function GroovePuzzle({ groove }: GroovePuzzleProps) {
 }
 
 /**
- * Renders a puzzle for a concrete groove. Split out so the Zustand store and
- * audio player are only created once a groove is known.
+ * Renders a puzzle for a concrete groove. Split out so the day's session and
+ * its audio transport are only created once a groove is known.
  *
- * This is the feature's only store subscriber: it reads the day's state, derives
- * everything Epics 3-5 display through `lib/`, and hands plain values and
- * handlers to the presentational cards below it.
+ * Composition only. The day's state lives in `usePuzzleSession` and playback in
+ * `useTransport`; what is left here is the date, the values those two derive
+ * into what the cards below display, and the layout that arranges them.
  */
 function GroovePuzzleView({ groove }: { groove: Groove }) {
   // Today, resolved once on the client. The same day both selects the groove
   // and seeds the flavour options, and is what the header displays (R4, R5).
   const [today] = useState(() => new Date())
   const todayIso = isoDate(today)
-  const { streak, history, todayResult, loaded, recordAttempt } =
-    useProgress(todayIso)
 
-  // The answer is the groove's own `root` and `flavour` fields — the values
-  // the generator wrote next to the audio, not a parse of its `scale` string.
-  const answer = useMemo(() => answerOf(groove), [groove])
+  const {
+    selectedRoot,
+    selectedFlavour,
+    attempts,
+    solved,
+    hydrated,
+    selectRoot,
+    selectFlavour,
+    canCheck,
+    check,
+    answer,
+    streak,
+    history,
+  } = usePuzzleSession(groove, today)
 
-  // One store instance per puzzle, created once. Held in state (not a ref) so it
-  // is stable across renders without reading a ref during render. It is created
-  // *empty*: the saved day arrives through `hydrate` below, so nothing here
-  // reads localStorage synchronously and the async `ResultStore` seam survives.
-  const [store] = useState(() => createDailyGrooveStore(answer))
-
-  // Restoration, exactly once. `todayResult` changes again on every write, and
-  // re-hydrating then would overwrite a selection the player has since made —
-  // so the latch is a ref, not a dependency.
-  const [hydrated, setHydrated] = useState(false)
-  const hydratedRef = useRef(false)
-  useEffect(() => {
-    if (!loaded || hydratedRef.current) return
-    hydratedRef.current = true
-    store.getState().hydrate(todayResult)
-    // Gates the first game frame on the store read: see the `hydrated` check
-    // below, which keeps the loading state up until this has run.
-    setHydrated(true)
-  }, [loaded, todayResult, store])
-
-  const selectedRoot = useStore(store, (s: DailyGrooveState) => s.selectedRoot)
-  const selectedFlavour = useStore(
-    store,
-    (s: DailyGrooveState) => s.selectedFlavour,
-  )
-  const attempts = useStore(store, (s: DailyGrooveState) => s.attempts)
-  const solved = useStore(store, (s: DailyGrooveState) => s.solved)
-  const selectRoot = useStore(store, (s: DailyGrooveState) => s.selectRoot)
-  const selectFlavour = useStore(store, (s: DailyGrooveState) => s.selectFlavour)
-  const check = useStore(store, (s: DailyGrooveState) => s.check)
-
-  // `canCheck` derives from state rather than being state, so it is recomputed
-  // on every render the subscribed slices trigger.
-  const canCheck = store.getState().canCheck()
+  const { soundingId, position, error: audioError, toggle } = useTransport()
 
   // Epic 3's three derivations. All pure functions of the attempt list, so
   // nothing about feedback, the nudge or the dots is stored or latched.
@@ -176,30 +141,6 @@ function GroovePuzzleView({ groove }: { groove: Groove }) {
     [today, groove],
   )
 
-  // The page's single owner of playback, held in state so it is stable across
-  // renders. It builds its player on the first press, never during render.
-  // Exclusivity is structural: one transport cannot sound two grooves, so no
-  // control has to know about any other (R3, R4).
-  const [transport] = useState(() => createPageTransport())
-  const [audioError, setAudioError] = useState(false)
-
-  useEffect(() => () => transport.dispose(), [transport])
-
-  // Playback state is read straight off the transport rather than mirrored into
-  // React state, so the progress bar follows the real position frame by frame.
-  // One subscription covers both: the transport notifies on start, on stop and
-  // throughout playback.
-  const soundingId = useSyncExternalStore(
-    transport.subscribe,
-    transport.getSoundingId,
-    () => null,
-  )
-  const position = useSyncExternalStore(
-    transport.subscribe,
-    transport.getPosition,
-    () => 0,
-  )
-
   // The question every control on the page asks, today's two included: is the
   // sounding groove mine? (R5)
   const isPlaying = soundingId === groove.id
@@ -209,20 +150,19 @@ function GroovePuzzleView({ groove }: { groove: Groove }) {
   const lastSource = useRef<PlayableSource | null>(null)
 
   const toggleSource = useCallback(
-    async (source: PlayableSource) => {
+    (source: PlayableSource) => {
       lastSource.current = source
-      setAudioError(false)
-      try {
-        await transport.toggle(source)
-      } catch {
-        setAudioError(true)
-      }
+      void toggle(source)
     },
-    [transport],
+    [toggle],
   )
 
   const handleToggle = useCallback(() => {
-    void toggleSource({ id: groove.id, src: groove.audioSrc })
+    toggleSource({
+      id: groove.id,
+      src: groove.audioSrc,
+      loopSeconds: loopSecondsOf(groove),
+    })
   }, [toggleSource, groove])
 
   /**
@@ -235,38 +175,24 @@ function GroovePuzzleView({ groove }: { groove: Groove }) {
     (entry: ArchiveEntry) => {
       const played = groovesByDate.get(entry.date)
       if (!played) return
-      void toggleSource({ id: played.id, src: played.audioSrc })
+      toggleSource({
+        id: played.id,
+        src: played.audioSrc,
+        loopSeconds: loopSecondsOf(played),
+      })
     },
     [groovesByDate, toggleSource],
   )
 
   const handleRetry = useCallback(() => {
-    void toggleSource(
-      lastSource.current ?? { id: groove.id, src: groove.audioSrc },
+    toggleSource(
+      lastSource.current ?? {
+        id: groove.id,
+        src: groove.audioSrc,
+        loopSeconds: loopSecondsOf(groove),
+      },
     )
   }, [toggleSource, groove])
-
-  /**
-   * Check the chosen pair, then persist the day. The record is written after
-   * every check rather than only on a solve, so a reload mid-game comes back to
-   * the attempts already spent (R2). The attempt list is read back off the
-   * store, which is the only place that accumulates it.
-   */
-  const handleCheck = useCallback(() => {
-    const before = store.getState().attempts.length
-    check()
-    const { attempts: after, solved: nowSolved } = store.getState()
-    // A rejected check (same pair, or an already-solved day) writes nothing.
-    if (after.length === before) return
-    // The record remembers which groove the day played, so the row can replay
-    // it later even after the catalogue has grown (E5 R7).
-    void recordAttempt({
-      answer,
-      attempts: after,
-      solved: nowSolved,
-      grooveId: groove.id,
-    })
-  }, [store, check, answer, recordAttempt, groove])
 
   // No fresh-game frame may paint before the saved day is in the store: a day
   // already in progress would flash as untouched, and a solved day as unplayed.
@@ -330,7 +256,7 @@ function GroovePuzzleView({ groove }: { groove: Groove }) {
               onSelectRoot={selectRoot}
               onSelectFlavour={selectFlavour}
               canCheck={canCheck}
-              onCheck={handleCheck}
+              onCheck={check}
               solved={solved}
               feedback={feedback}
               showNudge={showNudge}

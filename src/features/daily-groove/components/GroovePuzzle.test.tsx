@@ -1,4 +1,5 @@
 import type { ReactElement } from 'react'
+import { HEAD_DELAY_SECONDS } from '../lib/audio/transport'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
@@ -7,7 +8,7 @@ import type { Attempt, DailyResult, Groove, Root } from '../types'
 // Audio is mocked so the composition can be driven without real playback.
 // Scoring is NOT mocked: the flow below runs through the real store and the
 // real `scoreAttempt`, which is the point of Step C8.
-vi.mock('../lib/audio', () => ({
+vi.mock('../lib/audio/audio', () => ({
   createAudioPlayer: vi.fn(),
 }))
 
@@ -20,15 +21,16 @@ const { mockStore } = vi.hoisted(() => ({
     save: vi.fn(),
   },
 }))
-vi.mock('../lib/storage', () => ({
+vi.mock('../lib/persistence/storage', () => ({
   createLocalStore: () => mockStore,
 }))
 
-import { createAudioPlayer } from '../lib/audio'
+import { createAudioPlayer } from '../lib/audio/audio'
 import { GroovePuzzle } from './GroovePuzzle'
-import { flavourOptions, ROOTS } from '../lib/music'
-import { isoDate, selectGrooveForDate } from '../lib/selectGroove'
-import { GROOVES } from '../lib/grooves.generated'
+import { flavourOptions, ROOTS } from '../lib/theory/music'
+import { isoDate, selectGrooveForDate } from '../lib/puzzle/selectGroove'
+import { GROOVES } from '../data/grooves.generated'
+import { renderFeature } from '../testing/renderFeature'
 
 const GROOVE: Groove = {
   id: 'groove-01',
@@ -75,7 +77,16 @@ const SOLVING: Attempt = {
  * `stop()` mirrors the real player too: it halts *and* rewinds, so the position
  * the component reads through `useSyncExternalStore` returns to zero on its own.
  */
-function makePlayer(play: () => Promise<void> = () => Promise.resolve()) {
+/**
+ * The loop length of `GROOVE`, which is what the transport divides elapsed
+ * seconds by. Kept in step with the fixture: 4 bars of 4/4 at 90bpm.
+ */
+const GROOVE_LOOP_SECONDS = (4 * 4 * 60) / 90
+
+function makePlayer(
+  play: () => Promise<void> = () => Promise.resolve(),
+  loopSeconds: number = GROOVE_LOOP_SECONDS,
+) {
   const listeners = new Set<() => void>()
   let playing = false
   let position = 0
@@ -102,6 +113,12 @@ function makePlayer(play: () => Promise<void> = () => Promise.resolve()) {
       notify()
     }),
     getPosition: vi.fn(() => position),
+    // The real element reports seconds into the *file*, so the fake adds the
+    // encoder delay the transport subtracts back off. `seek(0.5)` therefore
+    // still means "half way through the music", as it always did.
+    getCurrentTime: vi.fn(() =>
+      position === 0 ? 0 : HEAD_DELAY_SECONDS + position * loopSeconds,
+    ),
     isPlaying: vi.fn(() => playing),
     subscribe: vi.fn((fn: () => void) => {
       listeners.add(fn)
@@ -440,34 +457,9 @@ describe('GroovePuzzle', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('writes the day after every check, not only on a solve (E5 R2, AC1)', async () => {
-    const user = userEvent.setup()
-    await renderPuzzle()
-    const wrong = wrongFlavour()
-
-    await guess(user, 'C', wrong)
-
-    expect(mockStore.save).toHaveBeenCalledTimes(1)
-    expect(mockStore.save).toHaveBeenLastCalledWith({
-      date: TODAY(),
-      answer: { root: 'C', flavour: 'Minor' },
-      attempts: [miss('C', wrong, true)],
-      solved: false,
-      // The day now records the groove it played (E5 R7, AC7).
-      grooveId: GROOVE.id,
-    })
-
-    await guess(user, 'C', 'Minor')
-
-    expect(mockStore.save).toHaveBeenCalledTimes(2)
-    expect(mockStore.save).toHaveBeenLastCalledWith({
-      date: TODAY(),
-      answer: { root: 'C', flavour: 'Minor' },
-      attempts: [miss('C', wrong, true), SOLVING],
-      solved: true,
-      grooveId: GROOVE.id,
-    })
-  })
+  // "writes the day after every check, not only on a solve (E5 R2, AC1)" moved
+  // to `hooks/usePuzzleSession.test.ts`: it asserts on the saved record alone,
+  // and needs no region of the page rendered to hold.
 
   it('restores the attempts spent on a reload mid-game (E5 R3, AC1, AC2)', async () => {
     const wrong = wrongFlavour()
@@ -829,21 +821,9 @@ describe('GroovePuzzle', () => {
     expect(play.nextElementSibling).toHaveTextContent(/Play along/)
   })
 
-  // Step D2 — the groove repeats until the player stops it.
-  it("creates today's player looped (R17, AC11)", async () => {
-    const player = makePlayer()
-    vi.mocked(createAudioPlayer).mockReturnValue(player)
-
-    const user = userEvent.setup()
-    await renderPuzzle()
-
-    await user.click(screen.getByRole('button', { name: 'Play the loop' }))
-
-    expect(createAudioPlayer).toHaveBeenCalledWith(
-      GROOVE.audioSrc,
-      expect.objectContaining({ loop: true }),
-    )
-  })
+  // Step D2's "creates today's player looped (R17, AC11)" moved to
+  // `hooks/useTransport.test.ts`: it asserts on the audio adapter it was handed,
+  // not on anything rendered.
 
   it("moves the bar highlight with the player's position (D5, AC8)", async () => {
     const player = makePlayer()
@@ -1222,5 +1202,54 @@ describe('GroovePuzzle', () => {
     } finally {
       vi.useRealTimers()
     }
+  })
+
+  /**
+   * Relocated from `src/app/page.test.tsx` (Epic 3, Step I1). Three assertions
+   * whose subject is the composed whole: what the page opens with, what it
+   * withholds until the solve, and what it shows while the day's record is
+   * still being read. They keep the composed render they were written
+   * against — `renderFeature()` is the route's own render-and-settle, lifted
+   * into the feature.
+   */
+  describe('through the composed page', () => {
+    it("renders the designed shell with a play control and the guessing card", async () => {
+      await renderFeature();
+
+      // The play control leads the groove card: full width, glyph and words, with
+      // an accessible name that states the action (E2 R1, R4a, AC3a, AC4).
+      const play = screen.getByRole("button", { name: "Play the loop" });
+      expect(play).toBeInTheDocument();
+      expect(play).toHaveTextContent("\u25b6 Play the groove");
+      expect(play).toHaveClass("w-full");
+
+      // The player names a root and a flavour: twelve chips and four (AC1).
+      const roots = screen.getByRole("radiogroup", { name: "Root" });
+      const flavours = screen.getByRole("radiogroup", { name: "Flavour" });
+      expect(within(roots).getAllByRole("button")).toHaveLength(12);
+      expect(within(flavours).getAllByRole("button")).toHaveLength(4);
+
+      // The retired subset-guessing model is gone from the route.
+      expect(screen.queryAllByRole("checkbox")).toHaveLength(0);
+    })
+
+    it("reveals neither the solved panel nor the day's changes before the solve", async () => {
+      const { container } = await renderFeature();
+
+      const groove = selectGrooveForDate(new Date(), GROOVES);
+      expect(container.textContent).not.toContain(groove.chord);
+      expect(container.textContent).not.toContain(groove.progression);
+    })
+
+    it("waits for the day's saved record rather than flashing a fresh game", async () => {
+      // Rendered but not settled: the store read has not resolved yet.
+      render(<GroovePuzzle />);
+
+      expect(screen.getByText(/loading/i)).toBeInTheDocument();
+      expect(
+        screen.queryByRole("radiogroup", { name: "Root" }),
+      ).not.toBeInTheDocument();
+      expect(document.querySelectorAll("[data-dot-state]")).toHaveLength(0);
+    })
   })
 })

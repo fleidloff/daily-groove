@@ -6,6 +6,8 @@
  * here may change once the tracks start in parallel.
  */
 
+import type { Root } from '../../src/lib/groove.ts'
+
 /** The eight flavours the game offers, as the generator names them internally. */
 export type Flavour =
   | 'major'
@@ -18,23 +20,11 @@ export type Flavour =
   | 'blues'
 
 /**
- * The twelve chromatic roots, spelled with Unicode accidentals to match the
- * app's own `Root` type in src/features/daily-groove/types.ts. The generator
- * emits these verbatim, so nothing has to translate between two spellings.
+ * `Root` is not declared here. The twelve chromatic roots are the contract the
+ * generator shares with the app, so there is one declaration of them, in
+ * src/lib/groove.ts, which `scripts/` reaches by relative path. Modules that
+ * need it import it from there directly.
  */
-export type Root =
-  | 'C'
-  | 'C♯'
-  | 'D'
-  | 'E♭'
-  | 'E'
-  | 'F'
-  | 'F♯'
-  | 'G'
-  | 'A♭'
-  | 'A'
-  | 'B♭'
-  | 'B'
 
 export type VoiceName =
   | 'kick'

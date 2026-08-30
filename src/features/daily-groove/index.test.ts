@@ -3,7 +3,7 @@ import { join, resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import * as publicSurface from './index'
 import { GroovePuzzle } from './index'
-import type { Answer, Attempt, DailyResult, Flavour, Root } from './index'
+import type { Answer, Attempt, DailyResult, Flavour, Groove, Root } from './index'
 
 const featureDir = resolve(process.cwd(), 'src/features/daily-groove')
 const componentDir = join(featureDir, 'components')
@@ -53,6 +53,27 @@ describe('daily-groove public surface', () => {
     expect(runtimeExports).not.toContain('SolvedPanel')
   })
 
+  it('exports exactly the six shared type names (AC14)', () => {
+    // Types are erased at runtime, so the surface is pinned by reading the
+    // source. Epic 4 moved Root, Flavour and Groove to src/lib/groove.ts; this
+    // asserts consumers of the feature saw no change when they left.
+    const source = readFileSync(join(featureDir, 'index.ts'), 'utf8')
+    const blocks = [...source.matchAll(/export\s+type\s*\{([^}]*)\}/g)]
+    const names = blocks
+      .flatMap((block) => block[1].split(','))
+      .map((name) => name.trim())
+      .filter(Boolean)
+      .sort()
+    expect(names).toEqual([
+      'Answer',
+      'Attempt',
+      'DailyResult',
+      'Flavour',
+      'Groove',
+      'Root',
+    ])
+  })
+
   it('exports the root/flavour domain types (Epic 2 contract)', () => {
     // Compile-time assertions: these fail `tsc` if the types stop being part of
     // the public surface, or if their shape drifts from the frozen contract.
@@ -67,8 +88,23 @@ describe('daily-groove public surface', () => {
       flavourMatched: true,
     }
 
+    // Groove comes through the same surface, re-exported from src/lib/groove.
+    const groove: Groove = {
+      id: 'groove-01',
+      audioSrc: '/grooves/groove-01.mp3',
+      name: 'Velvet Pocket',
+      bpm: 98,
+      scale: 'G dorian',
+      chord: 'Gm7',
+      progression: 'Gm–C–Gm',
+      root,
+      flavour,
+      bars: 4,
+    }
+
     expect(answer).toEqual({ root: 'G', flavour: 'Dorian' })
     expect(attempt.correct).toBe(true)
+    expect(groove.root).toBe('G')
   })
 
   it("exports the day's record in its v2 shape (Epic 5 contract)", () => {

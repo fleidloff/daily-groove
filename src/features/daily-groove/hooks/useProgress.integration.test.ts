@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import { renderHook, act, waitFor } from '@testing-library/react'
 import type { Answer, Attempt, DailyResult } from '../types'
-import { createLocalStore } from '../lib/storage'
-import { isoDate } from '../lib/selectGroove'
+import { createLocalStore } from '../lib/persistence/storage'
+import { isoDate } from '../lib/puzzle/selectGroove'
 import { useProgress } from './useProgress'
 
 // Integration: exercise useProgress against the REAL createLocalStore over the

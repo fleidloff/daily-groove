@@ -1,6 +1,6 @@
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { dirname } from 'node:path'
-import type { Groove } from '../../src/features/daily-groove/types.ts'
+import type { Groove } from '../../src/lib/groove.ts'
 import type { Pools } from './pools.ts'
 
 /**
@@ -88,7 +88,7 @@ export function renderManifest(
   entries: readonly Groove[],
   pools?: Pools,
 ): string {
-  const head = `${BANNER}\n\nimport type { Groove } from '../types'\n\n`
+  const head = `${BANNER}\n\nimport type { Groove } from '@/lib/groove'\n\n`
   const grooves =
     entries.length === 0
       ? 'export const GROOVES: Groove[] = []\n'

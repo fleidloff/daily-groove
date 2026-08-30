@@ -10,7 +10,7 @@ import { loadPack } from './pack.ts'
 import { templateById } from './templates/index.ts'
 import { renderVoices } from './voices.ts'
 import { OVERHANG_BARS, SAMPLE_RATE } from './cli.ts'
-import { DEFAULT_PACK_DIR, displayFlavour, generate, toGroove } from './cli.ts'
+import { DEFAULT_MANIFEST_PATH, DEFAULT_PACK_DIR, displayFlavour, generate, toGroove } from './cli.ts'
 import { placeholderPack } from './testing/placeholderPack.ts'
 import type { GrooveSpec } from './types.ts'
 
@@ -117,6 +117,14 @@ describe('the committed render', () => {
     expect(DEFAULT_PACK_DIR.endsWith('samples')).toBe(true)
     expect(existsSync(join(DEFAULT_PACK_DIR, 'pack.json'))).toBe(true)
     expect(existsSync(join(DEFAULT_PACK_DIR, 'provenance.json'))).toBe(true)
+  })
+
+  // Epic 2, Step B3: generated data lives in the feature's data/ folder, never
+  // in lib/. The generator is the one place that names where the manifest lands.
+  it('writes the manifest into the feature data/ folder, not lib/', () => {
+    expect(DEFAULT_MANIFEST_PATH).toBe(
+      join(import.meta.dirname, '../../src/features/daily-groove/data/grooves.generated.ts'),
+    )
   })
 
   it('has a committed catalogue whose ids and templates are well formed', () => {

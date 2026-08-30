@@ -25,7 +25,7 @@ const REAL_MANIFEST = join(
   'src',
   'features',
   'daily-groove',
-  'lib',
+  'data',
   'grooves.generated.ts',
 )
 const REAL_AUDIO = join(process.cwd(), 'public', 'grooves')

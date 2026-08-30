@@ -1,7 +1,7 @@
 import { mkdirSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import type { Groove } from '../../src/features/daily-groove/types.ts'
+import type { Groove } from '../../src/lib/groove.ts'
 import { CATALOGUE_PATH, readCatalogue } from './catalogue.ts'
 import { encodeMp3 } from './encode.ts'
 import { buildEvents } from './events.ts'
@@ -21,7 +21,7 @@ export const DEFAULT_PACK_DIR = join(HERE, 'samples')
 export const DEFAULT_OUT_DIR = join(HERE, '../../public/grooves')
 export const DEFAULT_MANIFEST_PATH = join(
   HERE,
-  '../../src/features/daily-groove/lib/grooves.generated.ts',
+  '../../src/features/daily-groove/data/grooves.generated.ts',
 )
 export const DEFAULT_LOCK_PATH = join(HERE, 'grooves.lock.json')
 export const SAMPLE_RATE = 44100

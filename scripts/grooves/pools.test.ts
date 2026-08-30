@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { Groove } from '../../src/features/daily-groove/types.ts'
+import type { Groove } from '../../src/lib/groove.ts'
 import { buildPools } from './pools.ts'
 
 /**

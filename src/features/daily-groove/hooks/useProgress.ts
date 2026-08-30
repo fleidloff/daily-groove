@@ -2,8 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { Answer, Attempt, DailyResult } from '../types'
-import { createLocalStore, type ResultStore } from '../lib/storage'
-import { computeStreak } from '../lib/streak'
+import { createLocalStore, type ResultStore } from '../lib/persistence/storage'
+import { computeStreak } from '../lib/persistence/streak'
 
 /**
  * Module-singleton store so every consumer that doesn't inject one shares the

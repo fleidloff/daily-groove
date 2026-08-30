@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import type { Flavour, MusicMeta, Root } from '../types.ts'
+import type { Root } from '../../../src/lib/groove.ts'
+import type { Flavour, MusicMeta } from '../types.ts'
 import { rngFor } from '../rng.ts'
 import { buildHarmony, chordNameFor, pitchClassesOf } from './harmony.ts'
 import { FLAVOURS, intervalsFor, pitchesOf, scaleName } from './scales.ts'

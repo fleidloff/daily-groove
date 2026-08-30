@@ -1,4 +1,5 @@
-import type { Flavour, Root } from '../types.ts'
+import type { Root } from '../../../src/lib/groove.ts'
+import type { Flavour } from '../types.ts'
 import { pitchClassOf } from './notes.ts'
 
 /**

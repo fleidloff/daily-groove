@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import { renderHook, act, waitFor } from '@testing-library/react'
 import type { Answer, Attempt, DailyResult } from '../types'
-import type { ResultStore } from '../lib/storage'
+import type { ResultStore } from '../lib/persistence/storage'
 import { useProgress } from './useProgress'
 
 const TODAY = '2026-08-21'

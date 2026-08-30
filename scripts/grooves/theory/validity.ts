@@ -1,4 +1,5 @@
-import type { Flavour, MusicMeta, Root } from '../types.ts'
+import type { Root } from '../../../src/lib/groove.ts'
+import type { Flavour, MusicMeta } from '../types.ts'
 import { pitchClassOf } from './notes.ts'
 import { intervalsFor } from './scales.ts'
 import type { Harmony } from './harmony.ts'

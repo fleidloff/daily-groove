@@ -1,4 +1,4 @@
-import type { Root } from '../types.ts'
+import type { Root } from '../../../src/lib/groove.ts'
 
 /**
  * The twelve chromatic roots, in the app's spelling and order. Index is the

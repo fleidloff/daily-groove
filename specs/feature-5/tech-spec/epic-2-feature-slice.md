@@ -237,8 +237,11 @@ Covers: R2, R9, AC2
 - **Implement** — `git mv` `lib/grooves.generated.ts` and
   `lib/grooves.generated.test.ts` into `data/`. Rewrite the test's subject import
   to `'./grooves.generated'` and its `'../types'` to `'../types'` (unchanged
-  depth — `lib/` and `data/` sit at the same level). Update the file's
-  `GENERATED FILE - DO NOT EDIT` header to name the new path.
+  depth — `lib/` and `data/` sit at the same level). **Leave the manifest file itself completely untouched, its
+  `GENERATED FILE - DO NOT EDIT` banner included** — `scripts/grooves/lock.ts`
+  hashes the whole file, banner and all, so any edit changes `manifestSha256`
+  and fails `grooves:verify`. The banner names `manifest.ts` and
+  `catalogue.json`, neither of which moves, so it stays accurate as it is.
 - **Green when** — Step B1 passes and `data/grooves.generated.test.ts` passes.
 - **Refactor** — none. The manifest's `import type { Groove } from '../types'`
   is left exactly as it is. `lib/` and `data/` sit at the same depth under the

@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { buildLock, writeLock } from './lock.ts'
-import { main } from './verify-cli.ts'
+import { DEFAULT_MANIFEST_PATH, main } from './verify-cli.ts'
 
 function audioBytes(id: string, n = 2048): Buffer {
   const buf = Buffer.alloc(n)
@@ -131,6 +131,14 @@ describe('verify-cli main — Step B4', () => {
     const output = r.lines.join('\n')
     expect(output).toContain('groove-01')
     expect(output).toContain('groove-03')
+  })
+
+  // Epic 2, Step B4: the build guard reads the manifest from the feature's
+  // data/ folder, and must name the same file the generator writes.
+  it('guards the manifest in the feature data/ folder, not lib/', () => {
+    expect(DEFAULT_MANIFEST_PATH).toBe(
+      join(import.meta.dirname, '../../src/features/daily-groove/data/grooves.generated.ts'),
+    )
   })
 
   it('importing the module runs nothing — the top-level call is guarded', async () => {

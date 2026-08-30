@@ -1,4 +1,4 @@
-import type { Groove } from '../../src/features/daily-groove/types.ts'
+import type { Groove } from '../../src/lib/groove.ts'
 
 /**
  * The three distractor pools the generated module exports. They exist so the

@@ -80,6 +80,14 @@ export type UsePuzzleSession = {
 export function usePuzzleSession(groove: Groove, today: Date): UsePuzzleSession
 ```
 
+**Amended during implementation.** `UsePuzzleSession` also carries `answer`,
+`streak` and `history`. Forced rather than chosen: the check handler moves into
+the hook and calls `recordAttempt`, so the hook must own the `useProgress`
+instance. `useProgress` holds per-instance state, so a second instance in the
+view would not observe the write, and the streak badge and archive strip would
+stop updating on a solve. One instance is the only shape that preserves
+behaviour.
+
 The generator's import, by relative path with the extension — the mechanism
 `scripts/grooves/manifest.ts` already uses:
 
@@ -277,6 +285,16 @@ Covers: R9, R13, AC13
   region renders together.
 - **Green when** — the recorded count is unchanged, `GroovePuzzle.test.tsx` is
   materially shorter than 1,184 lines, and the suite is green.
+
+  **Outcome: the second clause was not met, and it was the wrong criterion.**
+  The file went 1,226 → 1,189 while the suite's `expect(` count rose 1,206 →
+  1,297. Both hook tests are `.ts` using `renderHook`, so only value-level
+  assertions can move; the bulk of `GroovePuzzle.test.tsx` asserts through the
+  DOM (`screen.getByRole`, `dotStates()`, `archiveCards()`) and moving those
+  means rewriting them, which R9 and this step's own refactor note forbid. The
+  criterion assumed those lines were session and playback logic; they are
+  composed DOM behaviour. The half that did hold — a test file beside each hook,
+  carrying real coverage — is met. AC13 is graded **Partly**.
 - **Refactor** — none. An assertion that will not move without being rewritten
   is a signal the split went past a refactor; leave it in the composed test
   rather than reshaping it.

@@ -1,5 +1,5 @@
-import { Container } from "@/components/Container";
-import { PageShell } from "@/components/PageShell";
+import { Container } from "@/components/layout/Container";
+import { PageShell } from "@/components/layout/PageShell";
 import { GroovePuzzle } from "@/features/daily-groove";
 
 // Composition only: every structural, spacing and layout decision lives in the

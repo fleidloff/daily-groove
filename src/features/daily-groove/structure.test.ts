@@ -1,0 +1,188 @@
+import { existsSync, readFileSync, readdirSync } from 'node:fs'
+import { join } from 'node:path'
+import { describe, expect, it } from 'vitest'
+
+/**
+ * Structural tests for the feature slice's folder rules (Epic 2, AC1–AC4) and
+ * for the design system's grouped import paths as seen from its consumers
+ * (Epic 1, AC3).
+ *
+ * They are colocated inside the feature, so deleting the feature deletes them.
+ * They read the tree from disk rather than through imports, because the rule
+ * being enforced is about where files live, not about what they export.
+ */
+
+const FEATURE = join(process.cwd(), 'src', 'features', 'daily-groove')
+const LIB = join(FEATURE, 'lib')
+const DATA = join(FEATURE, 'data')
+const COMPONENTS = join(FEATURE, 'components')
+
+const featureDir = 'src/features/daily-groove'
+const hooksDir = `${featureDir}/hooks`
+const stateDir = `${featureDir}/state`
+
+/** Every file under `dir`, recursively, as absolute paths. */
+function filesUnder(dir: string): string[] {
+  if (!existsSync(dir)) return []
+  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+    const full = join(dir, entry.name)
+    return entry.isDirectory() ? filesUnder(full) : [full]
+  })
+}
+
+/** Source modules under `hooks/`, i.e. everything that is not a test file. */
+function hookModules(): string[] {
+  return readdirSync(hooksDir).filter((name) => !/\.(test|spec)\.tsx?$/.test(name))
+}
+
+/** Every `from '…'` and `import('…')` specifier in a source file. */
+function importSpecifiers(source: string): string[] {
+  const specifiers: string[] = []
+  const patterns = [
+    /\bfrom\s*['"]([^'"]+)['"]/g,
+    /\bimport\s*\(\s*['"]([^'"]+)['"]\s*\)/g,
+    /\brequire\s*\(\s*['"]([^'"]+)['"]\s*\)/g,
+  ]
+  for (const pattern of patterns) {
+    for (const match of source.matchAll(pattern)) specifiers.push(match[1])
+  }
+  return specifiers
+}
+
+// AC1: `lib/` is split by concern. Nothing sits loose at its root.
+describe('lib holds no loose modules', () => {
+  const entries = () => readdirSync(LIB, { withFileTypes: true })
+
+  it('contains only directories', () => {
+    const loose = entries()
+      .filter((entry) => !entry.isDirectory())
+      .map((entry) => entry.name)
+    expect(loose).toEqual([])
+  })
+
+  it('contains exactly the five concern folders', () => {
+    const dirs = entries()
+      .filter((entry) => entry.isDirectory())
+      .map((entry) => entry.name)
+      .sort()
+    expect(dirs).toEqual(['audio', 'persistence', 'presentation', 'puzzle', 'theory'])
+  })
+})
+
+// AC2: the generated manifest is data, not business logic, so it is not in lib/.
+describe('the generated manifest lives in data, not lib', () => {
+  it('has no grooves.generated.ts anywhere under lib', () => {
+    const offenders = filesUnder(LIB).filter((file) =>
+      file.endsWith('grooves.generated.ts'),
+    )
+    expect(offenders).toEqual([])
+  })
+
+  it('has the manifest in data with its test beside it', () => {
+    expect(existsSync(join(DATA, 'grooves.generated.ts'))).toBe(true)
+    expect(existsSync(join(DATA, 'grooves.generated.test.ts'))).toBe(true)
+  })
+})
+
+describe('daily-groove feature structure', () => {
+  it('holds only `use`-prefixed files under hooks/', () => {
+    const entries = readdirSync(hooksDir, { withFileTypes: true })
+    const misnamed = entries
+      .map((entry) => entry.name)
+      .filter((name) => !name.startsWith('use'))
+    expect(misnamed).toEqual([])
+  })
+
+  it('holds only genuine React hook modules under hooks/', () => {
+    const notHooks = hookModules().filter((name) => {
+      const source = readFileSync(`${hooksDir}/${name}`, 'utf8')
+      const importsReact = /from ['"]react['"]/.test(source)
+      const exportsHook = /export (?:function|const) use[A-Z]/.test(source)
+      return !importsReact || !exportsHook
+    })
+    expect(notHooks).toEqual([])
+  })
+
+  it('holds the store factory under state/', () => {
+    expect(existsSync(`${stateDir}/useDailyGrooveStore.ts`)).toBe(true)
+  })
+})
+
+// Epic 2, Step C1 — R4, AC4: components are grouped by the screen region that
+// renders them, with `GroovePuzzle` above the regions it composes.
+describe('feature components sit in screen regions', () => {
+  const REGIONS: Record<string, string[]> = {
+    header: ['GrooveHeader', 'StreakBadge'],
+    puzzle: [
+      'GrooveCard',
+      'TransportPanel',
+      'GuessCard',
+      'AttemptDots',
+      'FeedbackLine',
+      'NudgeBox',
+      'SolvedPanel',
+    ],
+    archive: ['ArchiveStrip'],
+  }
+
+  const entries = () => readdirSync(COMPONENTS, { withFileTypes: true })
+
+  it('contains exactly the three region directories', () => {
+    const dirs = entries()
+      .filter((entry) => entry.isDirectory())
+      .map((entry) => entry.name)
+      .sort()
+    expect(dirs).toEqual(['archive', 'header', 'puzzle'])
+  })
+
+  it('holds only the root component at the components/ root', () => {
+    // Test files are excluded the way `src/components/structure.test.ts`
+    // excludes them, so a colocated test never trips the file-list assertion.
+    const files = entries()
+      .filter((entry) => entry.isFile() && !/\.test\.tsx?$/.test(entry.name))
+      .map((entry) => entry.name)
+      .sort()
+    expect(files).toEqual(['GroovePuzzle.tsx'])
+    expect(existsSync(join(COMPONENTS, 'GroovePuzzle.test.tsx'))).toBe(true)
+  })
+
+  it('places every other component in its region beside its own test', () => {
+    const missing: string[] = []
+
+    for (const [region, names] of Object.entries(REGIONS)) {
+      for (const name of names) {
+        for (const file of [`${name}.tsx`, `${name}.test.tsx`]) {
+          const path = join(COMPONENTS, region, file)
+          if (!existsSync(path)) missing.push(`${region}/${file}`)
+        }
+      }
+    }
+
+    expect(missing).toEqual([])
+  })
+})
+
+// Epic 1, Step B1 — R4, AC3: no consumer reaches the design system through an
+// ungrouped path such as `@/components/Button`.
+describe('design-system consumers use grouped paths', () => {
+  it('has no ungrouped @/components import under src/app or src/features', () => {
+    const roots = [
+      join(process.cwd(), 'src', 'app'),
+      join(process.cwd(), 'src', 'features'),
+    ]
+    const offenders: string[] = []
+
+    for (const root of roots) {
+      for (const file of filesUnder(root).filter((f) => /\.tsx?$/.test(f))) {
+        const source = readFileSync(file, 'utf8')
+        for (const specifier of importSpecifiers(source)) {
+          if (/^@\/components\/[A-Z]/.test(specifier)) {
+            offenders.push(`${file.slice(process.cwd().length + 1)} -> ${specifier}`)
+          }
+        }
+      }
+    }
+
+    expect(offenders).toEqual([])
+  })
+})
