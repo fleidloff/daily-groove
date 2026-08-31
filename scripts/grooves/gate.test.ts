@@ -404,8 +404,17 @@ describe('the ceiling comparison', () => {
 // `checkHarmony` validates the harmony OBJECT and never reads a `NoteEvent`.
 // These are the tests that the gate now reads the events too.
 describe('the pitch check — R9, R10, AC10, AC11', () => {
-  /** The good candidate with one bass note the scale does not contain. */
-  function withOffScaleBass(): Candidate {
+  /**
+   * The good candidate with one bass note the scale does not contain, and the
+   * pitch that was put there.
+   *
+   * The offending pitch is returned rather than searched for afterwards. A
+   * search — "the event whose midi is not among the originals" — finds nothing
+   * the moment the altered pitch happens to coincide with a note the groove
+   * already plays somewhere else, which is a property of the catalogue rather
+   * than of the thing under test.
+   */
+  function withOffScaleBass(): { candidate: Candidate; midi: number } {
     const scale = new Set(pitchesOf(GOOD.music.root, GOOD.music.flavour))
     const bass = GOOD.events.find((e) => e.voice === 'bass' && e.midi !== undefined)
     expect(bass, 'the fixture groove has no bass').toBeDefined()
@@ -417,24 +426,22 @@ describe('the pitch check — R9, R10, AC10, AC11', () => {
     while (scale.has(midi % 12)) midi += 1
 
     const events = GOOD.events.map((e) => (e === bass ? { ...e, midi } : e))
-    return { ...GOOD, events }
+    return { candidate: { ...GOOD, events }, midi }
   }
 
   it('rejects a groove whose events contradict its stated scale, naming the pitch check', () => {
-    const failure = gateCandidate(withOffScaleBass())
+    const failure = gateCandidate(withOffScaleBass().candidate)
     expect(failure?.check).toBe('pitch')
   })
 
   it('names the offending MIDI value in the failure’s detail', () => {
-    const candidate = withOffScaleBass()
-    const original = new Set(GOOD.events.map((e) => e.midi))
-    const changed = candidate.events.find((e) => !original.has(e.midi))!
+    const { candidate, midi } = withOffScaleBass()
     const failure = gateCandidate(candidate)
-    expect(failure?.detail).toContain(String(changed.midi))
+    expect(failure?.detail).toContain(String(midi))
   })
 
   it('reads the events, not only the harmony object — the harmony is untouched', () => {
-    const candidate = withOffScaleBass()
+    const { candidate } = withOffScaleBass()
     // Same music, same harmony as the candidate the gate accepts: only the
     // events differ, so nothing but an event-level check can catch this.
     expect(candidate.music).toBe(GOOD.music)
@@ -445,12 +452,12 @@ describe('the pitch check — R9, R10, AC10, AC11', () => {
 
   it('runs between the harmony and density checks', () => {
     // Harmony first: a candidate broken in both ways reports the harmony.
-    const both = { ...withOffScaleBass(), music: { ...GOOD.music, chord: 'B♭dim7' } }
+    const both = { ...withOffScaleBass().candidate, music: { ...GOOD.music, chord: 'B♭dim7' } }
     expect(gateCandidate(both)?.check).toBe('harmony')
 
     // Density after: a candidate broken in both ways reports the pitch.
     const pitchAndDensity = {
-      ...withOffScaleBass(),
+      ...withOffScaleBass().candidate,
       template: {
         ...GOOD.template,
         density: { minPerBar: 1000, maxPerBar: 2000 },

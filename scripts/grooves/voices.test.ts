@@ -417,14 +417,24 @@ describe('renderVoices', () => {
       }
     }
 
-    /** The whole register the README claims is covered, one event per semitone. */
+    /**
+     * The whole register the README claims is covered, one event per semitone.
+     *
+     * The bass starts at 26, not 22. A four-string bass — upright or electric —
+     * has no note under its open low E at MIDI 28, so the pack samples from
+     * there and covers two semitones below it. The old floor of 22 described an
+     * instrument that does not exist; it went unnoticed while the voice was a
+     * synth, which renders any pitch it is asked for. `events.ts` will not write
+     * below MIDI 28 (`BASS_FLOOR_MIDI`), so the covered range is wider than the
+     * range that is played.
+     */
     const pitched: NoteEvent[] = [
-      ...Array.from({ length: 29 }, (_, i) => ({
+      ...Array.from({ length: 26 }, (_, i) => ({
         voice: 'bass' as const,
         timeSec: i * 0.05,
         durationSec: 0.05,
         velocity: 0.8,
-        midi: 22 + i,
+        midi: 26 + i,
       })),
       ...Array.from({ length: 41 }, (_, i) => ({
         voice: 'comp' as const,

@@ -243,26 +243,54 @@ compatible because this epic only adds declarations.
 - Whether VCSL holds a single coherent kit is settled by auditioning, not
   assumed either way in advance.
 
-## Finding — VCSL has no upright bass, and the bass stays electric
+## Decided after listening — the pitched voices come from VSCO 2 CE
 
-Recorded 2026-08-31, from listening to the Epic 3 and Epic 4 renders.
+Recorded 2026-08-31, after the player heard the Epic 3, 4 and 5 renders.
 
-Having heard the current bass — still the TX81Z FM Piano stand-in, since this
-epic has not run — the player asked whether it could be an upright instead.
+**This reverses Q3's answer below, deliberately and narrowly.** Q3 said stay
+VCSL-only and accept the closest instrument the library holds. Checked against
+VCSL's full inventory — 107 instruments at commit `c1ea7bc` — the library holds
+**no bass instrument of any kind**: no bass guitar, no double bass, no cello,
+nothing in the register. Its Chordophones are harps, pianos, harpsichords, a
+strumstick and a psaltery. It also holds **no electric piano**: its Electrophones
+are the Clavisynth and FM Piano already standing in, plus an empty folder.
 
-**VCSL has no bowed string bass at all.** Checked against the library's tree at
-`c1ea7bc`: its Chordophones are harps, pianos, harpsichords, a strumstick, a
-psaltery and a Dan Tranh. No double bass, no contrabass, no cello to pitch down.
-An upright would have meant a source outside the library, reversing Q3.
+So R3 and R4 could not both be met inside VCSL. The player's call was to bring in
+**one** further CC0 library rather than keep two synths standing in for a band:
 
-**Decided: the bass stays electric, and the pack stays VCSL-only.** Both logged
-answers below stand unchanged. The player's words: *"please just use the electric
-bass for all. If there is no upright, there's not much we can do."*
+| Voice | Source | Instrument |
+| :-- | :-- | :-- |
+| `kick` | VCSL | Bass Drum 1 — a real bass drum, replacing the cajon |
+| `rim` | VCSL | `Snare2_stick` — the cross-stick of the snare already in the pack |
+| `snare`, `hatClosed`, `hatOpen`, `tomHigh`, `tomLow` | VCSL | unchanged |
+| `bass` | **VSCO 2 CE** | Solo Contrabass, **pizzicato** — an upright bass |
+| `comp` | **VSCO 2 CE** | Upright Piano |
 
-Worth keeping because it is evidence rather than preference: Q2 was answered
-before anyone had heard a groove, and the answer survived hearing one. The
-constraint that decided it — VCSL's string section holds nothing in the register
-— is also the kind of thing worth not rediscovering.
+**R3 is amended: the bass is an upright, not an electric.** Q2 chose electric
+because no upright was thought to be available; one is, in VSCO 2 CE, and the
+player asked for an upright before being told VCSL had none. Pizzicato contrabass
+is that instrument.
+
+**R4 is amended: the comp is an acoustic upright piano, not an electric piano.**
+No CC0 Rhodes could be found with a licence verifiable from here — most electric
+piano sets are CC-BY or narrower. A real upright serves what was actually asked
+for, which was a smoother attack than the Clavisynth's, and it needs no third
+library.
+
+**Versilian Studios' VSCO 2 Community Edition is CC0 1.0**, verified against its
+own `LICENSE` file at commit `4403009`. It is the same author as VCSL, so the two
+sit under one licence regime even though they are two files.
+
+**Two constraints the choice had to satisfy, and one it forced:**
+
+- `Keys/Upright Nr1` was rejected: it samples every five to seven semitones,
+  which would need shifts of 3.5 and break the two-semitone bound `resample()`
+  is transparent within. `Keys/Upright Piano` samples every two.
+- A contrabass is conventionally **written an octave above it sounds**, so the
+  filename pitch cannot be trusted — the same trap the Clavisynth set. R8 already
+  requires measurement; here it is load-bearing rather than cautionary.
+- `samples/` now holds two licence files and provenance naming two libraries.
+  R11 and R5a are updated accordingly.
 
 ## Question log
 

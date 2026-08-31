@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process'
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -313,5 +313,163 @@ describe('the committed pack’s percussion', () => {
       )
     expect([...upstream('tomHigh')]).toEqual(['Tom 1'])
     expect([...upstream('tomLow')]).toEqual(['Tom 2'])
+  })
+})
+
+/**
+ * Feature 9, Epic 2, Step B2 — the upright bass.
+ *
+ * `bass` is the pack's first non-VCSL voice: a pizzicato solo contrabass from
+ * VSCO 2 Community Edition, replacing a TX81Z FM Piano that was standing in for
+ * a bass and had been heard and rejected. These read the committed declaration
+ * and the committed audio from disk for the same reason the percussion ones do:
+ * the mistakes that matter are in the bytes, not in `loadPack`.
+ *
+ * The register it achieves is 26-51, not the 22-50 the spec asks for. MIDI 28
+ * is a four-string contrabass's open low E and the instrument has nothing
+ * below it; `samples/README.md` records why that gap was left rather than
+ * filled with an offline pitch-shift, which is the arithmetic the renderer
+ * already does and so would have added coverage in name only.
+ */
+
+type MeasuredNote = { midi: number; measuredHz?: number; layers: VelocityLayer[] }
+
+/** The sampled notes of a pitched voice, lowest first. */
+function notesOf(voice: VoiceName): MeasuredNote[] {
+  return [...((committed.voices[voice]?.notes ?? []) as MeasuredNote[])].sort(
+    (a, b) => a.midi - b.midi,
+  )
+}
+
+function pitchedFilesOf(voice: VoiceName): string[] {
+  return notesOf(voice).flatMap((note) => note.layers.flatMap((layer) => layer.files))
+}
+
+/** The MIDI note a frequency sounds, as a real number. */
+function midiOf(hz: number): number {
+  return 12 * Math.log2(hz / 440) + 69
+}
+
+/** Every note the generator can ask the bass for: `BASS_BASE_MIDI` and an octave below. */
+const BASS_PLAYED = { lowest: 24, highest: 47 }
+
+describe('the committed pack’s bass', () => {
+  it('is a pizzicato contrabass from VSCO 2 CE, and no FM Piano file survives', () => {
+    const files = pitchedFilesOf('bass')
+    expect(files.length, 'bass declares no files').toBeGreaterThan(0)
+    for (const file of files) {
+      expect(file, `${file} is not a contrabass pizzicato sample`).toMatch(
+        /^bass\/BKCtbss_Pizz_/,
+      )
+    }
+    expect(readdirSync(join(SAMPLES, 'bass')).sort()).toEqual(
+      files.map((file) => file.slice('bass/'.length)).sort(),
+    )
+  })
+
+  it('names only bass files that are on disk', () => {
+    for (const file of pitchedFilesOf('bass')) {
+      expect(existsSync(join(SAMPLES, file)), `${file} is declared but missing`).toBe(true)
+    }
+  })
+
+  it('stores every bass sample as mono 44.1 kHz FLAC', () => {
+    for (const file of pitchedFilesOf('bass')) {
+      expect(format(file), `${file} is not mono 44.1 kHz FLAC`).toBe('flac,44100,1')
+    }
+  }, 120_000)
+
+  it('starts every bass sample near silence and never leaves it silent', () => {
+    for (const file of pitchedFilesOf('bass')) {
+      const pcm = samplesOf(file)
+      expect(pcm.length, `${file} decodes to nothing`).toBeGreaterThan(0)
+      expect(Math.abs(pcm[0]), `${file} opens on a discontinuity`).toBeLessThan(0.01)
+      expect(peakOf(file), `${file} is silent`).toBeGreaterThan(0.001)
+    }
+  }, 120_000)
+
+  // The un-normalised layers, note by note: VSCO's `v1` under its `v3`.
+  it('leaves each note’s velocity layers un-normalised, so v3 is louder than v1', () => {
+    for (const note of notesOf('bass')) {
+      const levels = note.layers.map(levelOf)
+      for (let i = 1; i < levels.length; i += 1) {
+        expect(
+          levels[i],
+          `bass MIDI ${note.midi}: layer ${i} is not louder than layer ${i - 1} — was it normalised?`,
+        ).toBeGreaterThan(levels[i - 1])
+      }
+    }
+  }, 120_000)
+
+  it('samples the bass no more than four semitones apart', () => {
+    const midi = notesOf('bass').map((note) => note.midi)
+    expect(midi.length, 'bass has too few sampled notes').toBeGreaterThanOrEqual(8)
+    for (let i = 1; i < midi.length; i += 1) {
+      expect(
+        midi[i] - midi[i - 1],
+        `bass has a ${midi[i] - midi[i - 1]}-semitone gap at MIDI ${midi[i - 1]}`,
+      ).toBeLessThanOrEqual(4)
+    }
+  })
+
+  /**
+   * The instrument's own floor, pinned so it is a recorded fact rather than an
+   * oversight. Raise `lowest` only by adding a note that was sampled, not one
+   * that was pitched down.
+   */
+  it('covers the register the contrabass has: MIDI 26 up, not the 22 the spec asks for', () => {
+    const midi = notesOf('bass').map((note) => note.midi)
+    const lowest = midi[0]
+    const highest = midi[midi.length - 1]
+
+    expect(lowest, 'the lowest sampled note is not the contrabass’s open low E').toBe(28)
+    expect(highest + 2, 'the bass does not reach the top of its register').toBeGreaterThanOrEqual(50)
+
+    // Everything the generator actually asks for is inside the sampled span or
+    // below its floor by no more than the octave drop `events.ts` allows.
+    expect(BASS_PLAYED.highest).toBeLessThanOrEqual(highest + 2)
+    expect(lowest - BASS_PLAYED.lowest, 'the low octave drops further than 4 semitones below the pack').toBeLessThanOrEqual(4)
+  })
+
+  // AC3 — sounding pitch is measured, never read off the filename. VSCO 2 names
+  // octaves with C3 as middle C, so `E0` sounds at MIDI 28.
+  it('declares a midi that its measured fundamental agrees with, within half a semitone', () => {
+    const notes = notesOf('bass')
+    expect(notes.length).toBeGreaterThan(0)
+    for (const note of notes) {
+      expect(typeof note.measuredHz, `bass MIDI ${note.midi} has no measuredHz`).toBe('number')
+      const measured = midiOf(note.measuredHz!)
+      expect(
+        Math.abs(measured - note.midi),
+        `bass MIDI ${note.midi} was measured at ${note.measuredHz} Hz, which sounds ${measured.toFixed(2)}`,
+      ).toBeLessThan(0.5)
+    }
+  })
+
+  it('is not the octave the filenames would suggest read as scientific pitch', () => {
+    // `BKCtbss_Pizz_E0` read as scientific E0 would be MIDI 16; read as a
+    // written contrabass part it would be MIDI 40. It is measured at 28.
+    const lowest = notesOf('bass')[0]
+    expect(lowest.midi).toBe(28)
+    expect(lowest.measuredHz).toBeGreaterThan(39)
+    expect(lowest.measuredHz).toBeLessThan(43)
+  })
+
+  it('records a VSCO 2 CE provenance entry for every bass file', () => {
+    const recorded = new Map(committedProvenance.samples.map((s) => [s.file, s]))
+    for (const file of pitchedFilesOf('bass')) {
+      const entry = recorded.get(file)
+      expect(entry, `${file} is in the pack but not in provenance.json`).toBeDefined()
+      expect(entry!.source, `${file} does not name VSCO 2 CE`).toContain('VSCO-2-CE')
+      expect(entry!.licence).toBe('CC0')
+      expect(entry!.sourceFile).toMatch(/^Strings\/Solo Contrabass\/Pizz\//)
+    }
+  })
+
+  it('ships the VSCO 2 CE licence beside the VCSL one', () => {
+    for (const licence of ['LICENSE.txt', 'LICENSE-VSCO-2-CE.txt']) {
+      expect(existsSync(join(SAMPLES, licence)), `${licence} is missing`).toBe(true)
+      expect(readFileSync(join(SAMPLES, licence), 'utf8')).toContain('CC0 1.0 Universal')
+    }
   })
 })

@@ -177,162 +177,140 @@
     "bass": {
       "notes": [
         {
-          "midi": 24,
-          "layers": [
-            {
-              "maxVelocity": 0.45,
-              "files": [
-                "bass/FMPiano_C1_vl1.flac"
-              ]
-            },
-            {
-              "maxVelocity": 0.8,
-              "files": [
-                "bass/FMPiano_C1_vl2.flac"
-              ]
-            },
-            {
-              "maxVelocity": 1.0,
-              "files": [
-                "bass/FMPiano_C1_vl3.flac"
-              ]
-            }
-          ]
-        },
-        {
           "midi": 28,
+          "measuredHz": 40.9,
           "layers": [
-            {
-              "maxVelocity": 0.45,
-              "files": [
-                "bass/FMPiano_E1_vl1.flac"
-              ]
-            },
             {
               "maxVelocity": 0.8,
               "files": [
-                "bass/FMPiano_E1_vl2.flac"
+                "bass/BKCtbss_Pizz_E0_v1_rr1.flac",
+                "bass/BKCtbss_Pizz_E0_v1_rr2.flac"
               ]
             },
             {
               "maxVelocity": 1.0,
               "files": [
-                "bass/FMPiano_E1_vl3.flac"
+                "bass/BKCtbss_Pizz_E0_v3_rr1.flac",
+                "bass/BKCtbss_Pizz_E0_v3_rr2.flac"
               ]
             }
           ]
         },
         {
-          "midi": 32,
+          "midi": 31,
+          "measuredHz": 48.51,
           "layers": [
-            {
-              "maxVelocity": 0.45,
-              "files": [
-                "bass/FMPiano_G#1_vl1.flac"
-              ]
-            },
             {
               "maxVelocity": 0.8,
               "files": [
-                "bass/FMPiano_G#1_vl2.flac"
+                "bass/BKCtbss_Pizz_G0_v1_rr1.flac",
+                "bass/BKCtbss_Pizz_G0_v1_rr2.flac"
               ]
             },
             {
               "maxVelocity": 1.0,
               "files": [
-                "bass/FMPiano_G#1_vl3.flac"
+                "bass/BKCtbss_Pizz_G0_v3_rr1.flac",
+                "bass/BKCtbss_Pizz_G0_v3_rr2.flac"
+              ]
+            }
+          ]
+        },
+        {
+          "midi": 34,
+          "measuredHz": 58.07,
+          "layers": [
+            {
+              "maxVelocity": 0.8,
+              "files": [
+                "bass/BKCtbss_Pizz_A#0_v1_rr1.flac",
+                "bass/BKCtbss_Pizz_A#0_v1_rr2.flac"
+              ]
+            },
+            {
+              "maxVelocity": 1.0,
+              "files": [
+                "bass/BKCtbss_Pizz_A#0_v3_rr1.flac",
+                "bass/BKCtbss_Pizz_A#0_v3_rr2.flac"
               ]
             }
           ]
         },
         {
           "midi": 36,
+          "measuredHz": 64.28,
           "layers": [
-            {
-              "maxVelocity": 0.45,
-              "files": [
-                "bass/FMPiano_C2_vl1.flac"
-              ]
-            },
             {
               "maxVelocity": 0.8,
               "files": [
-                "bass/FMPiano_C2_vl2.flac"
+                "bass/BKCtbss_Pizz_C1_v1_rr1.flac",
+                "bass/BKCtbss_Pizz_C1_v1_rr2.flac"
               ]
             },
             {
               "maxVelocity": 1.0,
               "files": [
-                "bass/FMPiano_C2_vl3.flac"
+                "bass/BKCtbss_Pizz_C1_v3_rr1.flac",
+                "bass/BKCtbss_Pizz_C1_v3_rr2.flac"
               ]
             }
           ]
         },
         {
           "midi": 40,
+          "measuredHz": 82.2,
           "layers": [
-            {
-              "maxVelocity": 0.45,
-              "files": [
-                "bass/FMPiano_E2_vl1.flac"
-              ]
-            },
             {
               "maxVelocity": 0.8,
               "files": [
-                "bass/FMPiano_E2_vl2.flac"
+                "bass/BKCtbss_Pizz_E1_v1_rr1.flac",
+                "bass/BKCtbss_Pizz_E1_v1_rr2.flac"
               ]
             },
             {
               "maxVelocity": 1.0,
               "files": [
-                "bass/FMPiano_E2_vl3.flac"
+                "bass/BKCtbss_Pizz_E1_v3_rr1.flac",
+                "bass/BKCtbss_Pizz_E1_v3_rr2.flac"
               ]
             }
           ]
         },
         {
-          "midi": 44,
+          "midi": 42,
+          "measuredHz": 92.28,
           "layers": [
-            {
-              "maxVelocity": 0.45,
-              "files": [
-                "bass/FMPiano_G#2_vl1.flac"
-              ]
-            },
-            {
-              "maxVelocity": 0.8,
-              "files": [
-                "bass/FMPiano_G#2_vl2.flac"
-              ]
-            },
             {
               "maxVelocity": 1.0,
               "files": [
-                "bass/FMPiano_G#2_vl3.flac"
+                "bass/BKCtbss_Pizz_F#1_v1_rr1.flac",
+                "bass/BKCtbss_Pizz_F#1_v1_rr2.flac"
               ]
             }
           ]
         },
         {
-          "midi": 48,
+          "midi": 45,
+          "measuredHz": 112.07,
           "layers": [
-            {
-              "maxVelocity": 0.45,
-              "files": [
-                "bass/FMPiano_C3_vl1.flac"
-              ]
-            },
-            {
-              "maxVelocity": 0.8,
-              "files": [
-                "bass/FMPiano_C3_vl2.flac"
-              ]
-            },
             {
               "maxVelocity": 1.0,
               "files": [
-                "bass/FMPiano_C3_vl3.flac"
+                "bass/BKCtbss_Pizz_A1_v1_rr1.flac",
+                "bass/BKCtbss_Pizz_A1_v1_rr2.flac"
+              ]
+            }
+          ]
+        },
+        {
+          "midi": 49,
+          "measuredHz": 139.07,
+          "layers": [
+            {
+              "maxVelocity": 1.0,
+              "files": [
+                "bass/BKCtbss_Pizz_C#2_v1_rr1.flac",
+                "bass/BKCtbss_Pizz_C#2_v1_rr2.flac"
               ]
             }
           ]

@@ -55,9 +55,27 @@ const BASS_BASE_MIDI = 36
  * How far a displaced bass note drops: one octave, into the register below
  * `BASS_BASE_MIDI`. Down and never up, because up would put the line inside the
  * comp's window and break the "bass under the comp" rule the arrangement rests
- * on. `BASS_BASE_MIDI - 12` is the lowest note the sample pack carries.
+ * on.
  */
 const BASS_OCTAVE_DROP = 12
+
+/**
+ * The lowest note a bass has: the open low E of a four-string instrument.
+ *
+ * True of an upright and of an electric alike, which is why it lives here as a
+ * fact about the instrument rather than in the pack as a fact about the samples.
+ * The octave drop is skipped rather than clamped when it would land under this —
+ * a note pushed back up to the floor is a different note, where a note left in
+ * its own octave is the line the writer meant.
+ *
+ * It matters because it was briefly untrue. The drop was written against a synth
+ * standing in for a bass, which will render any pitch asked of it; 66 of the
+ * catalogue's 928 bass notes sat below this floor, 40 of them a full fourth
+ * below it. A real bass has no such notes, and the renderer would have made them
+ * by stretching the low E down — audibly, and in the one register where it is
+ * least forgiving.
+ */
+const BASS_FLOOR_MIDI = 28
 
 /**
  * How the bass line is written, as the chances one draw of the rhythm stream is
@@ -775,7 +793,9 @@ export function buildEvents(
         midi = previousBass
       } else {
         midi = inRegister(chord[i % chord.length], BASS_BASE_MIDI)
-        if (drop < BASS_OCTAVE_CHANCE) midi -= BASS_OCTAVE_DROP
+        if (drop < BASS_OCTAVE_CHANCE && midi - BASS_OCTAVE_DROP >= BASS_FLOOR_MIDI) {
+          midi -= BASS_OCTAVE_DROP
+        }
       }
       previousBass = midi
       notes.push({ step, midi })
@@ -872,11 +892,23 @@ export function buildEvents(
   const pitches = () => bassFigure.flat().map((note) => note.midi)
   const top = Math.max(...pitches())
   // Under the top note, so dropping it can only widen the line's span.
+  // A candidate must be able to *reach* the octave below, not merely sit above
+  // the base: a bass has no notes under its open low E, so a note less than an
+  // octave above the floor cannot be dropped at all. Filtering here rather than
+  // testing the lowest candidate afterwards is what keeps the guarantee — the
+  // lowest note is often exactly the one that cannot move, and giving up on it
+  // would leave the line inside a single octave.
   const droppable = bassFigure
     .flatMap((notes, bar) => notes.filter((note) => !isApproach(bar, note)))
-    .filter((note) => note.midi >= BASS_BASE_MIDI && note.midi < top)
+    .filter(
+      (note) =>
+        note.midi >= BASS_BASE_MIDI &&
+        note.midi < top &&
+        note.midi - BASS_OCTAVE_DROP >= BASS_FLOOR_MIDI,
+    )
   if (droppable.length > 0) {
-    droppable.reduce((low, note) => (note.midi < low.midi ? note : low)).midi -= BASS_OCTAVE_DROP
+    const lowest = droppable.reduce((low, note) => (note.midi < low.midi ? note : low))
+    lowest.midi -= BASS_OCTAVE_DROP
   }
 
   const repeatsSomewhere = () => {

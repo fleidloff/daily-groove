@@ -192,14 +192,59 @@ describe('the pack is stocked for Epic 2', () => {
     }
   })
 
+  /**
+   * The sampled notes a source records at one velocity only, and which
+   * therefore cannot carry a second layer without one being fabricated.
+   *
+   * VSCO 2 CE recorded the solo contrabass at two velocity groups (`v1`, `v3`)
+   * only below MIDI 41; above it there is a single group. The honest options
+   * were to invent a second layer — by re-levelling a take, or by promoting a
+   * round-robin alternate whose level differs by a take-to-take 0.3–1.8 dB —
+   * or to declare what the library holds. Inventing one would erase exactly
+   * the dynamic information the un-normalised pack exists to carry, so these
+   * three notes are declared with one layer and two round-robin alternates.
+   *
+   * The list is exhaustive on purpose: adding a note here is a decision, and a
+   * new single-velocity note that nobody decided on still fails.
+   */
+  const SINGLE_VELOCITY_IN_SOURCE: Partial<Record<VoiceName, number[]>> = {
+    bass: [42, 45, 49],
+  }
+
   it('velocity-layers the pitched voices too', () => {
     for (const voice of PITCHED_VOICES) {
+      const exempt = SINGLE_VELOCITY_IN_SOURCE[voice] ?? []
       for (const note of decl.voices[voice]?.notes ?? []) {
+        if (exempt.includes(note.midi)) continue
         expect(
           note.layers.length,
           `${voice} MIDI ${note.midi} has a single velocity layer`,
         ).toBeGreaterThanOrEqual(2)
       }
+    }
+  })
+
+  it('round-robins the notes it cannot velocity-layer, so a repeat never replays one file', () => {
+    for (const voice of PITCHED_VOICES) {
+      for (const midi of SINGLE_VELOCITY_IN_SOURCE[voice] ?? []) {
+        const note = decl.voices[voice]?.notes?.find((n) => n.midi === midi)
+        expect(note, `${voice} MIDI ${midi} is exempted but not declared`).toBeDefined()
+        expect(
+          note!.layers.flatMap((l) => l.files).length,
+          `${voice} MIDI ${midi} has one velocity layer and no alternates`,
+        ).toBeGreaterThanOrEqual(2)
+      }
+    }
+  })
+
+  it('velocity-layers most of every pitched voice, so the exemption stays an exception', () => {
+    for (const voice of PITCHED_VOICES) {
+      const notes = decl.voices[voice]?.notes ?? []
+      const layered = notes.filter((n) => n.layers.length >= 2).length
+      expect(
+        layered * 2,
+        `${voice} carries velocity layers on only ${layered} of its ${notes.length} notes`,
+      ).toBeGreaterThan(notes.length)
     }
   })
 })

@@ -118,6 +118,16 @@ function audioBytes(f: Fixture): Record<string, string> {
   return Object.fromEntries(mp3s(f.outDir).map((n) => [n, readFileSync(join(f.outDir, n), 'utf8')]))
 }
 
+/**
+ * Minting renders in full, and the render is no longer cheap: every candidate
+ * now carries per-pass humanization, a tempo drift, note-offs, a hi-hat choke
+ * and a Schroeder reverb, and a rejected candidate pays for all of it before
+ * the gate turns it down. Vitest's 5 s default was written against a much
+ * lighter pipeline and times these out under parallel load — which reads as a
+ * flaky assertion when nothing is flaky but the clock.
+ */
+const MINT_TIMEOUT_MS = 30_000
+
 describe('addGrooves', () => {
   it('adds exactly n grooves, leaving every existing entry untouched', async () => {
     const f = fixture()
@@ -147,7 +157,7 @@ describe('addGrooves', () => {
     for (const [name, bytes] of Object.entries(before)) {
       expect(readFileSync(join(f.outDir, name), 'utf8'), `${name} was rewritten`).toBe(bytes)
     }
-  })
+  }, MINT_TIMEOUT_MS)
 
   it('regenerates the manifest so the new grooves need no follow-up edit', async () => {
     const f = fixture()
@@ -323,7 +333,7 @@ describe('addGrooves', () => {
       const pcm = renderCandidate(spec, events, music, template, f.pack)
       expect(gateCandidate({ pcm, events, music, harmony, template })).toBeNull()
     }
-  })
+  }, MINT_TIMEOUT_MS)
 
   it('left every committed artifact untouched', () => {
     expect(readFileSync(REAL_LOCK, 'utf8'), 'a test rewrote the committed lock').toBe(COMMITTED.lock)

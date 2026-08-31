@@ -355,172 +355,212 @@
       "modifications": "faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a tom lands with the snare it is written beside)"
     },
     {
-      "file": "bass/FMPiano_C1_vl1.flac",
-      "source": "Versilian Community Sample Library (VCSL)",
-      "sourceFile": "Electrophones/TX81Z/FM Piano/FMPiano_C1_vl1.wav",
-      "url": "https://github.com/sgossner/VCSL",
+      "file": "bass/BKCtbss_Pizz_E0_v1_rr1.flac",
+      "source": "VSCO 2 Community Edition (VSCO-2-CE), Solo Contrabass, pizzicato",
+      "sourceFile": "Strings/Solo Contrabass/Pizz/BKCtbss_Pizz_E0_v1_rr1.wav",
+      "url": "https://github.com/sgossner/VSCO-2-CE",
       "licence": "CC0",
-      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+      "modifications": "capped at 2 s, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a bass note lands with the kick it is written beside; not normalised: the v1/v3 level difference is the dynamic information the renderer reads)"
     },
     {
-      "file": "bass/FMPiano_C1_vl2.flac",
-      "source": "Versilian Community Sample Library (VCSL)",
-      "sourceFile": "Electrophones/TX81Z/FM Piano/FMPiano_C1_vl2.wav",
-      "url": "https://github.com/sgossner/VCSL",
+      "file": "bass/BKCtbss_Pizz_E0_v1_rr2.flac",
+      "source": "VSCO 2 Community Edition (VSCO-2-CE), Solo Contrabass, pizzicato",
+      "sourceFile": "Strings/Solo Contrabass/Pizz/BKCtbss_Pizz_E0_v1_rr2.wav",
+      "url": "https://github.com/sgossner/VSCO-2-CE",
       "licence": "CC0",
-      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+      "modifications": "capped at 2 s, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a bass note lands with the kick it is written beside; not normalised: the v1/v3 level difference is the dynamic information the renderer reads)"
     },
     {
-      "file": "bass/FMPiano_C1_vl3.flac",
-      "source": "Versilian Community Sample Library (VCSL)",
-      "sourceFile": "Electrophones/TX81Z/FM Piano/FMPiano_C1_vl3.wav",
-      "url": "https://github.com/sgossner/VCSL",
+      "file": "bass/BKCtbss_Pizz_E0_v3_rr1.flac",
+      "source": "VSCO 2 Community Edition (VSCO-2-CE), Solo Contrabass, pizzicato",
+      "sourceFile": "Strings/Solo Contrabass/Pizz/BKCtbss_Pizz_E0_v3_rr1.wav",
+      "url": "https://github.com/sgossner/VSCO-2-CE",
       "licence": "CC0",
-      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+      "modifications": "capped at 2 s, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a bass note lands with the kick it is written beside; not normalised: the v1/v3 level difference is the dynamic information the renderer reads)"
     },
     {
-      "file": "bass/FMPiano_E1_vl1.flac",
-      "source": "Versilian Community Sample Library (VCSL)",
-      "sourceFile": "Electrophones/TX81Z/FM Piano/FMPiano_E1_vl1.wav",
-      "url": "https://github.com/sgossner/VCSL",
+      "file": "bass/BKCtbss_Pizz_E0_v3_rr2.flac",
+      "source": "VSCO 2 Community Edition (VSCO-2-CE), Solo Contrabass, pizzicato",
+      "sourceFile": "Strings/Solo Contrabass/Pizz/BKCtbss_Pizz_E0_v3_rr2.wav",
+      "url": "https://github.com/sgossner/VSCO-2-CE",
       "licence": "CC0",
-      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+      "modifications": "capped at 2 s, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a bass note lands with the kick it is written beside; not normalised: the v1/v3 level difference is the dynamic information the renderer reads)"
     },
     {
-      "file": "bass/FMPiano_E1_vl2.flac",
-      "source": "Versilian Community Sample Library (VCSL)",
-      "sourceFile": "Electrophones/TX81Z/FM Piano/FMPiano_E1_vl2.wav",
-      "url": "https://github.com/sgossner/VCSL",
+      "file": "bass/BKCtbss_Pizz_G0_v1_rr1.flac",
+      "source": "VSCO 2 Community Edition (VSCO-2-CE), Solo Contrabass, pizzicato",
+      "sourceFile": "Strings/Solo Contrabass/Pizz/BKCtbss_Pizz_G0_v1_rr1.wav",
+      "url": "https://github.com/sgossner/VSCO-2-CE",
       "licence": "CC0",
-      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+      "modifications": "capped at 2 s, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a bass note lands with the kick it is written beside; not normalised: the v1/v3 level difference is the dynamic information the renderer reads)"
     },
     {
-      "file": "bass/FMPiano_E1_vl3.flac",
-      "source": "Versilian Community Sample Library (VCSL)",
-      "sourceFile": "Electrophones/TX81Z/FM Piano/FMPiano_E1_vl3.wav",
-      "url": "https://github.com/sgossner/VCSL",
+      "file": "bass/BKCtbss_Pizz_G0_v1_rr2.flac",
+      "source": "VSCO 2 Community Edition (VSCO-2-CE), Solo Contrabass, pizzicato",
+      "sourceFile": "Strings/Solo Contrabass/Pizz/BKCtbss_Pizz_G0_v1_rr2.wav",
+      "url": "https://github.com/sgossner/VSCO-2-CE",
       "licence": "CC0",
-      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+      "modifications": "capped at 2 s, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a bass note lands with the kick it is written beside; not normalised: the v1/v3 level difference is the dynamic information the renderer reads)"
     },
     {
-      "file": "bass/FMPiano_G#1_vl1.flac",
-      "source": "Versilian Community Sample Library (VCSL)",
-      "sourceFile": "Electrophones/TX81Z/FM Piano/FMPiano_G#1_vl1.wav",
-      "url": "https://github.com/sgossner/VCSL",
+      "file": "bass/BKCtbss_Pizz_G0_v3_rr1.flac",
+      "source": "VSCO 2 Community Edition (VSCO-2-CE), Solo Contrabass, pizzicato",
+      "sourceFile": "Strings/Solo Contrabass/Pizz/BKCtbss_Pizz_G0_v3_rr1.wav",
+      "url": "https://github.com/sgossner/VSCO-2-CE",
       "licence": "CC0",
-      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+      "modifications": "capped at 2 s, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a bass note lands with the kick it is written beside; not normalised: the v1/v3 level difference is the dynamic information the renderer reads)"
     },
     {
-      "file": "bass/FMPiano_G#1_vl2.flac",
-      "source": "Versilian Community Sample Library (VCSL)",
-      "sourceFile": "Electrophones/TX81Z/FM Piano/FMPiano_G#1_vl2.wav",
-      "url": "https://github.com/sgossner/VCSL",
+      "file": "bass/BKCtbss_Pizz_G0_v3_rr2.flac",
+      "source": "VSCO 2 Community Edition (VSCO-2-CE), Solo Contrabass, pizzicato",
+      "sourceFile": "Strings/Solo Contrabass/Pizz/BKCtbss_Pizz_G0_v3_rr2.wav",
+      "url": "https://github.com/sgossner/VSCO-2-CE",
       "licence": "CC0",
-      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+      "modifications": "capped at 2 s, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a bass note lands with the kick it is written beside; not normalised: the v1/v3 level difference is the dynamic information the renderer reads)"
     },
     {
-      "file": "bass/FMPiano_G#1_vl3.flac",
-      "source": "Versilian Community Sample Library (VCSL)",
-      "sourceFile": "Electrophones/TX81Z/FM Piano/FMPiano_G#1_vl3.wav",
-      "url": "https://github.com/sgossner/VCSL",
+      "file": "bass/BKCtbss_Pizz_A#0_v1_rr1.flac",
+      "source": "VSCO 2 Community Edition (VSCO-2-CE), Solo Contrabass, pizzicato",
+      "sourceFile": "Strings/Solo Contrabass/Pizz/BKCtbss_Pizz_A#0_v1_rr1.wav",
+      "url": "https://github.com/sgossner/VSCO-2-CE",
       "licence": "CC0",
-      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+      "modifications": "capped at 2 s, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a bass note lands with the kick it is written beside; not normalised: the v1/v3 level difference is the dynamic information the renderer reads)"
     },
     {
-      "file": "bass/FMPiano_C2_vl1.flac",
-      "source": "Versilian Community Sample Library (VCSL)",
-      "sourceFile": "Electrophones/TX81Z/FM Piano/FMPiano_C2_vl1.wav",
-      "url": "https://github.com/sgossner/VCSL",
+      "file": "bass/BKCtbss_Pizz_A#0_v1_rr2.flac",
+      "source": "VSCO 2 Community Edition (VSCO-2-CE), Solo Contrabass, pizzicato",
+      "sourceFile": "Strings/Solo Contrabass/Pizz/BKCtbss_Pizz_A#0_v1_rr2.wav",
+      "url": "https://github.com/sgossner/VSCO-2-CE",
       "licence": "CC0",
-      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+      "modifications": "capped at 2 s, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a bass note lands with the kick it is written beside; not normalised: the v1/v3 level difference is the dynamic information the renderer reads)"
     },
     {
-      "file": "bass/FMPiano_C2_vl2.flac",
-      "source": "Versilian Community Sample Library (VCSL)",
-      "sourceFile": "Electrophones/TX81Z/FM Piano/FMPiano_C2_vl2.wav",
-      "url": "https://github.com/sgossner/VCSL",
+      "file": "bass/BKCtbss_Pizz_A#0_v3_rr1.flac",
+      "source": "VSCO 2 Community Edition (VSCO-2-CE), Solo Contrabass, pizzicato",
+      "sourceFile": "Strings/Solo Contrabass/Pizz/BKCtbss_Pizz_A#0_v3_rr1.wav",
+      "url": "https://github.com/sgossner/VSCO-2-CE",
       "licence": "CC0",
-      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+      "modifications": "capped at 2 s, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a bass note lands with the kick it is written beside; not normalised: the v1/v3 level difference is the dynamic information the renderer reads)"
     },
     {
-      "file": "bass/FMPiano_C2_vl3.flac",
-      "source": "Versilian Community Sample Library (VCSL)",
-      "sourceFile": "Electrophones/TX81Z/FM Piano/FMPiano_C2_vl3.wav",
-      "url": "https://github.com/sgossner/VCSL",
+      "file": "bass/BKCtbss_Pizz_A#0_v3_rr2.flac",
+      "source": "VSCO 2 Community Edition (VSCO-2-CE), Solo Contrabass, pizzicato",
+      "sourceFile": "Strings/Solo Contrabass/Pizz/BKCtbss_Pizz_A#0_v3_rr2.wav",
+      "url": "https://github.com/sgossner/VSCO-2-CE",
       "licence": "CC0",
-      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+      "modifications": "capped at 2 s, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a bass note lands with the kick it is written beside; not normalised: the v1/v3 level difference is the dynamic information the renderer reads)"
     },
     {
-      "file": "bass/FMPiano_E2_vl1.flac",
-      "source": "Versilian Community Sample Library (VCSL)",
-      "sourceFile": "Electrophones/TX81Z/FM Piano/FMPiano_E2_vl1.wav",
-      "url": "https://github.com/sgossner/VCSL",
+      "file": "bass/BKCtbss_Pizz_C1_v1_rr1.flac",
+      "source": "VSCO 2 Community Edition (VSCO-2-CE), Solo Contrabass, pizzicato",
+      "sourceFile": "Strings/Solo Contrabass/Pizz/BKCtbss_Pizz_C1_v1_rr1.wav",
+      "url": "https://github.com/sgossner/VSCO-2-CE",
       "licence": "CC0",
-      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+      "modifications": "capped at 2 s, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a bass note lands with the kick it is written beside; not normalised: the v1/v3 level difference is the dynamic information the renderer reads)"
     },
     {
-      "file": "bass/FMPiano_E2_vl2.flac",
-      "source": "Versilian Community Sample Library (VCSL)",
-      "sourceFile": "Electrophones/TX81Z/FM Piano/FMPiano_E2_vl2.wav",
-      "url": "https://github.com/sgossner/VCSL",
+      "file": "bass/BKCtbss_Pizz_C1_v1_rr2.flac",
+      "source": "VSCO 2 Community Edition (VSCO-2-CE), Solo Contrabass, pizzicato",
+      "sourceFile": "Strings/Solo Contrabass/Pizz/BKCtbss_Pizz_C1_v1_rr2.wav",
+      "url": "https://github.com/sgossner/VSCO-2-CE",
       "licence": "CC0",
-      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+      "modifications": "capped at 2 s, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a bass note lands with the kick it is written beside; not normalised: the v1/v3 level difference is the dynamic information the renderer reads)"
     },
     {
-      "file": "bass/FMPiano_E2_vl3.flac",
-      "source": "Versilian Community Sample Library (VCSL)",
-      "sourceFile": "Electrophones/TX81Z/FM Piano/FMPiano_E2_vl3.wav",
-      "url": "https://github.com/sgossner/VCSL",
+      "file": "bass/BKCtbss_Pizz_C1_v3_rr1.flac",
+      "source": "VSCO 2 Community Edition (VSCO-2-CE), Solo Contrabass, pizzicato",
+      "sourceFile": "Strings/Solo Contrabass/Pizz/BKCtbss_Pizz_C1_v3_rr1.wav",
+      "url": "https://github.com/sgossner/VSCO-2-CE",
       "licence": "CC0",
-      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+      "modifications": "capped at 2 s, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a bass note lands with the kick it is written beside; not normalised: the v1/v3 level difference is the dynamic information the renderer reads)"
     },
     {
-      "file": "bass/FMPiano_G#2_vl1.flac",
-      "source": "Versilian Community Sample Library (VCSL)",
-      "sourceFile": "Electrophones/TX81Z/FM Piano/FMPiano_G#2_vl1.wav",
-      "url": "https://github.com/sgossner/VCSL",
+      "file": "bass/BKCtbss_Pizz_C1_v3_rr2.flac",
+      "source": "VSCO 2 Community Edition (VSCO-2-CE), Solo Contrabass, pizzicato",
+      "sourceFile": "Strings/Solo Contrabass/Pizz/BKCtbss_Pizz_C1_v3_rr2.wav",
+      "url": "https://github.com/sgossner/VSCO-2-CE",
       "licence": "CC0",
-      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+      "modifications": "capped at 2 s, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a bass note lands with the kick it is written beside; not normalised: the v1/v3 level difference is the dynamic information the renderer reads)"
     },
     {
-      "file": "bass/FMPiano_G#2_vl2.flac",
-      "source": "Versilian Community Sample Library (VCSL)",
-      "sourceFile": "Electrophones/TX81Z/FM Piano/FMPiano_G#2_vl2.wav",
-      "url": "https://github.com/sgossner/VCSL",
+      "file": "bass/BKCtbss_Pizz_E1_v1_rr1.flac",
+      "source": "VSCO 2 Community Edition (VSCO-2-CE), Solo Contrabass, pizzicato",
+      "sourceFile": "Strings/Solo Contrabass/Pizz/BKCtbss_Pizz_E1_v1_rr1.wav",
+      "url": "https://github.com/sgossner/VSCO-2-CE",
       "licence": "CC0",
-      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+      "modifications": "capped at 2 s, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a bass note lands with the kick it is written beside; not normalised: the v1/v3 level difference is the dynamic information the renderer reads)"
     },
     {
-      "file": "bass/FMPiano_G#2_vl3.flac",
-      "source": "Versilian Community Sample Library (VCSL)",
-      "sourceFile": "Electrophones/TX81Z/FM Piano/FMPiano_G#2_vl3.wav",
-      "url": "https://github.com/sgossner/VCSL",
+      "file": "bass/BKCtbss_Pizz_E1_v1_rr2.flac",
+      "source": "VSCO 2 Community Edition (VSCO-2-CE), Solo Contrabass, pizzicato",
+      "sourceFile": "Strings/Solo Contrabass/Pizz/BKCtbss_Pizz_E1_v1_rr2.wav",
+      "url": "https://github.com/sgossner/VSCO-2-CE",
       "licence": "CC0",
-      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+      "modifications": "capped at 2 s, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a bass note lands with the kick it is written beside; not normalised: the v1/v3 level difference is the dynamic information the renderer reads)"
     },
     {
-      "file": "bass/FMPiano_C3_vl1.flac",
-      "source": "Versilian Community Sample Library (VCSL)",
-      "sourceFile": "Electrophones/TX81Z/FM Piano/FMPiano_C3_vl1.wav",
-      "url": "https://github.com/sgossner/VCSL",
+      "file": "bass/BKCtbss_Pizz_E1_v3_rr1.flac",
+      "source": "VSCO 2 Community Edition (VSCO-2-CE), Solo Contrabass, pizzicato",
+      "sourceFile": "Strings/Solo Contrabass/Pizz/BKCtbss_Pizz_E1_v3_rr1.wav",
+      "url": "https://github.com/sgossner/VSCO-2-CE",
       "licence": "CC0",
-      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+      "modifications": "capped at 2 s, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a bass note lands with the kick it is written beside; not normalised: the v1/v3 level difference is the dynamic information the renderer reads)"
     },
     {
-      "file": "bass/FMPiano_C3_vl2.flac",
-      "source": "Versilian Community Sample Library (VCSL)",
-      "sourceFile": "Electrophones/TX81Z/FM Piano/FMPiano_C3_vl2.wav",
-      "url": "https://github.com/sgossner/VCSL",
+      "file": "bass/BKCtbss_Pizz_E1_v3_rr2.flac",
+      "source": "VSCO 2 Community Edition (VSCO-2-CE), Solo Contrabass, pizzicato",
+      "sourceFile": "Strings/Solo Contrabass/Pizz/BKCtbss_Pizz_E1_v3_rr2.wav",
+      "url": "https://github.com/sgossner/VSCO-2-CE",
       "licence": "CC0",
-      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+      "modifications": "capped at 2 s, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a bass note lands with the kick it is written beside; not normalised: the v1/v3 level difference is the dynamic information the renderer reads)"
     },
     {
-      "file": "bass/FMPiano_C3_vl3.flac",
-      "source": "Versilian Community Sample Library (VCSL)",
-      "sourceFile": "Electrophones/TX81Z/FM Piano/FMPiano_C3_vl3.wav",
-      "url": "https://github.com/sgossner/VCSL",
+      "file": "bass/BKCtbss_Pizz_F#1_v1_rr1.flac",
+      "source": "VSCO 2 Community Edition (VSCO-2-CE), Solo Contrabass, pizzicato",
+      "sourceFile": "Strings/Solo Contrabass/Pizz/BKCtbss_Pizz_F#1_v1_rr1.wav",
+      "url": "https://github.com/sgossner/VSCO-2-CE",
       "licence": "CC0",
-      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+      "modifications": "capped at 2 s, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a bass note lands with the kick it is written beside; not normalised: the v1/v3 level difference is the dynamic information the renderer reads)"
+    },
+    {
+      "file": "bass/BKCtbss_Pizz_F#1_v1_rr2.flac",
+      "source": "VSCO 2 Community Edition (VSCO-2-CE), Solo Contrabass, pizzicato",
+      "sourceFile": "Strings/Solo Contrabass/Pizz/BKCtbss_Pizz_F#1_v1_rr2.wav",
+      "url": "https://github.com/sgossner/VSCO-2-CE",
+      "licence": "CC0",
+      "modifications": "capped at 2 s, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a bass note lands with the kick it is written beside; not normalised: the v1/v3 level difference is the dynamic information the renderer reads)"
+    },
+    {
+      "file": "bass/BKCtbss_Pizz_A1_v1_rr1.flac",
+      "source": "VSCO 2 Community Edition (VSCO-2-CE), Solo Contrabass, pizzicato",
+      "sourceFile": "Strings/Solo Contrabass/Pizz/BKCtbss_Pizz_A1_v1_rr1.wav",
+      "url": "https://github.com/sgossner/VSCO-2-CE",
+      "licence": "CC0",
+      "modifications": "capped at 2 s, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a bass note lands with the kick it is written beside; not normalised: the v1/v3 level difference is the dynamic information the renderer reads)"
+    },
+    {
+      "file": "bass/BKCtbss_Pizz_A1_v1_rr2.flac",
+      "source": "VSCO 2 Community Edition (VSCO-2-CE), Solo Contrabass, pizzicato",
+      "sourceFile": "Strings/Solo Contrabass/Pizz/BKCtbss_Pizz_A1_v1_rr2.wav",
+      "url": "https://github.com/sgossner/VSCO-2-CE",
+      "licence": "CC0",
+      "modifications": "capped at 2 s, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a bass note lands with the kick it is written beside; not normalised: the v1/v3 level difference is the dynamic information the renderer reads)"
+    },
+    {
+      "file": "bass/BKCtbss_Pizz_C#2_v1_rr1.flac",
+      "source": "VSCO 2 Community Edition (VSCO-2-CE), Solo Contrabass, pizzicato",
+      "sourceFile": "Strings/Solo Contrabass/Pizz/BKCtbss_Pizz_C#2_v1_rr1.wav",
+      "url": "https://github.com/sgossner/VSCO-2-CE",
+      "licence": "CC0",
+      "modifications": "capped at 2 s, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a bass note lands with the kick it is written beside; not normalised: the v1/v3 level difference is the dynamic information the renderer reads)"
+    },
+    {
+      "file": "bass/BKCtbss_Pizz_C#2_v1_rr2.flac",
+      "source": "VSCO 2 Community Edition (VSCO-2-CE), Solo Contrabass, pizzicato",
+      "sourceFile": "Strings/Solo Contrabass/Pizz/BKCtbss_Pizz_C#2_v1_rr2.wav",
+      "url": "https://github.com/sgossner/VSCO-2-CE",
+      "licence": "CC0",
+      "modifications": "capped at 2 s, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a bass note lands with the kick it is written beside; not normalised: the v1/v3 level difference is the dynamic information the renderer reads)"
     },
     {
       "file": "comp/Clavisynth_C1_vl1.flac",
