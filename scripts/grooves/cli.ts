@@ -116,6 +116,7 @@ export async function generate(options: GenerateOptions = {}): Promise<GenerateR
       id: spec.id,
       bars: music.loopBars,
       bpm: music.bpm,
+      passes: music.loopBars / music.bars,
       overhangBars: OVERHANG_BARS,
     })
     const master = mixTracks(tracks, template, {

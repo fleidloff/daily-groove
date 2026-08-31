@@ -289,6 +289,57 @@ describe('renderVoices', () => {
       expect(distinctCount(first)).toBeGreaterThan(1)
     })
 
+    // Feature-9, Epic 1 (R4, AC4). A pass must not reuse the previous pass's
+    // alternates. The counter is per voice and the pack reduces it modulo the
+    // alternate count, so a voice with an even number of hits per pass and two
+    // alternates lands on exactly the same files every pass — which is the
+    // common case, and the one this asserts against.
+    it('does not replay a pass on the same alternates as the one before it', () => {
+      const HITS_PER_PASS = 4
+      const PASSES = 4
+      // 4 bars of 4/4 at 60bpm is 16 beats, so a pass lasts 16s. The events
+      // below must span that, or every one of them lands in pass 0 and the
+      // assertion passes for the wrong reason.
+      const BPM = 60
+      const PASS_SEC = 16
+      const pack = placeholderPack({ roundRobins: 2 })
+      const events: NoteEvent[] = []
+      for (let pass = 0; pass < PASSES; pass += 1) {
+        for (let hit = 0; hit < HITS_PER_PASS; hit += 1) {
+          events.push({
+            voice: 'kick',
+            timeSec: pass * PASS_SEC + hit * (PASS_SEC / HITS_PER_PASS),
+            durationSec: 0.5,
+            velocity: 0.8,
+          })
+        }
+      }
+
+      const [track] = renderVoices(events, pack, SAMPLE_RATE, {
+        id: 'groove-01',
+        bars: 4 * PASSES,
+        bpm: BPM,
+        passes: PASSES,
+      })
+
+      const signatures = Array.from({ length: PASSES }, (_, pass) =>
+        events
+          .slice(pass * HITS_PER_PASS, (pass + 1) * HITS_PER_PASS)
+          .map((event) => normalized(region(track.pcm, event.timeSec)).join(','))
+          .join('|'),
+      )
+
+      // Not "every pass differs from every other": with two alternates there
+      // are only two sequences to have, so four passes must reuse one. What
+      // must never happen is a pass replaying the one before it, which is what
+      // a single running counter did for every even hit count.
+      for (let pass = 1; pass < PASSES; pass += 1) {
+        expect(signatures[pass], `pass ${pass} replays pass ${pass - 1}`).not.toBe(
+          signatures[pass - 1],
+        )
+      }
+    })
+
     it('makes the same choices every time for the same id', () => {
       const pack = placeholderPack({ roundRobins: 3, layers: 3 })
       const render = () =>

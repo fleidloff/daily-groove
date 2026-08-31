@@ -40,6 +40,13 @@ export type RenderOptions = {
    * `mixTracks` sums this region back onto the start. Needs `bars` and `bpm`.
    */
   overhangBars?: number
+  /**
+   * How many passes of the figure `bars` covers. Used only to keep a pass from
+   * replaying its predecessor's round-robin alternates — see `roundRobin`.
+   * Needs `bars` and `bpm`. Omitted, every event is treated as pass 0, which
+   * is the pre-feature-9 behaviour.
+   */
+  passes?: number
 }
 
 export function renderVoices(
@@ -53,6 +60,7 @@ export function renderVoices(
   const frames = frameCount(events, sampleRate, options)
   const tracks = new Map<VoiceName, Track>()
   const nextAlternate = roundRobin(`${options.id ?? pack.id}:rr`)
+  const passOf = passIndexer(options)
 
   for (const event of events) {
     let track = tracks.get(event.voice)
@@ -70,7 +78,7 @@ export function renderVoices(
 
     const sample = pack.get(event.voice, {
       velocity: event.velocity,
-      index: nextAlternate(event.voice),
+      index: nextAlternate(event.voice, passOf(event.timeSec)),
       midi: event.midi,
     })
     if (!sample) continue
@@ -91,23 +99,61 @@ export function renderVoices(
  * the kick's next alternate, and its own seeded starting offset, so the first
  * hit of a groove is not always the first file on disk. The pack reduces the
  * number modulo the alternates it actually holds.
+ *
+ * Each pass restarts the count and enters the rotation one step further on,
+ * and that is load-bearing rather than decorative. A single running counter
+ * repeats: a voice with `N` hits per pass against `F` alternates re-enters
+ * pass 1 at `start + N`, which is congruent to `start` whenever `F` divides
+ * `N` — the ordinary case, because most voices declare two alternates and play
+ * an even number of hits per pass. Before this, the snare of every four-pass
+ * groove in the catalogue played the same two files in the same order four
+ * times over.
+ *
+ * Restarting the count is what makes the shift survive. Adding the pass to a
+ * running counter only moves the conspiracy — it collides whenever `F` divides
+ * `N + 1` — whereas a per-pass count enters at `start + pass` regardless of how
+ * many hits a pass holds. Consecutive passes therefore differ by exactly one
+ * step, which is never a whole rotation for any alternate count above one.
+ *
+ * What it cannot do is make every pass differ from every other: with two
+ * alternates there are only two sequences to have, so a four-pass groove must
+ * reuse one. Adjacent passes are what an ear compares, and those always differ.
  */
-function roundRobin(label: string): (voice: VoiceName) => number {
+function roundRobin(label: string): (voice: VoiceName, pass: number) => number {
   const rng = rngFor(label)
   const starts = new Map<VoiceName, number>()
-  const counts = new Map<VoiceName, number>()
+  const counts = new Map<string, number>()
 
-  return (voice) => {
+  return (voice, pass) => {
     let start = starts.get(voice)
     if (start === undefined) {
       start = Math.floor(rng() * ROUND_ROBIN_SPAN)
       starts.set(voice, start)
     }
 
-    const played = counts.get(voice) ?? 0
-    counts.set(voice, played + 1)
-    return start + played
+    const key = `${voice}:${pass}`
+    const played = counts.get(key) ?? 0
+    counts.set(key, played + 1)
+    return start + pass + played
   }
+}
+
+/**
+ * Which pass a moment belongs to, from the options the caller supplied.
+ *
+ * Without `bars`, `bpm` and `passes` there is nothing to divide by, so every
+ * event is pass 0 and the rotation behaves exactly as it did before passes
+ * existed. That keeps every Epic 1 caller — and every test that renders a bare
+ * event list — unchanged.
+ */
+function passIndexer(options: RenderOptions): (timeSec: number) => number {
+  const { bars, bpm, passes } = options
+  if (bars === undefined || bpm === undefined || !passes || passes < 2) return () => 0
+
+  const passSec = ((bars / passes) * BEATS_PER_BAR * 60) / bpm
+  if (!Number.isFinite(passSec) || passSec <= 0) return () => 0
+
+  return (timeSec) => Math.max(0, Math.min(passes - 1, Math.floor(timeSec / passSec)))
 }
 
 /**

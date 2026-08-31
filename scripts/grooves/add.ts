@@ -193,6 +193,7 @@ export function renderCandidate(
     id: spec.id,
     bars: music.loopBars,
     bpm: music.bpm,
+    passes: music.loopBars / music.bars,
     overhangBars: OVERHANG_BARS,
   })
   return mixTracks(tracks, template, { loopBars: music.loopBars, bpm: music.bpm })
