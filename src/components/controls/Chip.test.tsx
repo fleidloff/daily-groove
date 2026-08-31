@@ -264,6 +264,37 @@ describe('Chip', () => {
     expect(screen.getByRole('button').textContent).toBe(`${NOTE}C`)
   })
 
+  /**
+   * R8/AC10: the root row must stay the same height as the unadorned mode row
+   * beside it. The two tests above prove the button and the grid are untouched,
+   * which leaves the span itself as the only thing that could grow the line box
+   * — and the colour test below cannot see that, because it exempts Tailwind's
+   * arbitrary-value syntax, so a `text-[20px]` would slip straight through it.
+   *
+   * An allowlist rather than a blocklist: anything that is not horizontal
+   * spacing is refused, so a metric nobody thought of is refused too.
+   */
+  it('carries horizontal spacing and nothing else, so it cannot grow the row (R8, AC10)', () => {
+    render(
+      <Chip
+        label="C"
+        selected={false}
+        disabled={false}
+        onSelect={() => {}}
+        adornment={NOTE}
+      />,
+    )
+    const mark = screen.getByRole('button').firstElementChild as HTMLElement
+
+    const classes = mark.className.split(/\s+/).filter(Boolean)
+    expect(classes.length).toBeGreaterThan(0)
+    const offenders = classes.filter((name) => !/^-?m[rlx]-/.test(name))
+    expect(
+      offenders,
+      'the adornment may only carry horizontal margin: anything else can change the line box',
+    ).toEqual([])
+  })
+
   it('gives the adornment no colour of its own, so it inherits the ink (R9)', () => {
     render(
       <Chip

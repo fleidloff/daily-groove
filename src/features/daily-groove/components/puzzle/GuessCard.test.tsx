@@ -1121,6 +1121,32 @@ describe('GuessCard', () => {
     })
 
     // Step C2 — R3, AC3. Simple mode narrows the row; it does not unmark it.
+    /**
+     * AC10, as directly as this stack allows. The criterion is that the marked
+     * root row and the unmarked mode row are the same height, and jsdom has no
+     * layout engine — `offsetHeight` is 0 for everything, so a literal
+     * comparison would assert nothing at all.
+     *
+     * What decides the height here is the chip's classes, so that is what is
+     * compared: every chip in both rows must carry the identical class string,
+     * marked or not. Paired with `Chip`'s own guard that the adornment span
+     * carries only horizontal margin, the two together say what AC10 says.
+     */
+    it('gives the marked row and the unmarked row identical chips (R8, AC10)', () => {
+      render(<GuessCard {...props()} />)
+
+      const classesOf = (group: HTMLElement) =>
+        within(group)
+          .getAllByRole('button')
+          .map((chip) => chip.className)
+
+      const roots = classesOf(rootGroup())
+      const modes = classesOf(flavourGroup())
+
+      // Every chip in a row is drawn the same, and both rows agree.
+      expect(new Set([...roots, ...modes]).size).toBe(1)
+    })
+
     it('marks all six root chips in simple mode (R3, AC3)', () => {
       const six: Root[] = ['C', 'D', 'E', 'G', 'A', 'B']
       render(<GuessCard {...props({ simple: true, roots: six, flavours: FAMILIES })} />)
