@@ -36,10 +36,10 @@ export const straightFunk: FeelTemplate = {
     tomLow: -8,
     kick: -3,
     snare: -6,
-    hatClosed: -14,
-    hatOpen: -15,
+    hatClosed: -9,
+    hatOpen: -11,
     rim: -17,
-    bass: -6,
+    bass: -1,
     comp: -11,
   },
   // Kick, snare and bass hold the centre; the cymbals and the comp open the

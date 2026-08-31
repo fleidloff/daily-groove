@@ -54,14 +54,29 @@ describe('the template set — R1, AC1', () => {
     expect(new Set(templates.map((t) => t.tempoRange.join('-'))).size).toBe(4)
   })
 
-  it('gives each template its own instrumentation and mix', () => {
+  it('gives each template its own mix and its own feel', () => {
     const templates = allTemplates()
-    const voiceSets = templates.map((t) => [...t.voices].sort().join(','))
-    expect(new Set(voiceSets).size).toBe(4)
     const mixes = templates.map((t) => JSON.stringify([t.gain, t.pan]))
     expect(new Set(mixes).size).toBe(4)
     const humanizes = templates.map((t) => JSON.stringify(t.humanize))
     expect(new Set(humanizes).size).toBe(4)
+  })
+
+  // Instrumentation used to be unique per template too, and is no longer: every
+  // feel now plays both hats, because a kit has both and the two feels that went
+  // without were the poorer for it. What is left to differentiate a voice set is
+  // the cross-stick, so the assertion is what remains true — the kits are not
+  // all the same — rather than a uniqueness the design no longer wants.
+  it('does not give every template the same kit', () => {
+    const voiceSets = allTemplates().map((t) => [...t.voices].sort().join(','))
+    expect(new Set(voiceSets).size).toBeGreaterThan(1)
+  })
+
+  it('gives every template both hats', () => {
+    for (const template of allTemplates()) {
+      expect(template.voices, `${template.id} plays no closed hat`).toContain('hatClosed')
+      expect(template.voices, `${template.id} plays no open hat`).toContain('hatOpen')
+    }
   })
 })
 

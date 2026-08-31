@@ -271,7 +271,10 @@ describe('buildEvents — the instrumentation', () => {
       const { events } = buildEvents({ ...spec, seed }, template)
       for (const event of events) {
         if (event.voice === 'bass') {
-          expect(event.midi).toBeGreaterThanOrEqual(24)
+          // 28 is the open low E of a four-string bass, and the pack samples
+          // from there. The old floor of 24 was written against a synth, which
+          // renders any pitch asked of it.
+          expect(event.midi).toBeGreaterThanOrEqual(28)
           expect(event.midi).toBeLessThanOrEqual(48)
         }
         if (event.voice === 'comp') {

@@ -41,9 +41,9 @@ export const shuffle: FeelTemplate = {
     tomLow: -7,
     kick: -5,
     snare: -5,
-    hatClosed: -12,
-    hatOpen: -11,
-    bass: -4,
+    hatClosed: -7,
+    hatOpen: -7,
+    bass: 1,
     comp: -12,
   },
   // The mirror image of straight-funk's kit: hats to the left, comp to the

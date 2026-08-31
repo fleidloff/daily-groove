@@ -23,7 +23,7 @@ export const brightStraight: FeelTemplate = {
   subdivision: 8,
   swing: 0.06,
   flavours: ['lydian', 'ionian'],
-  voices: ['kick', 'snare', 'hatClosed', 'rim', 'tomHigh', 'tomLow', 'bass', 'comp'],
+  voices: ['kick', 'snare', 'hatClosed', 'hatOpen', 'rim', 'tomHigh', 'tomLow', 'bass', 'comp'],
   // The lightest lean of the four: at 116-132 bpm a large one reads as a
   // stumble rather than a feel.
   humanize: {
@@ -39,9 +39,10 @@ export const brightStraight: FeelTemplate = {
     tomLow: -10,
     kick: -7,
     snare: -8,
-    hatClosed: -16,
+    hatClosed: -11,
+    hatOpen: -12,
     rim: -14,
-    bass: -8,
+    bass: -3,
     comp: -8,
   },
   pan: {
@@ -50,6 +51,7 @@ export const brightStraight: FeelTemplate = {
     kick: 0,
     snare: 0.08,
     hatClosed: 0.42,
+    hatOpen: 0.44,
     rim: -0.36,
     bass: 0,
     comp: 0.3,

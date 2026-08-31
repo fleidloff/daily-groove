@@ -48,16 +48,36 @@ export const RHYTHM_LABEL = 'rhythm'
  */
 export const GHOST_LABEL = 'ghosts'
 
-/** The octave the bass plays in, as a MIDI offset applied to a pitch class. */
-const BASS_BASE_MIDI = 36
+/**
+ * The octave the bass plays in, as a MIDI offset applied to a pitch class.
+ *
+ * C1, which is below the instrument's own floor on purpose: a bass player takes
+ * the lowest voicing the instrument has, so the roots that fit down here sit
+ * down here, and only the four that do not — C, C♯, D and D♯ — come up an
+ * octave. Anchoring every root at C2 instead put the whole line in the octave
+ * above the low E, which is where a bass guitar's third string lives rather
+ * than where a bass line does.
+ */
+const BASS_BASE_MIDI = 24
 
 /**
- * How far a displaced bass note drops: one octave, into the register below
- * `BASS_BASE_MIDI`. Down and never up, because up would put the line inside the
- * comp's window and break the "bass under the comp" rule the arrangement rests
- * on.
+ * How far a displaced bass note moves: one octave, and upward.
+ *
+ * It used to go down, because the roots sat at C2 and the octave below was
+ * empty. Now that the line takes the lowest voicing the instrument has, there is
+ * nothing under it to drop into — the open low E is the floor — so the octave a
+ * bass player reaches for is the one above.
+ *
+ * Up is safe because the comp's window starts at `COMP_REGISTER_LOW`, well
+ * clear of `BASS_CEILING_MIDI`, so the bass still passes under it.
  */
-const BASS_OCTAVE_DROP = 12
+const BASS_OCTAVE_LIFT = 12
+
+/**
+ * The highest a lifted bass note may go, kept under `COMP_REGISTER_LOW` so the
+ * bass never crosses into the comp's register.
+ */
+const BASS_CEILING_MIDI = 48
 
 /**
  * The lowest note a bass has: the open low E of a four-string instrument.
@@ -471,9 +491,17 @@ function ghostSteps(steps: number[], subdivision: number): number[] {
   return out
 }
 
-/** Lift a pitch class into the register a voice plays in. */
+/**
+ * Lift a pitch class into the register a voice plays in.
+ *
+ * A note that lands below the bass's floor comes up an octave rather than being
+ * clamped onto it: the floor is a real edge — there is no note under a
+ * four-string bass's open low E — and clamping would put two different pitch
+ * classes on the same string.
+ */
 function inRegister(midi: number, base: number): number {
-  return base + (((midi % 12) + 12) % 12)
+  const placed = base + (((midi % 12) + 12) % 12)
+  return placed < BASS_FLOOR_MIDI ? placed + 12 : placed
 }
 
 /** Fold a chord tone into the comp's fixed register window, on its own. */
@@ -793,8 +821,8 @@ export function buildEvents(
         midi = previousBass
       } else {
         midi = inRegister(chord[i % chord.length], BASS_BASE_MIDI)
-        if (drop < BASS_OCTAVE_CHANCE && midi - BASS_OCTAVE_DROP >= BASS_FLOOR_MIDI) {
-          midi -= BASS_OCTAVE_DROP
+        if (drop < BASS_OCTAVE_CHANCE && midi + BASS_OCTAVE_LIFT <= BASS_CEILING_MIDI) {
+          midi += BASS_OCTAVE_LIFT
         }
       }
       previousBass = midi
@@ -813,7 +841,11 @@ export function buildEvents(
     }
     const target = inRegister(nextRoot, BASS_BASE_MIDI)
     const approachStep = template.subdivision - 1
-    const approach = direction < 0.5 ? target - 1 : target + 1
+    // From below by preference, from above when there is no note below: a root
+    // sitting on the open low E has nothing a semitone under it, and a bass
+    // player approaches such a root from the other side rather than not at all.
+    const approach =
+      direction < 0.5 && target - 1 >= BASS_FLOOR_MIDI ? target - 1 : target + 1
     previousBass = approach
     approaches.add(bassFigure.length)
     bassFigure.push(
@@ -890,25 +922,22 @@ export function buildEvents(
   }
 
   const pitches = () => bassFigure.flat().map((note) => note.midi)
-  const top = Math.max(...pitches())
-  // Under the top note, so dropping it can only widen the line's span.
-  // A candidate must be able to *reach* the octave below, not merely sit above
-  // the base: a bass has no notes under its open low E, so a note less than an
-  // octave above the floor cannot be dropped at all. Filtering here rather than
-  // testing the lowest candidate afterwards is what keeps the guarantee — the
-  // lowest note is often exactly the one that cannot move, and giving up on it
-  // would leave the line inside a single octave.
-  const droppable = bassFigure
+  const bottom = Math.min(...pitches())
+  // Above the bottom note, so lifting it can only widen the line's span, and
+  // able to *reach* the octave above without crossing under the comp. Filtering
+  // on both here rather than testing one candidate afterwards is what keeps the
+  // guarantee: the obvious candidate is often exactly the note that cannot move,
+  // and giving up on it would leave the line inside a single octave.
+  const liftable = bassFigure
     .flatMap((notes, bar) => notes.filter((note) => !isApproach(bar, note)))
     .filter(
-      (note) =>
-        note.midi >= BASS_BASE_MIDI &&
-        note.midi < top &&
-        note.midi - BASS_OCTAVE_DROP >= BASS_FLOOR_MIDI,
+      (note) => note.midi > bottom && note.midi + BASS_OCTAVE_LIFT <= BASS_CEILING_MIDI,
     )
-  if (droppable.length > 0) {
-    const lowest = droppable.reduce((low, note) => (note.midi < low.midi ? note : low))
-    lowest.midi -= BASS_OCTAVE_DROP
+  if (liftable.length > 0) {
+    // The highest that can still move, so the line reaches as far from its
+    // bottom as the instrument allows.
+    const highest = liftable.reduce((high, note) => (note.midi > high.midi ? note : high))
+    highest.midi += BASS_OCTAVE_LIFT
   }
 
   const repeatsSomewhere = () => {

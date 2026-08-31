@@ -54,7 +54,12 @@ band rather than re-tuned after it.
 
 ## Requirements
 
-- **R1** — The `kick` voice is a bass drum, not a cajon.
+- **R1** — ~~The `kick` voice is a bass drum, not a cajon.~~ **Withdrawn.** The
+  cajon stays. R1 was written from the pack's inventory rather than from
+  listening: a cajon is not a bass drum, so it read as a stand-in. Having heard
+  it against the reworked feel, timing and room, the player's judgement is that
+  it is more relaxed than a bass drum would be — which is what these grooves
+  want. VCSL's Bass Drum 1 was available and was not used.
 - **R2** — The `rim` voice is a cross-stick, not a woodblock.
 - **R3** — The `bass` voice is an electric bass.
 - **R4** — The `comp` voice is an electric piano.
@@ -260,7 +265,7 @@ So R3 and R4 could not both be met inside VCSL. The player's call was to bring i
 
 | Voice | Source | Instrument |
 | :-- | :-- | :-- |
-| `kick` | VCSL | Bass Drum 1 — a real bass drum, replacing the cajon |
+| `kick` | VCSL | Cajon, bass tone — **kept**, see R1 |
 | `rim` | VCSL | `Snare2_stick` — the cross-stick of the snare already in the pack |
 | `snare`, `hatClosed`, `hatOpen`, `tomHigh`, `tomLow` | VCSL | unchanged |
 | `bass` | **VSCO 2 CE** | Solo Contrabass, **pizzicato** — an upright bass |
