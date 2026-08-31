@@ -4,7 +4,7 @@ import { Heading } from '@/components/typography/Heading'
 import { Text } from '@/components/typography/Text'
 import { Stack } from '@/components/layout/Stack'
 import { dateLine } from '../../lib/presentation/date'
-import type { Groove } from '../../types'
+import type { Answer, Groove } from '../../types'
 
 type GrooveCardProps = {
   groove: Groove
@@ -15,6 +15,13 @@ type GrooveCardProps = {
    * fake timers, matching `GrooveHeader`.
    */
   date: Date
+  /**
+   * The day's answer, once the day is over — solved or given up — and `null`
+   * until then. It joins the meta line beside the tempo, so the card the player
+   * is still playing along to says what they are playing over. Null before the
+   * day ends: the root and the mode are the puzzle.
+   */
+  answer?: Answer | null
   /** The transport panel and its controls, rendered below the header region. */
   children?: ReactNode
 }
@@ -27,8 +34,19 @@ type GrooveCardProps = {
  * heading's accessible name stays the groove's name alone. The rest of the
  * canvas' meta line ("No. 214 · 4 bars · loops forever") is still deliberately
  * absent: only the tempo is backed by data worth showing.
+ *
+ * Once the day is over the answer joins that line, beside the tempo. The payoff
+ * panel names it too, but the panel is below both cards and out of view while
+ * you are playing along; the two facts a player jamming over the loop needs —
+ * how fast, and in what — belong on the card that is playing.
  */
-export function GrooveCard({ groove, date, children }: GrooveCardProps) {
+export function GrooveCard({ groove, date, answer, children }: GrooveCardProps) {
+  const meta = [
+    `${groove.bpm} bpm`,
+    ...(answer ? [`${answer.root} ${answer.flavour}`] : []),
+    dateLine(date),
+  ].join(' · ')
+
   return (
     <Card>
       <Stack gap="lg">
@@ -36,7 +54,7 @@ export function GrooveCard({ groove, date, children }: GrooveCardProps) {
           {groove.name}
         </Heading>
         <Text tone="muted" size="sm">
-          {`${groove.bpm} bpm · ${dateLine(date)}`}
+          {meta}
         </Text>
         {children}
       </Stack>

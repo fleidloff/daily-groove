@@ -1,5 +1,6 @@
 import { Card } from '@/components/surfaces/Card'
 import { ProgressTrack } from '@/components/display/ProgressTrack'
+import { Lettering } from '@/components/typography/Lettering'
 
 type TransportPanelProps = {
   /** Position through the whole loop, 0..1. */
@@ -12,11 +13,27 @@ type TransportPanelProps = {
    * silently draw a fill running at a quarter speed.
    */
   passes: number
+  /**
+   * One chord symbol per bar, or null to draw no row at all. Null until the
+   * day has ended: the progression names the answer, so a row over the bars
+   * before then would hand over the root and the mode at a glance.
+   *
+   * Optional, because the panel drew no row before this existed and a caller
+   * that has nothing to say should not have to say `null`.
+   */
+  chords?: string[] | null
 }
 
 // The track always draws the four-bar figure, whatever the file's length. The
 // tempo is display-only and never consulted here.
 const BAR_COUNT = 4
+
+/**
+ * How a bar that is not sounding reads: the same ink, quieter. Dimming rather
+ * than a second colour token is how the track's own quiet segments already
+ * read, and it keeps the row on the card's ink in both palettes.
+ */
+const DIMMED = 'opacity-40'
 
 /**
  * Position expressed in passes: 0..1 over the file becomes 0..`passes`, so the
@@ -42,7 +59,12 @@ function scaledPosition(position: number, passes: number): number {
  * hears a longer one, which is the point — the highlight already moves, and
  * the repeat is meant to be felt rather than read off a counter.
  */
-export function TransportPanel({ position, isPlaying, passes }: TransportPanelProps) {
+export function TransportPanel({
+  position,
+  isPlaying,
+  passes,
+  chords,
+}: TransportPanelProps) {
   const scaled = scaledPosition(position, passes)
   // The fraction of the current pass, which is the whole track.
   const fill = scaled % 1
@@ -53,6 +75,30 @@ export function TransportPanel({ position, isPlaying, passes }: TransportPanelPr
 
   return (
     <Card tone="inset">
+      {/*
+        The symbols are the feature's, not the track's: `ProgressTrack` is a
+        design-system primitive and may not learn what a chord is. They align
+        to the bars by sharing the track's width in four columns, so column
+        `i` is bar `i` by construction and nothing measures a pixel.
+
+        The lit symbol comes off `active` — the very value the segment
+        highlight is drawn from — so the two cannot disagree at a bar line.
+      */}
+      {chords && chords.length > 0 && (
+        <div data-testid="chord-row" className="mb-2 grid grid-cols-4">
+          {chords.map((chord, bar) => (
+            <span
+              key={bar}
+              data-bar={bar}
+              // Nothing is dimmed while nothing is sounding: a stopped card
+              // marks no bar, exactly as the track highlights no segment.
+              className={active !== null && bar !== active ? DIMMED : ''}
+            >
+              <Lettering size="sm">{chord}</Lettering>
+            </span>
+          ))}
+        </div>
+      )}
       <ProgressTrack
         value={fill}
         segments={BAR_COUNT}

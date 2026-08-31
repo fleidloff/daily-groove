@@ -123,6 +123,8 @@ describe('feature components sit in screen regions', () => {
       'FeedbackLine',
       'NudgeBox',
       'SolvedPanel',
+      'LeadSheet',
+      'ScaleStaff',
     ],
   }
 

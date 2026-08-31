@@ -140,11 +140,17 @@ export function GuessCard({
 
         {/*
           The switch sits above both rows, so the shape of the question is
-          settled before the question is asked (R1). It is deliberately outside
-          the `over` lock below: a finished day still lets the player change how
-          tomorrow is asked, and switching is not an attempt (R8a).
+          settled before the question is asked (R1). It stays live for the whole
+          playable day — narrowing the row mid-puzzle is the point, and switching
+          is not an attempt (R8a) — and it settles with the chips once the day is
+          over: the same `over`, so there is one notion of finished on this card
+          (F11 E4 R1, R2).
         */}
-        <ModeToggle simple={simple} onChange={disarming(onToggleSimple)} />
+        <ModeToggle
+          simple={simple}
+          onChange={disarming(onToggleSimple)}
+          disabled={over}
+        />
 
         {/*
           One gesture, two things: the root row reports the choice and asks for

@@ -1,19 +1,27 @@
 'use client'
 
-import { Chip } from '@/components/controls/Chip'
 import { Heading } from '@/components/typography/Heading'
 import { LabelledColumn } from '@/components/layout/LabelledColumn'
-import { Panel, PanelColumns } from '@/components/surfaces/Panel'
+import { Panel } from '@/components/surfaces/Panel'
 import { Row } from '@/components/layout/Row'
+import { Stack } from '@/components/layout/Stack'
 import { Text } from '@/components/typography/Text'
+import { LeadSheet } from './LeadSheet'
+import { ScaleStaff } from './ScaleStaff'
+import { barChords } from '../../lib/theory/changes'
 import { scaleNotes } from '../../lib/theory/notes'
+import { staffNotes } from '../../lib/theory/staff'
 import type { Answer } from '../../types'
 
 type SolvedPanelProps = {
   answer: Answer
   tries: number
   streak: number
-  chord: string
+  /**
+   * The day's changes as the generator writes them, en-dash separated. The
+   * panel draws them as bars; the tonic is bar one, so it is not passed — or
+   * shown — a second time (R6).
+   */
   progression: string
   /**
    * The day was given up on rather than solved. The panel shows the same
@@ -32,47 +40,16 @@ function triesLabel(tries: number): string {
   return tries === 1 ? 'one try' : `${tries} tries`
 }
 
-// The two columns hold rows of different shapes, so they are laid out
-// differently. `grid` gives the seven scale notes equal columns, which is what
-// makes a row of short, uniform labels read as even. `row` is for "The
-// changes": a gapped flex row of two items already *is* content-sized columns,
-// and equal columns would hand a two-character chord symbol as much of the
-// panel as a four-chord progression, with a gulf of empty space between them.
-const LAYOUT = {
-  grid: 'grid grid-cols-4 md:grid-cols-7 gap-2',
-  row: 'flex flex-wrap gap-2',
-} as const
-
-/** A row of read-only values, drawn for the inverted surface. */
-function ValueChips({
-  values,
-  layout,
-}: {
-  values: string[]
-  layout: keyof typeof LAYOUT
-}) {
-  return (
-    <div className={LAYOUT[layout]}>
-      {values.map((value) => (
-        <Chip
-          key={value}
-          label={value}
-          selected={false}
-          disabled
-          onSelect={() => {}}
-          tone="inverted"
-        />
-      ))}
-    </div>
-  )
-}
-
 /**
  * The payoff: the day's answer, what it cost, and the music behind it.
  *
  * It is a live region rather than a dialog — solving is a result to be
  * announced, not an interruption to be acknowledged, so it takes `role="status"`
  * and then simply stays for the rest of the session.
+ *
+ * Both halves are drawings, and a staff wants the panel's whole width, so the
+ * two labelled groups stack rather than sharing a two-column grid: the lead
+ * sheet at full width, the staff beneath it (R1c).
  *
  * Ink comes from the `inverted` tones, which resolve to the `on-accent`
  * token — it flips with the palette, so the panel stays legible in both.
@@ -83,7 +60,6 @@ export function SolvedPanel({
   answer,
   tries,
   streak,
-  chord,
   progression,
   revealed,
 }: SolvedPanelProps) {
@@ -104,14 +80,14 @@ export function SolvedPanel({
             </Text>
           </Row>
         </div>
-        <PanelColumns>
+        <Stack gap="xl">
           <LabelledColumn label="The changes">
-            <ValueChips values={[chord, progression]} layout="row" />
+            <LeadSheet chords={barChords(progression)} />
           </LabelledColumn>
           <LabelledColumn label="Notes to live in">
-            <ValueChips values={notes} layout="grid" />
+            <ScaleStaff notes={staffNotes(notes)} label={notes.join(' ')} />
           </LabelledColumn>
-        </PanelColumns>
+        </Stack>
       </Panel>
     </div>
   )

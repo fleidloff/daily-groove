@@ -60,6 +60,10 @@ choice is between guessing at full difficulty and not playing.
   miss is a miss, whatever it was aimed at, and one day is one record.
 - **R8a** — The toggle stays operable for the whole day. It is never locked by
   having guessed, and switching is not itself an attempt.
+  - *Narrowed by [feature-11 Epic 4](../../feature-11/prd/epic-4-the-simple-switch-settles.md):
+    "the whole day" now means the whole **playable** day. Never locked by having
+    guessed still holds; once the day ends — solved or given up on — the switch
+    settles and stops responding.*
 - **R9** — A day solved in simple mode is recorded as solved and counts toward
   the streak like any other solved day.
 - **R10** — The nudge and the reveal behave as they do in the full puzzle, at
@@ -121,6 +125,9 @@ reading.
   attempt count and the dot row are unchanged and no new attempt is recorded.
 - **AC8a** (R8a) — Given a guess has been checked, when the player reaches for
   the toggle, then it is still operable.
+  - *Narrowed by [feature-11 Epic 4](../../feature-11/prd/epic-4-the-simple-switch-settles.md):
+    this holds while the day is still playable. On a finished day the toggle is
+    disabled — see that epic's AC1 and AC2.*
 - **AC9** (R9) — Given a day solved in simple mode, when the streak is computed,
   then that day counts toward it.
 - **AC10** (R10) — Given two misses in simple mode, when the card renders, then

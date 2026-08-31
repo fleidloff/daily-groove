@@ -37,7 +37,7 @@ the one-line test.**
 | `layout/` | `Container`, `PageShell`, `Row`, `Stack`, `LabelledColumn` | Does it only arrange its children — spacing, direction, the page frame — and render no content of its own? |
 | `surfaces/` | `Card`, `Panel` | Is it a background other content sits *on*: a border, a fill, a gradient? |
 | `controls/` | `Button`, `Chip`, `ChipGroup`, `PlayControl` | Does the user press, toggle or select it? |
-| `typography/` | `Heading`, `Text`, `EyebrowLabel`, `SectionLabel` | Is it text styling and nothing else? |
+| `typography/` | `Heading`, `Text`, `Lettering`, `EyebrowLabel`, `SectionLabel` | Is it text styling and nothing else? |
 | `display/` | `Pill`, `ProgressTrack` | Does it render a value read-only — no input, no children to arrange? |
 
 `tokens.ts` stays at the root of `src/components/`, outside every group: it is

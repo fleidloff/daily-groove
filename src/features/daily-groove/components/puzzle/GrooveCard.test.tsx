@@ -80,6 +80,53 @@ describe('GrooveCard', () => {
     expect(container.textContent ?? '').not.toMatch(/No\.|bars|loops/)
   })
 
+  // F11 — the answer joins the meta line once the day is over. The payoff panel
+  // names it too, but it is below both cards and out of view while you play
+  // along; the card that is playing should say what you are playing over.
+
+  it('names the answer beside the tempo once the day is over', () => {
+    render(
+      <GrooveCard
+        groove={{ ...GROOVE, bpm: 105 }}
+        date={DAY}
+        answer={{ root: 'C', flavour: 'Mixolydian' }}
+      />,
+    )
+
+    // Still one node: tempo, answer, day, in that order.
+    expect(
+      screen.getByText('105 bpm · C Mixolydian · Sunday, 30 August'),
+    ).toBeInTheDocument()
+  })
+
+  it('says nothing about the answer while the day is still on', () => {
+    const { rerender, container } = render(
+      <GrooveCard groove={{ ...GROOVE, bpm: 105 }} date={DAY} />,
+    )
+    expect(screen.getByText('105 bpm · Sunday, 30 August')).toBeInTheDocument()
+    expect(container.textContent ?? '').not.toMatch(/Dorian|Mixolydian/)
+
+    // `null` is the state the card is given all day, and it must read the same
+    // as no prop at all — the root and the mode are the puzzle.
+    rerender(
+      <GrooveCard groove={{ ...GROOVE, bpm: 105 }} date={DAY} answer={null} />,
+    )
+    expect(screen.getByText('105 bpm · Sunday, 30 August')).toBeInTheDocument()
+    expect(container.textContent ?? '').not.toMatch(/Dorian|Mixolydian/)
+  })
+
+  it('keeps the answer out of the heading too', () => {
+    render(
+      <GrooveCard
+        groove={GROOVE}
+        date={DAY}
+        answer={{ root: 'C', flavour: 'Mixolydian' }}
+      />,
+    )
+    const heading = screen.getByRole('heading', { level: 2 })
+    expect(heading.textContent).toBe('Sunroom Shuffle')
+  })
+
   it('repeats the day beside the tempo, in one muted line', () => {
     render(<GrooveCard groove={{ ...GROOVE, bpm: 105 }} date={DAY} />)
 

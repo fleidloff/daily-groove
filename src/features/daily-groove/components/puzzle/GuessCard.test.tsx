@@ -783,7 +783,35 @@ describe('GuessCard', () => {
     expect(onToggleSimple).toHaveBeenCalledWith(false)
   })
 
-  it('leaves the switch operable on a day that is already over (R8a, AC8a)', async () => {
+  // --- F11 E4: the switch settles once the day is over ----------------------
+
+  // Step B1. The half of feature-7's R8a that survives the narrowing, and the
+  // reason the rule was written: a player who finds the full row too hard may
+  // narrow it mid-puzzle, however many attempts they have already spent.
+  it('keeps the switch live on a playable day with attempts spent (F11 E4 R3, AC3)', async () => {
+    const user = userEvent.setup()
+    const onToggleSimple = vi.fn()
+    render(
+      <GuessCard
+        {...props({
+          dots: ['spent', 'spent', 'unspent'],
+          feedback: ROOT_MATCHED,
+          onToggleSimple,
+        })}
+      />,
+    )
+
+    expect(modeSwitch()).toBeEnabled()
+    await user.click(modeSwitch())
+
+    expect(onToggleSimple).toHaveBeenCalledWith(true)
+  })
+
+  // Step B2. Feature-7's R8a said the switch is never locked by having
+  // guessed, and that still holds — but the day ending is not "having
+  // guessed". Once the answer is on screen the switch has nothing left to do,
+  // so it settles with the chips it sits above (F11 E4 R8).
+  it('settles the switch on a day that is already over (F11 E4 R1, AC1)', async () => {
     const user = userEvent.setup()
     const onToggleSimple = vi.fn()
     render(
@@ -798,21 +826,77 @@ describe('GuessCard', () => {
       />,
     )
 
-    // The chips lock on a finished day; the preference does not (R8a).
+    // The chips lock on a finished day, and now so does the switch above them.
     expect(within(rootGroup()).getAllByRole('button')[0]).toBeDisabled()
-    expect(modeSwitch()).toBeEnabled()
+    expect(modeSwitch()).toBeDisabled()
     await user.click(modeSwitch())
-    expect(onToggleSimple).toHaveBeenCalledWith(true)
+    expect(onToggleSimple).not.toHaveBeenCalled()
   })
 
-  it('leaves the switch operable on a revealed day too (R8a, AC8a)', async () => {
+  // Step B3. One terminal state, both endings: the card computes
+  // `over = solved || revealed` and the switch reads that, not `solved`.
+  it('settles the switch on a revealed day too (F11 E4 R2, AC2)', async () => {
     const user = userEvent.setup()
     const onToggleSimple = vi.fn()
     render(<GuessCard {...props({ revealed: true, onToggleSimple })} />)
 
-    expect(modeSwitch()).toBeEnabled()
+    expect(modeSwitch()).toBeDisabled()
     await user.click(modeSwitch())
-    expect(onToggleSimple).toHaveBeenCalledWith(true)
+    expect(onToggleSimple).not.toHaveBeenCalled()
+  })
+
+  it('keeps a settled switch showing which mode the day was played in (F11 E4 R4, R5, AC4, AC5)', () => {
+    render(
+      <GuessCard
+        {...props({
+          simple: true,
+          flavours: FAMILIES,
+          roots: ['C', 'D', 'E', 'G', 'A', 'B'] as Root[],
+          solved: true,
+          selectedRoot: 'G' as Root,
+          selectedFlavour: 'Minor',
+          feedback: SOLVED,
+        })}
+      />,
+    )
+
+    expect(modeSwitch()).toBeInTheDocument()
+    expect(modeSwitch()).toHaveAttribute('aria-checked', 'true')
+  })
+
+  // Step B5. R1 makes this unreachable; the check exists so that it stays so.
+  it('leaves the finished card untouched when its settled switch is clicked (F11 E4 R7, R7a)', async () => {
+    const user = userEvent.setup()
+    const onToggleSimple = vi.fn()
+    render(
+      <GuessCard
+        {...props({
+          solved: true,
+          selectedRoot: 'G' as Root,
+          selectedFlavour: 'Dorian',
+          feedback: SOLVED,
+          dots: ['spent', 'spent', 'unspent'],
+          onToggleSimple,
+        })}
+      />,
+    )
+
+    const before = {
+      roots: within(rootGroup()).getAllByRole('button').map(chipLabel),
+      flavours: within(flavourGroup()).getAllByRole('button').map(chipLabel),
+      dots: dotStates(),
+    }
+
+    await user.click(modeSwitch())
+
+    expect(within(rootGroup()).getAllByRole('button').map(chipLabel)).toEqual(
+      before.roots,
+    )
+    expect(
+      within(flavourGroup()).getAllByRole('button').map(chipLabel),
+    ).toEqual(before.flavours)
+    expect(dotStates()).toEqual(before.dots)
+    expect(onToggleSimple).not.toHaveBeenCalled()
   })
 
   it('disarms an armed give-up when the mode is switched instead (R6b)', async () => {

@@ -60,6 +60,11 @@ briefing actually asks for in both cases.
 - **R3a** — The "The changes" row is the exception: its columns are sized to
   their content, so a four-chord progression takes the room it needs and the
   chord symbol beside it stays compact.
+  - *Retired by feature-11 Epic 1.* The two chips this rule governed are gone:
+    the changes are drawn as a four-bar lead sheet, whose bars are equal columns
+    by convention — 1 × 4, or 2 × 2 on a phone. The rule stands for what it
+    described; its subject no longer exists. See
+    [feature-11 Epic 1 R5](../../feature-11/prd/epic-1-the-changes-as-a-lead-sheet.md).
 - **R4** — The root group (12 items) and the flavour group (4 items) are laid
   out by the same component and change together.
 - **R5** — The solved panel's two rows are laid out deliberately on the inverted

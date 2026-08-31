@@ -106,4 +106,99 @@ describe('ModeToggle', () => {
       /ionian|dorian|phrygian|lydian|mixolydian|aeolian|locrian/i,
     )
   })
+
+  // --- F11 E4: the switch settles once the day is over ----------------------
+
+  // Step A1. The prop is optional and defaults to off, so every call site that
+  // never heard of it keeps the switch it has today.
+  it('is live when it is told nothing about the day being over (F11 E4 R3)', async () => {
+    const user = userEvent.setup()
+    const onChange = vi.fn()
+    render(<ModeToggle simple={false} onChange={onChange} />)
+
+    expect(screen.getByRole('switch')).toBeEnabled()
+    await user.click(screen.getByRole('switch'))
+
+    expect(onChange).toHaveBeenCalledWith(true)
+  })
+
+  // Step A2. The mechanism is the native attribute, so the browser is the one
+  // declining — not a guard inside the handler (R1a).
+  it('carries the native disabled attribute when the day is over (F11 E4 R1a, AC5)', () => {
+    render(<ModeToggle simple onChange={vi.fn()} disabled />)
+
+    expect(screen.getByRole('switch')).toBeDisabled()
+  })
+
+  it('emits nothing when a settled switch is clicked (F11 E4 R1, AC1)', async () => {
+    const user = userEvent.setup()
+    const onChange = vi.fn()
+    render(<ModeToggle simple={false} onChange={onChange} disabled />)
+
+    await user.click(screen.getByRole('switch'))
+
+    expect(onChange).not.toHaveBeenCalled()
+  })
+
+  it('emits nothing when space or enter reaches a settled switch (F11 E4 R1, AC1)', async () => {
+    const user = userEvent.setup()
+    const onChange = vi.fn()
+    render(<ModeToggle simple={false} onChange={onChange} disabled />)
+
+    // Nothing may focus it either — `disabled` takes it out of the tab order.
+    await user.tab()
+    expect(screen.getByRole('switch')).not.toHaveFocus()
+
+    screen.getByRole('switch').focus()
+    await user.keyboard(' ')
+    await user.keyboard('{Enter}')
+
+    expect(onChange).not.toHaveBeenCalled()
+  })
+
+  // Step A3. Settling is a change of state, not of what the control is: the
+  // finished card still has to say which mode the day was played in.
+  it('still reads as a switch that is on when it has settled (F11 E4 R4, R5, AC4, AC5)', () => {
+    render(<ModeToggle simple onChange={vi.fn()} disabled />)
+
+    const toggle = screen.getByRole('switch', { name: /simple mode/i })
+    expect(toggle).toHaveAttribute('aria-checked', 'true')
+    expect(toggle).toHaveTextContent(/simple mode/i)
+  })
+
+  it('still reads as a switch that is off when it has settled (F11 E4 R4, R5, AC5)', () => {
+    render(<ModeToggle simple={false} onChange={vi.fn()} disabled />)
+
+    expect(screen.getByRole('switch')).toHaveAttribute('aria-checked', 'false')
+  })
+
+  it('keeps drawing the track when it has settled (F11 E4 R4, AC4)', () => {
+    const { container } = render(
+      <ModeToggle simple onChange={vi.fn()} disabled />,
+    )
+
+    // The track is the decoration that shows the position at a glance.
+    const track = container.querySelector('[aria-hidden="true"]')
+    expect(track).not.toBeNull()
+    expect(track?.className).toMatch(/bg-accent/)
+  })
+
+  // Step A4. A control that cannot be used must not go on offering itself.
+  it('drops the affordances of a live control when it has settled (F11 E4 R6)', () => {
+    render(<ModeToggle simple onChange={vi.fn()} disabled />)
+
+    const className = screen.getByRole('switch').className
+    expect(className).not.toMatch(/\bcursor-pointer\b/)
+    expect(className).not.toMatch(/hover:border-border-strong/)
+    expect(className).toMatch(/\bopacity-60\b/)
+  })
+
+  it('keeps those affordances while the day is still playable (F11 E4 R3, R6)', () => {
+    render(<ModeToggle simple onChange={vi.fn()} />)
+
+    const className = screen.getByRole('switch').className
+    expect(className).toMatch(/\bcursor-pointer\b/)
+    expect(className).toMatch(/hover:border-border-strong/)
+    expect(className).not.toMatch(/\bopacity-60\b/)
+  })
 })

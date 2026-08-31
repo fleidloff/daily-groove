@@ -10,6 +10,20 @@ Execute every epic in a feature from its specs, in parallel where the files
 allow it, and report honestly on what the acceptance criteria say versus what
 actually got built.
 
+## 0. Never commit
+
+**This skill does not touch git.** No `git add`, no `git commit`, no branch, no
+stash, no revert — not in the lead, not in a worker, not at the end of a wave,
+not for the status row. Every change this run makes stays in the working tree.
+
+The user reviews the diff in their editor and commits it themselves; a run that
+commits as it goes takes that reading away and buries the run's own changes in
+history the user did not write. Where a step below would once have committed,
+it now just leaves the edit in place.
+
+If a step genuinely needs a commit to proceed, stop and ask — don't commit and
+mention it afterwards.
+
 ## 1. Resolve target and flags
 
 - `/implement-feature feature-3` → every epic with a PRD in `specs/feature-3/`.
@@ -62,21 +76,21 @@ Two levels of parallelism, and you want both:
 **The scheduling rule is file ownership.** Two agents editing one file is a lost
 edit, not parallelism. List the files each unit writes; where two units overlap,
 either merge them into one unit or put them in different waves. If overlap is
-unavoidable and the units are genuinely independent, run them in separate git
-worktrees and merge after.
+unavoidable, merge the units — a worktree split would need commits to merge back
+(§0), so it is the user's call, not yours.
 
 **Contracts go first.** If a tech spec has a `Contracts` section, write those
-types and signatures in the lead, before dispatch, and commit them. Every worker
-then builds against a real file instead of a description. This one step removes
-most of the coordination cost.
+types and signatures in the lead, before dispatch. Every worker then builds
+against a real file instead of a description. This one step removes most of the
+coordination cost.
 
 Order the rest into waves by real dependency. Aim for 3–5 concurrent workers:
 past that, coordination overhead grows faster than throughput.
 
 ## 5. Dispatch (default: subagents)
 
-First mark the feature 🔨 In progress in `specs/features.md` and commit that
-edit alone (§10) — a run that dies after this point still leaves an honest row.
+First mark the feature 🔨 In progress in `specs/features.md` (§10) — a run that
+dies after this point still leaves an honest row.
 
 Spawn one agent per unit in the current wave, in a single message so they run
 concurrently. Give each the brief in
@@ -187,7 +201,7 @@ whether or not it is the feature you were asked to build.
 ### When the run starts
 
 Before dispatching the first wave, set every feature you are about to build to
-🔨 **In progress**, and commit that edit on its own.
+🔨 **In progress**. Leave the edit uncommitted like everything else (§0).
 
 This is not bookkeeping. A run can die mid-wave, be interrupted, or be held at a
 precondition, and every one of those paths skips the end-of-run edit below. A

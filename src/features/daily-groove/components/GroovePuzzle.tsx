@@ -23,6 +23,7 @@ import {
   simpleRootOptions,
 } from '../lib/theory/music'
 import { FAMILIES } from '../lib/theory/families'
+import { barChords } from '../lib/theory/changes'
 import { selectGrooveForDate } from '../lib/puzzle/selectGroove'
 import { GROOVES } from '../data/grooves.generated'
 import { NOTES } from '../data/notes.generated'
@@ -302,15 +303,28 @@ function GroovePuzzleView({ groove }: { groove: Groove }) {
             flex basis governs and the width goes back to auto. */}
         <Row gap="lg" align="start" collapseBelow="md">
           <div className="min-w-0 w-full flex-1 md:w-auto">
-            <GrooveCard groove={groove} date={today}>
+            <GrooveCard
+              groove={groove}
+              date={today}
+              answer={solved || revealed ? answer : null}
+            >
               <Stack gap="lg">
                 {/* Zero unless something is sounding: the panel cannot draw
                     a position for audio that is not playing, so nothing is
                     held or left decaying after a stop (R5, AC6). */}
+                {/* The changes over the bars, but only once the day has
+                    ended: the progression names the root and the mode, so
+                    before then the card is exactly what it was (E3 R1, R2,
+                    R3). `solved || revealed` is the payoff panel's own
+                    condition below — the same terminal state, not a second
+                    name for it. */}
                 <TransportPanel
                   position={isPlaying ? position : 0}
                   isPlaying={isPlaying}
                   passes={passes}
+                  chords={
+                    solved || revealed ? barChords(groove.progression) : null
+                  }
                 />
                 {/* The control leads and the caption follows it, rather than
                     sitting beside it in a row (E2 R4, AC3). */}
@@ -378,7 +392,6 @@ function GroovePuzzleView({ groove }: { groove: Groove }) {
             answer={answer}
             tries={attempts.length}
             streak={streak}
-            chord={groove.chord}
             progression={groove.progression}
             revealed={revealed}
           />

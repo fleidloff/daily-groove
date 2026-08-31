@@ -187,3 +187,143 @@ describe('through the composed page', () => {
     expect(screen.getByRole("progressbar")).toBeInTheDocument();
   })
 })
+
+/**
+ * Feature-11, Epic 3 — the chord symbols over the playing bars. The panel is
+ * handed the four symbols or nothing; it never works out which chords a groove
+ * has, and it never decides whether the day is over. Both of those belong to
+ * the card above it.
+ */
+describe('TransportPanel chord row', () => {
+  /** The day's changes as `barChords` hands them over: four symbols, in order. */
+  const CHORDS = ['Em7', 'Bm7', 'C♯m7♭5', 'Em7']
+
+  /** The four cells of the chord row, in document order. */
+  const cells = () =>
+    Array.from(
+      screen.getByTestId('chord-row').querySelectorAll<HTMLElement>('[data-bar]'),
+    )
+
+  /** What each cell reads. */
+  const symbols = () => cells().map((cell) => cell.textContent)
+
+  /**
+   * Which cells are dimmed, as booleans in bar order. Dimming is an opacity
+   * class on the cell, so "full ink" is the absence of one.
+   */
+  const dimmed = () => cells().map((cell) => /\bopacity-/.test(cell.className))
+
+  /** The bar the track itself is highlighting, or null when it highlights none. */
+  const litSegment = () => {
+    const rect = screen.queryByTestId('progress-active')
+    return rect === null ? null : Number(rect.getAttribute('data-segment'))
+  }
+
+  it('draws no row at all when it is given no chords (R2, AC2)', () => {
+    const { container } = render(<TransportPanel position={0.3} isPlaying passes={1} />)
+
+    expect(screen.queryByTestId('chord-row')).toBeNull()
+    const card = container.firstElementChild as HTMLElement
+    expect(card.children).toHaveLength(1)
+    expect(card.firstElementChild).toBe(screen.getByRole('progressbar'))
+  })
+
+  it('draws no row when the chords are explicitly null (R2, AC2)', () => {
+    const { container } = render(
+      <TransportPanel position={0.3} isPlaying passes={1} chords={null} />,
+    )
+
+    expect(screen.queryByTestId('chord-row')).toBeNull()
+    expect((container.firstElementChild as HTMLElement).children).toHaveLength(1)
+  })
+
+  it('writes one symbol per bar, four columns wide, in the jazz face (R1, R7, R8, AC1)', () => {
+    render(
+      <TransportPanel position={0} isPlaying={false} passes={1} chords={CHORDS} />,
+    )
+
+    expect(symbols()).toEqual(CHORDS)
+    expect(screen.getByTestId('chord-row').className).toMatch(/\bgrid-cols-4\b/)
+    for (const cell of cells()) {
+      const lettering = cell.firstElementChild as HTMLElement
+      expect(lettering.textContent).toBe(cell.textContent)
+      expect(lettering.className).toMatch(/font-jazz/)
+    }
+  })
+
+  it('inks the sounding bar’s symbol and dims the other three (R4, R5, AC4)', () => {
+    // Six tenths through a single pass is bar three of four.
+    const { rerender } = render(
+      <TransportPanel position={0.6} isPlaying passes={1} chords={CHORDS} />,
+    )
+
+    expect(dimmed()).toEqual([true, true, false, true])
+    expect(litSegment()).toBe(2)
+
+    rerender(<TransportPanel position={0.1} isPlaying passes={1} chords={CHORDS} />)
+    expect(dimmed()).toEqual([false, true, true, true])
+    expect(litSegment()).toBe(0)
+  })
+
+  it('draws all four alike when nothing is playing (R6, AC5)', () => {
+    render(
+      <TransportPanel position={0.6} isPlaying={false} passes={1} chords={CHORDS} />,
+    )
+
+    expect(symbols()).toEqual(CHORDS)
+    expect(dimmed()).toEqual([false, false, false, false])
+    expect(litSegment()).toBeNull()
+    // All four carry the same treatment, not merely no dimming.
+    expect(new Set(cells().map((cell) => cell.className)).size).toBe(1)
+  })
+
+  it('moves the ink with the highlight across every boundary of a four-pass file (R5)', () => {
+    const { rerender } = render(
+      <TransportPanel position={0} isPlaying passes={4} chords={CHORDS} />,
+    )
+
+    // Bar boundaries inside a pass, the top of a bar, and the pass boundary.
+    for (const position of [0, 0.0624, 0.0625, 0.124, 0.1875, 0.2499, 0.25, 0.9999]) {
+      rerender(
+        <TransportPanel position={position} isPlaying passes={4} chords={CHORDS} />,
+      )
+      const lit = dimmed().indexOf(false)
+      expect(lit, `position ${position}`).toBe(litSegment())
+      // Exactly one symbol is at full ink while something is sounding.
+      expect(dimmed().filter((d) => !d), `position ${position}`).toHaveLength(1)
+    }
+  })
+
+  it('announces nothing of its own (R10, AC6)', () => {
+    render(<TransportPanel position={0.6} isPlaying passes={1} chords={CHORDS} />)
+
+    const row = screen.getByTestId('chord-row')
+    expect(row).not.toHaveAttribute('aria-live')
+    expect(row).not.toHaveAttribute('role')
+    expect(row.querySelectorAll('[aria-live], [role]')).toHaveLength(0)
+
+    // The track exposes exactly what it exposes without the row.
+    const track = screen.getByRole('progressbar')
+    expect(track).toHaveAttribute('aria-valuenow', '60')
+    expect(track).toHaveAttribute('aria-valuemin', '0')
+    expect(track).toHaveAttribute('aria-valuemax', '100')
+  })
+
+  it('sits inside the track’s own inset card, directly above it (R6a, R9, R11)', () => {
+    const { container } = render(
+      <TransportPanel position={0.6} isPlaying passes={1} chords={CHORDS} />,
+    )
+
+    const card = container.firstElementChild as HTMLElement
+    expect(card).toHaveClass('bg-surface-inset')
+    const row = screen.getByTestId('chord-row')
+    expect(card).toContainElement(row)
+    expect(row.nextElementSibling).toBe(screen.getByRole('progressbar'))
+
+    // The ink is the card's: no colour is named on a symbol, in either palette.
+    for (const cell of cells()) {
+      expect(cell.className).not.toMatch(/\b(text|bg|fill)-/)
+      expect(cell.className).not.toMatch(/\bdark:/)
+    }
+  })
+})

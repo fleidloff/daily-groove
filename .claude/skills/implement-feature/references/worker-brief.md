@@ -44,6 +44,10 @@ other units are building against them:
 4. **Verify** — run your own tests. Only yours.
 5. **Fix and repeat** until they pass.
 
+**Do not touch git.** No `git add`, no `git commit`, no branch or stash — leave
+everything you change in the working tree. The person running this reviews the
+whole diff and commits it themselves.
+
 Do not run the full suite, the integration tier, or e2e. Other agents are
 mid-flight and their half-finished code will fail in ways you cannot fix from
 inside your unit. A QA pass over the whole epic runs after every unit is done;

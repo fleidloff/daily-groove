@@ -10,7 +10,7 @@ const COMPONENTS: Record<string, string[]> = {
   layout: ['Container', 'PageShell', 'Row', 'Stack', 'LabelledColumn'],
   surfaces: ['Card', 'Panel'],
   controls: ['Button', 'Chip', 'ChipGroup', 'PlayControl'],
-  typography: ['Heading', 'Text', 'EyebrowLabel', 'SectionLabel'],
+  typography: ['Heading', 'Text', 'EyebrowLabel', 'SectionLabel', 'Lettering'],
   display: ['Pill', 'ProgressTrack'],
 }
 

@@ -31,6 +31,7 @@ import {
 } from '../lib/theory/music'
 import { createLocalPreferenceStore } from '../lib/persistence/preferences'
 import { dateLine } from '../lib/presentation/date'
+import { barChords } from '../lib/theory/changes'
 import { isoDate, selectGrooveForDate } from '../lib/puzzle/selectGroove'
 import { GROOVES } from '../data/grooves.generated'
 import { NOTES } from '../data/notes.generated'
@@ -54,6 +55,13 @@ const GROOVE: Groove = {
   progression: 'Cm–Fm–G7',
   headDelaySeconds: 0.025057,
 }
+
+/**
+ * How the solved panel's lead sheet reads out. Feature-11 Epic 1 turned the
+ * changes from two chips into four ruled bars, so the day's harmony is checked
+ * through the sheet's accessible name rather than through printed chip text.
+ */
+const CHANGES_READ = 'Cm · Fm · G7 · Cm'
 
 /** The day's four flavour chips, resolved exactly as the component resolves them. */
 const flavours = () => flavourOptions(new Date(), GROOVE)
@@ -572,8 +580,9 @@ describe('GroovePuzzle', () => {
     expect(within(panel).getByText(/given up/i)).toBeInTheDocument()
     expect(screen.queryByText(/solved in/i)).toBeNull()
     expect(screen.queryByText(/streak now/i)).toBeNull()
-    expect(panel.textContent).toContain(GROOVE.chord)
-    expect(panel.textContent).toContain(GROOVE.progression)
+    expect(
+      within(panel).getByRole('img', { name: CHANGES_READ }),
+    ).toBeInTheDocument()
 
     // ...the offer itself is gone, and so is the way back in (AC8a).
     expect(giveUp()).toBeNull()
@@ -621,7 +630,9 @@ describe('GroovePuzzle', () => {
     const panel = solutionPanel()
     expect(panel).toBeInTheDocument()
     expect(within(panel).getByText(/given up/i)).toBeInTheDocument()
-    expect(panel.textContent).toContain(GROOVE.chord)
+    expect(
+      within(panel).getByRole('img', { name: CHANGES_READ }),
+    ).toBeInTheDocument()
     expect(
       within(panel).getByRole('group', { name: /notes to live in/i }),
     ).toBeInTheDocument()
@@ -671,8 +682,9 @@ describe('GroovePuzzle', () => {
     // Two attempts were spent, and today's solve is the streak's first day.
     expect(screen.getByText(/solved in 2 tries/i)).toBeInTheDocument()
     expect(screen.getByText(/streak now 1/i)).toBeInTheDocument()
-    expect(container.textContent).toContain(GROOVE.chord)
-    expect(container.textContent).toContain(GROOVE.progression)
+    expect(
+      within(container).getByRole('img', { name: CHANGES_READ }),
+    ).toBeInTheDocument()
     // The scale notes come with it.
     expect(
       screen.getByRole('group', { name: /notes to live in/i }),
@@ -950,10 +962,14 @@ describe('GroovePuzzle', () => {
     expect(screen.getByText(/the groove is yours now/i)).toBeInTheDocument()
     expect(mockStore.save.mock.calls.at(-1)?.[0].attempts).toHaveLength(3)
 
-    // ...and the switch is still operable on a day that is over (AC8a).
-    expect(modeSwitch()).toBeEnabled()
+    // ...and the switch settles once the day is over: it keeps the position the
+    // day was played in and stops responding (F11 E4 R1, R4, AC1). Feature-7's
+    // R8a covered the whole day; feature-11 narrows it to the playable one, and
+    // the live half is asserted above, two attempts in.
+    expect(modeSwitch()).toBeDisabled()
+    expect(modeSwitch()).toHaveAttribute('aria-checked', 'true')
     await user.click(modeSwitch())
-    expect(modeSwitch()).toHaveAttribute('aria-checked', 'false')
+    expect(modeSwitch()).toHaveAttribute('aria-checked', 'true')
   })
 
   it('keeps the nudge and the way out at the same thresholds in simple mode (E5 R10, AC10)', async () => {
@@ -2155,5 +2171,118 @@ describe('GroovePuzzle', () => {
     )
     const allowed = ['daily-groove:v2:results', 'daily-groove:v1:prefs']
     expect(written.filter((key) => !allowed.includes(key))).toEqual([])
+  })
+
+  // --- feature-11 Epic 3: the chords over the playing bars -----------------
+
+  /**
+   * The day's changes, bar by bar, worked out the way the card works them out.
+   * `GROOVE.progression` is three chords, so bar four is a return to the first
+   * — which is what the generator comps, and what the row has to print.
+   */
+  const BAR_CHORDS = barChords(GROOVE.progression)
+
+  /** The symbols written over the track, in bar order, or null if there is no row. */
+  const trackChords = () => {
+    const row = screen.queryByTestId('chord-row')
+    return row === null
+      ? null
+      : Array.from(row.querySelectorAll('[data-bar]')).map((cell) => cell.textContent)
+  }
+
+  it('prints no chord over the bars while the day is still on (E3 R2, AC2)', async () => {
+    const user = userEvent.setup()
+    const { container } = await renderPuzzle()
+
+    // A fresh day: nothing over the track.
+    expect(trackChords()).toBeNull()
+
+    // Two attempts spent, neither correct — still nothing.
+    await guess(user, 'C', wrongFlavour())
+    await guess(user, 'G', wrongFlavour())
+    expect(trackChords()).toBeNull()
+
+    // ...and playing the groove does not print them either. This is the guard
+    // that matters most: the progression names the root and the mode outright,
+    // so a row here would answer both halves of the puzzle before the solve.
+    await play(user)
+    await advance(loopFraction(0.6))
+    expect(trackChords()).toBeNull()
+    for (const chord of BAR_CHORDS) {
+      expect(screen.queryAllByText(chord), chord).toEqual([])
+    }
+    expect(container.textContent).not.toContain(GROOVE.progression)
+  })
+
+  it('writes the four symbols over the bars once the day is solved (E3 R1, AC1)', async () => {
+    const user = userEvent.setup()
+    await renderPuzzle()
+
+    await guess(user, 'C', wrongFlavour())
+    expect(trackChords()).toBeNull()
+
+    await guess(user, 'C', 'Aeolian')
+
+    expect(trackChords()).toEqual(BAR_CHORDS)
+    // Over the track, not somewhere else on the page.
+    expect(screen.getByTestId('chord-row').nextElementSibling).toBe(
+      screen.getByRole('progressbar'),
+    )
+  })
+
+  it('names the answer beside the tempo only once the day is over', async () => {
+    const user = userEvent.setup()
+    const { container } = await renderPuzzle()
+
+    // The meta line is the tempo and the day, and nothing that answers the
+    // puzzle — not before a guess, and not after a wrong one.
+    expect(container.textContent).not.toContain('C Aeolian')
+    await guess(user, 'C', wrongFlavour())
+    expect(container.textContent).not.toContain('C Aeolian')
+
+    await guess(user, 'C', 'Aeolian')
+
+    // One line under the groove's name, tempo first.
+    expect(
+      screen.getByText(new RegExp(`^${GROOVE.bpm} bpm · C Aeolian · `)),
+    ).toBeInTheDocument()
+  })
+
+  it('writes them for a day given up on too (E3 R3, AC3)', async () => {
+    const wrong = wrongFlavour()
+    const stored: DailyResult = {
+      date: TODAY(),
+      answer: { root: 'C', flavour: 'Aeolian' },
+      attempts: [
+        miss('C', wrong, true),
+        miss('G', wrong, false),
+        miss('G', otherWrongFlavour(), false),
+      ],
+      solved: false,
+      revealed: true,
+    }
+    mockStore.get.mockResolvedValue(stored)
+    mockStore.getAll.mockResolvedValue([stored])
+
+    await renderPuzzle()
+
+    expect(trackChords()).toEqual(BAR_CHORDS)
+  })
+
+  it('reads the same over the track as it does on the lead sheet (E3 R1)', async () => {
+    const user = userEvent.setup()
+    await renderPuzzle()
+
+    await guess(user, 'C', 'Aeolian')
+
+    const sheet = within(solutionPanel()).getByRole('img', { name: CHANGES_READ })
+    const sheetBars = Array.from(sheet.querySelectorAll('[data-bar]')).map(
+      (bar) => bar.textContent,
+    )
+
+    // One mapping, two drawings: the row over the bars and the sheet below
+    // cannot disagree about which chord bar four is.
+    expect(trackChords()).toEqual(sheetBars)
+    expect(trackChords()).toEqual(CHANGES_READ.split(' · '))
   })
 })
