@@ -1,6 +1,6 @@
 import type { FeelTemplate, GrooveSpec, MusicMeta, NoteEvent, VoiceName } from './types.ts'
 import { intBetween, pick, rngFor } from './rng.ts'
-import { applySwing, fitToLoop, humanize } from './humanize.ts'
+import { applyDrift, applySwing, fitToLoop, humanize } from './humanize.ts'
 import { ROOTS } from './theory/notes.ts'
 import { buildHarmony } from './theory/harmony.ts'
 import type { Harmony } from './theory/harmony.ts'
@@ -66,10 +66,25 @@ export const COMP_REGISTER_CEILING = 76
 
 /**
  * A note at or below this velocity reads as a ghost note rather than a played
- * one. Tests assert a groove contains some; nothing in the render path branches
- * on it.
+ * one. The snare's ghost strokes are emitted well under it (R10), and the
+ * tests read a snare's role from it: at or above is a backbeat, below is a
+ * ghost.
  */
 export const GHOST_VELOCITY_THRESHOLD = 0.5
+
+/**
+ * How hard a ghost stroke is struck, as a band the rhythm stream draws one
+ * value from per groove. Well under `GHOST_VELOCITY_THRESHOLD`, with the
+ * humanize slop on top, so a ghost can never be mistaken for a backbeat.
+ *
+ * Literals rather than template data on purpose: if a feel turns out to want
+ * its own, that is a field on `FeelTemplate`, and it should land with the rest
+ * of them rather than trickling in later.
+ */
+const GHOST_VELOCITY_RANGE: [number, number] = [0.15, 0.25]
+
+/** A velocity floor, so an accent multiplier can never silence a hit. */
+const MIN_VELOCITY = 0.05
 
 /**
  * How hard each voice hits, by metric position on the sixteenth grid:
@@ -100,6 +115,27 @@ function velocityFor(voice: VoiceName, step: number): number {
 }
 
 /**
+ * The hats' accent shape: a repeating cycle of multipliers on top of the metric
+ * accent (R11).
+ *
+ * `velocityFor` is a pure function of metric position, so without this every
+ * hat at a given step class is the same velocity forever, which is the flat,
+ * machine-like hat the epic is about. The cycle is applied by the hat's
+ * position in the bar's hat sequence rather than by its step: indexing by step
+ * would partition the bar exactly the way `velocityFor` already does and change
+ * nothing.
+ *
+ * Hats only. Kick, snare, bass and comp keep reading their accent from metric
+ * position alone — that is R12, and the backbeat has to stay the loudest thing
+ * around it.
+ */
+const HAT_ACCENTS = [1, 0.72, 0.88, 0.66]
+
+function clampVelocity(velocity: number): number {
+  return Math.min(1, Math.max(MIN_VELOCITY, velocity))
+}
+
+/**
  * Rhythms are written against a sixteenth-note bar and scaled to whatever
  * subdivision the template declares, so a future eighth-note template reuses
  * them rather than restating them.
@@ -125,6 +161,22 @@ const BASS_PATTERNS: number[][] = [
   [0, 3, 10],
   [0, 6, 10, 14],
   [0, 8, 14],
+]
+
+/**
+ * Where the snare ghosts, written as off-sixteenths.
+ *
+ * Every step is odd: a ghost is what fills the space *between* the backbeats,
+ * so it never lands on one. Drawn per groove from the rhythm stream like the
+ * kick and hat patterns — never from the music stream, whose draw order is
+ * frozen (see `MUSIC_LABEL`).
+ */
+const SNARE_GHOST_PATTERNS: number[][] = [
+  [3, 11],
+  [7, 15],
+  [11, 15],
+  [3, 7, 11],
+  [3, 11, 15],
 ]
 
 const COMP_PATTERNS: number[][] = [
@@ -209,6 +261,31 @@ function gridSteps(steps: number[], subdivision: number): number[] {
   return out
 }
 
+/**
+ * A ghost's off-sixteenth, resolved onto the template's own grid — and kept
+ * *off* the beat there too.
+ *
+ * `gridSteps` rounds to the nearest step, which on an eighth-note grid lands
+ * half of the off-sixteenths on a downbeat: a ghost on the beat is not a ghost,
+ * it is a weak backbeat. So a ghost snaps to the nearest ODD step of the
+ * template's grid instead, which is that grid's own off-subdivision — the
+ * off-eighth on an eighth-note feel, the off-sixteenth on a sixteenth-note one.
+ * On a sixteenth grid the two agree exactly.
+ */
+function ghostSteps(steps: number[], subdivision: number): number[] {
+  const seen = new Set<number>()
+  const out: number[] = []
+  for (const source of [...steps].sort((a, b) => a - b)) {
+    const scaled = (source * subdivision) / PATTERN_RESOLUTION
+    const odd = 2 * Math.round((scaled - 1) / 2) + 1
+    const step = Math.min(subdivision - 1, Math.max(1, odd))
+    if (seen.has(step)) continue
+    seen.add(step)
+    out.push(step)
+  }
+  return out
+}
+
 /** Lift a pitch class into the register a voice plays in. */
 function inRegister(midi: number, base: number): number {
   return base + (((midi % 12) + 12) % 12)
@@ -259,6 +336,38 @@ export function buildEvents(
   const hatOpenSteps = grid(placement.hatOpen)
   const rimSteps = grid(placement.rim)
 
+  // The ghosts (R10), drawn after the four pattern draws above so that adding
+  // them left every one of those choices where it was. The rhythm stream is
+  // free to grow; the music stream is not.
+  const snareGhostSteps = ghostSteps(
+    pick(rhythmRng, SNARE_GHOST_PATTERNS),
+    template.subdivision,
+  ).filter((step) => !snareSteps.includes(step))
+  const ghostVelocity =
+    GHOST_VELOCITY_RANGE[0] +
+    (GHOST_VELOCITY_RANGE[1] - GHOST_VELOCITY_RANGE[0]) * rhythmRng()
+
+  /**
+   * The accent multiplier for each hat step of the bar, by that step's position
+   * in the hat sequence rather than by its metric class (R11). Closed and open
+   * hats share one cycle, because a listener hears one hand.
+   */
+  const hatAccents = new Map<number, number>()
+  const hatLine = [...new Set([...hatSteps, ...hatOpenSteps])].sort((a, b) => a - b)
+  hatLine.forEach((step, index) => {
+    hatAccents.set(step, HAT_ACCENTS[index % HAT_ACCENTS.length])
+  })
+
+  /**
+   * How hard a hit lands: the metric accent, with the hats' accent cycle on top
+   * of it. Every other voice reads from metric position alone (R12).
+   */
+  const accentedVelocity = (voice: VoiceName, step: number, sixteenth: number) => {
+    const base = velocityFor(voice, sixteenth)
+    if (voice !== 'hatClosed' && voice !== 'hatOpen') return base
+    return clampVelocity(base * (hatAccents.get(step) ?? 1))
+  }
+
   const secPerBeat = 60 / bpm
   const barSec = secPerBeat * BEATS_PER_BAR
   const stepSec = barSec / template.subdivision
@@ -274,6 +383,7 @@ export function buildEvents(
     step: number,
     sixteenths: number,
     midi?: number,
+    velocity?: number,
   ) => {
     const event: NoteEvent = {
       voice,
@@ -281,8 +391,12 @@ export function buildEvents(
       durationSec: sixteenths * sixteenthSec,
       // Read the accent from where the hit lands in the bar, not from which
       // step of the template's grid it is: on an eighth grid, step 1 is the
-      // second eighth, which is an off-eighth and not an off-sixteenth.
-      velocity: velocityFor(voice, (step * PATTERN_RESOLUTION) / template.subdivision),
+      // second eighth, which is an off-eighth and not an off-sixteenth. A
+      // caller may state a velocity instead — the ghosts do, because their
+      // level says what they are rather than where they are.
+      velocity:
+        velocity ??
+        accentedVelocity(voice, step, (step * PATTERN_RESOLUTION) / template.subdivision),
     }
     if (midi !== undefined) event.midi = midi
     events.push(event)
@@ -309,7 +423,13 @@ export function buildEvents(
 
       // Drums — the same figure every bar, because this epic is not yet played.
       if (plays('kick')) for (const step of kickSteps) add('kick', bar, step, 2)
-      if (plays('snare')) for (const step of snareSteps) add('snare', bar, step, 2)
+      if (plays('snare')) {
+        for (const step of snareSteps) add('snare', bar, step, 2)
+        // The ghosts: short, quiet strokes on the off-subdivisions between the
+        // backbeats. They are what makes GHOST_VELOCITY_THRESHOLD mean what it
+        // says — before them, only the hats ever fell under it (R10).
+        for (const step of snareGhostSteps) add('snare', bar, step, 1, undefined, ghostVelocity)
+      }
       if (plays('hatClosed')) {
         const closed = plays('hatOpen')
           ? hatSteps.filter((s) => !hatOpenSteps.includes(s))
@@ -360,7 +480,12 @@ export function buildEvents(
       bpm,
     ),
   )
-  const shaped = fitToLoop(nudged, barsSec)
+  // Drift last of the three, and before the loop is pinned: the tempo breathes
+  // within each pass and resolves exactly at its boundary, so it displaces
+  // every voice together — a section pushing and relaxing, not one player
+  // wandering — and leaves `fitToLoop` nothing to correct at the seam (R13).
+  const breathed = applyDrift(nudged, template.humanize.driftDepth, barSec * BARS_PER_PASS)
+  const shaped = fitToLoop(breathed, barsSec)
 
   const voiceOrder = (voice: VoiceName) => {
     const index = template.voices.indexOf(voice)

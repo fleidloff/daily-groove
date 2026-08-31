@@ -62,6 +62,20 @@ function pairUp(
   })
 }
 
+/**
+ * The furthest `applyDrift` can move an event in this template.
+ *
+ * The drift is the integral of a tempo deviation, so its crest is
+ * `driftDepth × passSec / 2π` — not `driftDepth × passSec`. See `applyDrift`.
+ */
+function driftBoundFor(
+  template: { humanize: { driftDepth: number } },
+  music: { bpm: number; bars: number },
+): number {
+  const passSec = (music.bars * 4 * 60) / music.bpm
+  return (template.humanize.driftDepth * passSec) / (2 * Math.PI)
+}
+
 describe('buildEvents — the grid', () => {
   // Epic 2 replaces Epic 1's exact-grid assertion: swing and humanization move
   // notes off the grid on purpose (R4, R5). What must still hold — AC13 — is
@@ -313,7 +327,12 @@ describe('buildEvents — the feel', () => {
   it('accents the backbeat and ghosts the off-beat sixteenths — R6, AC6', () => {
     const { events } = buildEvents(spec, template)
     const hats = events.filter((e) => e.voice === 'hatClosed')
-    const snares = events.filter((e) => e.voice === 'snare')
+    // Feature 9, Epic 3, Track C: the snare now plays ghosts as well as the
+    // backbeat, and a ghost is quieter than a hat by construction. The subject
+    // of this assertion is the backbeat, so it reads the backbeats.
+    const snares = events.filter(
+      (e) => e.voice === 'snare' && e.velocity >= GHOST_VELOCITY_THRESHOLD,
+    )
     expect(hats.length).toBeGreaterThan(0)
     expect(snares.length).toBeGreaterThan(0)
 
@@ -361,7 +380,16 @@ describe('buildEvents — the feel', () => {
     for (const { before, after } of pairUp(flat.events, loose.events)) {
       const timing = after.timeSec - before.timeSec
       const velocity = after.velocity - before.velocity
-      expect(Math.abs(timing)).toBeLessThanOrEqual(bound + 1e-9)
+      // Feature 9, Epic 3, Track A: an onset now carries the voice's declared
+      // lean as well as its slop, and the two are bounded together. The bound
+      // is still the template's own — the lean is declared there too.
+      const lean = Math.abs(template.humanize.lean[before.voice] ?? 0) / 1000
+      // Feature 9, Epic 3, Track A also lets the tempo breathe within a pass,
+      // which displaces every event by up to `driftDepth × passSec / 2π`. It is
+      // a third declared deviation, not slop, so it is added to the bound
+      // rather than folded into `timingMs`.
+      const drift = driftBoundFor(template, loose.music)
+      expect(Math.abs(timing)).toBeLessThanOrEqual(bound + lean + drift + 1e-9)
       expect(Math.abs(velocity)).toBeLessThanOrEqual(template.humanize.velocity + 1e-9)
       expect(after.velocity).toBeGreaterThan(0)
       expect(after.velocity).toBeLessThanOrEqual(1)
@@ -531,12 +559,16 @@ describe('buildEvents — every template renders', () => {
 // "this is half-time", so `PLACEMENTS` in events.ts carries the one rule that
 // differs; these pin what it does.
 describe('buildEvents — per-template placement', () => {
+  // The placements these pin are the PLAYED hits. Feature 9, Epic 3, Track C
+  // added snare ghosts, which are placed by their own vocabulary and are, by
+  // construction, under the ghost threshold — so the backbeat is read off
+  // velocity, which is exactly what tells a listener the two apart.
   function stepsOf(voice: string, feelId: string, seed: number) {
     const feel = templateById(feelId)
     const { events, music } = buildEvents({ id: 'g', template: feelId, seed }, feel)
     const step = ((60 / music.bpm) * 4) / feel.subdivision
     return events
-      .filter((e) => e.voice === voice)
+      .filter((e) => e.voice === voice && e.velocity >= GHOST_VELOCITY_THRESHOLD)
       .map((e) => Math.round(e.timeSec / step) % feel.subdivision)
   }
 
@@ -773,13 +805,123 @@ describe('buildEvents — every pass is a different take — R4, AC4', () => {
       expect(flat.events, feel.id).toHaveLength(loose.events.length)
 
       for (const { before, after } of pairUp(flat.events, loose.events)) {
+        // Slop, plus the voice's declared lean, plus the pass's drift — the
+        // three deviations the template declares (Feature 9, Epic 3, Track A).
+        const lean = Math.abs(feel.humanize.lean[before.voice] ?? 0) / 1000
+        const drift = driftBoundFor(feel, loose.music)
         expect(Math.abs(after.timeSec - before.timeSec), feel.id).toBeLessThanOrEqual(
-          bound + 1e-9,
+          bound + lean + drift + 1e-9,
         )
         expect(
           Math.abs(after.velocity - before.velocity),
           feel.id,
         ).toBeLessThanOrEqual(feel.humanize.velocity + 1e-9)
+      }
+    }
+  })
+})
+
+// Feature 9, Epic 3, Track C — R10, R11, R12, AC9, AC10, AC11. The snare played
+// only the backbeat and `velocityFor` was a pure function of metric position,
+// so `GHOST_VELOCITY_THRESHOLD` was satisfied by quiet hi-hats alone and every
+// hat at a given step class was identical forever.
+describe('buildEvents — ghosts and accents — R10, R11, R12', () => {
+  /** No slop, so a velocity is exactly the one the event builder emitted. */
+  const dry = (feel = template) => ({
+    ...feel,
+    humanize: { timingMs: 0, velocity: 0, lean: {}, driftDepth: 0 },
+  })
+
+  /** Every event with the sixteenth-grid step it reads as, and its bar. */
+  function placed(feel = dry(), seed = 1) {
+    const { events, music } = buildEvents({ id: 'g', template: feel.id, seed }, feel)
+    const stepSec = ((60 / music.bpm) * 4) / feel.subdivision
+    return events.map((event) => {
+      const grid = Math.round(event.timeSec / stepSec)
+      return {
+        ...event,
+        bar: Math.floor(grid / feel.subdivision),
+        // Read in sixteenths, so an eighth-note template's steps are comparable.
+        sixteenth: ((grid % feel.subdivision) * 16) / feel.subdivision,
+      }
+    })
+  }
+
+  it('plays snare ghost notes on off-beat sixteenths, below the ghost threshold — R10, AC9', () => {
+    const ghosts = placed().filter(
+      (e) =>
+        e.voice === 'snare' && e.sixteenth % 2 === 1 && e.velocity < GHOST_VELOCITY_THRESHOLD,
+    )
+    expect(ghosts.length, 'the snare plays ghost notes between the backbeats').toBeGreaterThan(1)
+  })
+
+  it('keeps every backbeat snare louder than every ghost — R10, R12, AC9, AC11', () => {
+    // With the shipped template, so the slop cannot swap the two either.
+    for (const feel of [template, dry()]) {
+      const snares = placed(feel).filter((e) => e.voice === 'snare')
+      const ghosts = snares.filter((e) => e.velocity < GHOST_VELOCITY_THRESHOLD)
+      const backbeats = snares.filter((e) => e.velocity >= GHOST_VELOCITY_THRESHOLD)
+      expect(ghosts.length).toBeGreaterThan(1)
+      expect(backbeats.length).toBeGreaterThan(1)
+      expect(Math.min(...backbeats.map((e) => e.velocity))).toBeGreaterThan(
+        Math.max(...ghosts.map((e) => e.velocity)),
+      )
+    }
+  })
+
+  it('shapes the hats with an accent pattern, not metric position alone — R11, AC10', () => {
+    // Two hats of the same metric class in one bar must be able to differ:
+    // `velocityFor` alone gives every step class one velocity forever.
+    const hats = placed().filter((e) => e.voice === 'hatClosed' && e.bar === 0)
+    expect(hats.length).toBeGreaterThan(3)
+
+    const classOf = (s: number) => (s % 4 === 0 ? 'strong' : s % 2 === 0 ? 'medium' : 'weak')
+    const byClass = new Map<string, Set<number>>()
+    for (const hat of hats) {
+      const key = classOf(hat.sixteenth)
+      if (!byClass.has(key)) byClass.set(key, new Set())
+      byClass.get(key)!.add(hat.velocity)
+    }
+    const varied = [...byClass.values()].some((velocities) => velocities.size > 1)
+    expect(varied, 'hats of one metric class carry more than one velocity').toBe(true)
+  })
+
+  it('leaves kick, snare, bass and comp reading from metric position — R12, AC11', () => {
+    for (const feel of allTemplates()) {
+      const events = placed(dry(feel))
+      for (const voice of ['kick', 'snare', 'bass', 'comp'] as const) {
+        // Every hit of one voice on one metric class is the same velocity: the
+        // accent cycle belongs to the hats only. Ghosts are their own level.
+        const byStep = new Map<number, Set<number>>()
+        for (const event of events) {
+          if (event.voice !== voice) continue
+          if (event.velocity < GHOST_VELOCITY_THRESHOLD) continue
+          if (!byStep.has(event.sixteenth)) byStep.set(event.sixteenth, new Set())
+          byStep.get(event.sixteenth)!.add(event.velocity)
+        }
+        for (const [step, velocities] of byStep) {
+          expect(velocities.size, `${feel.id} ${voice}@${step}`).toBe(1)
+        }
+      }
+
+      // And the backbeat still lands above what surrounds it: in every bar the
+      // loudest snare is on a quarter-note position, and every other snare in
+      // that bar is quieter than it.
+      const bars = new Set(events.map((e) => e.bar))
+      for (const bar of bars) {
+        const snares = events.filter((e) => e.voice === 'snare' && e.bar === bar)
+        expect(snares.length, `${feel.id} bar ${bar}`).toBeGreaterThan(1)
+        const loudest = snares.reduce((a, b) => (b.velocity > a.velocity ? b : a))
+        for (const snare of snares) {
+          const where = `${feel.id} bar ${bar} @${snare.sixteenth}`
+          if (snare.velocity === loudest.velocity) {
+            // Whatever is loudest in the bar is on a quarter — the backbeat.
+            expect(snare.sixteenth % 4, where).toBe(0)
+          } else {
+            expect(snare.velocity, where).toBeLessThan(loudest.velocity)
+            expect(snare.sixteenth % 4, where).not.toBe(0)
+          }
+        }
       }
     }
   })

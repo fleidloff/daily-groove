@@ -4,6 +4,8 @@ import { buildEvents } from './events.ts'
 import { mixTracks, PEAK_CEILING, SEAM_THRESHOLD } from './mix.ts'
 import { templateById } from './templates/index.ts'
 import { placeholderPack } from './testing/placeholderPack.ts'
+import { loadPack } from './pack.ts'
+import { fileURLToPath } from 'node:url'
 import { renderVoices } from './voices.ts'
 import { gateCandidate } from './gate.ts'
 import type { FeelTemplate, MusicMeta, NoteEvent, Pcm } from './types.ts'
@@ -27,16 +29,31 @@ type Candidate = {
  * below is this one with exactly one thing broken, so a gate that fails
  * everything cannot pass this suite.
  */
+/**
+ * The committed sample pack, not the synthesized stand-in.
+ *
+ * `goodCandidate` claims to be "a real render of a catalogue groove", and the
+ * seam check is calibrated for real samples — a threshold of 0.02 against a
+ * ceiling of 0.891. `placeholderPack`'s pitched voice is a 0.9-second sine that
+ * is still sounding at a quarter of full scale when a four-pass loop ends, so
+ * it fails that threshold (0.07) on events the real pack renders cleanly
+ * (0.004). The fixture is a fine stand-in for "does the renderer place events
+ * where it says", which is what the other tests here use it for; it is not one
+ * for "does this master loop without a click".
+ */
+const realPack = await loadPack(fileURLToPath(new URL('./samples', import.meta.url)))
+
 function goodCandidate(): Candidate {
   const spec = readCatalogue()[0]
   const template = templateById(spec.template)
   const { events, music, harmony } = buildEvents(spec, template)
   // `loopBars`, not `bars`: a groove is several passes of the four-bar figure,
   // and the buffer is as long as what was rendered.
-  const tracks = renderVoices(events, placeholderPack(), SAMPLE_RATE, {
+  const tracks = renderVoices(events, realPack, SAMPLE_RATE, {
     id: spec.id,
     bars: music.loopBars,
     bpm: music.bpm,
+    passes: music.loopBars / music.bars,
     overhangBars: OVERHANG_BARS,
   })
   const pcm = mixTracks(tracks, template, { loopBars: music.loopBars, bpm: music.bpm })
@@ -332,15 +349,17 @@ describe('the ceiling comparison', () => {
     const { templateById } = await import('./templates/index.ts')
     const { renderVoices } = await import('./voices.ts')
     const { mixTracks, truePeak, PEAK_CEILING } = await import('./mix.ts')
-    const { placeholderPack } = await import('./testing/placeholderPack.ts')
-
+    // The real pack, for the same reason `goodCandidate` uses it: this asserts
+    // the gate accepts a master the mix actually produces, and the synthesized
+    // stand-in's sustained pitched voice fails the seam check on its own.
     const spec = readCatalogue()[0]
     const template = templateById(spec.template)
     const { events, music, harmony } = buildEvents(spec, template)
-    const tracks = renderVoices(events, placeholderPack(), 44100, {
+    const tracks = renderVoices(events, realPack, 44100, {
       id: spec.id,
       bars: music.loopBars,
       bpm: music.bpm,
+      passes: music.loopBars / music.bars,
       overhangBars: 1,
     })
     const pcm = mixTracks(tracks, template, { loopBars: music.loopBars, bpm: music.bpm })

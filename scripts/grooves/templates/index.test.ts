@@ -160,6 +160,38 @@ describe('every template', () => {
 // beside the tempo range that causes the spread, so a slow feel can declare
 // fewer without every other feel getting shorter.
 describe('the pass count — R2, R2a, AC2', () => {
+  // Feature-9, Epic 3, Step D1 (R1, R2, AC2). Lean is declared per template with
+  // no shared default: a shuffle and a half-time groove do not lay back by the
+  // same amount, and a default would quietly make them.
+  it('declares a signed lean for the voices that carry the feel', () => {
+    for (const template of allTemplates()) {
+      const lean = template.humanize.lean
+      expect(Object.keys(lean).length, `${template.id} inherits its lean`).toBeGreaterThan(0)
+      expect(lean.snare, `${template.id} does not lean its snare`).toBeGreaterThan(0)
+      for (const hat of ['hatClosed', 'hatOpen'] as const) {
+        if (!template.voices.includes(hat)) continue
+        expect(lean[hat] ?? 0, `${template.id} ${hat} does not push`).toBeLessThanOrEqual(0)
+      }
+    }
+  })
+
+  it('lets the tempo breathe, but only a little', () => {
+    for (const template of allTemplates()) {
+      expect(template.humanize.driftDepth, `${template.id}`).toBeGreaterThan(0)
+      expect(template.humanize.driftDepth, `${template.id}`).toBeLessThanOrEqual(0.01)
+    }
+  })
+
+  it('leans every voice it names, and names no voice it does not play', () => {
+    for (const template of allTemplates()) {
+      for (const voice of Object.keys(template.humanize.lean)) {
+        expect(template.voices, `${template.id} leans ${voice}, which it never plays`).toContain(
+          voice,
+        )
+      }
+    }
+  })
+
   it('declares a whole number of passes on every template', () => {
     for (const template of allTemplates()) {
       expect(Number.isInteger(template.passes), template.id).toBe(true)

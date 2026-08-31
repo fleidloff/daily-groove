@@ -2,7 +2,7 @@ import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import { loadPack } from './pack.ts'
 import { placeholderPack } from './testing/placeholderPack.ts'
-import type { NoteEvent, Pcm, SamplePack, VoiceName } from './types.ts'
+import type { NoteEvent, PackDeclaration, Pcm, SamplePack, VoiceName } from './types.ts'
 import { renderVoices } from './voices.ts'
 
 const SAMPLE_RATE = 44100
@@ -494,6 +494,108 @@ describe('renderVoices', () => {
       const [track] = renderVoices(events, placeholderPack(), SAMPLE_RATE, {})
 
       expect(track.pcm.left.length).toBe(Math.round(2 * SAMPLE_RATE))
+    })
+  })
+
+  // Feature-9, Epic 3, Step B2 - R8, R9, AC8
+  describe('velocity scaling', () => {
+    /**
+     * A two-layer pack whose layers carry their own recorded loudness, as a
+     * real one does: the soft layer stands for a hit at 0.225 and is quiet, the
+     * loud layer for one at 0.725 and is three times louder. The velocity that
+     * picked the layer must not be applied to it a second time.
+     *
+     * `placeholderPack` cannot stand in here. Its synthesized level is
+     * `0.25 + 0.75 x band`, which is compressed rather than proportional to the
+     * band a layer represents, so its two layers are 1.6:1 apart where their
+     * nominals are 3:1 - no scaling rule makes them meet.
+     */
+    const RECORDED = [
+      { maxVelocity: 0.45, nominalVelocity: 0.225 },
+      { maxVelocity: 1, nominalVelocity: 0.725 },
+    ]
+
+    const declaration: PackDeclaration = {
+      id: 'recorded',
+      sampleRate: SAMPLE_RATE,
+      voices: {
+        kick: {
+          layers: RECORDED.map((layer) => ({
+            maxVelocity: layer.maxVelocity,
+            nominalVelocity: layer.nominalVelocity,
+            files: [`kick/kick_v${Math.round(layer.maxVelocity * 100)}.wav`],
+          })),
+        },
+      },
+    }
+
+    /** A flat burst at the layer's recorded level, so a track's peak is that level. */
+    function burst(level: number): Pcm {
+      return {
+        sampleRate: SAMPLE_RATE,
+        left: new Float32Array(64).fill(level),
+        right: new Float32Array(64).fill(level),
+      }
+    }
+
+    /** The pack, plus which layers it was actually asked for. */
+    function recordedPack(): { pack: SamplePack; served: number[] } {
+      const served: number[] = []
+      return {
+        served,
+        pack: {
+          id: declaration.id,
+          describe: () => declaration,
+          get(_voice, opts) {
+            const layer = RECORDED.find((l) => opts.velocity <= l.maxVelocity) ?? RECORDED.at(-1)!
+            served.push(layer.nominalVelocity)
+            return { pcm: burst(layer.nominalVelocity), nominalVelocity: layer.nominalVelocity }
+          },
+        },
+      }
+    }
+
+    function peakAt(pack: SamplePack, velocity: number): number {
+      const [track] = renderVoices(
+        [{ voice: 'kick', timeSec: 0, durationSec: 0.1, velocity }],
+        pack,
+        SAMPLE_RATE,
+      )
+      return peak(track.pcm.left)
+    }
+
+    /**
+     * Forty velocities from 0.02 to 1, spaced geometrically so every step is
+     * the same 10.6 % rise. A level that tracks velocity therefore also rises
+     * 10.6 % per step, and the 1.3 ceiling below catches a jump at a layer
+     * boundary without the assertion having to know the curve's exact shape.
+     */
+    const SWEEP = Array.from({ length: 40 }, (_, i) => 0.02 * 50 ** (i / 39))
+
+    it('has no step at a layer boundary', () => {
+      const { pack, served } = recordedPack()
+      const peaks = SWEEP.map((velocity) => peakAt(pack, velocity))
+
+      // The sweep has to cross a boundary, or it proves nothing.
+      expect(new Set(served).size).toBe(2)
+
+      for (let i = 1; i < peaks.length; i += 1) {
+        const where = `velocity ${SWEEP[i].toFixed(3)}`
+        expect(peaks[i], `${where} is quieter than the step below it`).toBeGreaterThanOrEqual(
+          peaks[i - 1],
+        )
+        expect(peaks[i] / peaks[i - 1], `step at ${where}`).toBeLessThanOrEqual(1.3)
+      }
+    })
+
+    it("applies a layer's recorded loudness once, not once per velocity", () => {
+      const { pack } = recordedPack()
+
+      // Ten times the velocity is ten times the level. Multiplying the chosen
+      // layer by the raw velocity as well squares the range, giving about 32.
+      const ratio = peakAt(pack, 1) / peakAt(pack, 0.1)
+      expect(ratio).toBeGreaterThan(8)
+      expect(ratio).toBeLessThan(12.5)
     })
   })
 })

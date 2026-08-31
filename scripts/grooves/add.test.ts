@@ -302,7 +302,17 @@ describe('addGrooves', () => {
   })
 
   it('puts every candidate through the real quality gate when none is injected', async () => {
-    const f = fixture()
+    // The committed pack, not the synthesized stand-in. This is the one test
+    // here that exercises `gate.ts` for real, and the gate's seam check is
+    // calibrated for real samples: the stand-in's pitched voice is a
+    // 0.9-second sine still sounding at a quarter of full scale when a
+    // four-pass loop ends, so it fails the seam on grooves the real pack
+    // renders cleanly and the mint runs out of attempts. Every other test in
+    // this file injects a gate and is right to use the stand-in.
+    const { loadPack } = await import('./pack.ts')
+    const { fileURLToPath } = await import('node:url')
+    const realPack = await loadPack(fileURLToPath(new URL('./samples', import.meta.url)))
+    const f = { ...fixture(), pack: realPack }
     const minted = await addGrooves(2, { startSeed: 9000, log: () => {}, ...f })
 
     expect(minted).toHaveLength(2)

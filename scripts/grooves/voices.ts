@@ -25,6 +25,17 @@ const BEATS_PER_BAR = 4
  */
 const ROUND_ROBIN_SPAN = 64
 
+/**
+ * The most a layer may be scaled up to stand in for a louder hit.
+ *
+ * A nominal is the midpoint of its band, so the honest ceiling is 2: a hit at
+ * the very top of the lowest band asks its layer for twice the level it was
+ * recorded at. A pack that declares its own `nominalVelocity` can ask for more
+ * than that, and this is what stops a very quiet layer being scaled into
+ * distortion when it does.
+ */
+const MAX_LAYER_GAIN = 2
+
 export type RenderOptions = {
   /**
    * The groove's id. It seeds the round-robin starting offset, so two grooves
@@ -86,10 +97,35 @@ export function renderVoices(
     const source = transpose(sample.pcm, event.midi, sample.rootMidi)
     const offset = Math.round(event.timeSec * sampleRate)
 
-    addAt(track.pcm, source, offset, event.velocity)
+    addAt(track.pcm, source, offset, gainFor(event.velocity, sample.nominalVelocity))
   }
 
   return [...tracks.values()]
+}
+
+/**
+ * How loud to play the layer the pack handed back.
+ *
+ * The layers are deliberately not normalised: the one chosen for a velocity was
+ * recorded at that kind of velocity and already carries its loudness. Scaling
+ * it by the raw velocity on top of that applies the dynamics twice - it squares
+ * the range, and it puts an audible step at every layer boundary, where a hit
+ * just over the line jumps to a louder recording that is then scaled by very
+ * nearly the same number. Hi-hats, which sit right on a boundary and flip layer
+ * from hit to hit, wore it worst.
+ *
+ * So the gain is relative to what the layer represents: 1 at the centre of its
+ * band, above it towards the top, below it towards the bottom. The two sides of
+ * a boundary then meet, and velocity moves the level once.
+ *
+ * A pack that reports no usable nominal falls back to the raw velocity, which
+ * is at least the behaviour every pack had before.
+ */
+function gainFor(velocity: number, nominalVelocity: number | undefined): number {
+  if (nominalVelocity === undefined || !Number.isFinite(nominalVelocity) || nominalVelocity <= 0) {
+    return velocity
+  }
+  return Math.min(velocity / nominalVelocity, MAX_LAYER_GAIN)
 }
 
 /**
