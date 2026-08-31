@@ -35,7 +35,19 @@ function declaredFiles(): string[] {
   return out
 }
 
-const DRUM_VOICES: VoiceName[] = ['kick', 'snare', 'hatClosed', 'hatOpen', 'rim']
+const DRUM_VOICES: VoiceName[] = [
+  'kick',
+  'snare',
+  'hatClosed',
+  'hatOpen',
+  'rim',
+  // Epic 5's toms play only in a fill, but they are stocked, layered and
+  // round-robined under exactly the same rules as the voices that play in
+  // every bar — a fill that repeats one sample three times is the machine-gun
+  // artefact these rules exist to prevent.
+  'tomHigh',
+  'tomLow',
+]
 const PITCHED_VOICES: VoiceName[] = ['bass', 'comp']
 
 // Step D1

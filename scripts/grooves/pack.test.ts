@@ -1,11 +1,11 @@
 import { spawnSync } from 'node:child_process'
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { loadPack } from './pack.ts'
-import type { PackDeclaration, Pcm } from './types.ts'
+import type { PackDeclaration, Pcm, VelocityLayer, VoiceName } from './types.ts'
 
 const here = dirname(fileURLToPath(import.meta.url))
 
@@ -146,4 +146,172 @@ describe('the committed sample pack', () => {
     expect(typeof bass.rootMidi).toBe('number')
     expect(bass.pcm.left.length).toBeGreaterThan(0)
   }, 120_000)
+})
+
+/**
+ * Epic 5, Step B1 — the toms, and the rules the whole percussion pack follows.
+ *
+ * These read the committed declaration and the committed audio from disk. They
+ * are the guard on the *files*, not on `loadPack`: the pack can load a wrongly
+ * prepared sample perfectly well, and the mistakes that matter here — a stereo
+ * file, a 48 kHz file, a velocity layer that was normalised until it stopped
+ * being a velocity layer — are only visible in the bytes.
+ */
+
+const SAMPLES = join(here, 'samples')
+
+const committed = JSON.parse(
+  readFileSync(join(SAMPLES, 'pack.json'), 'utf8'),
+) as PackDeclaration
+
+const committedProvenance = JSON.parse(
+  readFileSync(join(SAMPLES, 'provenance.json'), 'utf8'),
+) as { samples: { file: string; source: string; sourceFile: string; licence: string }[] }
+
+/** Every voice struck rather than pitched — the ones declared with `layers`. */
+const PERCUSSIVE: VoiceName[] = ['kick', 'snare', 'hatClosed', 'hatOpen', 'rim', 'tomHigh', 'tomLow']
+
+const TOMS: VoiceName[] = ['tomHigh', 'tomLow']
+
+function layersOf(voice: VoiceName): VelocityLayer[] {
+  return committed.voices[voice]?.layers ?? []
+}
+
+function filesOf(voice: VoiceName): string[] {
+  return layersOf(voice).flatMap((layer) => layer.files)
+}
+
+/** `codec,sampleRate,channels` as the file itself declares them. */
+function format(file: string): string {
+  const probed = spawnSync('ffprobe', [
+    '-v', 'error',
+    '-show_entries', 'stream=codec_name,sample_rate,channels',
+    '-of', 'csv=p=0',
+    join(SAMPLES, file),
+  ])
+  if (probed.status !== 0) {
+    throw new Error(`ffprobe is required for the generator tests: ${probed.stderr}`)
+  }
+  return probed.stdout.toString().trim()
+}
+
+/** The file's own samples, un-resampled and un-upmixed, as ffmpeg reads them. */
+function samplesOf(file: string): Float32Array {
+  const decoded = spawnSync(
+    'ffmpeg',
+    ['-hide_banner', '-loglevel', 'error', '-i', join(SAMPLES, file), '-f', 'f32le', 'pipe:1'],
+    { maxBuffer: 1 << 26 },
+  )
+  if (decoded.status !== 0) {
+    throw new Error(`ffmpeg could not decode ${file}: ${decoded.stderr}`)
+  }
+  const bytes = decoded.stdout
+  const out = new Float32Array(Math.floor(bytes.length / 4))
+  for (let i = 0; i < out.length; i += 1) out[i] = bytes.readFloatLE(i * 4)
+  return out
+}
+
+function peakOf(file: string): number {
+  let peak = 0
+  for (const sample of samplesOf(file)) peak = Math.max(peak, Math.abs(sample))
+  return peak
+}
+
+/** A layer's level: the mean peak of its round-robin alternates. */
+function levelOf(layer: VelocityLayer): number {
+  return layer.files.reduce((sum, file) => sum + peakOf(file), 0) / layer.files.length
+}
+
+describe('the committed pack’s percussion', () => {
+  it('declares a high tom and a low tom', () => {
+    for (const tom of TOMS) {
+      expect(committed.voices[tom], `${tom} is not declared`).toBeDefined()
+      expect(layersOf(tom).length, `${tom} has no velocity layers`).toBeGreaterThan(0)
+    }
+  })
+
+  it('layers and round-robins every tom, so a fill never repeats one sample', () => {
+    for (const tom of TOMS) {
+      const layers = layersOf(tom)
+      expect(layers.length, `${tom} has too few velocity layers`).toBeGreaterThanOrEqual(2)
+      for (const layer of layers) {
+        expect(
+          layer.files.length,
+          `${tom} layer at ${layer.maxVelocity} has a single alternate`,
+        ).toBeGreaterThanOrEqual(2)
+      }
+    }
+  })
+
+  it('names only tom files that are on disk', () => {
+    for (const tom of TOMS) {
+      const files = filesOf(tom)
+      expect(files.length, `${tom} declares no files`).toBeGreaterThan(0)
+      for (const file of files) {
+        expect(existsSync(join(SAMPLES, file)), `${file} is declared but missing`).toBe(true)
+      }
+    }
+  })
+
+  it('stores every percussive sample as mono 44.1 kHz FLAC', () => {
+    for (const voice of PERCUSSIVE) {
+      for (const file of filesOf(voice)) {
+        expect(format(file), `${file} is not mono 44.1 kHz FLAC`).toBe('flac,44100,1')
+      }
+    }
+  }, 120_000)
+
+  it('leaves the velocity layers un-normalised, so each is louder than the one below', () => {
+    for (const voice of PERCUSSIVE) {
+      const levels = layersOf(voice).map(levelOf)
+      for (let i = 1; i < levels.length; i += 1) {
+        expect(
+          levels[i],
+          `${voice}: layer ${i} is not louder than layer ${i - 1} — was it normalised?`,
+        ).toBeGreaterThan(levels[i - 1])
+      }
+    }
+  }, 120_000)
+
+  it('starts every tom near silence and never leaves it silent', () => {
+    for (const tom of TOMS) {
+      for (const file of filesOf(tom)) {
+        const pcm = samplesOf(file)
+        expect(pcm.length, `${file} decodes to nothing`).toBeGreaterThan(0)
+        expect(Math.abs(pcm[0]), `${file} opens on a discontinuity`).toBeLessThan(0.01)
+        expect(peakOf(file), `${file} is silent`).toBeGreaterThan(0.001)
+      }
+    }
+  }, 120_000)
+
+  // AC2 — the toms are the same library, and the same drum family, as the snare.
+  it('records a VCSL provenance entry for every tom file, naming the snare’s source', () => {
+    const recorded = new Map(committedProvenance.samples.map((s) => [s.file, s]))
+    const snare = recorded.get(filesOf('snare')[0])!
+    expect(snare, 'the snare has no provenance entry to compare against').toBeDefined()
+
+    for (const tom of TOMS) {
+      for (const file of filesOf(tom)) {
+        const entry = recorded.get(file)
+        expect(entry, `${file} is in the pack but not in provenance.json`).toBeDefined()
+        expect(entry!.source, `${file} names a different library than the snare`).toBe(snare.source)
+        expect(entry!.licence).toBe('CC0')
+        // Same VCSL section as the snare: struck membranophones, not a synth
+        // and not a hand percussion sample standing in for a tom.
+        expect(entry!.sourceFile).toMatch(/^Membranophones\/Struck Membranophones\/Tom [12]\//)
+      }
+    }
+  })
+
+  it('takes the high tom and the low tom from different drums', () => {
+    const upstream = (voice: VoiceName) =>
+      new Set(
+        filesOf(voice).map(
+          (file) =>
+            committedProvenance.samples.find((s) => s.file === file)!.sourceFile.split('/')[2],
+        ),
+      )
+    expect([...upstream('tomHigh')]).toEqual(['Tom 1'])
+    expect([...upstream('tomLow')]).toEqual(['Tom 2'])
+  })
 })

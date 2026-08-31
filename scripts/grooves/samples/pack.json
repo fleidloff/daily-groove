@@ -124,6 +124,56 @@
         }
       ]
     },
+    "tomHigh": {
+      "layers": [
+        {
+          "maxVelocity": 0.72,
+          "files": [
+            "tomHigh/TomH_HitS_v2_rr1_Mid.flac",
+            "tomHigh/TomH_HitS_v2_rr2_Mid.flac"
+          ]
+        },
+        {
+          "maxVelocity": 0.88,
+          "files": [
+            "tomHigh/TomH_HitS_v3_rr1_Mid.flac",
+            "tomHigh/TomH_HitS_v3_rr2_Mid.flac"
+          ]
+        },
+        {
+          "maxVelocity": 1.0,
+          "files": [
+            "tomHigh/TomH_HitS_v4_rr1_Mid.flac",
+            "tomHigh/TomH_HitS_v4_rr2_Mid.flac"
+          ]
+        }
+      ]
+    },
+    "tomLow": {
+      "layers": [
+        {
+          "maxVelocity": 0.72,
+          "files": [
+            "tomLow/TomL_HitS_v2_rr1_Mid.flac",
+            "tomLow/TomL_HitS_v2_rr2_Mid.flac"
+          ]
+        },
+        {
+          "maxVelocity": 0.88,
+          "files": [
+            "tomLow/TomL_HitS_v3_rr1_Mid.flac",
+            "tomLow/TomL_HitS_v3_rr2_Mid.flac"
+          ]
+        },
+        {
+          "maxVelocity": 1.0,
+          "files": [
+            "tomLow/TomL_HitS_v4_rr1_Mid.flac",
+            "tomLow/TomL_HitS_v4_rr2_Mid.flac"
+          ]
+        }
+      ]
+    },
     "bass": {
       "notes": [
         {

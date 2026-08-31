@@ -259,6 +259,102 @@
       "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
     },
     {
+      "file": "tomHigh/TomH_HitS_v2_rr1_Mid.flac",
+      "source": "Versilian Community Sample Library (VCSL)",
+      "sourceFile": "Membranophones/Struck Membranophones/Tom 1/Stick/TomH_HitS_v2_rr1_Mid.wav",
+      "url": "https://github.com/sgossner/VCSL",
+      "licence": "CC0",
+      "modifications": "faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a tom lands with the snare it is written beside)"
+    },
+    {
+      "file": "tomHigh/TomH_HitS_v2_rr2_Mid.flac",
+      "source": "Versilian Community Sample Library (VCSL)",
+      "sourceFile": "Membranophones/Struck Membranophones/Tom 1/Stick/TomH_HitS_v2_rr2_Mid.wav",
+      "url": "https://github.com/sgossner/VCSL",
+      "licence": "CC0",
+      "modifications": "faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a tom lands with the snare it is written beside)"
+    },
+    {
+      "file": "tomHigh/TomH_HitS_v3_rr1_Mid.flac",
+      "source": "Versilian Community Sample Library (VCSL)",
+      "sourceFile": "Membranophones/Struck Membranophones/Tom 1/Stick/TomH_HitS_v3_rr1_Mid.wav",
+      "url": "https://github.com/sgossner/VCSL",
+      "licence": "CC0",
+      "modifications": "faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a tom lands with the snare it is written beside)"
+    },
+    {
+      "file": "tomHigh/TomH_HitS_v3_rr2_Mid.flac",
+      "source": "Versilian Community Sample Library (VCSL)",
+      "sourceFile": "Membranophones/Struck Membranophones/Tom 1/Stick/TomH_HitS_v3_rr2_Mid.wav",
+      "url": "https://github.com/sgossner/VCSL",
+      "licence": "CC0",
+      "modifications": "faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a tom lands with the snare it is written beside)"
+    },
+    {
+      "file": "tomHigh/TomH_HitS_v4_rr1_Mid.flac",
+      "source": "Versilian Community Sample Library (VCSL)",
+      "sourceFile": "Membranophones/Struck Membranophones/Tom 1/Stick/TomH_HitS_v4_rr1_Mid.wav",
+      "url": "https://github.com/sgossner/VCSL",
+      "licence": "CC0",
+      "modifications": "faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a tom lands with the snare it is written beside)"
+    },
+    {
+      "file": "tomHigh/TomH_HitS_v4_rr2_Mid.flac",
+      "source": "Versilian Community Sample Library (VCSL)",
+      "sourceFile": "Membranophones/Struck Membranophones/Tom 1/Stick/TomH_HitS_v4_rr2_Mid.wav",
+      "url": "https://github.com/sgossner/VCSL",
+      "licence": "CC0",
+      "modifications": "faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a tom lands with the snare it is written beside)"
+    },
+    {
+      "file": "tomLow/TomL_HitS_v2_rr1_Mid.flac",
+      "source": "Versilian Community Sample Library (VCSL)",
+      "sourceFile": "Membranophones/Struck Membranophones/Tom 2/Stick/TomL_HitS_v2_rr1_Mid.wav",
+      "url": "https://github.com/sgossner/VCSL",
+      "licence": "CC0",
+      "modifications": "faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a tom lands with the snare it is written beside)"
+    },
+    {
+      "file": "tomLow/TomL_HitS_v2_rr2_Mid.flac",
+      "source": "Versilian Community Sample Library (VCSL)",
+      "sourceFile": "Membranophones/Struck Membranophones/Tom 2/Stick/TomL_HitS_v2_rr2_Mid.wav",
+      "url": "https://github.com/sgossner/VCSL",
+      "licence": "CC0",
+      "modifications": "faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a tom lands with the snare it is written beside)"
+    },
+    {
+      "file": "tomLow/TomL_HitS_v3_rr1_Mid.flac",
+      "source": "Versilian Community Sample Library (VCSL)",
+      "sourceFile": "Membranophones/Struck Membranophones/Tom 2/Stick/TomL_HitS_v3_rr1_Mid.wav",
+      "url": "https://github.com/sgossner/VCSL",
+      "licence": "CC0",
+      "modifications": "faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a tom lands with the snare it is written beside)"
+    },
+    {
+      "file": "tomLow/TomL_HitS_v3_rr2_Mid.flac",
+      "source": "Versilian Community Sample Library (VCSL)",
+      "sourceFile": "Membranophones/Struck Membranophones/Tom 2/Stick/TomL_HitS_v3_rr2_Mid.wav",
+      "url": "https://github.com/sgossner/VCSL",
+      "licence": "CC0",
+      "modifications": "faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a tom lands with the snare it is written beside)"
+    },
+    {
+      "file": "tomLow/TomL_HitS_v4_rr1_Mid.flac",
+      "source": "Versilian Community Sample Library (VCSL)",
+      "sourceFile": "Membranophones/Struck Membranophones/Tom 2/Stick/TomL_HitS_v4_rr1_Mid.wav",
+      "url": "https://github.com/sgossner/VCSL",
+      "licence": "CC0",
+      "modifications": "faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a tom lands with the snare it is written beside)"
+    },
+    {
+      "file": "tomLow/TomL_HitS_v4_rr2_Mid.flac",
+      "source": "Versilian Community Sample Library (VCSL)",
+      "sourceFile": "Membranophones/Struck Membranophones/Tom 2/Stick/TomL_HitS_v4_rr2_Mid.wav",
+      "url": "https://github.com/sgossner/VCSL",
+      "licence": "CC0",
+      "modifications": "faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a tom lands with the snare it is written beside)"
+    },
+    {
       "file": "bass/FMPiano_C1_vl1.flac",
       "source": "Versilian Community Sample Library (VCSL)",
       "sourceFile": "Electrophones/TX81Z/FM Piano/FMPiano_C1_vl1.wav",
