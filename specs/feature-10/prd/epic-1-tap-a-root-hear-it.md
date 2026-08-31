@@ -92,11 +92,15 @@ so the first two attempts are spent on a coin toss rather than on listening.
 
 - **R17** — A root's audio is fetched and decoded at most once per session and
   reused for every later tap of that root.
-- **R18** — Once the groove's own fetch and decode have finished, the row's
-  notes are fetched in the background so the common case is already in hand
-  when the player taps.
+- **R18** — Once the groove's own fetch and decode have finished, all twelve
+  notes are fetched in the background so the common case is already in hand when
+  the player taps. The full twelve are warmed in both modes; simple mode's six
+  are a subset of them, and switching modes fetches nothing further.
 - **R19** — Background fetching never delays or contends with the groove's own
   fetch and decode. The groove is what the player pressed.
+- **R19a** — A tap that arrives before warming has reached that root — including
+  every tap made before the groove has ever been played — fetches it on demand.
+  Warming is an optimisation, never a precondition for a note to sound.
 
 ### The render and the build guard
 
@@ -194,8 +198,10 @@ if the guard does not catch a stale or missing render, nothing will.
 - **AC19** (R25) — Given a machine with no ffmpeg and no sample pack, when
   `npm run grooves:verify` runs, then it completes and reports on the committed
   artifacts.
-- **AC20** (R8) — Given all twelve notes, then their durations and peak levels
-  match within a stated tolerance.
+- **AC20** (R8) — Given all twelve notes, then their durations match within
+  50 ms and their peak levels within 1 dB.
+- **AC21** (R19a) — Given the groove has never been played and nothing has been
+  warmed, when a root chip is tapped, then its note is fetched and sounds.
 
 ## Dependencies
 
@@ -225,38 +231,31 @@ folders asserted by `structure.test.ts`.
   level chosen at the listen, not a runtime calculation.
 - **No new storage.** Nothing about which roots have been heard is recorded, in
   this browser or any other.
+- **Evenness has a number.** "Same length, same loudness" is checked as
+  durations within 50 ms and peaks within 1 dB — tight enough that no root
+  stands out, loose enough not to fail on encoder rounding.
 
-## Open questions
+## Question log
 
-The current round. Tick one option per question (`- [x]`), or write your own,
-then re-run `/brainstorm feature-10 epic-1` — the answers get folded into the
-sections above, moved into the log, and replaced with whatever they open up.
+Answered questions, kept for traceability. The requirements above are the source
+of truth — this records how they got there. Append-only.
 
-### Q1. When does the note sound relative to the groove?
+### Cycle 1 — 2026-08-31
 
-R3 currently says immediately. The alternative is musical rather than
-responsive: hold the note until the next beat so it lands in time with the loop.
+**Q1. When does the note sound relative to the groove?**
+Answer: **A) Immediately on the tap** — a reference pitch is a response to a
+gesture, not a musical event; at 96 bpm, waiting for a downbeat would cost up to
+2.5 seconds and read as a broken control.
+Applied to: R3, AC1
 
-- [x] A) Immediately on the tap *(recommended — the briefing frames this as checking a note against the groove, not playing along with it; a control that answers up to half a second late reads as broken, and at 96 bpm the wait for a downbeat is up to 2.5 seconds)*
-- [ ] B) Quantised to the next beat *(musical, and it teaches where the beat is — at the cost of a delay the player did not ask for)*
-- [ ] C) Immediately, but only while the groove is stopped; quantised while it plays *(best of both, and the only option where the same tap behaves two different ways)*
+**Q2. How much is fetched, and when?**
+Answer: **A) Warm all twelve in the background after the groove's decode** — the
+notes are short and the groove is already the far larger download, so warming
+the full set makes every tap instant and makes a mode switch free.
+Applied to: R18, R19a, AC21
 
-### Q2. How much is fetched, and when?
-
-R18 warms the row after the groove's decode. Twelve short notes are a real but
-small cost on a phone, and most players tap two or three roots at most.
-
-- [x] A) Warm all twelve in the background after the groove's decode *(recommended — the roadmap's position, and it makes every tap instant; the notes are short and the groove itself is already the far larger download)*
-- [ ] B) Warm only the roots currently on the row — six in simple mode, twelve otherwise *(identical in the full puzzle, half the cost in simple mode)*
-- [ ] C) Fetch only on the first tap of each root, never in advance *(cheapest, and the first tap of each root pays a visible gap)*
-- [ ] D) Ship the twelve as one file and decode it once *(one request instead of twelve, at the cost of a bespoke render and offset bookkeeping)*
-
-### Q3. Can a root be heard once the day is over?
-
-R12 keeps today's behaviour: solved or revealed, the chips are disabled and
-silent. But the moment a player has just been shown the answer is arguably the
-moment hearing it is worth most.
-
-- [x] A) No — the row stays disabled and silent *(recommended — it is today's behaviour, the roadmap's stated assumption, and it keeps `SolvedPanel` the single payoff rather than splitting attention back to a dead chip row)*
-- [ ] B) Yes — the chips stay tappable for sound only, selecting nothing *(the strongest learning moment in the app, at the cost of a chip that looks disabled and is not, or looks live and cannot be guessed with)*
-- [ ] C) Yes, but only the answer's root, sounded from `SolvedPanel` *(puts the sound where the answer already is — and quietly becomes the *Explain the answer* candidate's first step)*
+**Q3. Can a root be heard once the day is over?**
+Answer: **A) No — the row stays disabled and silent** — it is today's behaviour,
+and it keeps `SolvedPanel` the single payoff rather than splitting attention
+back to a dead chip row.
+Applied to: R12, AC10, Out of scope

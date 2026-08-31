@@ -58,8 +58,25 @@ export type FeelTemplate = {
   /** Epic 3 gives every template exactly two, disjoint across the set. */
   flavours: Flavour[]
   voices: VoiceName[]
-  /** Deviation bounds; declared here, applied by Epic 2. */
-  humanize: { timingMs: number; velocity: number }
+  /**
+   * How the feel deviates from its own grid.
+   *
+   * `timingMs` and `velocity` are the bounds a single hit may wander inside.
+   * `lean` is different in kind: a constant, signed millisecond offset applied
+   * to every hit of a voice, which is what a listener hears as laid back or
+   * pushing. It is declared per template with no shared default, because a
+   * shuffle and a half-time groove do not lay back by the same amount.
+   * `driftDepth` is a fractional tempo deviation across a pass, zero at both
+   * ends of it.
+   */
+  humanize: {
+    timingMs: number
+    velocity: number
+    /** Signed ms per voice. Negative pushes, positive lays back. */
+    lean: Partial<Record<VoiceName, number>>
+    /** Fractional tempo deviation, e.g. 0.006 for ±0.6 %. */
+    driftDepth: number
+  }
   /** Per-voice mix level in dBFS. */
   gain: Partial<Record<VoiceName, number>>
   /** Per-voice stereo position, -1 hard left to +1 hard right. Applied by Epic 2. */
@@ -113,8 +130,20 @@ export type MusicMeta = {
   progression: string
 }
 
-/** Round-robin alternates for one velocity band. */
-export type VelocityLayer = { maxVelocity: number; files: string[] }
+/**
+ * Round-robin alternates for one velocity band.
+ *
+ * `nominalVelocity` is the velocity this layer's samples were actually
+ * recorded at. It defaults to the midpoint of the layer's band, and exists as
+ * an override for the case where a layer's recorded level does not sit where
+ * its band says. `renderVoices` scales relative to it rather than multiplying
+ * by the raw velocity, which would apply the dynamics twice.
+ */
+export type VelocityLayer = {
+  maxVelocity: number
+  files: string[]
+  nominalVelocity?: number
+}
 
 export type PackDeclaration = {
   id: string
@@ -136,7 +165,17 @@ export type PackDeclaration = {
   >
 }
 
-export type PackSample = { pcm: Pcm; rootMidi?: number }
+export type PackSample = {
+  pcm: Pcm
+  rootMidi?: number
+  /**
+   * The velocity the returned layer represents, 0..1. The caller scales
+   * relative to this: the layer already carries the loudness of a hit at this
+   * velocity, so multiplying by the event's raw velocity on top of it would
+   * square the dynamic range and put a step at every layer boundary.
+   */
+  nominalVelocity: number
+}
 
 export type SamplePack = {
   id: string

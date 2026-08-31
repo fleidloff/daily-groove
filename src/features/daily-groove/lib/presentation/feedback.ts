@@ -39,12 +39,12 @@ const ROOT_MATCHED: Feedback = {
 }
 
 const FLAVOUR_MATCHED: Feedback = {
-  message: 'That flavour is close. But the tonic is somewhere else.',
+  message: 'The mode is right. But the tonic is somewhere else.',
   tone: 'warm',
 }
 
 const NEITHER_MATCHED: Feedback = {
-  message: 'Not it. No penalty — keep playing and try again.',
+  message: 'Not it. Keep playing and try again.',
   tone: 'warm',
 }
 
