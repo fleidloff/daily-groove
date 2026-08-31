@@ -157,6 +157,34 @@ async function renderPuzzle(ui: ReactElement = <GroovePuzzle groove={GROOVE} />)
   return result
 }
 
+/** The note glyph the root row wears (F10 E2 R1). */
+const NOTE_GLYPH = '♪'
+
+/**
+ * The caption under the play control, verbatim (F10 E2 R1a, AC6). Feature-4
+ * Epic 2 put it below the control; this is the wording that replaced its own.
+ */
+const CAPTION =
+  'Find the note that feels like home — Play along with your instrument or tap a root to hear it.'
+
+/**
+ * A chip's label with its decorative adornment left out. The glyph is
+ * `aria-hidden`, so this is the chip's accessible name — which is what every
+ * assertion about *which* chips a row offers has always been about (F10 E2 R4).
+ */
+const chipLabel = (chip: Element) =>
+  Array.from(chip.childNodes)
+    .filter(
+      (node) =>
+        !(node instanceof Element && node.getAttribute('aria-hidden') === 'true'),
+    )
+    .map((node) => node.textContent ?? '')
+    .join('')
+
+/** The adornment a chip carries, or `null` when it carries none. */
+const chipAdornment = (chip: Element) =>
+  chip.querySelector('[aria-hidden="true"]')?.textContent ?? null
+
 const rootGroup = () => screen.getByRole('radiogroup', { name: 'Root' })
 // The second row holds modes and says so (F7 E4 R1, AC1). The helper is named
 // for the domain field behind it — `flavour` on the groove — which the rename
@@ -266,11 +294,9 @@ describe('GroovePuzzle', () => {
 
   it('offers all twelve roots every day (R2)', async () => {
     await renderPuzzle()
-    expect(
-      within(rootGroup())
-        .getAllByRole('button')
-        .map((b) => b.textContent),
-    ).toEqual(ROOTS)
+    expect(within(rootGroup()).getAllByRole('button').map(chipLabel)).toEqual(
+      ROOTS,
+    )
   })
 
   it('drives the whole guess flow through the real store (R5, R7, R10, R11, R12)', async () => {
@@ -335,7 +361,7 @@ describe('GroovePuzzle', () => {
     const pressed = within(rootGroup())
       .getAllByRole('button')
       .filter((b) => b.getAttribute('aria-pressed') === 'true')
-    expect(pressed.map((b) => b.textContent)).toEqual(['G'])
+    expect(pressed.map(chipLabel)).toEqual(['G'])
   })
 
   // --- Epic 3: dots, feedback and the nudge --------------------------------
@@ -404,7 +430,7 @@ describe('GroovePuzzle', () => {
     expect(
       chips
         .filter((b) => b.getAttribute('aria-pressed') === 'true')
-        .map((b) => b.textContent),
+        .map(chipLabel),
     ).toEqual(['C'])
     expect(
       within(rootGroup()).getByRole('button', { name: 'G' }),
@@ -788,9 +814,7 @@ describe('GroovePuzzle', () => {
   const simpleRoots = () => simpleRootOptions(new Date(), answerOf(DORIAN))
 
   const chipTexts = (group: HTMLElement) =>
-    within(group)
-      .getAllByRole('button')
-      .map((b) => b.textContent)
+    within(group).getAllByRole('button').map(chipLabel)
 
   const MODE_NAME = /ionian|dorian|phrygian|lydian|mixolydian|aeolian|locrian/i
 
@@ -1026,10 +1050,16 @@ describe('GroovePuzzle', () => {
     // press costs no player — the retry reuses the one context.
     expect(fake.contexts).toHaveLength(1)
     expect(fake.sources).toHaveLength(1)
-    expect(vi.mocked(fetch).mock.calls.map((call) => call[0])).toEqual([
-      GROOVE.audioSrc,
-      GROOVE.audioSrc,
-    ])
+    // Filtered to the groove's own file: since F10 E1 the page also warms the
+    // twelve reference notes once the groove has decoded, and those are a
+    // different subject. What is asserted is unchanged — the failed press and
+    // the retry each asked for today's groove, and for nothing else.
+    expect(
+      vi
+        .mocked(fetch)
+        .mock.calls.map((call) => String(call[0]))
+        .filter((url) => !url.startsWith('/notes/')),
+    ).toEqual([GROOVE.audioSrc, GROOVE.audioSrc])
   })
 
   it('plays, stops and restarts on successive presses (E2 R6, AC5)', async () => {
@@ -1070,8 +1100,16 @@ describe('GroovePuzzle', () => {
       '0',
     )
     expect(fake.contexts).toHaveLength(1)
-    expect(fake.fetchCalls).toBe(1)
-    expect(fake.decodeCalls).toBe(1)
+    // The *groove's* file, once. Counted per URL rather than off the fake's
+    // running total: since F10 E1 the page also warms the twelve reference
+    // notes once the groove has decoded, and those are a different subject.
+    // What this asserts is unchanged — replaying re-uses the decoded buffer.
+    const grooveFetches = vi
+      .mocked(fetch)
+      .mock.calls.filter((call) => String(call[0]) === GROOVE.audioSrc)
+    expect(grooveFetches).toHaveLength(1)
+    // One decode per file fetched, and never a second one of the same file.
+    expect(fake.decodeCalls).toBe(fake.fetchCalls)
   })
 
   // Step C5 — R5, AC6: the fill, not only the highlight. `isPlaying` used to
@@ -1139,7 +1177,11 @@ describe('GroovePuzzle', () => {
     const region = play.parentElement as HTMLElement
     expect(region).toHaveClass('flex-col')
     expect(region).not.toHaveClass('flex-row')
-    expect(play.nextElementSibling).toHaveTextContent(/Play along/)
+    // F10 E2 Step I1 — the only place the old wording was asserted. R1a
+    // replaced the string and nothing else: the caption is still the control's
+    // next sibling, in a column, which is the half of feature-4 E2 R4 that
+    // still stands.
+    expect(play.nextElementSibling).toHaveTextContent(CAPTION)
   })
 
   // Step D2's "creates today's player looped (R17, AC11)" moved to
@@ -1986,4 +2028,132 @@ describe('GroovePuzzle', () => {
   })
 
 
+  // --- feature-10 Epic 1, Step I2: the row is warmed after the groove ------
+
+  /** Every reference note there is, in the order the module lists them. */
+  const allNoteSrcs = () => NOTES.map((note) => note.audioSrc)
+
+  // R18, R19, AC21. Warming is an optimisation that must never contend with
+  // the groove the player actually pressed, so it waits for that fetch and
+  // decode to finish before asking for anything of its own.
+  it('warms the whole row once the groove has decoded, never before (I2, R18, R19)', async () => {
+    const user = userEvent.setup()
+    await renderPuzzle()
+
+    // Nothing is asked for until the player asks for something.
+    expect(fetchedUrls()).toEqual([])
+
+    await play(user)
+    await waitFor(() => expect(fetchedNotes()).toHaveLength(NOTES.length))
+
+    // The groove's own file was asked for first; the twelve notes followed it.
+    const urls = fetchedUrls()
+    expect(urls[0]).toBe(GROOVE.audioSrc)
+    expect(urls.indexOf(GROOVE.audioSrc)).toBeLessThan(
+      urls.findIndex((url) => url.startsWith('/notes/')),
+    )
+    // The whole row, whatever the mode: simple mode's six are a subset (R7).
+    expect([...fetchedNotes()].sort()).toEqual([...allNoteSrcs()].sort())
+    // Warming sounds nothing — the groove is still the only voice (R18).
+    expect(fake.sources).toHaveLength(1)
+  })
+
+  it('warms once, not on every press (I2, R19)', async () => {
+    const user = userEvent.setup()
+    await renderPuzzle()
+
+    await play(user)
+    await waitFor(() => expect(fetchedNotes()).toHaveLength(NOTES.length))
+
+    await user.click(screen.getByRole('button', { name: 'Stop the loop' }))
+    await play(user)
+    await settle()
+
+    // Still twelve: the second press warms nothing, and neither does the
+    // decoded buffer already in hand (R17, AC14).
+    expect(fetchedNotes()).toHaveLength(NOTES.length)
+  })
+
+  // R19a, AC21. Warming is never a precondition. A player who taps a root
+  // before ever pressing play hears it, fetched on demand.
+  it('sounds a tap that lands before any warm (I2, R19a, AC21)', async () => {
+    const user = userEvent.setup()
+    await renderPuzzle()
+
+    await user.click(within(rootGroup()).getByRole('button', { name: 'B' }))
+
+    const [note] = await soundedNotes(1)
+    expect(note.start).toHaveBeenCalledTimes(1)
+    // Exactly the one note it needed — the row was never warmed (R19a).
+    expect(fetchedNotes()).toEqual([noteSrc('B')])
+  })
+
+
+  // --- feature-10 Epic 2, Steps C3-C5: the card says it --------------------
+
+  // Step C3 — R1a, R5, AC6. The glyph marks where; this sentence is what
+  // actually names the behaviour.
+  it('reads the new caption under the play control (E2 R1a, R5, AC6)', async () => {
+    await renderPuzzle()
+
+    expect(screen.getByText(CAPTION)).toBeInTheDocument()
+    // ...and the wording it replaced is gone (F10 E2 R1a).
+    expect(
+      screen.queryByText('Play along. Find the note that feels like home.'),
+    ).toBeNull()
+  })
+
+  // Step C4 — R1a, AC6a. R1a supersedes the wording half of feature-4 E2 R4
+  // and nothing else: the caption still follows the control, full width, in a
+  // column. Written so a later edit cannot move it while chasing its wording.
+  it('keeps the caption below the control at full width (E2 R1a, AC6a)', async () => {
+    await renderPuzzle()
+
+    const play = screen.getByRole('button', { name: 'Play the loop' })
+    const caption = screen.getByText(CAPTION)
+
+    // Same stack, control first.
+    expect(play.nextElementSibling).toBe(caption)
+    expect(caption.parentElement).toBe(play.parentElement)
+    expect(play.parentElement).toHaveClass('flex-col')
+    expect(play.parentElement).not.toHaveClass('flex-row')
+    // Still the muted, small caption feature-4 put there — tone and size are
+    // that epic's, not this one's.
+    expect(caption.className).toMatch(/text-text-muted/)
+    expect(caption.className).toMatch(/text-\[13px\]/)
+  })
+
+  // Step C5 — R10, AC11. No "seen it" flag, no fade after first use: the
+  // glyph is the same on a reload as it was on the first frame.
+  it('remembers nothing about the glyph across a reload (E2 R10, AC11)', async () => {
+    const user = userEvent.setup()
+    const first = await renderFeature()
+
+    const marked = () =>
+      within(rootGroup())
+        .getAllByRole('button')
+        .map((chip) => chipAdornment(chip))
+
+    expect(marked().every((glyph) => glyph === NOTE_GLYPH)).toBe(true)
+
+    await user.click(within(rootGroup()).getAllByRole('button')[0])
+    await settle()
+
+    // A reload: the tree goes away and the page is built again from storage.
+    first.unmount()
+    await renderFeature()
+
+    const after = marked()
+    expect(after).toHaveLength(12)
+    expect(after.every((glyph) => glyph === NOTE_GLYPH)).toBe(true)
+
+    // ...and the tap left no key behind that could have recorded it. Read
+    // through the `Storage` interface — see the how-to-play test above.
+    const written = Array.from(
+      { length: localStorage.length },
+      (_, i) => localStorage.key(i) as string,
+    )
+    const allowed = ['daily-groove:v2:results', 'daily-groove:v1:prefs']
+    expect(written.filter((key) => !allowed.includes(key))).toEqual([])
+  })
 })

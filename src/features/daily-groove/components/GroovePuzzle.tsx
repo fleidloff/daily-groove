@@ -1,6 +1,13 @@
 'use client'
 
-import { useCallback, useMemo, useState, useSyncExternalStore } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from 'react'
 import type { Groove } from '../types'
 import type { PlayableSource } from '../lib/audio/transport'
 import {
@@ -106,7 +113,7 @@ function GroovePuzzleView({ groove }: { groove: Groove }) {
   // cannot move the groove and stopping the groove cannot cut a note (R6, R13).
   // The whole chromatic set is handed over whatever mode is on: simple mode's
   // six are a subset, so switching costs no fetch (R7, R18).
-  const { playRoot } = useReferenceNote(NOTES)
+  const { playRoot, warm } = useReferenceNote(NOTES)
 
   const {
     selectedRoot,
@@ -231,6 +238,29 @@ function GroovePuzzleView({ groove }: { groove: Groove }) {
     void toggle()
   }, [toggle])
 
+  /**
+   * Fetch and decode the twelve reference notes in the background, once, after
+   * the groove the player pressed for has finished loading (R18, R19).
+   *
+   * The gate is the transport's own `loading`, not a timer: warming twelve
+   * files while the groove is still fetching would put thirteen requests and
+   * thirteen decodes in front of the one sound the player actually asked for.
+   * Waiting for `isPlaying` with `loading` clear means the groove is audible
+   * before anything else is asked for.
+   *
+   * A ref, not state: warming is a side effect with no rendered consequence,
+   * and re-rendering to record that it happened would be a paint for nothing.
+   * Warming is an optimisation and never a precondition — a tap that lands
+   * first fetches its own note on demand (R19a).
+   */
+  const warmed = useRef(false)
+  useEffect(() => {
+    if (warmed.current) return
+    if (!isPlaying || loading) return
+    warmed.current = true
+    warm()
+  }, [isPlaying, loading, warm])
+
   // No fresh-game frame may paint before the saved day is in the store: a day
   // already in progress would flash as untouched, and a solved day as unplayed.
   if (!hydrated) return <PuzzleLoading />
@@ -298,8 +328,15 @@ function GroovePuzzleView({ groove }: { groove: Groove }) {
                       loading: 'Loading…',
                     }}
                   />
+                  {/* The line that sets the task is where the answer belongs
+                      (F10 E2 R1a, R5, AC6). `♪` on the root chips marks
+                      where; this sentence is what names the behaviour, and it
+                      offers your own instrument first rather than only. Its
+                      tone, its size and its place under the control are
+                      feature-4 E2 R4's and are unchanged. */}
                   <Text tone="muted" size="sm">
-                    Play along. Find the note that feels like home.
+                    Find the note that feels like home — Play along with
+                    your instrument or tap a root to hear it.
                   </Text>
                 </Stack>
               </Stack>

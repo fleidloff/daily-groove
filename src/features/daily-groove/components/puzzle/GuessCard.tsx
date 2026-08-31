@@ -153,6 +153,13 @@ export function GuessCard({
           unguarded, so a re-tap of the chip already selected sounds it again
           (AC2). Both sit inside `disarming`, so a root tap still cancels an
           armed give-up exactly as it did before.
+
+          The `♪` is the promise that goes with it (F10 E2 R1, R2, AC1). The
+          chip only knows it has an adornment; that this one means "this chip
+          sounds" is decided here, which is what keeps the primitive free of
+          the domain. The mode row is handed none, because mode chips are
+          silent and must not say otherwise. It is deliberately outside the
+          `over` lock: a locked row is still an audible one (R3, AC4).
         */}
         <ChipGroup
           label="Root"
@@ -166,6 +173,7 @@ export function GuessCard({
           })}
           disabled={over}
           columns={{ base: 4, wide: 6 }}
+          adornment="♪"
         />
 
         {/*

@@ -55,6 +55,27 @@ function props(overrides: Partial<Props> = {}): Props {
 
 const rootGroup = () => screen.getByRole('radiogroup', { name: 'Root' })
 const flavourGroup = () => screen.getByRole('radiogroup', { name: 'Mode' })
+/** The note glyph the root row wears (F10 E2 R1). */
+const NOTE_GLYPH = '♪'
+/**
+ * A chip's label with its decorative adornment left out. The glyph is
+ * `aria-hidden`, so this is the chip's accessible name — which is what every
+ * assertion about *which* chips a row offers has always been about (F10 E2 R4).
+ */
+const chipLabel = (chip: Element) =>
+  Array.from(chip.childNodes)
+    .filter(
+      (node) =>
+        !(
+          node instanceof Element &&
+          node.getAttribute('aria-hidden') === 'true'
+        ),
+    )
+    .map((node) => node.textContent ?? '')
+    .join('')
+/** The adornment a chip carries, or `null` when it carries none. */
+const chipAdornment = (chip: Element) =>
+  chip.querySelector('[aria-hidden="true"]')?.textContent ?? null
 /** The element a chip group lays its chips out on. */
 const chipList = (group: HTMLElement) =>
   group.querySelector('[data-testid="chip-list"]') as HTMLElement
@@ -94,9 +115,7 @@ describe('GuessCard', () => {
     render(<GuessCard {...props()} />)
 
     expect(
-      within(rootGroup())
-        .getAllByRole('button')
-        .map((b) => b.textContent),
+      within(rootGroup()).getAllByRole('button').map(chipLabel),
     ).toEqual(ROOTS)
     expect(
       within(flavourGroup())
@@ -130,7 +149,7 @@ describe('GuessCard', () => {
     const pressedRoots = within(rootGroup())
       .getAllByRole('button')
       .filter((b) => b.getAttribute('aria-pressed') === 'true')
-    expect(pressedRoots.map((b) => b.textContent)).toEqual(['G'])
+    expect(pressedRoots.map(chipLabel)).toEqual(['G'])
 
     const pressedFlavours = within(flavourGroup())
       .getAllByRole('button')
@@ -833,7 +852,7 @@ describe('GuessCard', () => {
         within(group)
           .getAllByRole('button')
           .filter((b) => b.getAttribute('aria-pressed') === 'true')
-          .map((b) => b.textContent)
+          .map(chipLabel)
 
       // Both rows still answer to their labels, and each holds one selection.
       expect(pressed(rootGroup())).toEqual(['G'])
@@ -1056,6 +1075,91 @@ describe('GuessCard', () => {
     await user.click(give)
     expect(onReveal).not.toHaveBeenCalled()
   })
+
+  // --- feature-10 Epic 2, Steps C1-C2: the row looks audible ---------------
+
+  /**
+   * The glyph is the card's decision, not the chip's: `Chip` takes a generic
+   * adornment and this card is what hands one to the root row and nothing to
+   * the mode row. Asserted on rendered output, so it is indifferent to how the
+   * design system spells the prop.
+   */
+  describe('the note glyph on the root row (F10 E2)', () => {
+    // Step C1 — R1, R2, AC1, AC2.
+    it('marks every root chip with the glyph and no mode chip (R1, R2, AC1, AC2)', () => {
+      render(<GuessCard {...props()} />)
+
+      const roots = within(rootGroup()).getAllByRole('button')
+      expect(roots).toHaveLength(12)
+      for (const chip of roots) {
+        expect(chipAdornment(chip), chipLabel(chip)).toBe(NOTE_GLYPH)
+        // Leading, so the row's glyphs line up in a column (R1).
+        expect(chip.textContent, chipLabel(chip)).toBe(
+          `${NOTE_GLYPH}${chipLabel(chip)}`,
+        )
+      }
+
+      // Mode chips are silent and must not advertise otherwise (R2, AC2).
+      for (const chip of within(flavourGroup()).getAllByRole('button')) {
+        expect(chipAdornment(chip), chip.textContent ?? '').toBeNull()
+      }
+      expect(flavourGroup().textContent).not.toContain(NOTE_GLYPH)
+    })
+
+    // Step C1's other half — R4, AC5. The glyph is decorative, so the name a
+    // screen reader announces is the root alone, exactly as it was before.
+    it('leaves a root chip’s accessible name its label alone (R4, AC5)', () => {
+      render(<GuessCard {...props()} />)
+
+      for (const root of ROOTS) {
+        const chip = within(rootGroup()).getByRole('button', { name: root })
+        expect(chip).toHaveAccessibleName(root)
+      }
+      expect(
+        within(rootGroup()).queryByRole('button', { name: /♪/ }),
+      ).toBeNull()
+    })
+
+    // Step C2 — R3, AC3. Simple mode narrows the row; it does not unmark it.
+    it('marks all six root chips in simple mode (R3, AC3)', () => {
+      const six: Root[] = ['C', 'D', 'E', 'G', 'A', 'B']
+      render(<GuessCard {...props({ simple: true, roots: six, flavours: FAMILIES })} />)
+
+      const chips = within(rootGroup()).getAllByRole('button')
+      expect(chips).toHaveLength(6)
+      expect(chips.map(chipLabel)).toEqual(six)
+      for (const chip of chips) expect(chipAdornment(chip)).toBe(NOTE_GLYPH)
+    })
+
+    // Step C2's second half — R3, AC4. Both terminal states lock the row;
+    // neither takes the glyph off it.
+    it.each([
+      ['solved', { solved: true }],
+      ['revealed', { revealed: true }],
+    ])('keeps the glyph on the disabled chips of a %s day (R3, AC4)', (_name, over) => {
+      render(<GuessCard {...props({ ...over, selectedRoot: 'G' as Root })} />)
+
+      const chips = within(rootGroup()).getAllByRole('button')
+      for (const chip of chips) {
+        expect(chip).toBeDisabled()
+        expect(chipAdornment(chip), chipLabel(chip)).toBe(NOTE_GLYPH)
+      }
+      // The selected chip wears it too, on its accent treatment (R3, R9).
+      const selected = within(rootGroup()).getByRole('button', { name: 'G' })
+      expect(selected).toHaveAttribute('aria-pressed', 'true')
+      expect(chipAdornment(selected)).toBe(NOTE_GLYPH)
+    })
+
+    // R8, AC10. The glyph is spacing and nothing else: it may not give the
+    // root row a class the mode row does not have.
+    it('leaves the two rows built the same way (R8, AC10)', () => {
+      render(<GuessCard {...props()} />)
+
+      const rootChip = within(rootGroup()).getAllByRole('button')[0]
+      const modeChip = within(flavourGroup()).getAllByRole('button')[0]
+      expect(rootChip.className).toBe(modeChip.className)
+    })
+  })
 })
 
 /**
@@ -1085,11 +1189,7 @@ describe('through the composed page', () => {
     await renderFeature();
 
     const roots = screen.getByRole("radiogroup", { name: "Root" });
-    expect(
-      within(roots)
-        .getAllByRole("button")
-        .map((b) => b.textContent),
-    ).toEqual(ROOTS);
+    expect(within(roots).getAllByRole("button").map(chipLabel)).toEqual(ROOTS);
   })
 
   it("names the chosen pair on the check control once both are picked (AC6)", async () => {

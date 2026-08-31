@@ -58,6 +58,27 @@ describe('SolvedPanel', () => {
     expect(within(changes).getByText('Cm–Fm–G7')).toBeInTheDocument()
   })
 
+  // Feature-10 Epic 2, Step I2 — R6, AC9. `Chip` gained an optional
+  // adornment; this is the guard that it did not gain a *default* one. These
+  // chips are read-only values, they sound nothing, and they are rendered here
+  // exactly as they were before the prop existed.
+  it('renders its chips with no adornment at all (F10 E2 R6, AC9)', () => {
+    const { container } = renderPanel({
+      chord: 'Cm7',
+      progression: 'Cm–Fm–G7',
+    })
+
+    const chips = within(container).getAllByRole('button')
+    expect(chips.length).toBeGreaterThan(0)
+    for (const chip of chips) {
+      expect(chip.querySelector('[aria-hidden="true"]'), chip.textContent ?? '')
+        .toBeNull()
+      // Text content is the value itself, with nothing drawn before it.
+      expect(chip).toHaveAccessibleName(chip.textContent ?? '')
+    }
+    expect(container.textContent).not.toContain('♪')
+  })
+
   it('shows the seven scale notes under "Notes to live in" (R5, AC4)', () => {
     renderPanel()
     const notes = screen.getByRole('group', { name: /notes to live in/i })

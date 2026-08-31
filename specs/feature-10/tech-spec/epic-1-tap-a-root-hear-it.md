@@ -287,8 +287,19 @@ Covers: R8, R20
 
 - Not a test step. Run the command, commit `public/notes/**`,
   `data/notes.generated.ts` and the updated lock, then listen to all twelve back
-  to back against a groove. Confirm the roots furthest from a sampled note
-  (MIDI 62, 66, 70 — two semitones from 60, 64, 68) do not read as duller.
+  to back against a groove. The sampled notes nearest the row are 61, 65 and 69,
+  so the roots furthest from one are **E♭ (63), G (67) and B (71)** — each two
+  semitones *up*; the largest downward shift anywhere in the row is one
+  semitone.
+
+  Measured after the render rather than assumed: on a first-difference/RMS
+  brightness ratio those three are the *brightest* in their group, not the
+  dullest, so the worry this step was written around is inverted. What the
+  numbers do show is a step *between* source groups — E, F, F♯ and G all come
+  from the MIDI-65 sample and read about 30% darker than their neighbours drawn
+  from 61 and 69. That is the committed pack's own recordings rather than
+  anything this render does, and it is the one thing an ear should check at
+  Step I3.
 - **Green when** — the listen passes and `npm run grooves:verify` is clean.
 
 ### Track B — The build guard covers them
