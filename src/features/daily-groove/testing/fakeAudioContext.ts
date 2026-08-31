@@ -1,4 +1,5 @@
 import { vi, type Mock } from 'vitest'
+import { releaseAudioContext } from '../lib/audio/context'
 
 /**
  * A driveable stand-in for the Web Audio API.
@@ -66,6 +67,12 @@ export type FakeContext = {
   fetchCalls: number
   /** Make the next decode reject. */
   failNextDecode(): void
+  /**
+   * Make every fetch of this URL answer 404. Per-URL rather than global,
+   * because warming asks for twelve files and one of them failing is its own
+   * case (R18).
+   */
+  failFetchFor(url: string): void
   /** Make the next decode hang until `releaseDecodes()`. */
   deferNextDecode(): void
   /** Resolve every decode held by `deferNextDecode()`. */
@@ -93,6 +100,15 @@ const SAMPLE_RATE = 44100
  * which is the AC4a case.
  */
 export function installFakeAudioContext(opts: InstallOptions = {}): FakeContext {
+  // The page holds one `AudioContext` in a module-level singleton, and a
+  // context built under the *previous* stub is stale the moment this one is
+  // installed: it would report the old clock and push its nodes onto the old
+  // handle. Handing it back here is what keeps `contexts` a per-test list.
+  // The close is deliberately not awaited — `releaseAudioContext` forgets the
+  // context synchronously, which is the half that has to happen before the
+  // caller's first `sharedAudioContext()`.
+  void releaseAudioContext()
+
   const bufferSeconds = opts.bufferSeconds ?? 10
 
   const state = {
@@ -106,6 +122,7 @@ export function installFakeAudioContext(opts: InstallOptions = {}): FakeContext 
   }
 
   const sources: FakeSourceNode[] = []
+  const failingUrls = new Set<string>()
   const contexts: FakeAudioContextHandle[] = []
   const held: Array<() => void> = []
 
@@ -196,11 +213,12 @@ export function installFakeAudioContext(opts: InstallOptions = {}): FakeContext 
   vi.stubGlobal('AudioContext', FakeAudioContext)
   vi.stubGlobal(
     'fetch',
-    vi.fn(async () => {
+    vi.fn(async (input: unknown) => {
       state.fetchCalls += 1
+      const failed = failingUrls.has(String(input))
       return {
-        ok: true,
-        status: 200,
+        ok: !failed,
+        status: failed ? 404 : 200,
         arrayBuffer: async () => new ArrayBuffer(SAMPLE_RATE),
       }
     }),
@@ -241,6 +259,9 @@ export function installFakeAudioContext(opts: InstallOptions = {}): FakeContext 
     },
     failNextDecode() {
       state.failNext = true
+    },
+    failFetchFor(url: string) {
+      failingUrls.add(url)
     },
     deferNextDecode() {
       state.deferNext = true

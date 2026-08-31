@@ -7,7 +7,7 @@ import { encodeMp3 } from './encode.ts'
 import { buildEvents } from './events.ts'
 import { writeManifest } from './manifest.ts'
 import { buildPools } from './pools.ts'
-import { buildLock, writeLock } from './lock.ts'
+import { buildLock, mergeLock, readLock, writeLock, type Lock } from './lock.ts'
 import { mixTracks } from './mix.ts'
 import { nameFor } from './name.ts'
 import { loadPack } from './pack.ts'
@@ -90,6 +90,19 @@ export type GenerateResult = {
   pcm: Map<string, Pcm>
 }
 
+/**
+ * The committed lock, or `null` when there is none — and also when there is one
+ * that will not parse, which a render is entitled to overwrite rather than die
+ * on.
+ */
+function existingLock(path: string): Lock | null {
+  try {
+    return readLock(path)
+  } catch {
+    return null
+  }
+}
+
 export async function generate(options: GenerateOptions = {}): Promise<GenerateResult> {
   const specs = options.catalogue ?? readCatalogue()
   const outDir = options.outDir ?? DEFAULT_OUT_DIR
@@ -152,17 +165,20 @@ export async function generate(options: GenerateOptions = {}): Promise<GenerateR
   // what it needs is audio to hash, not an encode of its own: a manifest-only
   // run locks the existing mp3s, and a PCM-only run has none to lock.
   if (audioOnDisk) {
-    writeLock(
-      buildLock(
-        {
-          grooveDir: outDir,
-          cataloguePath: options.cataloguePath ?? CATALOGUE_PATH,
-          manifestPath,
-        },
-        entries.map((e) => e.id),
-      ),
-      options.lockPath ?? DEFAULT_LOCK_PATH,
+    const lockPath = options.lockPath ?? DEFAULT_LOCK_PATH
+    const grooves = buildLock(
+      {
+        grooveDir: outDir,
+        cataloguePath: options.cataloguePath ?? CATALOGUE_PATH,
+        manifestPath,
+      },
+      entries.map((e) => e.id),
     )
+    // One lock, two writers. This run rendered no reference note, so it records
+    // the groove family and hands back whatever `npm run notes` left behind —
+    // without the merge, a catalogue edit would silently drop the note hashes
+    // and the build guard would quietly stop guarding them.
+    writeLock(mergeLock(existingLock(lockPath), grooves), lockPath)
   }
 
   return { entries, pcm }

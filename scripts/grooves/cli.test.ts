@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { readCatalogue } from './catalogue.ts'
-import { readLock, sha256File } from './lock.ts'
+import { readLock, sha256File, writeLock } from './lock.ts'
 import { decodeAudioFile } from './decode.ts'
 import { buildEvents } from './events.ts'
 import { mixTracks, PEAK_CEILING, SEAM_THRESHOLD, truePeak } from './mix.ts'
@@ -142,6 +142,45 @@ describe('generate', () => {
       expect(entry.sha256).toBe(sha256File(join(opts.outDir, `${entry.id}.mp3`)))
     }
   })
+
+  // Feature-10, Step B5a — R23. The notes and the grooves are rendered by two
+  // commands into one lock. `npm run grooves` has rendered no note and cannot
+  // vouch for one, so it must carry through what `npm run notes` recorded
+  // rather than overwrite the file with what it happens to know.
+  it('preserves the note fields another command recorded in the lock', async () => {
+    const opts = tempRun()
+    writeFileSync(opts.cataloguePath, JSON.stringify(SPECS))
+    mkdirSync(opts.outDir, { recursive: true })
+    for (const spec of SPECS) copyFileSync(REAL_MP3, join(opts.outDir, `${spec.id}.mp3`))
+
+    // A lock as `npm run notes` would leave it: the note family filled in, the
+    // groove family whatever was there before.
+    const notes = [
+      { id: 'C', sha256: 'a'.repeat(64), bytes: 11 },
+      { id: 'E\u266d', sha256: 'b'.repeat(64), bytes: 22 },
+    ]
+    writeLock(
+      {
+        catalogueSha256: 'c'.repeat(64),
+        manifestSha256: 'd'.repeat(64),
+        grooves: [],
+        notes,
+        notesManifestSha256: 'e'.repeat(64),
+        packSha256: 'f'.repeat(64),
+      },
+      opts.lockPath,
+    )
+
+    await generate({ ...opts, encode: false })
+
+    const after = readLock(opts.lockPath)!
+    expect(after.notes).toEqual(notes)
+    expect(after.notesManifestSha256).toBe('e'.repeat(64))
+    expect(after.packSha256).toBe('f'.repeat(64))
+    // ...while the groove family is the one this run actually rendered.
+    expect(after.grooves.map((g) => g.id)).toEqual(SPECS.map((s) => s.id))
+    expect(after.catalogueSha256).toBe(sha256File(opts.cataloguePath))
+  }, RENDER_TIMEOUT_MS)
 
   it('renders identical PCM when run twice — determinism is asserted here, not on the mp3', async () => {
     const a = await generate({ ...tempRun(), encode: false })

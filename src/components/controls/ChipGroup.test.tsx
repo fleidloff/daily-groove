@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
-import { render, screen, within } from '@testing-library/react'
+import { cleanup, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { ChipGroup } from './ChipGroup'
 import type { ChipColumns } from './ChipGroup'
@@ -15,6 +15,9 @@ const TWELVE = [
   'Seven', 'Eight', 'Nine', 'Ten', 'Eleven', 'Twelve',
 ]
 const FOUR = ['Alpha', 'Beta', 'Gamma', 'a considerably longer label']
+
+// An arbitrary decorative glyph. What it means is the caller's business.
+const NOTE = '♪'
 
 function renderGroup(overrides: Partial<Parameters<typeof ChipGroup>[0]> = {}) {
   const props = {
@@ -218,5 +221,65 @@ describe('ChipGroup', () => {
       (chip) => chip.textContent,
     )
     expect(labels).toEqual(TWELVE)
+  })
+
+  // --- Step B1 — a group with no adornment is unchanged (R7, AC8) ----------
+  //
+  // The track's regression guard: it passes today, and it is what proves the
+  // pass-through acquired no default of its own.
+
+  it('renders each chip as its bare label with no adornment (R7, AC8)', () => {
+    renderGroup({ options: FOUR, columns: { base: 2, wide: 4 } })
+    const chips = [...chipList().querySelectorAll('button')]
+
+    expect(chips.map((chip) => chip.textContent)).toEqual(FOUR)
+    for (const chip of chips) expect(chip.children).toHaveLength(0)
+  })
+
+  // --- Step B2 — the group gives its adornment to every chip (R1, R3) ------
+
+  it('gives every chip the same adornment (R1, R3)', () => {
+    renderGroup({
+      options: FOUR,
+      columns: { base: 2, wide: 4 },
+      adornment: NOTE,
+    })
+    const chips = [...chipList().querySelectorAll('button')]
+
+    expect(chips).toHaveLength(FOUR.length)
+    expect(chips.map((chip) => chip.textContent)).toEqual(
+      FOUR.map((option) => `${NOTE}${option}`),
+    )
+  })
+
+  it('leaves every accessible name bare when adorned (R4, AC5)', () => {
+    renderGroup({
+      options: FOUR,
+      columns: { base: 2, wide: 4 },
+      adornment: NOTE,
+    })
+
+    for (const option of FOUR) {
+      expect(screen.getByRole('button', { name: option })).toBeInTheDocument()
+    }
+  })
+
+  it('keeps the adornment out of the row\u2019s own layout (R8)', () => {
+    const plain = renderGroup({ options: FOUR, columns: { base: 2, wide: 4 } })
+    const plainClass = (
+      plain.container.querySelector('[data-testid="chip-list"]') as HTMLElement
+    ).className
+    cleanup()
+
+    const adorned = renderGroup({
+      options: FOUR,
+      columns: { base: 2, wide: 4 },
+      adornment: NOTE,
+    })
+    const adornedClass = (
+      adorned.container.querySelector('[data-testid="chip-list"]') as HTMLElement
+    ).className
+
+    expect(adornedClass).toBe(plainClass)
   })
 })

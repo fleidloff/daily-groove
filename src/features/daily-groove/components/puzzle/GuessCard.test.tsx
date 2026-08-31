@@ -36,6 +36,7 @@ function props(overrides: Partial<Props> = {}): Props {
     selectedFlavour: null,
     onSelectRoot: vi.fn(),
     onSelectFlavour: vi.fn(),
+    onHearRoot: vi.fn(),
     canCheck: false,
     onCheck: vi.fn(),
     solved: false,
@@ -921,6 +922,139 @@ describe('GuessCard', () => {
     // the chord nor the progression may leak before Epic 4 reveals them.
     expect(container.textContent).not.toContain('Cm7')
     expect(container.textContent).not.toContain('Cm–Fm–G7')
+  })
+
+  // --- feature-10 Epic 1, Steps D2-D6: the root row sounds ------------------
+
+  // Step D2 (R1, R2, AC1). One gesture, two things: the card reports the
+  // choice and asks for the note, in that order. Only the first is allowed to
+  // fail loudly, which is why selection goes first.
+  it('reports the root and asks for its note on the same tap (R1, R2, AC1)', async () => {
+    const user = userEvent.setup()
+    const calls: string[] = []
+    const onSelectRoot = vi.fn((r: Root) => calls.push(`select:${r}`))
+    const onHearRoot = vi.fn((r: Root) => calls.push(`hear:${r}`))
+    render(<GuessCard {...props({ onSelectRoot, onHearRoot })} />)
+
+    await user.click(within(rootGroup()).getByRole('button', { name: 'E♭' }))
+
+    expect(onSelectRoot).toHaveBeenCalledWith('E♭')
+    expect(onHearRoot).toHaveBeenCalledWith('E♭')
+    expect(calls).toEqual(['select:E♭', 'hear:E♭'])
+  })
+
+  // Step D3 (R1, AC2). "Tap again to hear it again" is not a feature the card
+  // adds; it is the guard on a feature it must not add. A handler that skipped
+  // an unchanged value would break this and nothing else.
+  it('asks again when the root already selected is tapped again (R1, AC2)', async () => {
+    const user = userEvent.setup()
+    const onHearRoot = vi.fn()
+    render(
+      <GuessCard
+        {...props({ selectedRoot: 'E♭' as Root, onHearRoot })}
+      />,
+    )
+
+    const chip = within(rootGroup()).getByRole('button', { name: 'E♭' })
+    await user.click(chip)
+    await user.click(chip)
+
+    expect(onHearRoot).toHaveBeenCalledTimes(2)
+    expect(onHearRoot).toHaveBeenNthCalledWith(1, 'E♭')
+    expect(onHearRoot).toHaveBeenNthCalledWith(2, 'E♭')
+    expect(chip).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  // Step D5 (R12, AC10). The chips are already disabled once the day is over;
+  // this is the proof that the new call did not route around that lock.
+  it('stays silent once the day is solved (R12, AC10)', async () => {
+    const user = userEvent.setup()
+    const onHearRoot = vi.fn()
+    const onSelectRoot = vi.fn()
+    render(
+      <GuessCard
+        {...props({
+          selectedRoot: 'G' as Root,
+          selectedFlavour: 'Dorian',
+          solved: true,
+          dots: ['solved', 'solved', 'solved'],
+          feedback: SOLVED,
+          onSelectRoot,
+          onHearRoot,
+        })}
+      />,
+    )
+
+    await user.click(within(rootGroup()).getByRole('button', { name: 'C' }))
+
+    expect(onHearRoot).not.toHaveBeenCalled()
+    expect(onSelectRoot).not.toHaveBeenCalled()
+  })
+
+  it('stays silent once the day has been revealed (R12, AC10)', async () => {
+    const user = userEvent.setup()
+    const onHearRoot = vi.fn()
+    render(
+      <GuessCard
+        {...props({ revealed: true, onHearRoot })}
+      />,
+    )
+
+    await user.click(within(rootGroup()).getByRole('button', { name: 'C' }))
+
+    expect(onHearRoot).not.toHaveBeenCalled()
+  })
+
+  // Step D6 (R7, AC6). Simple mode narrows the row the card is handed; the
+  // card does the narrowing nowhere and special-cases the count nowhere, so
+  // six chips sound exactly as twelve do.
+  it('sounds every root a narrowed row offers (R7, AC6)', async () => {
+    const user = userEvent.setup()
+    const onHearRoot = vi.fn()
+    const six: Root[] = ['C', 'E♭', 'F', 'G', 'A', 'B♭']
+    render(
+      <GuessCard {...props({ roots: six, simple: true, onHearRoot })} />,
+    )
+
+    for (const root of six) {
+      await user.click(within(rootGroup()).getByRole('button', { name: root }))
+    }
+
+    expect(onHearRoot.mock.calls.map(([r]) => r)).toEqual(six)
+  })
+
+  // The mode row is Epic 2's contract in reverse: it must stay silent, so the
+  // adornment Epic 2 adds to the root row keeps meaning something.
+  it('never asks for a note when a mode chip is tapped (R1)', async () => {
+    const user = userEvent.setup()
+    const onHearRoot = vi.fn()
+    render(<GuessCard {...props({ onHearRoot })} />)
+
+    await user.click(
+      within(flavourGroup()).getByRole('button', { name: 'Dorian' }),
+    )
+
+    expect(onHearRoot).not.toHaveBeenCalled()
+  })
+
+  // Step D2, second half: the new call sits *inside* the disarming wrapper, so
+  // a root tap still cancels an armed give-up exactly as it did before.
+  it('still disarms the give-up control when a root is tapped (F7 E3 R6b)', async () => {
+    const user = userEvent.setup()
+    const onReveal = vi.fn()
+    render(<GuessCard {...props({ showReveal: true, onReveal })} />)
+
+    await user.click(
+      screen.getByRole('button', { name: /give up and show the answer/i }),
+    )
+    await user.click(within(rootGroup()).getByRole('button', { name: 'C' }))
+
+    // Back to the first-press label, and the next press does not end the day.
+    const give = screen.getByRole('button', {
+      name: /give up and show the answer/i,
+    })
+    await user.click(give)
+    expect(onReveal).not.toHaveBeenCalled()
   })
 })
 

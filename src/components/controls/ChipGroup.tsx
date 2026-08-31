@@ -15,6 +15,8 @@ type ChipGroupProps = {
   disabled: boolean
   name: string
   columns: ChipColumns
+  /** Given to every chip in the row. */
+  adornment?: string
 }
 
 // Tailwind's JIT only sees literal class strings, so the column count maps
@@ -42,7 +44,10 @@ const WIDE_CLASS: Record<number, string> = {
  * container and a trailing short row leaves empty cells instead of stretching.
  * `columns` carries counts, not row names: the caller is what knows how many
  * options it has, and a group that had learned what its rows mean would have
- * stopped being a primitive.
+ * stopped being a primitive. `adornment` is the same bargain: one decorative
+ * mark for the whole row, and the caller is what decides what it means. Not one
+ * per option — a row where some chips are marked and others are not is not a
+ * thing this group models.
  */
 export function ChipGroup({
   label,
@@ -52,6 +57,7 @@ export function ChipGroup({
   disabled,
   name,
   columns,
+  adornment,
 }: ChipGroupProps) {
   const labelId = useId()
   const layout = `grid ${COLUMN_CLASS[columns.base]} ${WIDE_CLASS[columns.wide]} gap-[7px]`
@@ -69,6 +75,7 @@ export function ChipGroup({
             selected={value === option}
             disabled={disabled}
             onSelect={() => onSelect(option)}
+            adornment={adornment}
           />
         ))}
       </div>

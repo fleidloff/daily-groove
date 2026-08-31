@@ -19,6 +19,16 @@ type GuessCardProps = {
   selectedRoot: Root | null
   selectedFlavour: Flavour | null
   onSelectRoot(r: Root): void
+  /**
+   * Sound the root that was just tapped. Called on every root tap, including a
+   * re-tap of the chip already selected (F10 E1 R1, AC2), and never for a mode
+   * chip — the mode row stays silent.
+   *
+   * Best effort by contract: it returns nothing and must never throw, because
+   * `onSelectRoot` has already run by the time it is called and no audio
+   * failure may undo the selection (F10 E1 R9, R10).
+   */
+  onHearRoot(r: Root): void
   onSelectFlavour(f: Flavour): void
   canCheck: boolean
   onCheck(): void
@@ -76,6 +86,7 @@ export function GuessCard({
   selectedRoot,
   selectedFlavour,
   onSelectRoot,
+  onHearRoot,
   onSelectFlavour,
   canCheck,
   onCheck,
@@ -135,12 +146,24 @@ export function GuessCard({
         */}
         <ModeToggle simple={simple} onChange={disarming(onToggleSimple)} />
 
+        {/*
+          One gesture, two things: the root row reports the choice and asks for
+          the note (F10 E1 R1, R2, AC1). Selection goes first — it is the half
+          that is allowed to fail loudly — and the second call is deliberately
+          unguarded, so a re-tap of the chip already selected sounds it again
+          (AC2). Both sit inside `disarming`, so a root tap still cancels an
+          armed give-up exactly as it did before.
+        */}
         <ChipGroup
           label="Root"
           name="root"
           options={roots}
           value={selectedRoot}
-          onSelect={disarming((option: string) => onSelectRoot(option as Root))}
+          onSelect={disarming((option: string) => {
+            const root = option as Root
+            onSelectRoot(root)
+            onHearRoot(root)
+          })}
           disabled={over}
           columns={{ base: 4, wide: 6 }}
         />

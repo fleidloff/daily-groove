@@ -20,13 +20,21 @@ const SCRIPTS_DIR = resolve(import.meta.dirname, '..')
 const REPO_ROOT = resolve(SCRIPTS_DIR, '..')
 
 /**
- * The one place `src/features` may legitimately be named under `scripts/`: the
- * path the generator *writes* the manifest to. Writing a file into the feature
- * is not importing from it — `grooves.generated.ts` is generated data that
- * lives in the feature's `data/` folder, and the generator has to know where to
- * put it. Every entry here is a write destination, never an import specifier.
+ * The only places `src/features` may legitimately be named under `scripts/`:
+ * the paths the generator *writes* its manifests to. Writing a file into the
+ * feature is not importing from it — each of these is generated data that lives
+ * in the feature's `data/` folder, and the generator has to know where to put
+ * it. Every entry here is a write destination, never an import specifier.
+ *
+ * There are two because two commands render: `npm run grooves` writes the
+ * groove catalogue's manifest, and `npm run notes` writes the reference notes'.
+ * The count is asserted below, so a third destination is a deliberate edit here
+ * rather than a silent widening of the boundary.
  */
-const MANIFEST_OUTPUT_PATH = '../../src/features/daily-groove/data/grooves.generated.ts'
+const MANIFEST_OUTPUT_PATHS = [
+  '../../src/features/daily-groove/data/grooves.generated.ts',
+  '../../src/features/daily-groove/data/notes.generated.ts',
+]
 
 /** Every `.ts` file under `scripts/`, recursively, as a repo-relative path. */
 function scriptFiles(dir: string = SCRIPTS_DIR): string[] {
@@ -79,7 +87,11 @@ describe('the generator/app boundary', () => {
 
   // AC11, continued: and it names src/features nowhere else either, except at
   // the one path it writes the generated manifest to.
-  it('names src/features only as the manifest it writes', () => {
+  it('names src/features only as the manifests it writes', () => {
+    // Two write destinations, and only two. Widening this list is how a third
+    // one gets in, so the length is part of the assertion.
+    expect(MANIFEST_OUTPUT_PATHS).toHaveLength(2)
+
     const offenders: string[] = []
     for (const file of scriptFiles()) {
       // This guard is exempt from its own literal check: it has to name the
@@ -87,7 +99,8 @@ describe('the generator/app boundary', () => {
       // like every other file's.
       if (file === 'scripts/grooves/boundary.test.ts') continue
       const source = readFileSync(join(REPO_ROOT, file), 'utf8')
-      const stripped = source.split(MANIFEST_OUTPUT_PATH).join('')
+      let stripped = source
+      for (const path of MANIFEST_OUTPUT_PATHS) stripped = stripped.split(path).join('')
       if (stripped.includes('src/features')) offenders.push(file)
     }
     expect(offenders).toEqual([])

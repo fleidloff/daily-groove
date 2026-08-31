@@ -19,12 +19,26 @@ export const DEFAULT_MANIFEST_PATH = join(
   HERE,
   '../../src/features/daily-groove/data/grooves.generated.ts',
 )
+export const DEFAULT_NOTES_DIR = join(HERE, '../../public/notes')
+export const DEFAULT_NOTES_MANIFEST_PATH = join(
+  HERE,
+  '../../src/features/daily-groove/data/notes.generated.ts',
+)
+/**
+ * The pack the reference notes were rendered from. Its *declaration* only —
+ * the guard hashes this one json file and never opens a sample, which is what
+ * keeps it runnable on a machine that has no pack checked out at all.
+ */
+export const DEFAULT_PACK_DECLARATION_PATH = join(HERE, 'samples/pack.json')
 
 export type VerifyOptions = {
   lockPath?: string
   grooveDir?: string
   cataloguePath?: string
   manifestPath?: string
+  notesDir?: string
+  notesManifestPath?: string
+  packDeclarationPath?: string
   /** Where messages go. Injected by tests; defaults to stderr. */
   log?: (line: string) => void
 }
@@ -37,6 +51,9 @@ export async function main(options: VerifyOptions = {}): Promise<number> {
     grooveDir: options.grooveDir ?? DEFAULT_GROOVE_DIR,
     cataloguePath: options.cataloguePath ?? DEFAULT_CATALOGUE_PATH,
     manifestPath: options.manifestPath ?? DEFAULT_MANIFEST_PATH,
+    notesDir: options.notesDir ?? DEFAULT_NOTES_DIR,
+    notesManifestPath: options.notesManifestPath ?? DEFAULT_NOTES_MANIFEST_PATH,
+    packDeclarationPath: options.packDeclarationPath ?? DEFAULT_PACK_DECLARATION_PATH,
   }
 
   let lock: Lock | null
@@ -55,11 +72,16 @@ export async function main(options: VerifyOptions = {}): Promise<number> {
 
   const failures = verifyLock(lock, paths)
   if (failures.length === 0) {
-    log(`grooves:verify — ${lock.grooves.length} grooves, the manifest and the catalogue all match the lock.`)
+    // Both counts, always: a lock that has stopped recording the notes reads as
+    // `0 notes` here rather than as silence, which is the only way anyone would
+    // notice the guard had quietly stopped guarding them.
+    log(
+      `grooves:verify — ${lock.grooves.length} grooves, ${lock.notes?.length ?? 0} notes, the manifests and the catalogue all match the lock.`,
+    )
     return 0
   }
 
-  log(`grooves:verify — ${failures.length} problem(s) with the committed grooves:`)
+  log(`grooves:verify — ${failures.length} problem(s) with the committed artifacts:`)
   for (const failure of failures) log(`  [${failure.check}] ${failure.detail}`)
   return 1
 }

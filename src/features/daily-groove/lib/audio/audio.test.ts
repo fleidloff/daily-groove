@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createAudioPlayer } from './audio'
+import { hasAudioContext, releaseAudioContext, sharedAudioContext } from './context'
 import {
   installFakeAudioContext,
   type FakeContext,
@@ -27,7 +28,10 @@ async function flush() {
   })
 }
 
-afterEach(() => {
+afterEach(async () => {
+  // The context is a page-level singleton now; `installFakeAudioContext()`
+  // forgets any stale one, and this closes the last test's for good.
+  await releaseAudioContext()
   vi.unstubAllGlobals()
   vi.restoreAllMocks()
 })
@@ -400,7 +404,9 @@ describe('createAudioPlayer', () => {
       player.dispose()
     })
 
-    it('dispose() stops the source, closes the context and reports nothing playing', async () => {
+    // Step C2 — R14, R16, AC13: the context outlives the player that used it,
+    // because the reference voice may still be holding it.
+    it('dispose() stops the source and reports nothing playing', async () => {
       const fake = installFakeAudioContext()
       const player = createAudioPlayer(GROOVE_01)
 
@@ -408,9 +414,33 @@ describe('createAudioPlayer', () => {
       player.dispose()
 
       expect(fake.sources[0].stop).toHaveBeenCalled()
-      expect(fake.contexts[0].close).toHaveBeenCalled()
       expect(player.isPlaying()).toBe(false)
       expect(player.getElapsed()).toBe(0)
+    })
+
+    it('dispose() does not close the shared context (R16, AC13)', async () => {
+      const fake = installFakeAudioContext()
+      const player = createAudioPlayer(GROOVE_01)
+
+      await player.play()
+      player.dispose()
+
+      expect(fake.contexts[0].close).not.toHaveBeenCalled()
+      expect(hasAudioContext()).toBe(true)
+      expect(sharedAudioContext()).toBe(fake.contexts[0])
+      expect(fake.contexts).toHaveLength(1)
+    })
+
+    it('plays through a context another caller built first (R14)', async () => {
+      const fake = installFakeAudioContext()
+      const shared = sharedAudioContext()
+      const player = createAudioPlayer(GROOVE_01)
+
+      await player.play()
+
+      expect(fake.contexts).toHaveLength(1)
+      expect(shared).toBe(fake.contexts[0])
+      player.dispose()
     })
   })
 })

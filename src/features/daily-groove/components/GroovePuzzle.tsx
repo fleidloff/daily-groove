@@ -18,7 +18,9 @@ import {
 import { FAMILIES } from '../lib/theory/families'
 import { selectGrooveForDate } from '../lib/puzzle/selectGroove'
 import { GROOVES } from '../data/grooves.generated'
+import { NOTES } from '../data/notes.generated'
 import { usePuzzleSession } from '../hooks/usePuzzleSession'
+import { useReferenceNote } from '../hooks/useReferenceNote'
 import { useSimpleMode } from '../hooks/useSimpleMode'
 import { useTransport } from '../hooks/useTransport'
 import { GrooveCard } from './puzzle/GrooveCard'
@@ -97,6 +99,14 @@ function GroovePuzzleView({ groove }: { groove: Groove }) {
   // and survives both a reload and a new day (E5 R7). Everything it changes is
   // below — two option sets and one comparison. The day itself never sees it.
   const { simple, setSimple } = useSimpleMode()
+
+  // The row's second voice. It is built here, beside the transport, because
+  // both belong to the page rather than to a card — but the two share nothing
+  // except the `AudioContext` that `lib/audio/context.ts` owns, so a tap
+  // cannot move the groove and stopping the groove cannot cut a note (R6, R13).
+  // The whole chromatic set is handed over whatever mode is on: simple mode's
+  // six are a subset, so switching costs no fetch (R7, R18).
+  const { playRoot } = useReferenceNote(NOTES)
 
   const {
     selectedRoot,
@@ -303,6 +313,7 @@ function GroovePuzzleView({ groove }: { groove: Groove }) {
               selectedRoot={offeredRoot}
               selectedFlavour={offeredFlavour}
               onSelectRoot={selectRoot}
+              onHearRoot={playRoot}
               onSelectFlavour={selectFlavour}
               canCheck={canCheckOffered}
               onCheck={check}

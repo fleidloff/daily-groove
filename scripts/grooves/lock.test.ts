@@ -11,7 +11,17 @@ import {
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { buildLock, readLock, sha256File, verifyLock, writeLock, type Lock } from './lock.ts'
+import {
+  buildLock,
+  mergeLock,
+  noteFile,
+  readLock,
+  sha256File,
+  verifyLock,
+  writeLock,
+  type Lock,
+  type LockPaths,
+} from './lock.ts'
 
 /** Bytes that stand in for an mp3 — the lock never looks inside one. */
 function audioBytes(id: string, n = 2048): Buffer {
@@ -236,6 +246,295 @@ describe('verifyLock — Step B2b, stale inputs and outputs', () => {
     expect(new Set(checks)).toEqual(
       new Set(['missing', 'empty', 'checksum', 'catalogue-stale', 'manifest-stale']),
     )
+  })
+})
+
+/**
+ * Feature-10, Track B. The reference notes are a second artifact family in the
+ * same lock: twelve mp3s named by root slug, their own generated manifest, and
+ * the pack declaration they were rendered from.
+ */
+
+/** The twelve are keyed by root; the file name is the root's ASCII slug. */
+const NOTE_FILES: Record<string, string> = {
+  C: 'note-c.mp3',
+  'C\u266f': 'note-c-sharp.mp3',
+  'E\u266d': 'note-e-flat.mp3',
+}
+const NOTE_ROOTS = Object.keys(NOTE_FILES)
+
+type NotesFixture = Fixture & {
+  notesDir: string
+  notesManifestPath: string
+  packDeclarationPath: string
+  notePaths: Required<LockPaths>
+  notesLock: Lock
+}
+
+/** The groove fixture, plus an intact notes family beside it. */
+function notesFixture(roots: string[] = NOTE_ROOTS): NotesFixture {
+  const f = fixture()
+  const notesDir = join(f.dir, 'public', 'notes')
+  mkdirSync(notesDir, { recursive: true })
+  for (const root of roots) writeFileSync(join(notesDir, NOTE_FILES[root]), audioBytes(root, 1024))
+
+  const notesManifestPath = join(f.dir, 'notes.generated.ts')
+  writeFileSync(
+    notesManifestPath,
+    `export const NOTES = [\n${roots.map((r) => `  { root: '${r}', midi: 60 },`).join('\n')}\n]\n`,
+  )
+
+  const packDeclarationPath = join(f.dir, 'pack.json')
+  writeFileSync(packDeclarationPath, `${JSON.stringify({ comp: ['c4.wav'] }, null, 2)}\n`)
+
+  const notePaths: Required<LockPaths> = {
+    ...f.paths,
+    notesDir,
+    notesManifestPath,
+    packDeclarationPath,
+  }
+  return {
+    ...f,
+    notesDir,
+    notesManifestPath,
+    packDeclarationPath,
+    notePaths,
+    notesLock: buildLock(notePaths, ['groove-01', 'groove-02'], roots),
+  }
+}
+
+describe('noteFile — the notes are named by root slug, not by id', () => {
+  it('derives the ASCII slug the render writes', () => {
+    expect(noteFile('/notes', 'C')).toBe('/notes/note-c.mp3')
+    expect(noteFile('/notes', 'C\u266f')).toBe('/notes/note-c-sharp.mp3')
+    expect(noteFile('/notes', 'E\u266d')).toBe('/notes/note-e-flat.mp3')
+  })
+
+  it('never emits a sharp or flat sign, or an uppercase letter', () => {
+    for (const root of ['C', 'C\u266f', 'D', 'E\u266d', 'E', 'F', 'F\u266f', 'G', 'A\u266d', 'A', 'B\u266d', 'B']) {
+      expect(noteFile('/notes', root)).toMatch(/^\/notes\/note-[a-z-]+\.mp3$/)
+    }
+  })
+})
+
+describe('verifyLock — Step B1, a lock written before the notes existed', () => {
+  it('returns no failures when the lock carries no note fields at all', () => {
+    const f = fixture()
+    expect(f.lock.notes).toBeUndefined()
+    expect(f.lock.notesManifestSha256).toBeUndefined()
+    expect(f.lock.packSha256).toBeUndefined()
+    expect(verifyLock(f.lock, f.paths)).toEqual([])
+  })
+
+  it('still returns none when the note paths are supplied but the lock has nothing to check', () => {
+    // `grooves:verify` always passes the note paths. A pre-epic lock must not
+    // start failing because a path it never recorded a hash for now exists.
+    const f = notesFixture()
+    const preEpic: Lock = {
+      catalogueSha256: f.lock.catalogueSha256,
+      manifestSha256: f.lock.manifestSha256,
+      grooves: f.lock.grooves,
+    }
+    expect(verifyLock(preEpic, f.notePaths)).toEqual([])
+  })
+})
+
+describe('verifyLock — Step B2, the note audio', () => {
+  it('returns no failures when every note matches', () => {
+    const f = notesFixture()
+    expect(verifyLock(f.notesLock, f.notePaths)).toEqual([])
+  })
+
+  it('fails, naming the file, when a note is missing (AC16)', () => {
+    const f = notesFixture()
+    rmSync(join(f.notesDir, 'note-c-sharp.mp3'))
+
+    const failures = verifyLock(f.notesLock, f.notePaths)
+    expect(failures).toHaveLength(1)
+    expect(failures[0].check).toBe('missing')
+    expect(failures[0].detail).toContain('note-c-sharp.mp3')
+  })
+
+  it('fails when a note is zero bytes', () => {
+    const f = notesFixture()
+    writeFileSync(join(f.notesDir, 'note-c.mp3'), Buffer.alloc(0))
+
+    const failures = verifyLock(f.notesLock, f.notePaths)
+    expect(failures).toHaveLength(1)
+    expect(failures[0].check).toBe('empty')
+    expect(failures[0].detail).toContain('note-c.mp3')
+  })
+
+  it('fails when a single byte of a note is altered', () => {
+    const f = notesFixture()
+    const file = join(f.notesDir, 'note-e-flat.mp3')
+    const bytes = readFileSync(file)
+    bytes[64] = bytes[64] ^ 0xff
+    writeFileSync(file, bytes)
+
+    const failures = verifyLock(f.notesLock, f.notePaths)
+    expect(failures).toHaveLength(1)
+    expect(failures[0].check).toBe('checksum')
+    expect(failures[0].detail).toContain('note-e-flat.mp3')
+    expect(readFileSync(file).length).toBe(1024)
+  })
+
+  it('reports a broken groove and a broken note in the same run', () => {
+    const f = notesFixture()
+    rmSync(join(f.grooveDir, 'groove-01.mp3'))
+    rmSync(join(f.notesDir, 'note-c.mp3'))
+
+    const details = verifyLock(f.notesLock, f.notePaths).map((x) => x.detail).join(' ')
+    expect(details).toContain('groove-01.mp3')
+    expect(details).toContain('note-c.mp3')
+  })
+})
+
+describe('verifyLock — Step B3, the notes manifest (AC17)', () => {
+  it('fails when the notes manifest was edited by hand', () => {
+    const f = notesFixture()
+    writeFileSync(
+      f.notesManifestPath,
+      readFileSync(f.notesManifestPath, 'utf8').replace('midi: 60', 'midi: 72'),
+    )
+
+    const failures = verifyLock(f.notesLock, f.notePaths)
+    expect(failures).toHaveLength(1)
+    expect(failures[0].check).toBe('notes-manifest-stale')
+    expect(failures[0].detail).toContain('notes.generated.ts')
+    expect(failures[0].detail).toContain('npm run notes')
+  })
+
+  it('reports a missing notes manifest rather than throwing', () => {
+    const f = notesFixture()
+    rmSync(f.notesManifestPath)
+
+    const failures = verifyLock(f.notesLock, f.notePaths)
+    expect(failures).toHaveLength(1)
+    expect(failures[0].check).toBe('missing')
+    expect(failures[0].detail).toContain('notes.generated.ts')
+  })
+
+  it('skips the check when the lock recorded no notes manifest hash', () => {
+    const f = notesFixture()
+    const lock: Lock = { ...f.notesLock, notesManifestSha256: undefined }
+    rmSync(f.notesManifestPath)
+    expect(verifyLock(lock, f.notePaths)).toEqual([])
+  })
+})
+
+describe('verifyLock — Step B4, the pack declaration (AC18)', () => {
+  it('fails when the pack declaration changed without a re-render', () => {
+    const f = notesFixture()
+    writeFileSync(
+      f.packDeclarationPath,
+      `${JSON.stringify({ comp: ['c4.wav', 'e4.wav'] }, null, 2)}\n`,
+    )
+
+    const failures = verifyLock(f.notesLock, f.notePaths)
+    expect(failures).toHaveLength(1)
+    expect(failures[0].check).toBe('pack-stale')
+    expect(failures[0].detail).toContain('pack.json')
+    expect(failures[0].detail).toContain('npm run notes')
+  })
+
+  it('skips the check when the lock recorded no pack hash', () => {
+    const f = notesFixture()
+    const lock: Lock = { ...f.notesLock, packSha256: undefined }
+    writeFileSync(f.packDeclarationPath, '{}\n')
+    expect(verifyLock(lock, f.notePaths)).toEqual([])
+  })
+})
+
+describe('buildLock — Step B5, it records the notes', () => {
+  it('hashes each note, the notes manifest and the pack declaration', () => {
+    const f = notesFixture()
+
+    expect(f.notesLock.notes).toHaveLength(NOTE_ROOTS.length)
+    for (const entry of f.notesLock.notes!) {
+      const file = join(f.notesDir, NOTE_FILES[entry.id])
+      expect(entry.sha256).toBe(sha256File(file))
+      expect(entry.bytes).toBe(1024)
+    }
+    expect(f.notesLock.notesManifestSha256).toBe(sha256File(f.notesManifestPath))
+    expect(f.notesLock.packSha256).toBe(sha256File(f.packDeclarationPath))
+  })
+
+  it('sorts the note entries so diffs stay stable', () => {
+    const f = notesFixture()
+    const ids = f.notesLock.notes!.map((n) => n.id)
+    expect(ids).toEqual([...ids].sort())
+  })
+
+  it('records nothing about the notes when it is not given any', () => {
+    const f = notesFixture()
+    const lock = buildLock(f.paths, ['groove-01', 'groove-02'])
+    expect(lock.notes).toBeUndefined()
+    expect(lock.notesManifestSha256).toBeUndefined()
+    expect(lock.packSha256).toBeUndefined()
+  })
+})
+
+describe('Step B5a — `npm run grooves` does not drop the notes', () => {
+  it('round-trips the three note fields through writeLock and readLock', () => {
+    const f = notesFixture()
+    writeLock(f.notesLock, f.lockPath)
+
+    const read = readLock(f.lockPath)!
+    expect(read.notes).toEqual(f.notesLock.notes)
+    expect(read.notesManifestSha256).toBe(f.notesLock.notesManifestSha256)
+    expect(read.packSha256).toBe(f.notesLock.packSha256)
+    // ...and on disk, in a stable order after the grooves.
+    const json = readFileSync(f.lockPath, 'utf8')
+    expect(json.indexOf('"grooves"')).toBeLessThan(json.indexOf('"notes"'))
+    expect(json.indexOf('"notes"')).toBeLessThan(json.indexOf('"notesManifestSha256"'))
+    expect(json.indexOf('"notesManifestSha256"')).toBeLessThan(json.indexOf('"packSha256"'))
+  })
+
+  it('keeps the note fields when a grooves-only lock is written over the same path', () => {
+    const f = notesFixture()
+    writeLock(f.notesLock, f.lockPath)
+
+    // Exactly what `npm run grooves` produces: it has rendered no note and
+    // cannot vouch for one, so what it builds carries none.
+    const groovesOnly = buildLock(f.paths, ['groove-01', 'groove-02'])
+    expect(groovesOnly.notes).toBeUndefined()
+    writeLock(mergeLock(readLock(f.lockPath), groovesOnly), f.lockPath)
+
+    const after = readLock(f.lockPath)!
+    expect(after.notes).toEqual(f.notesLock.notes)
+    expect(after.notesManifestSha256).toBe(f.notesLock.notesManifestSha256)
+    expect(after.packSha256).toBe(f.notesLock.packSha256)
+    // The groove family is still the one that was just rendered.
+    expect(after.grooves).toEqual(groovesOnly.grooves)
+  })
+
+  it('keeps the groove fields when a notes-only render writes over them', () => {
+    const f = notesFixture()
+    writeLock(buildLock(f.paths, ['groove-01', 'groove-02']), f.lockPath)
+
+    const existing = readLock(f.lockPath)!
+    writeLock(mergeLock(existing, { ...existing, ...f.notesLock }), f.lockPath)
+
+    const after = readLock(f.lockPath)!
+    expect(after.grooves).toEqual(existing.grooves)
+    expect(after.notes).toEqual(f.notesLock.notes)
+  })
+
+  it('merges onto nothing when there is no existing lock', () => {
+    const f = notesFixture()
+    expect(mergeLock(null, f.notesLock)).toEqual(f.notesLock)
+  })
+
+  it('takes the newer note fields when both locks carry them', () => {
+    const f = notesFixture()
+    const stale: Lock = {
+      ...f.notesLock,
+      notes: [{ id: 'C', sha256: 'f'.repeat(64), bytes: 1 }],
+      packSha256: 'e'.repeat(64),
+    }
+    expect(mergeLock(stale, f.notesLock).notes).toEqual(f.notesLock.notes)
+    expect(mergeLock(stale, f.notesLock).packSha256).toBe(f.notesLock.packSha256)
   })
 })
 

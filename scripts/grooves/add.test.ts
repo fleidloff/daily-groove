@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process'
-import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, statSync } from 'node:fs'
+import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, statSync, writeFileSync} from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
@@ -128,9 +128,39 @@ function audioBytes(f: Fixture): Record<string, string> {
  */
 const MINT_TIMEOUT_MS = 30_000
 
+/**
+ * What `npm run notes` records in the shared lock. A mint never renders these
+ * and cannot vouch for them, so its only correct behaviour is to leave them
+ * exactly as it found them (F10 E1 R23).
+ */
+const NOTE_FIELDS = {
+  notes: [{ id: 'C', sha256: 'a'.repeat(64), bytes: 49571 }],
+  notesManifestSha256: 'b'.repeat(64),
+  packSha256: 'c'.repeat(64),
+}
+
+/** Put a notes family into a fixture lock, as a prior `npm run notes` would. */
+function seedNoteFields(lockPath: string): void {
+  writeFileSync(
+    lockPath,
+    `${JSON.stringify(
+      {
+        catalogueSha256: 'd'.repeat(64),
+        manifestSha256: 'e'.repeat(64),
+        grooves: [],
+        ...NOTE_FIELDS,
+      },
+      null,
+      2,
+    )}\n`,
+    'utf8',
+  )
+}
+
 describe('addGrooves', () => {
   it('adds exactly n grooves, leaving every existing entry untouched', async () => {
     const f = fixture()
+    seedNoteFields(f.lockPath)
     const before = audioBytes(f)
 
     const minted = await addGrooves(3, { startSeed: 1000, gate: PASS, ...f })
@@ -152,6 +182,14 @@ describe('addGrooves', () => {
     for (const spec of minted) {
       expect(lock!.grooves.map((g) => g.id)).toContain(spec.id)
     }
+
+    // F10 E1 R23: one lock, two commands. The reference notes are recorded by
+    // `npm run notes`, and a mint must carry them through untouched — a mint
+    // that dropped them would leave `grooves:verify` passing while it silently
+    // stopped guarding the notes.
+    expect(lock!.notes).toEqual(NOTE_FIELDS.notes)
+    expect(lock!.notesManifestSha256).toBe(NOTE_FIELDS.notesManifestSha256)
+    expect(lock!.packSha256).toBe(NOTE_FIELDS.packSha256)
 
     // AC7: pre-existing audio bytes are byte-identical after the mint.
     for (const [name, bytes] of Object.entries(before)) {

@@ -11,6 +11,7 @@
     "test:watch": "vitest",
     "grooves": "node scripts/grooves/cli.ts",
     "grooves:add": "node scripts/grooves/add-cli.ts",
+    "notes": "node scripts/grooves/notes-cli.ts",
     "grooves:verify": "node scripts/grooves/verify-cli.ts",
     "prebuild": "npm run grooves:verify"
   },

@@ -3,7 +3,13 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { buildLock, writeLock } from './lock.ts'
-import { DEFAULT_MANIFEST_PATH, main } from './verify-cli.ts'
+import {
+  DEFAULT_MANIFEST_PATH,
+  DEFAULT_NOTES_DIR,
+  DEFAULT_NOTES_MANIFEST_PATH,
+  DEFAULT_PACK_DECLARATION_PATH,
+  main,
+} from './verify-cli.ts'
 
 function audioBytes(id: string, n = 2048): Buffer {
   const buf = Buffer.alloc(n)
@@ -38,6 +44,51 @@ function fixture(ids: string[] = ['groove-01', 'groove-02']): Fixture {
   writeLock(buildLock({ grooveDir, cataloguePath, manifestPath }, ids), lockPath)
 
   return { grooveDir, cataloguePath, manifestPath, lockPath }
+}
+
+/**
+ * Feature-10, Track B. The same tree with the reference notes beside it: three
+ * note mp3s named by root slug, their generated manifest, and the pack
+ * declaration they were rendered from.
+ */
+const NOTE_FILES: Record<string, string> = {
+  C: 'note-c.mp3',
+  'C\u266f': 'note-c-sharp.mp3',
+  'E\u266d': 'note-e-flat.mp3',
+}
+
+type NotesFixture = Fixture & {
+  notesDir: string
+  notesManifestPath: string
+  packDeclarationPath: string
+}
+
+function notesFixture(ids: string[] = ['groove-01', 'groove-02']): NotesFixture {
+  const f = fixture(ids)
+  const dir = join(f.lockPath, '..')
+
+  const notesDir = join(dir, 'public', 'notes')
+  mkdirSync(notesDir, { recursive: true })
+  const roots = Object.keys(NOTE_FILES)
+  for (const root of roots) writeFileSync(join(notesDir, NOTE_FILES[root]), audioBytes(root, 512))
+
+  const notesManifestPath = join(dir, 'notes.generated.ts')
+  writeFileSync(notesManifestPath, `export const NOTES = [${roots.map((r) => `'${r}'`).join(', ')}]\n`)
+
+  const packDeclarationPath = join(dir, 'pack.json')
+  writeFileSync(packDeclarationPath, `${JSON.stringify({ comp: ['c4.wav'] }, null, 2)}\n`)
+
+  const paths = {
+    grooveDir: f.grooveDir,
+    cataloguePath: f.cataloguePath,
+    manifestPath: f.manifestPath,
+    notesDir,
+    notesManifestPath,
+    packDeclarationPath,
+  }
+  writeLock(buildLock(paths, ids, roots), f.lockPath)
+
+  return { ...f, notesDir, notesManifestPath, packDeclarationPath }
 }
 
 function run(f: Fixture) {
@@ -139,6 +190,67 @@ describe('verify-cli main — Step B4', () => {
     expect(DEFAULT_MANIFEST_PATH).toBe(
       join(import.meta.dirname, '../../src/features/daily-groove/data/grooves.generated.ts'),
     )
+  })
+
+  // Feature-10, Step B7 — R23, R24. The notes are a second family in the same
+  // lock, checked by the same command.
+  it('exits zero and names both counts when the notes are intact', async () => {
+    const r = run(notesFixture())
+    await expect(r.code).resolves.toBe(0)
+    const output = r.lines.join('\n')
+    expect(output).toContain('2 grooves')
+    expect(output).toContain('3 notes')
+  })
+
+  it('exits non-zero and names the missing note (AC16)', async () => {
+    const f = notesFixture()
+    rmSync(join(f.notesDir, 'note-c-sharp.mp3'))
+
+    const r = run(f)
+    await expect(r.code).resolves.not.toBe(0)
+    const output = r.lines.join('\n')
+    expect(output).toContain('note-c-sharp.mp3')
+    expect(output).toContain('missing')
+  })
+
+  it('exits non-zero when the notes manifest was hand-edited (AC17)', async () => {
+    const f = notesFixture()
+    writeFileSync(f.notesManifestPath, `${readFileSync(f.notesManifestPath, 'utf8')}// edited\n`)
+
+    const r = run(f)
+    await expect(r.code).resolves.not.toBe(0)
+    const output = r.lines.join('\n')
+    expect(output).toContain('notes.generated.ts')
+    expect(output).toContain('notes-manifest-stale')
+  })
+
+  it('exits non-zero when the pack declaration changed without a re-render (AC18)', async () => {
+    const f = notesFixture()
+    writeFileSync(f.packDeclarationPath, `${JSON.stringify({ comp: [] }, null, 2)}\n`)
+
+    const r = run(f)
+    await expect(r.code).resolves.not.toBe(0)
+    const output = r.lines.join('\n')
+    expect(output).toContain('pack.json')
+    expect(output).toContain('pack-stale')
+    expect(output).toContain('npm run notes')
+  })
+
+  // AC19: the guard runs where there is no sample pack and no rendered note.
+  it('still reports on a lock that predates the notes', async () => {
+    const r = run(fixture())
+    await expect(r.code).resolves.toBe(0)
+    const output = r.lines.join('\n')
+    expect(output).toContain('2 grooves')
+    expect(output).toContain('0 notes')
+  })
+
+  it('guards the notes beside the grooves, from the paths the render writes to', () => {
+    expect(DEFAULT_NOTES_DIR).toBe(join(import.meta.dirname, '../../public/notes'))
+    expect(DEFAULT_NOTES_MANIFEST_PATH).toBe(
+      join(import.meta.dirname, '../../src/features/daily-groove/data/notes.generated.ts'),
+    )
+    expect(DEFAULT_PACK_DECLARATION_PATH).toBe(join(import.meta.dirname, 'samples/pack.json'))
   })
 
   it('importing the module runs nothing — the top-level call is guarded', async () => {

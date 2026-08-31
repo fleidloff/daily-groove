@@ -13,7 +13,7 @@ import {
 import { encodeMp3 } from './encode.ts'
 import { buildEvents } from './events.ts'
 import { gateCandidate } from './gate.ts'
-import { buildLock, writeLock } from './lock.ts'
+import { buildLock, mergeLock, readLock, writeLock } from './lock.ts'
 import { writeManifest } from './manifest.ts'
 import { mixTracks } from './mix.ts'
 import { loadPack } from './pack.ts'
@@ -222,6 +222,15 @@ export function renderCandidate(
  * The existing audio is never re-encoded, so a mint cannot disturb a groove
  * that is already in the catalogue (R9).
  */
+/** The committed lock, or null when there is none or it will not parse. */
+function readLockOrNull(path: string) {
+  try {
+    return readLock(path)
+  } catch {
+    return null
+  }
+}
+
 async function writeBatch(
   minted: readonly Minted[],
   existing: readonly GrooveSpec[],
@@ -249,14 +258,21 @@ async function writeBatch(
   })
   writeManifest(entries, paths.manifestPath, buildPools(entries))
 
+  // Merged, not replaced. `npm run notes` records the reference notes in this
+  // same lock, and a mint neither renders them nor can vouch for them — writing
+  // a fresh lock here would drop them and leave `grooves:verify` passing while
+  // it silently stopped guarding the notes (F10 E1 R23).
   writeLock(
-    buildLock(
-      {
-        grooveDir: paths.outDir,
-        cataloguePath: paths.cataloguePath,
-        manifestPath: paths.manifestPath,
-      },
-      entries.map((e) => e.id),
+    mergeLock(
+      readLockOrNull(paths.lockPath),
+      buildLock(
+        {
+          grooveDir: paths.outDir,
+          cataloguePath: paths.cataloguePath,
+          manifestPath: paths.manifestPath,
+        },
+        entries.map((e) => e.id),
+      ),
     ),
     paths.lockPath,
   )

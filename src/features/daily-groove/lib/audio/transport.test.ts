@@ -164,7 +164,9 @@ describe('createPageTransport', () => {
     transport.dispose()
 
     expect(fake.sources[0].stop).toHaveBeenCalled()
-    expect(fake.contexts[0].close).toHaveBeenCalledTimes(1)
+    // The context is *not* closed: it belongs to the page, and the reference
+    // note a root chip sounds shares it (R16, AC13).
+    expect(fake.contexts[0].close).not.toHaveBeenCalled()
     expect(transport.isPlaying()).toBe(false)
 
     // The listener set is empty: a late notification reaches nobody.

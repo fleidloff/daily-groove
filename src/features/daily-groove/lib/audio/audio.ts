@@ -1,3 +1,4 @@
+import { sharedAudioContext } from './context'
 import { deriveLoopWindow } from './loop'
 
 /** The one groove this player sounds: what to fetch, and where its music is. */
@@ -27,8 +28,6 @@ export type AudioPlayer = {
   dispose(): void
 }
 
-type AudioContextConstructor = new () => AudioContext
-
 /**
  * What the browser reports about the gap between the graph and the ear. Both
  * are optional at runtime whatever `lib.dom` says: Safari exposes only
@@ -48,22 +47,6 @@ function latencyOf(context: AudioContext): number {
   const reported = context as LatencyReporting
   const latency = reported.outputLatency ?? reported.baseLatency ?? 0
   return Number.isFinite(latency) && latency > 0 ? latency : 0
-}
-
-/**
- * The constructor, looked up at press time rather than at module load.
- *
- * A browser without Web Audio gets a plain `Error` from inside an async
- * function, so the press *rejects* and lands in the error state the retry
- * affordance already handles. There is no second playback path (R7, AC8a).
- */
-function audioContextConstructor(): AudioContextConstructor {
-  const ctor = (globalThis as { AudioContext?: AudioContextConstructor })
-    .AudioContext
-  if (typeof ctor !== 'function') {
-    throw new Error('Audio playback is unavailable in this browser')
-  }
-  return ctor
 }
 
 /**
@@ -87,8 +70,9 @@ function audioContextConstructor(): AudioContextConstructor {
  * animation loop — a backgrounded tab — costs nothing: the next frame reads the
  * truth and the highlight snaps to it.
  *
- * No `AudioContext` is constructed until the first `load()`, so none exists
- * during render or a server prerender (R6, AC7).
+ * The context itself belongs to `./context`, not to the player: the reference
+ * note a root chip sounds shares it. Nothing constructs one until the first
+ * `load()`, so none exists during render or a server prerender (R6, AC7).
  */
 export function createAudioPlayer(source: PlayableSource): AudioPlayer {
   const listeners = new Set<() => void>()
@@ -129,8 +113,10 @@ export function createAudioPlayer(source: PlayableSource): AudioPlayer {
   }
 
   async function decode(): Promise<AudioBuffer> {
-    const ctor = audioContextConstructor()
-    const ctx = context ?? new ctor()
+    // `sharedAudioContext()` throws where the browser has no Web Audio, and it
+    // is called from inside an async function, so the press *rejects* and lands
+    // in the error state the retry affordance already handles (R7, AC8a).
+    const ctx = sharedAudioContext()
     context = ctx
 
     const response = await fetch(source.src)
@@ -253,7 +239,8 @@ export function createAudioPlayer(source: PlayableSource): AudioPlayer {
       listeners.clear()
       buffer = null
       pending = null
-      void context?.close()
+      // The context is not closed: it belongs to the page, not to this player,
+      // and the reference voice may still be sounding through it (R16, AC13).
       context = null
     },
   }

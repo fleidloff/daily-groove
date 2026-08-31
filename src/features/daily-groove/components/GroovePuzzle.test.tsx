@@ -1,5 +1,5 @@
 import type { ReactElement } from 'react'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi, type Mock } from 'vitest'
 import { act, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import type { Attempt, DailyResult, Groove, Root } from '../types'
@@ -33,6 +33,7 @@ import { createLocalPreferenceStore } from '../lib/persistence/preferences'
 import { dateLine } from '../lib/presentation/date'
 import { isoDate, selectGrooveForDate } from '../lib/puzzle/selectGroove'
 import { GROOVES } from '../data/grooves.generated'
+import { NOTES } from '../data/notes.generated'
 import { renderFeature } from '../testing/renderFeature'
 import { APP_NAME } from '@/lib/branding'
 import {
@@ -1817,5 +1818,172 @@ describe('GroovePuzzle', () => {
       }
     })
   })
+
+
+  // --- feature-10 Epic 1, Steps D2-D7: tapping a root sounds it -------------
+
+  /**
+   * The reference voice is *not* mocked, in keeping with the rest of this
+   * file: the browser is stubbed instead, so these run over the same fetch,
+   * decode and node path a real tap takes. Which files exist is
+   * `notes.generated.ts`'s business, so the expected URL is read from it.
+   */
+  const noteSrc = (root: Root) =>
+    (NOTES.find((note) => note.root === root) as { audioSrc: string }).audioSrc
+
+  /** Every URL asked for so far, in order. */
+  const fetchedUrls = () =>
+    (globalThis.fetch as unknown as Mock).mock.calls.map(([url]) => String(url))
+
+  /** Only the reference notes: the groove's own file is not one of them. */
+  const fetchedNotes = () =>
+    fetchedUrls().filter((url) => url.startsWith('/notes/'))
+
+  /** Wait for the tap's fetch-decode-start chain to have settled. */
+  const soundedNotes = async (count: number) => {
+    await waitFor(() => expect(fake.sources).toHaveLength(count))
+    return fake.sources
+  }
+
+  // Step D2 — R1, R2, AC1. It is also AC3 and AC21: the groove has never been
+  // played here, so nothing has been warmed and the note is fetched on demand.
+  it('selects the tapped root and sounds its note (D2, R1, R2, R3, AC1)', async () => {
+    const user = userEvent.setup()
+    await renderPuzzle()
+
+    await user.click(within(rootGroup()).getByRole('button', { name: 'E♭' }))
+
+    expect(
+      within(rootGroup()).getByRole('button', { name: 'E♭' }),
+    ).toHaveAttribute('aria-pressed', 'true')
+
+    const [note] = await soundedNotes(1)
+    expect(fetchedNotes()).toEqual([noteSrc('E♭')])
+    // One-shot, not a loop, and started rather than scheduled (R3, R4).
+    expect(note.loop).toBe(false)
+    expect(note.start).toHaveBeenCalledTimes(1)
+  })
+
+  // Step D3 — R1, AC2. The handler is deliberately unguarded, so the chip that
+  // is already selected still sounds. A guard on "the value changed" would
+  // break this and nothing else, which is why the case is written down.
+  it('sounds the selected root again when it is tapped again (D3, R1, AC2)', async () => {
+    const user = userEvent.setup()
+    await renderPuzzle()
+
+    const chip = () => within(rootGroup()).getByRole('button', { name: 'E♭' })
+    await user.click(chip())
+    await soundedNotes(1)
+    await user.click(chip())
+    const nodes = await soundedNotes(2)
+
+    expect(chip()).toHaveAttribute('aria-pressed', 'true')
+    expect(nodes[1].start).toHaveBeenCalledTimes(1)
+    // Heard twice, fetched once (R17, AC14).
+    expect(fetchedNotes()).toEqual([noteSrc('E♭')])
+  })
+
+  // Step D5 — R12, AC10. The chips are already disabled on a finished day;
+  // this is the guard that the new call did not route around that lock.
+  it('stays silent on a day that has been solved (D5, R12, AC10)', async () => {
+    const stored: DailyResult = {
+      date: TODAY(),
+      answer: { root: 'C', flavour: 'Aeolian' },
+      attempts: [SOLVING],
+      solved: true,
+    }
+    mockStore.get.mockResolvedValue(stored)
+    mockStore.getAll.mockResolvedValue([stored])
+
+    const user = userEvent.setup()
+    await renderPuzzle()
+
+    await user.click(within(rootGroup()).getByRole('button', { name: 'G' }))
+
+    expect(fetchedNotes()).toEqual([])
+    expect(fake.sources).toHaveLength(0)
+    expect(
+      within(rootGroup()).getByRole('button', { name: 'G' }),
+    ).toHaveAttribute('aria-pressed', 'false')
+  })
+
+  // Step D6 — R7, AC6. Nothing special-cases the twelve: the page hands the
+  // whole chromatic set to the voice whatever the mode, and the row is what
+  // narrows. Switching modes therefore costs no fetch of its own.
+  it('sounds each of simple mode’s six roots (D6, R7, AC6)', async () => {
+    await enableSimpleMode()
+    const user = userEvent.setup()
+    await renderPuzzle(<GroovePuzzle groove={DORIAN} />)
+
+    const six = simpleRoots()
+    expect(chipTexts(rootGroup())).toEqual(six)
+
+    for (const root of six) {
+      await user.click(within(rootGroup()).getByRole('button', { name: root }))
+    }
+
+    await waitFor(() =>
+      expect(fetchedNotes()).toEqual(six.map((root) => noteSrc(root))),
+    )
+    await soundedNotes(six.length)
+  })
+
+  // Step D7 — R6, R13, AC5, AC11. The two voices share the context and nothing
+  // else. This fails loudly if the transport is ever reused to play a note.
+  it('leaves the groove untouched, and the groove leaves the note alone (D7, R6, R13, AC5, AC11)', async () => {
+    const user = userEvent.setup()
+    await renderPuzzle()
+
+    await play(user)
+    await advance(loopFraction(0.5))
+    const groove = fake.sources[0]
+    expect(screen.getByRole('progressbar')).toHaveAttribute(
+      'aria-valuenow',
+      '50',
+    )
+
+    await user.click(within(rootGroup()).getByRole('button', { name: 'A' }))
+    const [, note] = await soundedNotes(2)
+
+    // The groove kept playing, from where it was: no stop, no restart, no
+    // rewind, and one context between the two voices (R6, R14, AC5).
+    expect(groove.stop).not.toHaveBeenCalled()
+    expect(screen.getByRole('progressbar')).toHaveAttribute(
+      'aria-valuenow',
+      '50',
+    )
+    expect(
+      screen.getByRole('button', { name: 'Stop the loop' }),
+    ).toBeInTheDocument()
+    expect(fake.contexts).toHaveLength(1)
+
+    // And the other direction: stopping the groove does not cut the note, which
+    // rings on to its natural end (R13, AC11).
+    await user.click(screen.getByRole('button', { name: 'Stop the loop' }))
+    expect(groove.stop).toHaveBeenCalledTimes(1)
+    expect(note.stop).not.toHaveBeenCalled()
+  })
+
+  // Step D4 — R9, R10, AC8. The selection is the half that must not depend on
+  // the audio: with no Web Audio at all the chip still takes the tap, and the
+  // groove's own banner is not raised on a reference note's account (R11).
+  it('selects and stays quiet where Web Audio is unavailable (D4, R9, R10, R11, AC8)', async () => {
+    vi.stubGlobal('AudioContext', undefined)
+    const user = userEvent.setup()
+    await renderPuzzle()
+
+    await user.click(within(rootGroup()).getByRole('button', { name: 'F' }))
+    await act(async () => {
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+
+    expect(
+      within(rootGroup()).getByRole('button', { name: 'F' }),
+    ).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.queryByRole('alert')).toBeNull()
+    expect(fake.sources).toHaveLength(0)
+  })
+
 
 })

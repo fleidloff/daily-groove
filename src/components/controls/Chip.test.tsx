@@ -5,6 +5,10 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { Chip } from './Chip'
 
+// A decorative glyph, used as any caller's string would be. The primitive knows
+// nothing about what it means.
+const NOTE = '♪'
+
 describe('Chip', () => {
   it('renders its label as a button', () => {
     render(<Chip label="Alpha" selected={false} disabled={false} onSelect={() => {}} />)
@@ -147,5 +151,134 @@ describe('Chip', () => {
     ).container.firstElementChild as HTMLElement
 
     expect(idle.className).not.toBe(selected.className)
+  })
+
+  // --- Step A1 — a chip with no adornment is unchanged (R6, R7, AC7) -------
+  //
+  // The regression guard for the whole track: it passes today, and it is what
+  // proves the new prop acquired no default. `SolvedPanel` renders inverted
+  // chips with no adornment, which is why both tones are asserted.
+
+  it.each(['default', 'inverted'] as const)(
+    'renders nothing but its label with no adornment, in the %s tone (R6, R7, AC7)',
+    (tone) => {
+      render(
+        <Chip
+          label="C"
+          selected={false}
+          disabled={false}
+          onSelect={() => {}}
+          tone={tone}
+        />,
+      )
+      const chip = screen.getByRole('button')
+
+      expect(chip.children).toHaveLength(0)
+      expect(chip.textContent).toBe('C')
+      expect(chip).toHaveAccessibleName('C')
+    },
+  )
+
+  // --- Step A2 — the adornment renders before the label (R1, R8) -----------
+
+  it('renders its adornment before its label (R1)', () => {
+    render(
+      <Chip
+        label="C"
+        selected={false}
+        disabled={false}
+        onSelect={() => {}}
+        adornment={NOTE}
+      />,
+    )
+
+    expect(screen.getByRole('button').textContent).toBe(`${NOTE}C`)
+  })
+
+  it('changes nothing about the chip’s own box when adorned (R8)', () => {
+    const plain = render(
+      <Chip label="C" selected={false} disabled={false} onSelect={() => {}} />,
+    ).container.firstElementChild as HTMLElement
+    const adorned = render(
+      <Chip
+        label="C"
+        selected={false}
+        disabled={false}
+        onSelect={() => {}}
+        adornment={NOTE}
+      />,
+    ).container.firstElementChild as HTMLElement
+
+    expect(adorned.className).toBe(plain.className)
+  })
+
+  // --- Step A3 — the adornment is hidden from assistive tech (R4, AC5) -----
+
+  it('keeps the accessible name to the label alone (R4, AC5)', () => {
+    render(
+      <Chip
+        label="C"
+        selected={false}
+        disabled={false}
+        onSelect={() => {}}
+        adornment={NOTE}
+      />,
+    )
+    const chip = screen.getByRole('button')
+
+    expect(chip).toHaveAccessibleName('C')
+    expect(screen.getByRole('button', { name: 'C' })).toBe(chip)
+  })
+
+  it('hides the adornment from the accessibility tree (R4, AC5)', () => {
+    render(
+      <Chip
+        label="C"
+        selected={false}
+        disabled={false}
+        onSelect={() => {}}
+        adornment={NOTE}
+      />,
+    )
+    const chip = screen.getByRole('button')
+    const mark = chip.firstElementChild as HTMLElement
+
+    expect(mark).not.toBeNull()
+    expect(mark.textContent).toBe(NOTE)
+    expect(mark).toHaveAttribute('aria-hidden', 'true')
+  })
+
+  // --- Step A4 — it survives every chip state (R3, R9) ---------------------
+
+  it.each([
+    { state: 'idle', props: { selected: false, disabled: false } },
+    { state: 'selected', props: { selected: true, disabled: false } },
+    { state: 'disabled', props: { selected: false, disabled: true } },
+    {
+      state: 'inverted',
+      props: { selected: false, disabled: false, tone: 'inverted' as const },
+    },
+  ])('still carries its adornment when $state (R3)', ({ props }) => {
+    render(<Chip label="C" onSelect={() => {}} adornment={NOTE} {...props} />)
+
+    expect(screen.getByRole('button').textContent).toBe(`${NOTE}C`)
+  })
+
+  it('gives the adornment no colour of its own, so it inherits the ink (R9)', () => {
+    render(
+      <Chip
+        label="C"
+        selected={false}
+        disabled={false}
+        onSelect={() => {}}
+        adornment={NOTE}
+      />,
+    )
+    const mark = screen.getByRole('button').firstElementChild as HTMLElement
+
+    expect(mark.className).not.toMatch(/\btext-(?!\[)/)
+    expect(mark.className).not.toMatch(/\b(bg|border|fill|stroke)-/)
+    expect(mark.className).not.toMatch(/\bopacity-/)
+    expect(mark).not.toHaveAttribute('style')
   })
 })
