@@ -41,6 +41,13 @@ export type UsePuzzleSession = {
   answer: Answer
   /** The player's current streak, derived from the saved results. */
   streak: number
+  /**
+   * The player arrived with nothing saved, or nothing saved in the last month,
+   * so the page explains the game (F8 E3 R1, R2, R3). Decided when the records
+   * load and held for the session: playing does not take the instructions away
+   * (F8 E3 R16, R17).
+   */
+  newOrLapsed: boolean
 }
 
 /**
@@ -68,7 +75,8 @@ export function usePuzzleSession(
   simple = false,
 ): UsePuzzleSession {
   const todayIso = isoDate(today)
-  const { streak, todayResult, loaded, recordAttempt } = useProgress(todayIso)
+  const { streak, todayResult, loaded, recordAttempt, newOrLapsed } =
+    useProgress(todayIso)
 
   // The answer is the groove's own `root` and `flavour` fields — the values
   // the generator wrote next to the audio, not a parse of its `scale` string.
@@ -191,5 +199,6 @@ export function usePuzzleSession(
     reveal,
     answer,
     streak,
+    newOrLapsed,
   }
 }

@@ -13,11 +13,20 @@ export function isoDate(date: Date): string {
 }
 
 /**
+ * Parse an ISO `YYYY-MM-DD` string into a local Date at noon. Noon avoids any
+ * DST edge where midnight ± a step could land on the wrong calendar day.
+ */
+export function parseIsoDate(iso: string): Date {
+  const [year, month, day] = iso.split('-').map(Number)
+  return new Date(year, month - 1, day, 12, 0, 0, 0)
+}
+
+/**
  * Days from 1970-01-01 to the given ISO calendar day.
  *
- * The day is parsed at 12:00 local — the same noon anchor `persistence/
- * streak.ts` uses — so the ±1h a DST transition moves the clock can never push
- * the value across a day boundary. The index is therefore a property of the
+ * The day is parsed at 12:00 local — the same noon anchor `parseIsoDate` above
+ * uses — so the ±1h a DST transition moves the clock can never push the value
+ * across a day boundary. The index is therefore a property of the
  * calendar day, not of when in it the page was opened.
  */
 export function dayIndexOf(iso: string): number {

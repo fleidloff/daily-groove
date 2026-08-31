@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { Answer, Attempt, DailyResult } from '../types'
 import { createLocalStore, type ResultStore } from '../lib/persistence/storage'
+import { isNewOrLapsed } from '../lib/persistence/lapsed'
 import { computeStreak } from '../lib/persistence/streak'
 
 /**
@@ -46,6 +47,16 @@ export type UseProgress = {
    */
   recordAttempt: (day: DayProgress) => Promise<void>
   loaded: boolean
+  /**
+   * The player arrived with nothing saved, or with nothing saved in the last
+   * `LAPSE_DAYS` days — so the game explains itself again (F8 E3 R1, R2, R3).
+   *
+   * Latched: written once, in the load that read the records, and never
+   * recomputed. It describes how the player *arrived*, not what they have done
+   * since, so today's first attempt — which writes a record dated today — must
+   * not flip it while the explanation is being read (F8 E3 R16).
+   */
+  newOrLapsed: boolean
 }
 
 /**
@@ -64,6 +75,10 @@ export function useProgress(
   const [all, setAll] = useState<DailyResult[]>([])
   const [todayResult, setTodayResult] = useState<DailyResult | null>(null)
   const [loaded, setLoaded] = useState(false)
+  // Deliberately state, not a `useMemo` over `all`: `all` changes on every
+  // write, and a derivation would take the how-to-play box away the moment the
+  // player made their first guess (F8 E3 R16, AC15, AC16).
+  const [newOrLapsed, setNewOrLapsed] = useState(false)
 
   useEffect(() => {
     let active = true
@@ -77,6 +92,8 @@ export function useProgress(
         if (!active) return
         setAll(allResults)
         setTodayResult(todays)
+        // Decided here and nowhere else. `recordAttempt` never touches it.
+        setNewOrLapsed(isNewOrLapsed(allResults, today))
         setLoaded(true)
       },
     )
@@ -115,5 +132,5 @@ export function useProgress(
 
   const streak = useMemo(() => computeStreak(all, today), [all, today])
 
-  return { todayResult, streak, recordAttempt, loaded }
+  return { todayResult, streak, recordAttempt, loaded, newOrLapsed }
 }

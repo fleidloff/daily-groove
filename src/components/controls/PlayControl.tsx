@@ -28,8 +28,9 @@ const NAME = { play: 'Play the loop', stop: 'Stop the loop' } as const
  * `busy` is a prop, never state: it lasts exactly as long as the caller says
  * it does, and clearing it returns the control to the state `isPlaying` names.
  *
- * It renders `Button`, inheriting the solve button's geometry rather than
- * restating it. There is one page and one loop, so there is one form.
+ * It renders `Button`, so there is one form on the page — one shape, one set
+ * of tones, one focus treatment — in two sizes. The play control takes the
+ * larger of them: it is the first move, and the page should say so.
  */
 export function PlayControl({ isPlaying, onToggle, busy = false, text = TEXT }: PlayControlProps) {
   const action = isPlaying ? 'stop' : 'play'
@@ -38,6 +39,7 @@ export function PlayControl({ isPlaying, onToggle, busy = false, text = TEXT }: 
   return (
     <Button
       tone="ready"
+      size="lg"
       disabled={busy}
       onPress={onToggle}
       label={busy ? text.loading : NAME[action]}

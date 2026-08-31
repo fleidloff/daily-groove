@@ -110,3 +110,34 @@ describe('the jazz face is vendored into the repo', () => {
     expect(readFileSync(licencePath, 'utf8')).toContain('SIL OPEN FONT LICENSE')
   })
 })
+
+// AC5 (R6, R7) — the tab title and the meta description name the app and state
+// its pitch. Asserted against the source rather than the imported module:
+// importing `layout.tsx` pulls `next/font/google` into the test environment,
+// which is why every assertion in this file reads the file from disk. Matching
+// the identifiers rather than the literals is the point — the words live in
+// `src/lib/branding.ts`, and a metadata block that inlines them would drift
+// from the masthead that renders the same two constants.
+describe('layout.tsx metadata names the app', () => {
+  it('imports the branding constants', () => {
+    expect(source).toMatch(/import\s*\{[^}]*\bAPP_NAME\b[^}]*\}\s*from\s*['"]@\/lib\/branding['"]/)
+    expect(source).toMatch(/import\s*\{[^}]*\bTAGLINE\b[^}]*\}\s*from\s*['"]@\/lib\/branding['"]/)
+  })
+
+  it('sets the document title to APP_NAME', () => {
+    expect(source).toMatch(/title:\s*APP_NAME/)
+  })
+
+  it('sets the meta description to TAGLINE', () => {
+    expect(source).toMatch(/description:\s*TAGLINE/)
+  })
+
+  it('no longer names the app Daily Groove', () => {
+    expect(source).not.toContain('Daily Groove')
+  })
+
+  it('no longer carries the old description sentence', () => {
+    expect(source).not.toContain('Guess today')
+    expect(source).not.toContain('its scale, chord, and progression')
+  })
+})

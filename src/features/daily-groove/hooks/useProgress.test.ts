@@ -331,6 +331,8 @@ describe('useProgress', () => {
 
     expect(Object.keys(result.current).sort()).toEqual([
       'loaded',
+      // Added by F8 E3: who arrived, decided once at load (F8 E3 R16).
+      'newOrLapsed',
       'recordAttempt',
       'streak',
       'todayResult',
@@ -417,4 +419,54 @@ describe('useProgress', () => {
     expect('revealed' in record).toBe(false)
     expect(result.current.todayResult?.revealed).toBeUndefined()
   })
+
+  // --- F8 Epic 3: who arrived, decided once when the records load -----------
+
+  // Step C1 — F8 E3 R1, R2, R3
+  it('reports a player with nothing saved as new (F8 E3 R1)', async () => {
+    const store = makeStore()
+    const { result } = renderHook(() => useProgress(TODAY, store))
+
+    await waitFor(() => expect(result.current.loaded).toBe(true))
+    expect(result.current.newOrLapsed).toBe(true)
+  })
+
+  it('reports a player who was here yesterday as neither (F8 E3 R2, R3)', async () => {
+    const store = makeStore({
+      get: vi.fn(async () => null),
+      getAll: vi.fn(async () => [yesterdayResult]),
+    })
+    const { result } = renderHook(() => useProgress(TODAY, store))
+
+    await waitFor(() => expect(result.current.loaded).toBe(true))
+    expect(result.current.newOrLapsed).toBe(false)
+  })
+
+  // Step C2 — F8 E3 R16: latched at load, not derived from the record set
+  it("holds the answer through today's first write, while the streak moves (F8 E3 R16)", async () => {
+    const store = makeStore()
+    const { result } = renderHook(() => useProgress(TODAY, store))
+    await waitFor(() => expect(result.current.loaded).toBe(true))
+
+    expect(result.current.newOrLapsed).toBe(true)
+    expect(result.current.streak).toBe(0)
+
+    const winner = attempt({ flavour: 'Minor', correct: true, flavourMatched: true })
+    await act(async () => {
+      await result.current.recordAttempt({
+        answer: ANSWER,
+        grooveId: GROOVE_ID,
+        attempts: [winner],
+        solved: true,
+      })
+    })
+
+    // One write, two behaviours: the streak is a derivation over the record set
+    // and moves; "new or lapsed" describes how the player *arrived* and does
+    // not. A `useMemo` over `all` would flip this to `false` and pull the
+    // explanation off the screen mid-read.
+    expect(result.current.streak).toBe(1)
+    expect(result.current.newOrLapsed).toBe(true)
+  })
+
 })

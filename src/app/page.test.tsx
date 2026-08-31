@@ -3,6 +3,7 @@ import { resolve } from "node:path";
 import { describe, it, expect } from "vitest";
 import { act, render, screen } from "@testing-library/react";
 import Home from "./page";
+import { APP_NAME } from "@/lib/branding";
 
 /**
  * The route's own tests, and nothing else.
@@ -39,7 +40,7 @@ describe("Home route", () => {
     const main = screen.getByRole("main");
     expect(main).toBeInTheDocument();
     expect(
-      screen.getByRole("heading", { level: 1, name: "Daily Groove" }),
+      screen.getByRole("heading", { level: 1, name: APP_NAME }),
     ).toBeInTheDocument();
 
     // The retired wordmark cluster is gone from the shell (E1 AC1).

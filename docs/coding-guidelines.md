@@ -165,7 +165,7 @@ being the single inbound reference the route uses today.
 | :-- | :-- | :-- |
 | `theory/` | `notes`, `music`, `options` | `lib/theory/notes.ts` — how a diatonic scale spells itself; pure music theory with no puzzle in it |
 | `puzzle/` | `selectGroove`, `scoring`, `resolveGroove` | `lib/puzzle/scoring.ts` — the rules of the game: which groove today plays, whether a guess is right |
-| `persistence/` | `storage`, `streak` | `lib/persistence/storage.ts` — the one seam onto stored results; nothing else touches `localStorage` |
+| `persistence/` | `storage`, `streak`, `lapsed` | `lib/persistence/storage.ts` — the one seam onto stored results; nothing else touches `localStorage` |
 | `presentation/` | `feedback`, `archive` | `lib/presentation/feedback.ts` — turning state into what the UI says, without rendering anything |
 | `audio/` | `audio`, `transport` | `lib/audio/transport.ts` — the browser audio element and who is currently sounding |
 

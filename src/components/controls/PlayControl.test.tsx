@@ -42,13 +42,16 @@ describe('PlayControl', () => {
     expect(onToggle).toHaveBeenCalledTimes(1)
   })
 
-  // D1 — R9, AC8a. The one form the control has left: there is no size to pick.
-  it('renders the full-width button form with no size given (D1, R9, AC8a)', () => {
+  // D1 — R9, AC8a. The one form the control has left: the caller picks no size.
+  // Widened by feature-8 Epic 2, Step B2 — R6, AC5: the size the control picks
+  // for itself is the large one, in every state, so each state test pins it.
+  it('renders the large full-width button form with no size given (D1, B2, R9, R6, AC8a, AC5)', () => {
     render(<PlayControl isPlaying={false} onToggle={() => {}} />)
 
     const button = screen.getByRole('button', { name: 'Play the loop' })
     expect(button).toHaveTextContent('▶ Play')
     expect(button.className).toContain('w-full')
+    expect(button.className).toContain('py-[22px]')
     expect(button).toBeEnabled()
   })
 
@@ -79,19 +82,26 @@ describe('PlayControl', () => {
     expect(screen.getByRole('button')).toHaveTextContent('■ Halt it')
   })
 
-  it("inherits the solve button's geometry rather than restating it (A1, R1, AC1)", () => {
+  // feature-8 Epic 2, Step B1 — R4, R7, AC4. Feature-4 sized this control to
+  // match the solve button exactly; this epic undoes that. The form is still
+  // the one button's — full width, same radius, same horizontal padding — and
+  // the play control takes its larger size because it is the first move.
+  it('takes the large form of the one button, not the solve button\'s size (B1, R4, R7, AC4)', () => {
     render(<PlayControl isPlaying={false} onToggle={() => {}} />)
 
     const className = screen.getByRole('button').className
-    for (const geometry of ['w-full', 'rounded-control', 'px-4', 'py-[15px]', 'text-[15px]']) {
+    for (const geometry of ['w-full', 'rounded-control', 'px-4', 'py-[22px]', 'text-[17px]']) {
       expect(className).toContain(geometry)
     }
   })
 
-  it('swaps to the stop glyph and text while sounding (A2, R4b, AC3a)', () => {
+  it('swaps to the stop glyph and text while sounding, at the same size (A2, B2, R4b, R6, AC3a, AC5)', () => {
     render(<PlayControl isPlaying onToggle={() => {}} />)
 
-    expect(screen.getByRole('button')).toHaveTextContent('■ Stop')
+    const button = screen.getByRole('button')
+    expect(button).toHaveTextContent('■ Stop')
+    expect(button).toHaveAccessibleName('Stop the loop')
+    expect(button.className).toContain('py-[22px]')
   })
 
   it('differs between the two states in glyph and text only (A2, R4b, AC3b)', () => {
@@ -132,7 +142,7 @@ describe('PlayControl', () => {
   // Step C1 — R7a, AC8b. Web Audio cannot play progressively: the first press
   // has to fetch and decode before any sound exists. The control says so
   // rather than flipping to "Stop" over silence.
-  it('renders inert with the caller-supplied loading word while busy (C1, R7a, AC8b)', async () => {
+  it('renders inert at the same size with the loading word while busy (C1, B2, R7a, R6, AC8b, AC5, AC6)', async () => {
     const user = userEvent.setup()
     const onToggle = vi.fn()
     render(
@@ -146,8 +156,10 @@ describe('PlayControl', () => {
 
     const button = screen.getByRole('button')
     expect(button).toBeDisabled()
-    expect(button).toHaveTextContent('Fetching…')
+    expect(button).toHaveTextContent('◌ Fetching…')
     expect(button).not.toHaveTextContent('Start it')
+    expect(button).toHaveAccessibleName('Fetching…')
+    expect(button.className).toContain('py-[22px]')
 
     await user.click(button)
 

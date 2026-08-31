@@ -23,6 +23,7 @@ import { useSimpleMode } from '../hooks/useSimpleMode'
 import { useTransport } from '../hooks/useTransport'
 import { GrooveCard } from './puzzle/GrooveCard'
 import { GrooveHeader } from './header/GrooveHeader'
+import { HowToPlay } from './intro/HowToPlay'
 import { GuessCard } from './puzzle/GuessCard'
 import { SolvedPanel } from './puzzle/SolvedPanel'
 import { TransportPanel } from './puzzle/TransportPanel'
@@ -31,10 +32,15 @@ import { PlayControl } from '@/components/controls/PlayControl'
 import { Row } from '@/components/layout/Row'
 import { Stack } from '@/components/layout/Stack'
 import { Text } from '@/components/typography/Text'
+import { APP_NAME } from '@/lib/branding'
 
 type GroovePuzzleProps = {
   groove?: Groove
 }
+
+// The feature's landmark name, held once so the loading branch and the loaded
+// branch cannot disagree about what the page is (F8 E1 R8, AC6).
+const REGION_LABEL = APP_NAME
 
 // A no-op subscription: today's groove never changes within a session, so the
 // external store never notifies. Defined once so the subscription is stable.
@@ -47,7 +53,7 @@ const subscribeNoop = () => () => {}
  */
 function PuzzleLoading() {
   return (
-    <section aria-label="Daily Groove">
+    <section aria-label={REGION_LABEL}>
       <Text tone="muted">Loading today&apos;s groove…</Text>
     </section>
   )
@@ -83,7 +89,8 @@ export function GroovePuzzle({ groove }: GroovePuzzleProps) {
  */
 function GroovePuzzleView({ groove }: { groove: Groove }) {
   // Today, resolved once on the client. The same day both selects the groove
-  // and seeds the flavour options, and is what the header displays (R4, R5).
+  // and seeds the flavour options, and is what the groove card displays beside
+  // the tempo (R4, R5; F8 E1 R13).
   const [today] = useState(() => new Date())
 
   // The player's own preference, not the day's: it is read from its own store
@@ -105,7 +112,19 @@ function GroovePuzzleView({ groove }: { groove: Groove }) {
     reveal,
     answer,
     streak,
+    newOrLapsed,
   } = usePuzzleSession(groove, today, simple)
+
+  // Whether the how-to-play box is on screen. `null` means "follow the rule";
+  // the box's close control and the header's question mark are the only two
+  // things that set it, and nothing about it is persisted (F8 E3 R6, R7, R8).
+  // Session state in the page rather than a preference: it says nothing about
+  // who the player is, so it stays out of `preferences.ts`.
+  const [helpOverride, setHelpOverride] = useState<boolean | null>(null)
+  const showHelp = helpOverride ?? newOrLapsed
+
+  const handleShowHelp = useCallback(() => setHelpOverride(true), [])
+  const handleCloseHelp = useCallback(() => setHelpOverride(false), [])
 
   // What the page plays: today's groove, its musical loop length, and where
   // inside its own file the music starts. The head delay is per-groove data,
@@ -196,9 +215,20 @@ function GroovePuzzleView({ groove }: { groove: Groove }) {
   if (!hydrated) return <PuzzleLoading />
 
   return (
-    <section aria-label="Daily Groove">
+    <section aria-label={REGION_LABEL}>
       <Stack gap="xl">
-        <GrooveHeader date={today} streak={streak} />
+        {/* No question mark while the box is up: a control asking for what
+            is already on screen is noise (E3 R10). */}
+        <GrooveHeader
+          streak={streak}
+          onShowHelp={showHelp ? null : handleShowHelp}
+        />
+
+        {/* Under the header and above the two cards: it precedes the game it
+            explains and never covers it (F8 E3 R5). It cannot reach the first
+            painted frame either — the view is still on `PuzzleLoading` until
+            the day's record has been read (F8 E3 R11). */}
+        {showHelp && <HowToPlay onClose={handleCloseHelp} />}
 
         {audioError && (
           <div role="alert">

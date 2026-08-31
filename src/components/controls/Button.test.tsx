@@ -90,6 +90,72 @@ describe('Button', () => {
     expect(button).toHaveTextContent('▶ Play the loop')
   })
 
+  it('renders today\'s geometry when no size is given (A1, R1, AC1)', () => {
+    const { container } = render(
+      <Button onPress={() => {}} disabled={false} tone="ready">
+        Go
+      </Button>,
+    )
+
+    const className = (container.firstElementChild as HTMLElement).className
+
+    for (const utility of ['py-[15px]', 'text-[15px]', 'w-full', 'rounded-control', 'px-4']) {
+      expect(className).toContain(utility)
+    }
+  })
+
+  it('swaps only the two size utilities at the large size (A2, R2, AC2)', () => {
+    const classOf = (size?: 'md' | 'lg') =>
+      (
+        render(
+          <Button onPress={() => {}} disabled={false} tone="ready" size={size}>
+            Go
+          </Button>,
+        ).container.firstElementChild as HTMLElement
+      ).className
+
+    const large = classOf('lg')
+
+    expect(large).toContain('py-[22px]')
+    expect(large).toContain('text-[17px]')
+    expect(large).not.toContain('py-[15px]')
+    expect(large).not.toContain('text-[15px]')
+
+    // Everything that is not size — radius, tones, focus ring — is identical,
+    // checked by stripping the size utilities rather than listing the rest.
+    const withoutSize = (classes: string) =>
+      classes
+        .split(/\s+/)
+        .filter(
+          (utility) =>
+            !['py-[15px]', 'text-[15px]', 'py-[22px]', 'text-[17px]'].includes(utility),
+        )
+        .sort()
+        .join(' ')
+
+    expect(withoutSize(large)).toBe(withoutSize(classOf()))
+  })
+
+  it('disables at the large size exactly as it does at the default (A3, R2, AC3)', async () => {
+    const user = userEvent.setup()
+    const onPress = vi.fn()
+    const { container } = render(
+      <Button onPress={onPress} disabled tone="idle" size="lg">
+        Not ready yet
+      </Button>,
+    )
+
+    const button = screen.getByRole('button', { name: 'Not ready yet' })
+    expect(button).toBeDisabled()
+    expect((container.firstElementChild as HTMLElement).className).toContain(
+      'disabled:cursor-default',
+    )
+
+    await user.click(button)
+
+    expect(onPress).not.toHaveBeenCalled()
+  })
+
   it('falls back to its children for the accessible name when label is omitted (A0, R5)', () => {
     render(
       <Button onPress={() => {}} disabled={false} tone="ready">
@@ -101,4 +167,10 @@ describe('Button', () => {
     expect(button).toHaveAccessibleName('▶ Play the loop')
     expect(button).not.toHaveAttribute('aria-label')
   })
+
+  // R3 / AC10 — "the size names no domain concept" — is enforced repo-wide by
+  // `src/app/globals.test.ts` guard I5, which reads every design-system file,
+  // tests included, against a domain-vocabulary pattern. A local version here
+  // would have to name the banned words to ban them, which is itself the leak
+  // I5 catches. One guard, in the place that already owns the rule.
 })

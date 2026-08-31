@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import type { Groove } from '../../types'
-import { selectGrooveForDate, isoDate, dayIndexOf } from './selectGroove'
+import { selectGrooveForDate, isoDate, dayIndexOf, parseIsoDate } from './selectGroove'
 
 const grooves: Groove[] = [
   { id: 'a', audioSrc: '/grooves/a.mp3', name: 'Test Groove', bpm: 90, root: 'C', flavour: 'Minor', bars: 4, scale: 'C minor', chord: 'Cm', progression: 'Cm–F–G', headDelaySeconds: 0.025057 },
@@ -15,6 +15,17 @@ describe('isoDate', () => {
 
   it('pads single-digit months and days', () => {
     expect(isoDate(new Date('2026-01-05T10:00'))).toBe('2026-01-05')
+  })
+})
+
+describe('parseIsoDate', () => {
+  it('parses a YYYY-MM-DD string as a local calendar day at noon', () => {
+    const date = parseIsoDate('2026-08-30')
+    expect(date.getFullYear()).toBe(2026)
+    expect(date.getMonth()).toBe(7)
+    expect(date.getDate()).toBe(30)
+    // Noon, not midnight: a DST step of ±1h can never move the calendar day.
+    expect(date.getHours()).toBe(12)
   })
 })
 

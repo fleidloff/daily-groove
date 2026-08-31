@@ -34,6 +34,7 @@ import { dateLine } from '../lib/presentation/date'
 import { isoDate, selectGrooveForDate } from '../lib/puzzle/selectGroove'
 import { GROOVES } from '../data/grooves.generated'
 import { renderFeature } from '../testing/renderFeature'
+import { APP_NAME } from '@/lib/branding'
 import {
   installFakeAudioContext,
   type FakeContext,
@@ -198,7 +199,7 @@ describe('GroovePuzzle', () => {
   it('renders a play control and the guessing card (R1, R2, AC1)', async () => {
     await renderPuzzle()
 
-    expect(screen.getByRole('button', { name: /play/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^play the loop$/i })).toBeInTheDocument()
     expect(within(rootGroup()).getAllByRole('button')).toHaveLength(12)
     expect(within(flavourGroup()).getAllByRole('button')).toHaveLength(4)
     // The retired subset-guessing model is gone.
@@ -213,7 +214,7 @@ describe('GroovePuzzle', () => {
     await renderPuzzle()
 
     expect(
-      screen.getByRole('heading', { level: 1, name: 'Daily Groove' }).className,
+      screen.getByRole('heading', { level: 1, name: APP_NAME }).className,
     ).toMatch(/font-jazz/)
   })
 
@@ -990,7 +991,7 @@ describe('GroovePuzzle', () => {
     const user = userEvent.setup()
     await renderPuzzle()
 
-    await user.click(screen.getByRole('button', { name: /play/i }))
+    await user.click(screen.getByRole('button', { name: /^play the loop$/i }))
 
     expect(await screen.findByRole('alert')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /retry/i })).toBeInTheDocument()
@@ -1199,9 +1200,10 @@ describe('GroovePuzzle', () => {
     expect(
       screen.getByText(new RegExp(`^${GROOVE.bpm} bpm · `)),
     ).toBeInTheDocument()
-    // The day appears twice on purpose — once in the page header, once beside
-    // the tempo — so the card states what it is without a glance upward.
-    expect(screen.getAllByText(new RegExp(dateLine(new Date())))).toHaveLength(2)
+    // The day appears exactly once, beside the tempo: the header stopped
+    // carrying its own copy, so the card is the page's only statement of the
+    // day (F8 E1 R13, AC11).
+    expect(screen.getAllByText(new RegExp(dateLine(new Date())))).toHaveLength(1)
     expect(screen.queryByText('BPM')).not.toBeInTheDocument()
     // The tempo sits outside the heading, so the name is still the whole of the
     // heading's accessible name.
@@ -1218,10 +1220,14 @@ describe('GroovePuzzle', () => {
       await renderPuzzle()
 
       expect(
-        screen.getByRole('heading', { level: 1, name: 'Daily Groove' }),
+        screen.getByRole('heading', { level: 1, name: APP_NAME }),
       ).toBeInTheDocument()
-      // The date is one line, and no longer a weekday element of its own.
-      expect(screen.getByText('Saturday, 29 August')).toBeInTheDocument()
+      // The header shows no date of its own: the day is the card's line,
+      // where it reads `<bpm> bpm · <day>` (F8 E1 R11, R13, AC9, AC11).
+      expect(screen.queryByText('Saturday, 29 August')).toBeNull()
+      expect(
+        screen.getByText(/· Saturday, 29 August$/),
+      ).toBeInTheDocument()
       expect(screen.queryByText('Saturday')).not.toBeInTheDocument()
       // The wordmark cluster went with it (E1 R1, AC1).
       expect(screen.queryByText('daily-groove')).not.toBeInTheDocument()
@@ -1230,6 +1236,62 @@ describe('GroovePuzzle', () => {
       )
     } finally {
       vi.useRealTimers()
+    }
+  })
+
+  it('names its landmark for the app in both branches (F8 E1 R8, AC6)', async () => {
+    // Rendered but not settled: the store read has not resolved, so this is the
+    // loading branch.
+    const { unmount } = render(<GroovePuzzle groove={GROOVE} />)
+    expect(screen.getByText(/loading/i)).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: APP_NAME })).toBeInTheDocument()
+    await settle()
+    // ...and the loaded branch says the same word.
+    expect(screen.getByRole('region', { name: APP_NAME })).toBeInTheDocument()
+    unmount()
+  })
+
+  it('reads a pre-rename store back unchanged (F8 E1 R9, AC7)', async () => {
+    // A regression pin, not a behaviour change: the epic renames the page, not
+    // the key. A player's streak lives under `daily-groove:v2:results` and must
+    // survive a "rename everything" sweep untouched.
+    const { createLocalStore } = await vi.importActual<
+      typeof import('../lib/persistence/storage')
+    >('../lib/persistence/storage')
+
+    const day = (daysAgo: number): DailyResult => ({
+      date: isoDate(new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000)),
+      answer: { root: 'C', flavour: 'Aeolian' },
+      attempts: [SOLVING],
+      solved: true,
+    })
+    const byDate: Record<string, DailyResult> = {}
+    for (const daysAgo of [0, 1, 2]) {
+      const result = day(daysAgo)
+      byDate[result.date] = result
+    }
+    localStorage.setItem(
+      'daily-groove:v2:results',
+      JSON.stringify({ version: 2, byDate }),
+    )
+
+    // Read through the real localStorage-backed store, so the key itself is
+    // what the assertion depends on.
+    const real = createLocalStore()
+    mockStore.get.mockImplementation((date: string) => real.get(date))
+    mockStore.getAll.mockImplementation(() => real.getAll())
+    mockStore.save.mockImplementation((result: DailyResult) => real.save(result))
+
+    try {
+      await renderPuzzle()
+
+      expect(screen.getByLabelText(/current streak/i)).toHaveTextContent(
+        '3 days streak',
+      )
+      // Nothing migrated it away.
+      expect(localStorage.getItem('daily-groove:v2:results')).not.toBeNull()
+    } finally {
+      localStorage.removeItem('daily-groove:v2:results')
     }
   })
 
@@ -1279,7 +1341,7 @@ describe('GroovePuzzle', () => {
 
   it("falls back to today's groove when no prop is given", async () => {
     await renderPuzzle(<GroovePuzzle />)
-    expect(screen.getByRole('button', { name: /play/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^play the loop$/i })).toBeInTheDocument()
     expect(rootGroup()).toBeInTheDocument()
   })
 
@@ -1300,7 +1362,7 @@ describe('GroovePuzzle', () => {
   const fiveSolvedDays = () => [1, 2, 3, 4, 5].map(solvedDay)
 
   /** The puzzle's own landmark — the whole of what the page renders. */
-  const page = () => screen.getByRole('region', { name: 'Daily Groove' })
+  const page = () => screen.getByRole('region', { name: APP_NAME })
 
   it('renders no played-grooves section, however deep the history (E6 R1, AC1)', async () => {
     mockStore.get.mockResolvedValue(null)
@@ -1328,8 +1390,10 @@ describe('GroovePuzzle', () => {
 
     await renderFeature()
 
+    // Anchored on the transport control's own name: the header's question mark
+    // is named "How to play" (F8 E3 R9) and an unanchored /play/ matches it.
     expect(
-      screen.getAllByRole('button', { name: /play|stop/i }),
+      screen.getAllByRole('button', { name: /^(play|stop) the loop$/i }),
     ).toHaveLength(1)
   })
 
@@ -1431,8 +1495,8 @@ describe('GroovePuzzle', () => {
 
       await renderPuzzle(<GroovePuzzle />)
 
-      // The header renders the day...
-      expect(screen.getByText('Saturday, 29 August')).toBeInTheDocument()
+      // The card renders the day...
+      expect(screen.getByText(/· Saturday, 29 August$/)).toBeInTheDocument()
       // ...and the card names the groove that same day selects.
       expect(
         screen.getByRole('heading', { name: expected.name }),
@@ -1490,4 +1554,268 @@ describe('GroovePuzzle', () => {
       expect(document.querySelectorAll("[data-dot-state]")).toHaveLength(0);
     })
   })
+
+  /**
+   * Feature 8, Epic 3, Track C — the how-to-play box and the question mark that
+   * brings it back. Every case here goes through `renderFeature`, the route's
+   * own render-and-settle, because who sees the box is a property of the
+   * composed page and its saved records rather than of any one component.
+   */
+  describe('how to play (F8 E3)', () => {
+    /** The box, found by its own heading — the `Card` root carries no role. */
+    const box = () =>
+      screen.queryByRole('heading', { level: 2, name: 'How to play' })
+    const helpToggle = () =>
+      screen.queryByRole('button', { name: 'How to play' })
+    const closeBox = () =>
+      screen.getByRole('button', { name: 'Close how to play' })
+
+    /** An ISO day `n` days before today, anchored at noon so DST cannot shift it. */
+    function daysAgo(n: number): string {
+      const day = new Date()
+      day.setHours(12, 0, 0, 0)
+      day.setDate(day.getDate() - n)
+      return isoDate(day)
+    }
+
+    function solvedOn(date: string): DailyResult {
+      return {
+        date,
+        answer: { root: 'C', flavour: 'Aeolian' },
+        attempts: [SOLVING],
+        solved: true,
+      }
+    }
+
+    /**
+     * Point the mocked persistence seam at the real localStorage-backed store,
+     * for the cases where the *storage contents* have to drive the behaviour —
+     * a record written by a guess and read back by the next render, and the
+     * keys the page is allowed to leave behind.
+     */
+    async function withRealStorage() {
+      const { createLocalStore } = await vi.importActual<
+        typeof import('../lib/persistence/storage')
+      >('../lib/persistence/storage')
+      const real = createLocalStore()
+      mockStore.get.mockImplementation((date: string) => real.get(date))
+      mockStore.getAll.mockImplementation(() => real.getAll())
+      mockStore.save.mockImplementation((result: DailyResult) =>
+        real.save(result),
+      )
+      return real
+    }
+
+    /** Seed the real results key with exactly one record on `date`. */
+    function seed(date: string) {
+      localStorage.setItem(
+        'daily-groove:v2:results',
+        JSON.stringify({ version: 2, byDate: { [date]: solvedOn(date) } }),
+      )
+    }
+
+    /** Spend one guess on whatever the day offers, and let the write settle. */
+    async function guessSomething(user: ReturnType<typeof userEvent.setup>) {
+      await user.click(within(rootGroup()).getAllByRole('button')[0])
+      await user.click(within(flavourGroup()).getAllByRole('button')[0])
+      await user.click(control())
+      await settle()
+    }
+
+    // --- Step C4: the right players see it ---------------------------------
+
+    it('greets a player with nothing saved (F8 E3 R1, AC1)', async () => {
+      await renderFeature()
+
+      expect(box()).toBeInTheDocument()
+    })
+
+    it('says nothing to a player who was here yesterday (F8 E3 R3, AC2)', async () => {
+      mockStore.getAll.mockResolvedValue([solvedOn(daysAgo(1))])
+
+      await renderFeature()
+
+      expect(box()).toBeNull()
+    })
+
+    it('explains the game again after a month away (F8 E3 R2, AC3)', async () => {
+      mockStore.getAll.mockResolvedValue([solvedOn(daysAgo(35))])
+
+      await renderFeature()
+
+      expect(box()).toBeInTheDocument()
+    })
+
+    // --- Step C5: it sits under the header, and never before the records ----
+
+    it('follows the masthead and precedes the groove card (F8 E3 R5, AC6)', async () => {
+      const { container } = await renderFeature()
+
+      const headings = Array.from(container.querySelectorAll('h1, h2'))
+      const groove = selectGrooveForDate(new Date(), GROOVES)
+      const at = (text: string) =>
+        headings.findIndex((h) => h.textContent === text)
+
+      const masthead = headings.findIndex((h) => h.tagName === 'H1')
+      const intro = at('How to play')
+      const card = at(groove.name)
+
+      expect(masthead).toBeGreaterThanOrEqual(0)
+      expect(intro).toBeGreaterThan(masthead)
+      expect(card).toBeGreaterThan(intro)
+    })
+
+    it('is not in the first painted frame, before the records load (F8 E3 R11, AC11)', async () => {
+      // Rendered but deliberately not settled: the store read has not resolved,
+      // so this is the loading branch a returning player would flash through.
+      const { unmount } = render(<GroovePuzzle />)
+
+      expect(screen.getByText(/loading/i)).toBeInTheDocument()
+      expect(screen.queryByText('How to play')).toBeNull()
+
+      await settle()
+      unmount()
+    })
+
+    // --- Step C3: playing does not take the instructions away --------------
+
+    it('keeps the box up while a new player guesses (F8 E3 R16, R17, AC15)', async () => {
+      const user = userEvent.setup()
+      await renderFeature()
+      expect(box()).toBeInTheDocument()
+
+      await guessSomething(user)
+
+      // Today's record has just been written, which by the record set alone
+      // would make this a returning player. The answer is latched at load.
+      expect(mockStore.save).toHaveBeenCalled()
+      expect(box()).toBeInTheDocument()
+    })
+
+    it('keeps it up for a lapsed player too, and drops it on the next load (F8 E3 R16, AC16)', async () => {
+      await withRealStorage()
+      seed(daysAgo(35))
+      const user = userEvent.setup()
+
+      const first = await renderFeature()
+      expect(box()).toBeInTheDocument()
+
+      await guessSomething(user)
+      expect(box()).toBeInTheDocument()
+
+      first.unmount()
+
+      // A reload against the same storage: the newest record is now today, so
+      // the player is no longer lapsed and the box stays away.
+      await renderFeature()
+      expect(box()).toBeNull()
+    })
+
+    // --- Step C6: close it, and get it back --------------------------------
+
+    it('closes on the box’s own control and comes back on the question mark (F8 E3 R6, R8, AC7, AC8)', async () => {
+      const user = userEvent.setup()
+      await renderFeature()
+      expect(box()).toBeInTheDocument()
+
+      await user.click(closeBox())
+      expect(box()).toBeNull()
+
+      await user.click(helpToggle() as HTMLElement)
+      expect(box()).toBeInTheDocument()
+    })
+
+    it('hides the question mark while the box is up, and returns it on close (F8 E3 R10, AC9a)', async () => {
+      const user = userEvent.setup()
+      await renderFeature()
+
+      // A new player: the box is up, so there is nothing to ask for.
+      expect(box()).toBeInTheDocument()
+      expect(helpToggle()).toBeNull()
+
+      await user.click(closeBox())
+
+      // Closed, and the way back appears in the same moment.
+      expect(box()).toBeNull()
+      expect(helpToggle()).toBeInTheDocument()
+
+      await user.click(helpToggle() as HTMLElement)
+      expect(box()).toBeInTheDocument()
+      expect(helpToggle()).toBeNull()
+    })
+
+    it('offers the question mark to a regular, who can ask for the box (F8 E3 R10, AC9)', async () => {
+      mockStore.getAll.mockResolvedValue([solvedOn(daysAgo(1))])
+      const user = userEvent.setup()
+      await renderFeature()
+
+      expect(box()).toBeNull()
+      expect(helpToggle()).toBeInTheDocument()
+
+      await user.click(helpToggle() as HTMLElement)
+      expect(box()).toBeInTheDocument()
+    })
+
+    it('forgets the dismissal on the next load (F8 E3 R7, AC7)', async () => {
+      const user = userEvent.setup()
+      const first = await renderFeature()
+
+      await user.click(closeBox())
+      expect(box()).toBeNull()
+      first.unmount()
+
+      // A reload against the same (still empty) storage: the rule decides
+      // again from the records alone, and the records never heard about it.
+      await renderFeature()
+      expect(box()).toBeInTheDocument()
+    })
+
+    // --- Step C7: nothing new is written -----------------------------------
+
+    it('writes no key of its own, however often it is closed (F8 E3 R13, AC13)', async () => {
+      // Through the real localStorage-backed store, so a write of any kind
+      // would actually land in the keys asserted below.
+      await withRealStorage()
+      const user = userEvent.setup()
+      await renderFeature()
+
+      await user.click(closeBox())
+      await user.click(helpToggle() as HTMLElement)
+      await user.click(closeBox())
+      await settle()
+
+      // Enumerated through the `Storage` interface rather than with
+      // `Object.keys`: the jsdom shim in `vitest.setup.ts` is a class holding
+      // its map in an own field, so `Object.keys` reports that field and not
+      // the stored keys.
+      const written = Array.from(
+        { length: localStorage.length },
+        (_, i) => localStorage.key(i) as string,
+      )
+      const allowed = ['daily-groove:v2:results', 'daily-groove:v1:prefs']
+      expect(written.filter((key) => !allowed.includes(key))).toEqual([])
+    })
+
+    // --- Step C8: a broken store still explains the game --------------------
+
+    it('explains the game when storage cannot be read at all (F8 E3 R15, AC14)', async () => {
+      await withRealStorage()
+      const getItem = vi
+        .spyOn(localStorage, 'getItem')
+        .mockImplementation(() => {
+          throw new Error('storage disabled')
+        })
+
+      try {
+        await renderFeature()
+
+        // A new browser and a broken one look the same, and the safe direction
+        // is to explain the game rather than withhold the explanation.
+        expect(box()).toBeInTheDocument()
+      } finally {
+        getItem.mockRestore()
+      }
+    })
+  })
+
 })

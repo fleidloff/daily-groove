@@ -338,6 +338,34 @@ describe('usePuzzleSession', () => {
     expect(Object.keys(result.current)).not.toContain('history')
   })
 
+  // --- F8 Epic 3, Step C3: who arrived, passed through unchanged ------------
+
+  it('passes "new or lapsed" through from useProgress (F8 E3 R16, R17)', async () => {
+    const { result } = await renderSession()
+
+    // Nothing saved: the game explains itself (F8 E3 R1).
+    expect(result.current.newOrLapsed).toBe(true)
+
+    // ...and it survives the write today's first guess makes, because the
+    // answer is latched at load rather than derived from the record set.
+    await guess(result, 'C', wrongFlavour())
+    expect(result.current.newOrLapsed).toBe(true)
+  })
+
+  it('reports a player who was here yesterday as neither (F8 E3 R3)', async () => {
+    const yesterday: DailyResult = {
+      date: YESTERDAY(),
+      answer: { root: 'G', flavour: 'Dorian' },
+      attempts: [miss('C', 'Lydian', false)],
+      solved: false,
+    }
+    mockStore.getAll.mockResolvedValue([yesterday])
+
+    const { result } = await renderSession()
+
+    expect(result.current.newOrLapsed).toBe(false)
+  })
+
   it("derives the day's answer from the groove's own fields (AC1)", async () => {
     const { result } = await renderSession()
 

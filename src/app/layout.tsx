@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { DM_Sans, Newsreader } from "next/font/google";
 import localFont from "next/font/local";
+import { APP_NAME, TAGLINE } from "@/lib/branding";
 import "./globals.css";
 
 const newsreader = Newsreader({
@@ -27,8 +28,8 @@ const jazzHand = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "Daily Groove",
-  description: "Guess today's groove — its scale, chord, and progression.",
+  title: APP_NAME,
+  description: TAGLINE,
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

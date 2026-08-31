@@ -431,6 +431,25 @@ describe('GuessCard', () => {
     expect(control.className).not.toBe(readyClass)
   })
 
+  // feature-8 Epic 2, Step B3 — R5, AC4. The play control grew; the check
+  // control did not. The contrast is the point, so this fails the moment
+  // someone "makes the buttons match again" by moving the default size.
+  it('leaves the check control at the default size while the play control grows (B3, R5, AC4)', () => {
+    render(
+      <GuessCard
+        {...props({
+          selectedRoot: 'G' as Root,
+          selectedFlavour: 'Dorian',
+          canCheck: true,
+        })}
+      />,
+    )
+
+    const check = screen.getByRole('button', { name: 'Check G Dorian' })
+    expect(check.className).toContain('py-[15px]')
+    expect(check.className).not.toContain('py-[22px]')
+  })
+
   // --- Epic 1 C1-C3: the dots sit above the check button, alone -------------
 
   it('puts the attempt dots directly above the check button, not beside the heading (R7, AC7)', () => {

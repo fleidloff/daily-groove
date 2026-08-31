@@ -108,6 +108,12 @@ describe('design system structure', () => {
   // Step D1 widened by Epic 2 Step C1 — R7a, AC8b: `busy` joins them, because
   // the page has a pending press to report. The rule is unchanged — a prop no
   // caller can reach does not survive — so the list stays exact.
+  // feature-8 Epic 2, Step B4 — R3, R4, AC10: the rule is about *reachable
+  // props*, which the exact list below enforces on its own. The old blanket ban
+  // on the word `size` was only a proxy for it. The control now asks `Button`
+  // for the large size, and that is the control's own choice, not a knob a
+  // caller turns — so the ban narrows to a `size` prop, and the choice is
+  // pinned instead.
   it('gives PlayControl only the four props its one caller can reach', () => {
     const source = readFileSync(join(componentsDir, 'controls/PlayControl.tsx'), 'utf8')
 
@@ -119,10 +125,13 @@ describe('design system structure', () => {
     )
     expect(props).toEqual(['isPlaying', 'onToggle', 'busy', 'text'])
 
-    // `size` is gone, and with it the branch that rendered `IconButton`.
+    // The `size` *prop* is gone, and with it the branch that rendered
+    // `IconButton`. What survives is the control naming its own size on the
+    // `Button` it renders.
     expect(source).not.toContain('PlayControlSize')
     expect(source).not.toContain('IconButton')
-    expect(source).not.toMatch(/\bsize\b/)
+    expect(source).not.toMatch(/^\s{2}size\??:/m)
+    expect(source).toContain('size="lg"')
   })
 
   // feature-7 Epic 3, Step C2 — R2, AC1. The dot row's explanation is carried

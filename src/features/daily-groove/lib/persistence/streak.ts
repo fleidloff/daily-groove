@@ -1,5 +1,5 @@
 import type { DailyResult } from '../../types'
-import { isoDate } from '../puzzle/selectGroove'
+import { isoDate, parseIsoDate } from '../puzzle/selectGroove'
 
 /**
  * A day qualifies for the streak when it was solved, however many attempts it
@@ -7,15 +7,6 @@ import { isoDate } from '../puzzle/selectGroove'
  */
 export function isQualifying(r: DailyResult): boolean {
   return r.solved
-}
-
-/**
- * Parse an ISO `YYYY-MM-DD` string into a local Date at noon. Noon avoids any
- * DST edge where midnight ± a step could land on the wrong calendar day.
- */
-function parseIsoDate(iso: string): Date {
-  const [year, month, day] = iso.split('-').map(Number)
-  return new Date(year, month - 1, day, 12, 0, 0, 0)
 }
 
 /**

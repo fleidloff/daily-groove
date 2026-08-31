@@ -112,7 +112,8 @@ describe('daily-groove feature structure', () => {
 // renders them, with `GroovePuzzle` above the regions it composes.
 describe('feature components sit in screen regions', () => {
   const REGIONS: Record<string, string[]> = {
-    header: ['GrooveHeader', 'StreakBadge'],
+    header: ['GrooveHeader', 'HelpToggle', 'StreakBadge'],
+    intro: ['HowToPlay'],
     puzzle: [
       'GrooveCard',
       'TransportPanel',
@@ -127,12 +128,12 @@ describe('feature components sit in screen regions', () => {
 
   const entries = () => readdirSync(COMPONENTS, { withFileTypes: true })
 
-  it('contains exactly the two region directories', () => {
+  it('contains exactly the three region directories', () => {
     const dirs = entries()
       .filter((entry) => entry.isDirectory())
       .map((entry) => entry.name)
       .sort()
-    expect(dirs).toEqual(['header', 'puzzle'])
+    expect(dirs).toEqual(['header', 'intro', 'puzzle'])
   })
 
   it('holds only the root component at the components/ root', () => {
