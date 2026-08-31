@@ -21,7 +21,7 @@ function template(
     swing: 0,
     flavours: ['aeolian'],
     voices: ['kick', 'snare', 'bass'],
-    humanize: { timingMs: 0, velocity: 0 },
+    humanize: { timingMs: 0, velocity: 0, lean: {}, driftDepth: 0 },
     gain,
     pan,
     passes: 4,

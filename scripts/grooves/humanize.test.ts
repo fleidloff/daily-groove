@@ -15,7 +15,7 @@ function feel(overrides: Partial<FeelTemplate> = {}): FeelTemplate {
     swing: 0,
     flavours: ['aeolian'],
     voices: ['kick', 'hatClosed'],
-    humanize: { timingMs: 0, velocity: 0 },
+    humanize: { timingMs: 0, velocity: 0, lean: {}, driftDepth: 0 },
     gain: {},
     pan: {},
     passes: 4,
@@ -85,7 +85,7 @@ describe('applySwing — R4, AC3', () => {
 })
 
 describe('humanize — R5, R7, AC4, AC5', () => {
-  const template = feel({ humanize: { timingMs: 12, velocity: 0.2 } })
+  const template = feel({ humanize: { timingMs: 12, velocity: 0.2, lean: {}, driftDepth: 0 } })
 
   it('keeps every timing deviation inside the template’s declared bound', () => {
     const events = grid(32)
@@ -119,7 +119,7 @@ describe('humanize — R5, R7, AC4, AC5', () => {
   it('clamps a velocity that would leave 0..1 rather than emitting it', () => {
     const loud = grid(16).map((e) => ({ ...e, velocity: 1 }))
     const quiet = grid(16).map((e) => ({ ...e, velocity: 0.02 }))
-    const wide = feel({ humanize: { timingMs: 0, velocity: 0.5 } })
+    const wide = feel({ humanize: { timingMs: 0, velocity: 0.5, lean: {}, driftDepth: 0 } })
     for (const event of humanize(loud, wide, rngFor('g:humanize'), BPM)) {
       expect(event.velocity).toBeLessThanOrEqual(1)
     }
@@ -130,7 +130,7 @@ describe('humanize — R5, R7, AC4, AC5', () => {
 
   it('never nudges a note into a neighbouring subdivision — R7', () => {
     // A bound far wider than half a subdivision must still be clamped to it.
-    const reckless = feel({ humanize: { timingMs: 1000, velocity: 0 } })
+    const reckless = feel({ humanize: { timingMs: 1000, velocity: 0, lean: {}, driftDepth: 0 } })
     const events = grid(32)
     const nudged = humanize(events, reckless, rngFor('g:reckless'), BPM)
     for (let i = 0; i < events.length; i++) {
@@ -153,7 +153,7 @@ describe('humanize — R5, R7, AC4, AC5', () => {
 })
 
 describe('humanize — reproducible from the seed, AC4', () => {
-  const template = feel({ humanize: { timingMs: 12, velocity: 0.2 } })
+  const template = feel({ humanize: { timingMs: 12, velocity: 0.2, lean: {}, driftDepth: 0 } })
 
   it('returns identical events for two freshly seeded generators', () => {
     const events = grid(32)

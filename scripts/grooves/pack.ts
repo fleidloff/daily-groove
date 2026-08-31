@@ -41,12 +41,14 @@ export async function loadPack(dir: string, decode: Decoder = decodeAudioFile): 
 
       if (declared.notes && declared.notes.length > 0) {
         const note = nearestNote(declared.notes, opts.midi)
-        const pcm = pick(buffers, note.layers, opts.velocity, opts.index)
-        return pcm ? { pcm, rootMidi: note.midi } : null
+        const chosen = pick(buffers, note.layers, opts.velocity, opts.index)
+        return chosen
+          ? { pcm: chosen.pcm, rootMidi: note.midi, nominalVelocity: chosen.nominalVelocity }
+          : null
       }
 
-      const pcm = pick(buffers, declared.layers ?? [], opts.velocity, opts.index)
-      return pcm ? { pcm } : null
+      const chosen = pick(buffers, declared.layers ?? [], opts.velocity, opts.index)
+      return chosen ? { pcm: chosen.pcm, nominalVelocity: chosen.nominalVelocity } : null
     },
   }
 }
@@ -112,12 +114,29 @@ function pick(
   layers: VelocityLayer[],
   velocity: number,
   index: number,
-): Pcm | null {
+): { pcm: Pcm; nominalVelocity: number } | null {
   if (layers.length === 0) return null
 
-  const layer = layers.find((candidate) => velocity <= candidate.maxVelocity) ?? layers.at(-1)!
+  const found = layers.findIndex((candidate) => velocity <= candidate.maxVelocity)
+  const at = found >= 0 ? found : layers.length - 1
+  const layer = layers[at]
   if (layer.files.length === 0) return null
 
   const wrapped = ((index % layer.files.length) + layer.files.length) % layer.files.length
-  return buffers.get(layer.files[wrapped]) ?? null
+  const pcm = buffers.get(layer.files[wrapped])
+  if (!pcm) return null
+
+  return { pcm, nominalVelocity: nominalOf(layers, at) }
+}
+
+/**
+ * The velocity a layer's samples represent: its declared value, or the midpoint
+ * of the band it covers. The band runs from the previous layer's ceiling to its
+ * own, so the top layer of a 0.45/1.0 pair is nominally 0.725.
+ */
+function nominalOf(layers: VelocityLayer[], at: number): number {
+  const layer = layers[at]
+  if (layer.nominalVelocity !== undefined) return layer.nominalVelocity
+  const floor = at > 0 ? layers[at - 1].maxVelocity : 0
+  return (floor + layer.maxVelocity) / 2
 }

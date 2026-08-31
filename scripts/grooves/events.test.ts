@@ -302,12 +302,12 @@ describe('buildEvents — the feel', () => {
   const straight = {
     ...template,
     swing: 0,
-    humanize: { timingMs: 0, velocity: 0 },
+    humanize: { timingMs: 0, velocity: 0, lean: {}, driftDepth: 0 },
   }
   const swung = {
     ...template,
     swing: 0.35,
-    humanize: { timingMs: 0, velocity: 0 },
+    humanize: { timingMs: 0, velocity: 0, lean: {}, driftDepth: 0 },
   }
 
   it('accents the backbeat and ghosts the off-beat sixteenths — R6, AC6', () => {
@@ -350,7 +350,7 @@ describe('buildEvents — the feel', () => {
   })
 
   it('humanizes within the template’s declared bounds — R5, R7, AC5', () => {
-    const flat = buildEvents(spec, { ...template, humanize: { timingMs: 0, velocity: 0 } })
+    const flat = buildEvents(spec, { ...template, humanize: { timingMs: 0, velocity: 0, lean: {}, driftDepth: 0 } })
     const loose = buildEvents(spec, template)
     const bound = template.humanize.timingMs / 1000
 
@@ -766,7 +766,7 @@ describe('buildEvents — every pass is a different take — R4, AC4', () => {
     for (const feel of allTemplates()) {
       const flat = buildEvents(
         { id: 'g', template: feel.id, seed: 3 },
-        { ...feel, humanize: { timingMs: 0, velocity: 0 } },
+        { ...feel, humanize: { timingMs: 0, velocity: 0, lean: {}, driftDepth: 0 } },
       )
       const loose = buildEvents({ id: 'g', template: feel.id, seed: 3 }, feel)
       const bound = feel.humanize.timingMs / 1000

@@ -24,7 +24,14 @@ export const brightStraight: FeelTemplate = {
   swing: 0.06,
   flavours: ['lydian', 'ionian'],
   voices: ['kick', 'snare', 'hatClosed', 'rim', 'bass', 'comp'],
-  humanize: { timingMs: 6, velocity: 0.05 },
+  // The lightest lean of the four: at 116-132 bpm a large one reads as a
+  // stumble rather than a feel.
+  humanize: {
+    timingMs: 6,
+    velocity: 0.05,
+    lean: { snare: 5, hatClosed: -2, rim: 3 },
+    driftDepth: 0.004,
+  },
   // Everything a few dB down from the funk kit, and the comp brought up: a
   // light band playing at volume rather than a heavy one playing quietly.
   gain: {

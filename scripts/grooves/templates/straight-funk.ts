@@ -23,7 +23,14 @@ export const straightFunk: FeelTemplate = {
   swing: 0.18,
   flavours: ['dorian', 'mixolydian'],
   voices: ['kick', 'snare', 'hatClosed', 'hatOpen', 'rim', 'bass', 'comp'],
-  humanize: { timingMs: 9, velocity: 0.09 },
+  // A funk snare sits a touch behind the kick and the hats push; the rim is a
+  // pickup and can afford to be late.
+  humanize: {
+    timingMs: 9,
+    velocity: 0.09,
+    lean: { snare: 9, hatClosed: -3, hatOpen: -3, rim: 4 },
+    driftDepth: 0.005,
+  },
   gain: {
     kick: -3,
     snare: -6,

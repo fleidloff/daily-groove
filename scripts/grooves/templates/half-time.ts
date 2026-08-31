@@ -24,7 +24,14 @@ export const halfTime: FeelTemplate = {
   swing: 0.28,
   flavours: ['phrygian', 'harmonic-minor'],
   voices: ['kick', 'snare', 'hatClosed', 'bass', 'comp'],
-  humanize: { timingMs: 13, velocity: 0.11 },
+  // Half-time lives on the space between the kick and the snare, so the snare
+  // is the latest of any template - it is the whole character of the feel.
+  humanize: {
+    timingMs: 13,
+    velocity: 0.11,
+    lean: { snare: 15, hatClosed: -2 },
+    driftDepth: 0.006,
+  },
   // Kick and snare are the loudest of any template and the hat the quietest:
   // in half-time the two big hits are the groove, and the hat is a timekeeper
   // nobody should be listening to.

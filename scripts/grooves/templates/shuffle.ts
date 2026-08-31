@@ -26,7 +26,14 @@ export const shuffle: FeelTemplate = {
   swing: 0.64,
   flavours: ['blues', 'aeolian'],
   voices: ['kick', 'snare', 'hatClosed', 'hatOpen', 'bass', 'comp'],
-  humanize: { timingMs: 16, velocity: 0.13 },
+  // The loosest of the four. A shuffle that is metronomically exact stops
+  // swinging, so the snare lays back furthest and the hand pattern pushes.
+  humanize: {
+    timingMs: 16,
+    velocity: 0.13,
+    lean: { snare: 14, hatClosed: -4, hatOpen: -4 },
+    driftDepth: 0.007,
+  },
   // Bass and kick carry the weight; the comp sits back so the hand pattern
   // stays the loudest thing above the backbeat.
   gain: {

@@ -89,12 +89,20 @@ export function placeholderPack(options: PlaceholderPackOptions = {}): SamplePac
         const note = nearestNote(declared.notes, opts.midi)
         const file = fileFor(note.layers, opts.velocity, opts.index)
         if (!file) return null
-        return { pcm: synthesize(file, sampleRate), rootMidi: note.midi }
+        return {
+          pcm: synthesize(file, sampleRate),
+          rootMidi: note.midi,
+          nominalVelocity: nominalOf(note.layers, opts.velocity),
+        }
       }
 
-      const file = fileFor(declared.layers ?? [], opts.velocity, opts.index)
+      const layers = declared.layers ?? []
+      const file = fileFor(layers, opts.velocity, opts.index)
       if (!file) return null
-      return { pcm: synthesize(file, sampleRate) }
+      return {
+        pcm: synthesize(file, sampleRate),
+        nominalVelocity: nominalOf(layers, opts.velocity),
+      }
     },
   }
 }
@@ -230,4 +238,19 @@ function mulberry32(seed: number): () => number {
     t ^= t + Math.imul(t ^ (t >>> 7), t | 61)
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296
   }
+}
+
+/**
+ * The midpoint of the band the requested velocity falls in — the same rule the
+ * real pack applies, so a test that renders against this pack measures the same
+ * scaling the catalogue does.
+ */
+function nominalOf(layers: VelocityLayer[], velocity: number): number {
+  if (layers.length === 0) return 1
+  const found = layers.findIndex((layer) => velocity <= layer.maxVelocity)
+  const at = found >= 0 ? found : layers.length - 1
+  const layer = layers[at]
+  if (layer.nominalVelocity !== undefined) return layer.nominalVelocity
+  const floor = at > 0 ? layers[at - 1].maxVelocity : 0
+  return (floor + layer.maxVelocity) / 2
 }
