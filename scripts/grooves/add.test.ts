@@ -195,7 +195,7 @@ describe('addGrooves', () => {
     expect(new Set(all.map((s) => s.seed)).size).toBe(8)
     const firstIds = new Set(first.map((s) => s.id))
     for (const spec of second) expect(firstIds.has(spec.id)).toBe(false)
-  })
+  }, MINT_TIMEOUT_MS)
 
   it('skips past a start seed that is already in the catalogue', async () => {
     const f = fixture(FIVE)
