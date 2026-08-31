@@ -23,7 +23,7 @@ export const halfTime: FeelTemplate = {
   subdivision: 16,
   swing: 0.28,
   flavours: ['phrygian', 'harmonic-minor'],
-  voices: ['kick', 'snare', 'hatClosed', 'bass', 'comp'],
+  voices: ['kick', 'snare', 'hatClosed', 'tomHigh', 'tomLow', 'bass', 'comp'],
   // Half-time lives on the space between the kick and the snare, so the snare
   // is the latest of any template - it is the whole character of the feel.
   humanize: {

@@ -25,7 +25,7 @@ export const shuffle: FeelTemplate = {
   subdivision: 8,
   swing: 0.64,
   flavours: ['blues', 'aeolian'],
-  voices: ['kick', 'snare', 'hatClosed', 'hatOpen', 'bass', 'comp'],
+  voices: ['kick', 'snare', 'hatClosed', 'hatOpen', 'tomHigh', 'tomLow', 'bass', 'comp'],
   // The loosest of the four. A shuffle that is metronomically exact stops
   // swinging, so the snare lays back furthest and the hand pattern pushes.
   humanize: {

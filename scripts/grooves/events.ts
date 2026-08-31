@@ -295,6 +295,109 @@ function placementFor(templateId: string): Placement {
   return { ...DEFAULT_PLACEMENT, ...(PLACEMENTS[templateId] ?? {}) }
 }
 
+/**
+ * A written phrase: which steps of the sixteenth-note bar each voice strikes.
+ *
+ * The same grid every other pattern here is written on, resolved onto the
+ * template's own by `gridSteps`, so an eighth-note feel plays the phrase at its
+ * own resolution rather than needing a second one written for it.
+ */
+export type FillPhrase = Partial<Record<VoiceName, number[]>>
+
+/**
+ * The phrase a template gets when it declares none (R7).
+ *
+ * A sixteenth-note run down the kit and back to the snare: four snare strokes
+ * across the first half of the bar, the two toms descending through the third
+ * beat, and the snare again on the last off-eighth, which is what the loop
+ * restarts from. It resolves on the snare and not on a crash, because the
+ * downbeat after a fill IS position zero of the file — a crash there would be
+ * heard at the top of every playback, before any fill had been played (R9).
+ */
+export const DEFAULT_FILL: FillPhrase = {
+  kick: [0],
+  snare: [0, 2, 4, 6, 14],
+  tomHigh: [8, 10],
+  tomLow: [12],
+}
+
+/**
+ * Per-template phrases, keyed by template id and living beside `PLACEMENTS`
+ * for the same reason it does: a fill is a written phrase, not one of the knobs
+ * `FeelTemplate` declares, and adding a field for it would have meant editing a
+ * frozen contract to carry data only `events.ts` reads.
+ *
+ * A template with no entry plays `DEFAULT_FILL`, and a `variation` left
+ * undeclared is that template's fill with its toms removed — the same phrase,
+ * thinned, which is what makes the middle mark read as a smaller version of the
+ * ending rather than as a second, unrelated idea.
+ */
+export const FILLS: Record<string, { fill: FillPhrase; variation?: FillPhrase }> = {
+  // Half-time lives on the space between the kick and the snare, so its fill
+  // keeps that space: four hits in the second half of the bar, where a funk
+  // fill plays nine across the whole of it (R6). Sparser, never absent.
+  'half-time': { fill: { snare: [8, 12], tomHigh: [10], tomLow: [14] } },
+  // The shuffle's hand pattern is in eighths, so its phrase is written in
+  // eighths too — a sixteenth-note run resolved onto this grid would collapse
+  // into the same shape at half the notes and lose the swing that carries it.
+  shuffle: {
+    fill: { kick: [0], snare: [0, 4, 14], tomHigh: [6, 8], tomLow: [10, 12] },
+  },
+}
+
+/** The voices a phrase adds to the kit, and the variation takes back out. */
+const TOM_VOICES: VoiceName[] = ['tomHigh', 'tomLow']
+
+/**
+ * How long a phrase's hit rings, in sixteenths. The same lengths the figure
+ * gives the same voices, so a fill is a different phrase and not a different
+ * instrument.
+ */
+const FILL_DURATIONS: Record<VoiceName, number> = {
+  kick: 2,
+  snare: 2,
+  hatClosed: 1,
+  hatOpen: 2,
+  rim: 1,
+  tomHigh: 2,
+  tomLow: 2,
+  bass: 2,
+  comp: 4,
+}
+
+/** The same phrase with its toms taken out — the default variation. */
+function withoutToms(phrase: FillPhrase): FillPhrase {
+  const thinned: FillPhrase = {}
+  for (const [voice, steps] of Object.entries(phrase) as [VoiceName, number[]][]) {
+    if (TOM_VOICES.includes(voice)) continue
+    thinned[voice] = steps
+  }
+  return thinned
+}
+
+/**
+ * The pass whose last bar carries the variation, as a 0-based index, or `null`
+ * when the loop has no middle to mark.
+ *
+ * Fewer than three passes is a loop that is one pass and then its ending: there
+ * is nothing between them, and nothing is substituted for it — a mark in the
+ * pass before the fill would put two markers in consecutive bars, which is the
+ * opposite of what a feel built on space wants (PRD Q4).
+ *
+ * On an even pass count the earlier of the two candidates wins, so four passes
+ * mark the end of pass two and the mark sits AT the half-way point of the loop
+ * rather than past it — the PRD's placement table, its AC6 and its assumption
+ * all name pass two of four. (The tech spec's Step C1 writes this as
+ * `floor(passes / 2)`, which returns the LATER candidate on an even count —
+ * pass three of four, bar 11 of 16 — and so contradicts both its own placement
+ * table and the C4 test that reads bar 7. The stated intent is implemented
+ * here; the arithmetic in the spec is not.)
+ */
+export function middlePassOf(passes: number): number | null {
+  if (passes < 3) return null
+  return Math.floor((passes - 1) / 2)
+}
+
 /** Map a sixteenth-grid step onto the template's own grid. */
 function scaleStep(step: number, subdivision: number): number {
   // Clamped, because a sixteenth late in the bar rounds up past the last step
@@ -818,6 +921,41 @@ export function buildEvents(
    */
   const passRanges: { start: number; end: number }[] = []
 
+  /**
+   * The phrases this groove ends and marks itself with, resolved onto the
+   * template's grid and cut down to the voices it actually plays.
+   *
+   * Drawn from no generator at all: which phrase a feel plays is a written
+   * decision like its backbeat, and a random one would make the ending of the
+   * loop a property of the seed rather than of the template.
+   */
+  const resolvePhrase = (phrase: FillPhrase): [VoiceName, number[]][] =>
+    (Object.entries(phrase) as [VoiceName, number[]][])
+      .filter(([voice]) => plays(voice))
+      .map(([voice, steps]) => [voice, grid(steps)] as [VoiceName, number[]])
+
+  const declared = FILLS[template.id] ?? { fill: DEFAULT_FILL }
+  const fillPhrase = resolvePhrase(declared.fill)
+  const variationPhrase = resolvePhrase(declared.variation ?? withoutToms(declared.fill))
+  const middlePass = middlePassOf(template.passes)
+
+  /**
+   * What a bar carries instead of the figure's drums: the fill in the last bar
+   * of the last pass, the variation in the last bar of the middle pass, and
+   * nothing anywhere else.
+   *
+   * Positions are stated in passes and never in bar numbers, because Epic 1
+   * made the pass count a property of the template: a four-pass groove fills in
+   * bar 16 and marks bar 8, while a two-pass groove fills in bar 8 and marks
+   * nowhere.
+   */
+  const phraseForBar = (pass: number, barInPass: number): [VoiceName, number[]][] | null => {
+    if (barInPass !== BARS_PER_PASS - 1) return null
+    if (pass === template.passes - 1) return fillPhrase
+    if (middlePass !== null && pass === middlePass) return variationPhrase
+    return null
+  }
+
   for (let pass = 0; pass < template.passes; pass++) {
     const start = events.length
 
@@ -827,24 +965,42 @@ export function buildEvents(
       // still describes the figure rather than the whole loop.
       const bar = pass * BARS_PER_PASS + barInPass
 
-      // Drums — the same figure every bar, because this epic is not yet played.
-      if (plays('kick')) for (const step of kickSteps) add('kick', bar, step, 2)
-      if (plays('snare')) {
-        for (const step of snareSteps) add('snare', bar, step, 2)
-        // The ghosts: short, quiet strokes on the off-subdivisions between the
-        // backbeats. They are what makes GHOST_VELOCITY_THRESHOLD mean what it
-        // says — before them, only the hats ever fell under it (R10).
-        for (const step of ghostsForBar()) add('snare', bar, step, 1, undefined, ghostVelocity)
-      }
-      if (plays('hatClosed')) {
-        const closed = plays('hatOpen')
-          ? hatSteps.filter((s) => !hatOpenSteps.includes(s))
-          : hatSteps
-        for (const step of closed) add('hatClosed', bar, step, 1)
-      }
-      if (plays('hatOpen')) for (const step of hatOpenSteps) add('hatOpen', bar, step, 2)
-      if (plays('rim') && placement.rimBars.includes(barInPass)) {
-        for (const step of rimSteps) add('rim', bar, step, 1)
+      // One draw of the ghost stream per bar whatever that bar turns out to
+      // carry, so where the fill falls cannot shift the ghost figure of the
+      // bars around it.
+      const ghosts = plays('snare') ? ghostsForBar() : []
+
+      // Drums — the same figure in every bar but the two a phrase replaces.
+      //
+      // Replaces, and never layers over: a fill is what a drummer plays
+      // INSTEAD of the groove, and a phrase on top of the figure would double
+      // the densest bar of the loop into exactly the mush `checkDensity`
+      // exists to catch. The bass and the comp below are untouched, so the bar
+      // is still the chord it claims.
+      const phrase = phraseForBar(pass, barInPass)
+      if (phrase) {
+        for (const [voice, steps] of phrase) {
+          for (const step of steps) add(voice, bar, step, FILL_DURATIONS[voice])
+        }
+      } else {
+        if (plays('kick')) for (const step of kickSteps) add('kick', bar, step, 2)
+        if (plays('snare')) {
+          for (const step of snareSteps) add('snare', bar, step, 2)
+          // The ghosts: short, quiet strokes on the off-subdivisions between
+          // the backbeats. They are what makes GHOST_VELOCITY_THRESHOLD mean
+          // what it says — before them, only the hats ever fell under it (R10).
+          for (const step of ghosts) add('snare', bar, step, 1, undefined, ghostVelocity)
+        }
+        if (plays('hatClosed')) {
+          const closed = plays('hatOpen')
+            ? hatSteps.filter((s) => !hatOpenSteps.includes(s))
+            : hatSteps
+          for (const step of closed) add('hatClosed', bar, step, 1)
+        }
+        if (plays('hatOpen')) for (const step of hatOpenSteps) add('hatOpen', bar, step, 2)
+        if (plays('rim') && placement.rimBars.includes(barInPass)) {
+          for (const step of rimSteps) add('rim', bar, step, 1)
+        }
       }
 
       // Bass — the written line, the same one in every pass.

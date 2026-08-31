@@ -1,14 +1,17 @@
 import { describe, expect, it } from 'vitest'
-import type { GrooveSpec, MusicMeta, NoteEvent } from './types.ts'
+import type { FeelTemplate, GrooveSpec, MusicMeta, NoteEvent, VoiceName } from './types.ts'
 import type { Harmony } from './theory/harmony.ts'
 import {
   BACKING_VOICES,
   COMP_REGISTER_CEILING,
   COMP_REGISTER_LOW,
+  DEFAULT_FILL,
+  FILLS,
   GHOST_VELOCITY_THRESHOLD,
   MUSIC_LABEL,
   RHYTHM_LABEL,
   buildEvents,
+  middlePassOf,
   playedVoicing,
   voiceLead,
 } from './events.ts'
@@ -124,6 +127,22 @@ function pairUp(
  */
 function isGhost(event: NoteEvent): boolean {
   return event.voice === 'snare' && event.velocity < GHOST_VELOCITY_THRESHOLD
+}
+
+/**
+ * The bars a written phrase replaces the figure's drums in: the last bar of the
+ * last pass, and the last bar of the middle pass where the pass count leaves a
+ * middle to mark (Feature 9, Epic 5).
+ *
+ * The tests below that pin the FIGURE read past these bars. The figure is what
+ * repeats; the fill is the one bar that deliberately does not, and it has its
+ * own describe at the foot of this file.
+ */
+function phraseBars(feel: FeelTemplate): Set<number> {
+  const bars = new Set([(feel.passes - 1) * 4 + 3])
+  const middle = middlePassOf(feel.passes)
+  if (middle !== null) bars.add(middle * 4 + 3)
+  return bars
 }
 
 function driftBoundFor(
@@ -667,13 +686,21 @@ describe('buildEvents — per-template placement', () => {
   // added snare ghosts, which are placed by their own vocabulary and are, by
   // construction, under the ghost threshold — so the backbeat is read off
   // velocity, which is exactly what tells a listener the two apart.
+  //
+  // Read from the figure's bars alone. Epic 5's fill and variation replace the
+  // figure's drums in the last bar of the last pass and of the middle pass, so
+  // the snare there is the phrase's, not the placement's — a fill that resolved
+  // on beat one would otherwise read as a backbeat that had moved.
   function stepsOf(voice: string, feelId: string, seed: number) {
     const feel = templateById(feelId)
     const { events, music } = buildEvents({ id: 'g', template: feelId, seed }, feel)
     const step = ((60 / music.bpm) * 4) / feel.subdivision
+    const phrased = phraseBars(feel)
     return events
       .filter((e) => e.voice === voice && e.velocity >= GHOST_VELOCITY_THRESHOLD)
-      .map((e) => Math.round(e.timeSec / step) % feel.subdivision)
+      .map((e) => Math.round(e.timeSec / step))
+      .filter((grid) => !phrased.has(Math.floor(grid / feel.subdivision)))
+      .map((grid) => grid % feel.subdivision)
   }
 
   it('gives half-time a wide backbeat — one snare on beat three', () => {
@@ -799,28 +826,46 @@ describe('buildEvents — a groove is several passes of one figure — R3, R5, A
       // as pass one. The snare's ghost strokes are deliberately excluded: they
       // are the quiet fill between the backbeats, they are drawn per bar, and
       // the test below is the one that holds them to varying.
-      it('plays the same figure in every pass, voice by voice — AC3', () => {
+      //
+      // Read bar by bar rather than pass by pass, because Epic 5 gives the loop
+      // an ending: the last bar of the last pass carries a fill instead of the
+      // figure's drums, and the last bar of the middle pass a lighter mark of
+      // it. Those two bars are the whole of the exception — their bass and comp
+      // still play the figure's line, so the harmony is unbroken — and every
+      // other bar of the loop is its figure bar, note for note.
+      it('plays the same figure in every bar but the ones a phrase replaces — AC3', () => {
+        const isPitched = (key: string) => PITCHED.has(key.split('@')[0])
+
         for (let seed = 1; seed <= 6; seed++) {
           const { events, music } = buildEvents({ id: 'g', template: feel.id, seed }, feel)
-          const stepsPerPass = feel.subdivision * 4
           const steps = stepsOfLoop(events, music.bpm, feel.subdivision)
+          const phrased = phraseBars(feel)
 
-          const byPass = new Map<number, string[]>()
+          const byBar = new Map<number, string[]>()
           events.forEach((event, i) => {
             if (isGhost(event)) return
-            const pass = Math.floor(steps[i] / stepsPerPass)
-            const list = byPass.get(pass) ?? []
-            list.push(`${event.voice}@${steps[i] % stepsPerPass}:${event.midi ?? '-'}`)
-            byPass.set(pass, list)
+            const bar = Math.floor(steps[i] / feel.subdivision)
+            const list = byBar.get(bar) ?? []
+            list.push(`${event.voice}@${steps[i] % feel.subdivision}:${event.midi ?? '-'}`)
+            byBar.set(bar, list)
           })
 
-          expect([...byPass.keys()].sort((a, b) => a - b), `${feel.id}:${seed}`).toEqual(
-            Array.from({ length: feel.passes }, (_, p) => p),
+          expect([...byBar.keys()].sort((a, b) => a - b), `${feel.id}:${seed}`).toEqual(
+            Array.from({ length: music.loopBars }, (_, bar) => bar),
           )
-          const first = [...(byPass.get(0) as string[])].sort()
-          for (let pass = 1; pass < feel.passes; pass++) {
-            expect([...(byPass.get(pass) as string[])].sort(), `${feel.id}:${seed} pass ${pass}`)
-              .toEqual(first)
+
+          for (let bar = 4; bar < music.loopBars; bar++) {
+            const where = `${feel.id}:${seed} bar ${bar}`
+            const figure = [...(byBar.get(bar % 4) as string[])].sort()
+            const here = [...(byBar.get(bar) as string[])].sort()
+            if (!phrased.has(bar)) {
+              expect(here, where).toEqual(figure)
+              continue
+            }
+            expect(here, `${where} carries no phrase`).not.toEqual(figure)
+            expect(here.filter(isPitched), `${where} drops the harmony`).toEqual(
+              figure.filter(isPitched),
+            )
           }
         }
       })
@@ -915,6 +960,11 @@ describe('buildEvents — every pass is a different take — R4, AC4', () => {
     for (const event of events) {
       if (isGhost(event)) continue
       const onGrid = Math.round(event.timeSec / step)
+      // The last bar of a pass is where Epic 5's fill and variation replace the
+      // figure, so it is the one bar the passes do not play the same notes in.
+      // This measures whether a pass is a different PERFORMANCE of the same
+      // notes, so it reads the three bars that are the same notes.
+      if (Math.floor((onGrid % stepsPerPass) / feel.subdivision) === 3) continue
       rows[Math.floor(onGrid / stepsPerPass)].push({
         key: `${event.voice}@${onGrid % stepsPerPass}:${event.midi ?? '-'}`,
         timing: event.timeSec - onGrid * step,
@@ -1441,5 +1491,294 @@ describe('buildEvents — hands and fingers — R3, R4, R5, R6, R7, R8, R8a', ()
         expect(offScalePitches(events, music, harmony), `${feel.id}:${seed}`).toEqual([])
       }
     }
+  })
+})
+
+// Feature 9, Epic 5, Track C — R5, R6, R7, R8, R9, R10, R13, AC4–AC8.
+//
+// Epic 1 made every pass a different take of one figure; it did not give the
+// loop a shape, so nothing told a listener where in it they were. The last bar
+// of the last pass stops being another bar: it carries a fill, and where the
+// pass count leaves a middle to mark, the last bar of the middle pass carries
+// the same phrase with its toms taken out.
+describe('buildEvents — the last pass ends with a fill — R5, R6, R7, R8, R9, R10', () => {
+  const DRUMS = new Set<VoiceName>([
+    'kick',
+    'snare',
+    'hatClosed',
+    'hatOpen',
+    'rim',
+    'tomHigh',
+    'tomLow',
+  ])
+
+  const TOMS = new Set<VoiceName>(['tomHigh', 'tomLow'])
+
+  /**
+   * The drum figure of every bar of the loop, as sorted `voice@step` lists.
+   *
+   * Ghost strokes are left out for the same reason the pass-equality test
+   * leaves them out: they are drawn afresh per bar by design, so two ordinary
+   * bars already differ in them, and they would swamp the one difference these
+   * tests are about.
+   */
+  function drumBars(feel: FeelTemplate, seed = 1): string[][] {
+    const { events, music } = buildEvents({ id: 'g', template: feel.id, seed }, feel)
+    const step = ((60 / music.bpm) * 4) / feel.subdivision
+    const bars: string[][] = Array.from({ length: music.loopBars }, () => [])
+    for (const event of events) {
+      if (!DRUMS.has(event.voice) || isGhost(event)) continue
+      const grid = Math.round(event.timeSec / step)
+      bars[Math.floor(grid / feel.subdivision)].push(`${event.voice}@${grid % feel.subdivision}`)
+    }
+    return bars.map((bar) => [...bar].sort())
+  }
+
+  /** The pitched figure of every bar: the bass and the comp, with their notes. */
+  function pitchedBars(feel: FeelTemplate, seed = 1): string[][] {
+    const { events, music } = buildEvents({ id: 'g', template: feel.id, seed }, feel)
+    const step = ((60 / music.bpm) * 4) / feel.subdivision
+    const bars: string[][] = Array.from({ length: music.loopBars }, () => [])
+    for (const event of events) {
+      if (!PITCHED.has(event.voice)) continue
+      const grid = Math.round(event.timeSec / step)
+      bars[Math.floor(grid / feel.subdivision)].push(
+        `${event.voice}@${grid % feel.subdivision}:${event.midi}`,
+      )
+    }
+    return bars.map((bar) => [...bar].sort())
+  }
+
+  /** How far two bars stand apart: what each plays that the other does not. */
+  function distance(a: string[], b: string[]): number {
+    const left = new Set(a)
+    const right = new Set(b)
+    return (
+      [...left].filter((s) => !right.has(s)).length +
+      [...right].filter((s) => !left.has(s)).length
+    )
+  }
+
+  /** The voices a bar plays, once each. */
+  function voicesIn(bar: string[]): Set<string> {
+    return new Set(bar.map((key) => key.split('@')[0]))
+  }
+
+  const fourPass = allTemplates().filter((feel) => feel.passes === 4)
+  const twoPass = allTemplates().filter((feel) => feel.passes === 2)
+
+  // Step C1 — R8, AC6. Where the middle is, is arithmetic on the pass count,
+  // not a bar number written down somewhere.
+  describe('middlePassOf — R8, AC6', () => {
+    it('has no middle pass to mark below three passes', () => {
+      expect(middlePassOf(0)).toBeNull()
+      expect(middlePassOf(1)).toBeNull()
+      expect(middlePassOf(2)).toBeNull()
+    })
+
+    it('marks the half-way pass, taking the earlier candidate on an even count', () => {
+      // 0-based pass indices, so 1 is pass two. Three passes mark pass two;
+      // four passes mark pass two as well — the earlier of the two candidates,
+      // so the mark sits AT the half-way point of the loop rather than past it
+      // (PRD "Where the fill and the variation go", and its Assumptions).
+      expect(middlePassOf(3)).toBe(1)
+      expect(middlePassOf(4)).toBe(1)
+      expect(middlePassOf(5)).toBe(2)
+      expect(middlePassOf(6)).toBe(2)
+      expect(middlePassOf(7)).toBe(3)
+    })
+
+    it('never names the last pass, which carries the fill instead', () => {
+      for (let passes = 3; passes <= 12; passes += 1) {
+        const middle = middlePassOf(passes) as number
+        expect(middle, `passes ${passes}`).toBeGreaterThanOrEqual(0)
+        expect(middle, `passes ${passes}`).toBeLessThan(passes - 1)
+      }
+    })
+  })
+
+  // Step C2 — R5, R7, R10, AC4, AC8.
+  describe('the fill — R5, R7, R10, AC4', () => {
+    it('puts the fill in the last bar of the last pass and nowhere else', () => {
+      for (const feel of fourPass) {
+        const bars = drumBars(feel)
+        const last = bars.length - 1
+        const middleBar = (middlePassOf(feel.passes) as number) * 4 + 3
+
+        expect(distance(bars[last], bars[3]), `${feel.id} last bar`).toBeGreaterThan(0)
+        for (let bar = 0; bar < bars.length; bar += 1) {
+          if (bar === last || bar === middleBar) continue
+          // Every other bar plays the figure's own bar, exactly.
+          expect(bars[bar], `${feel.id} bar ${bar}`).toEqual(bars[bar % 4])
+        }
+      }
+    })
+
+    it('plays toms, which the figure never does — R10', () => {
+      for (const feel of allTemplates()) {
+        const bars = drumBars(feel)
+        const last = bars.length - 1
+        const toms = [...voicesIn(bars[last])].filter((voice) => TOMS.has(voice as VoiceName))
+        expect(toms.sort(), `${feel.id} fill plays no tom`).toEqual(['tomHigh', 'tomLow'])
+        for (let bar = 0; bar < last; bar += 1) {
+          for (const voice of voicesIn(bars[bar])) {
+            expect(TOMS.has(voice as VoiceName), `${feel.id} bar ${bar} plays ${voice}`).toBe(
+              false,
+            )
+          }
+        }
+      }
+    })
+
+    it('leaves the bass and the comp playing, so the bar is still its chord — R5', () => {
+      for (const feel of allTemplates()) {
+        const bars = pitchedBars(feel)
+        const last = bars.length - 1
+        expect(bars[last].length, `${feel.id} drops the harmony in its fill bar`).toBeGreaterThan(
+          0,
+        )
+        expect(bars[last], `${feel.id}`).toEqual(bars[last % 4])
+      }
+    })
+
+    it('gives a template with no declaration of its own the default fill — R7, AC4', () => {
+      // A template id `FILLS` has never heard of, so the default is the only
+      // thing that can be playing.
+      const unknown: FeelTemplate = { ...templateById('straight-funk'), id: 'no-such-fill' }
+      expect(FILLS[unknown.id]).toBeUndefined()
+      expect(unknown.subdivision, 'the default is written on the sixteenth grid').toBe(16)
+
+      const bars = drumBars(unknown)
+      const played = new Map<string, number[]>()
+      for (const key of bars[bars.length - 1]) {
+        const [voice, step] = key.split('@')
+        played.set(voice, [...(played.get(voice) ?? []), Number(step)])
+      }
+      for (const [voice, steps] of Object.entries(DEFAULT_FILL)) {
+        expect([...(played.get(voice) ?? [])].sort((a, b) => a - b), voice).toEqual(steps)
+      }
+      expect([...played.keys()].sort()).toEqual(Object.keys(DEFAULT_FILL).sort())
+    })
+  })
+
+  // Step C3 — R6, AC5. A feel that lives on space gets a sparser fill, not an
+  // absent one.
+  describe('every template fills — R6, AC5', () => {
+    for (const feel of allTemplates()) {
+      it(`${feel.id} ends on a phrase of its own`, () => {
+        for (let seed = 1; seed <= 6; seed += 1) {
+          const bars = drumBars(feel, seed)
+          const last = bars.length - 1
+          expect(bars[last].length, `${feel.id}:${seed} fills with nothing`).toBeGreaterThan(0)
+          expect(
+            distance(bars[last], bars[last % 4]),
+            `${feel.id}:${seed} last bar is an ordinary bar`,
+          ).toBeGreaterThan(0)
+        }
+      })
+    }
+
+    it('gives the sparsest feel the sparsest fill — R6', () => {
+      const half = drumBars(templateById('half-time'))
+      const funk = drumBars(templateById('straight-funk'))
+      expect(half[half.length - 1].length).toBeLessThan(funk[funk.length - 1].length)
+    })
+
+    it('writes every declared phrase on the sixteenth grid, in ascending order', () => {
+      const phrases = [DEFAULT_FILL, ...Object.values(FILLS).flatMap((e) => [e.fill, e.variation])]
+      for (const phrase of phrases) {
+        if (!phrase) continue
+        for (const [voice, steps] of Object.entries(phrase)) {
+          expect(BACKING_VOICES, `${voice} is not a voice`).toContain(voice)
+          expect(steps.length, voice).toBeGreaterThan(0)
+          expect([...steps].sort((a, b) => a - b), voice).toEqual(steps)
+          expect(new Set(steps).size, voice).toBe(steps.length)
+          for (const step of steps) {
+            expect(step, voice).toBeGreaterThanOrEqual(0)
+            expect(step, voice).toBeLessThan(16)
+          }
+        }
+      }
+    })
+  })
+
+  // Step C4 — R8, R10, AC6, AC8. The middle pass is marked, and a loop with no
+  // middle gets nothing in its place.
+  describe('the middle pass — R8, R10, AC6, AC8', () => {
+    it('marks the last bar of the middle pass more lightly than the fill', () => {
+      for (const feel of fourPass) {
+        for (let seed = 1; seed <= 4; seed += 1) {
+          const bars = drumBars(feel, seed)
+          const last = bars.length - 1
+          const middleBar = (middlePassOf(feel.passes) as number) * 4 + 3
+          const ordinary = bars[middleBar % 4]
+
+          const toFill = distance(bars[last], ordinary)
+          const toVariation = distance(bars[middleBar], ordinary)
+          expect(toVariation, `${feel.id}:${seed} does not mark its middle`).toBeGreaterThan(0)
+          expect(
+            toVariation,
+            `${feel.id}:${seed} marks its middle as heavily as it fills`,
+          ).toBeLessThan(toFill)
+        }
+      }
+    })
+
+    it('takes the toms out of the variation, which is what makes it lighter — R10', () => {
+      for (const feel of fourPass) {
+        const bars = drumBars(feel)
+        const middleBar = (middlePassOf(feel.passes) as number) * 4 + 3
+        for (const voice of voicesIn(bars[middleBar])) {
+          expect(TOMS.has(voice as VoiceName), `${feel.id} variation plays ${voice}`).toBe(false)
+        }
+      }
+    })
+
+    it('adds nothing in its place when there is no middle pass — R8, AC6', () => {
+      expect(twoPass.length, 'no two-pass template to check').toBeGreaterThan(0)
+      for (const feel of twoPass) {
+        expect(middlePassOf(feel.passes), feel.id).toBeNull()
+        const bars = drumBars(feel)
+        const last = bars.length - 1
+        for (let bar = 0; bar < last; bar += 1) {
+          expect(bars[bar], `${feel.id} bar ${bar}`).toEqual(bars[bar % 4])
+        }
+      }
+    })
+  })
+
+  // Step C5 — R9, R13, AC7, AC10. The downbeat after the fill is left clean on
+  // purpose: a crash there would have to be written past the loop end and
+  // folded onto bar one, so every groove would OPEN on a crash.
+  describe('nothing is written past the loop — R9, R13, AC7', () => {
+    it('keeps every fill event inside the loop', () => {
+      for (const feel of allTemplates()) {
+        for (let seed = 1; seed <= 8; seed += 1) {
+          const { events, music } = buildEvents({ id: 'g', template: feel.id, seed }, feel)
+          const loopSec = (60 / music.bpm) * 4 * music.loopBars
+          for (const event of events) {
+            expect(event.timeSec, `${feel.id}:${seed} ${event.voice}`).toBeLessThan(loopSec)
+            expect(
+              event.timeSec + event.durationSec,
+              `${feel.id}:${seed} ${event.voice}`,
+            ).toBeLessThanOrEqual(loopSec + 1e-9)
+          }
+        }
+      }
+    })
+
+    it('has no crash to write there — the vocabulary holds none', () => {
+      for (const voice of BACKING_VOICES) expect(voice).not.toMatch(/crash|cymbal|ride/)
+      for (const feel of allTemplates()) {
+        const { events } = buildEvents({ id: 'g', template: feel.id, seed: 1 }, feel)
+        for (const event of events) expect(event.voice).not.toMatch(/crash|cymbal|ride/)
+      }
+      const phrases = [DEFAULT_FILL, ...Object.values(FILLS).flatMap((e) => [e.fill, e.variation])]
+      for (const phrase of phrases) {
+        for (const voice of Object.keys(phrase ?? {})) {
+          expect(voice).not.toMatch(/crash|cymbal|ride/)
+        }
+      }
+    })
   })
 })

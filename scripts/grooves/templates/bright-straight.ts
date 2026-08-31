@@ -23,7 +23,7 @@ export const brightStraight: FeelTemplate = {
   subdivision: 8,
   swing: 0.06,
   flavours: ['lydian', 'ionian'],
-  voices: ['kick', 'snare', 'hatClosed', 'rim', 'bass', 'comp'],
+  voices: ['kick', 'snare', 'hatClosed', 'rim', 'tomHigh', 'tomLow', 'bass', 'comp'],
   // The lightest lean of the four: at 116-132 bpm a large one reads as a
   // stumble rather than a feel.
   humanize: {
