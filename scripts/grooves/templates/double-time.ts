@@ -60,15 +60,15 @@ export const doubleTime: FeelTemplate = {
   // The bass over the kick, not under it: at this tempo the kick is a
   // percussion part and the bass is the low end.
   gain: {
-    tomHigh: -10,
-    tomLow: -9,
-    kick: -6,
-    snare: -7,
-    hatClosed: -12,
-    hatOpen: -13,
-    rim: -5,
+    tomHigh: -12,
+    tomLow: -11,
+    kick: -8,
+    snare: -9,
+    hatClosed: -14,
+    hatOpen: -15,
+    rim: -7,
     bass: -2,
-    comp: -10,
+    comp: -7,
   },
   // The widest image of the six: hats hard left, comp hard right. A fast feel
   // needs the space between the parts to stay legible.

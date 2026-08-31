@@ -37,14 +37,14 @@ export const shuffle: FeelTemplate = {
   // Bass and kick carry the weight; the comp sits back so the hand pattern
   // stays the loudest thing above the backbeat.
   gain: {
-    tomHigh: -8,
-    tomLow: -7,
-    kick: -5,
-    snare: -5,
-    hatClosed: -7,
-    hatOpen: -7,
+    tomHigh: -10,
+    tomLow: -9,
+    kick: -7,
+    snare: -7,
+    hatClosed: -9,
+    hatOpen: -9,
     bass: 1,
-    comp: -12,
+    comp: -9,
   },
   // The mirror image of straight-funk's kit: hats to the left, comp to the
   // right, so two shuffles and two funks in a row do not sound like one room.

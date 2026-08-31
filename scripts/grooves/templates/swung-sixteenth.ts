@@ -63,14 +63,14 @@ export const swungSixteenth: FeelTemplate = {
   // is carried by the bass — a rootless voicing over a ♭6 needs the root
   // audible beneath it more than it needs to be loud itself.
   gain: {
-    tomHigh: -7,
-    tomLow: -6,
-    kick: -3,
-    snare: -5,
-    hatClosed: -12,
-    hatOpen: -13,
+    tomHigh: -9,
+    tomLow: -8,
+    kick: -5,
+    snare: -7,
+    hatClosed: -14,
+    hatOpen: -15,
     bass: -1,
-    comp: -14,
+    comp: -11,
   },
   // Narrower than the fast feels on purpose: a heavy groove reads as one band
   // in one room, so nothing is panned past a third of the way out.

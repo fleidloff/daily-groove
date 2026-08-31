@@ -32,15 +32,15 @@ export const straightFunk: FeelTemplate = {
     driftDepth: 0.005,
   },
   gain: {
-    tomHigh: -9,
-    tomLow: -8,
-    kick: -3,
-    snare: -6,
-    hatClosed: -9,
-    hatOpen: -11,
-    rim: -7,
+    tomHigh: -11,
+    tomLow: -10,
+    kick: -5,
+    snare: -8,
+    hatClosed: -11,
+    hatOpen: -13,
+    rim: -9,
     bass: -1,
-    comp: -11,
+    comp: -8,
   },
   // Kick, snare and bass hold the centre; the cymbals and the comp open the
   // image out either side, the way a kit sits from behind.
