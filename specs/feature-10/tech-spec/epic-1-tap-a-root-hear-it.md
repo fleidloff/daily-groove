@@ -42,9 +42,12 @@ even loudness fall out for free — all twelve peak at exactly 0.891 before
 encoding.
 
 **Pitch.** `theory/notes.ts` already exports `midiOf(root, octave)`. The twelve
-notes are `midiOf(root, 4)` for each of the twelve `ROOTS`, i.e. MIDI 60–71. The
-comp voice samples every four semitones from 48 to 84, so no note is resampled
-by more than two semitones — inside the pack's own design tolerance.
+notes are `midiOf(root, 4)` for each of the twelve `ROOTS`, i.e. MIDI 60–71.
+After feature-9's pack swap the comp voice is a piano sampled every four
+semitones from MIDI 45 to 85, so the furthest any root sits from a sampled note
+is two semitones (63, 67 and 71) — inside the pack's own design tolerance. Check
+this range again before Track A runs: it is a property of whatever pack is
+committed at the time, and it moved once already.
 
 **App side.** `createAudioPlayer` currently does `new ctor()` inside `decode()`
 and `context.close()` inside `dispose()`. Both move: the context comes from a
