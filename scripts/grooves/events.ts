@@ -38,6 +38,16 @@ export const MUSIC_LABEL = 'events'
  */
 export const RHYTHM_LABEL = 'rhythm'
 
+/**
+ * The stream the snare's ghost strokes are drawn from, one draw per bar.
+ *
+ * Its own label rather than a share of `RHYTHM_LABEL`, because it is consumed a
+ * number of times that depends on the loop's length: a four-pass groove takes
+ * sixteen draws and a two-pass groove eight, and any choice made after them on
+ * a shared stream would move when a template's pass count changed.
+ */
+export const GHOST_LABEL = 'ghosts'
+
 /** The octave the bass plays in, as a MIDI offset applied to a pitch class. */
 const BASS_BASE_MIDI = 36
 
@@ -336,13 +346,27 @@ export function buildEvents(
   const hatOpenSteps = grid(placement.hatOpen)
   const rimSteps = grid(placement.rim)
 
-  // The ghosts (R10), drawn after the four pattern draws above so that adding
-  // them left every one of those choices where it was. The rhythm stream is
-  // free to grow; the music stream is not.
-  const snareGhostSteps = ghostSteps(
-    pick(rhythmRng, SNARE_GHOST_PATTERNS),
-    template.subdivision,
-  ).filter((step) => !snareSteps.includes(step))
+  /**
+   * The ghosts get their own stream, and they are drawn per *bar*.
+   *
+   * Everything else about the figure is drawn once and repeated: the kick, the
+   * hats, the bass and the comp are what makes a groove that groove, and a
+   * listener must recognise pass three as the same music as pass one. Ghost
+   * strokes are not that. They are the quiet strokes a drummer fills the space
+   * between backbeats with, and no drummer fills it the same way twice — so a
+   * fresh pattern is drawn for every bar of the loop, out of the same small
+   * vocabulary so it stays in character.
+   *
+   * The stream is separate from `rhythmRng` because it is drawn a different
+   * number of times per groove: sixteen bars take sixteen draws where eight
+   * take eight, and sharing a stream would make the pass count shift every
+   * choice made after it.
+   */
+  const ghostRng = rngFor(`${spec.template}:${spec.seed}:${GHOST_LABEL}`)
+  const ghostsForBar = () =>
+    ghostSteps(pick(ghostRng, SNARE_GHOST_PATTERNS), template.subdivision).filter(
+      (step) => !snareSteps.includes(step),
+    )
   const ghostVelocity =
     GHOST_VELOCITY_RANGE[0] +
     (GHOST_VELOCITY_RANGE[1] - GHOST_VELOCITY_RANGE[0]) * rhythmRng()
@@ -428,7 +452,7 @@ export function buildEvents(
         // The ghosts: short, quiet strokes on the off-subdivisions between the
         // backbeats. They are what makes GHOST_VELOCITY_THRESHOLD mean what it
         // says — before them, only the hats ever fell under it (R10).
-        for (const step of snareGhostSteps) add('snare', bar, step, 1, undefined, ghostVelocity)
+        for (const step of ghostsForBar()) add('snare', bar, step, 1, undefined, ghostVelocity)
       }
       if (plays('hatClosed')) {
         const closed = plays('hatOpen')

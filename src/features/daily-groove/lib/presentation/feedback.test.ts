@@ -52,20 +52,18 @@ describe('selectFeedback', () => {
   })
 
   // Step A3 — R3, AC6
-  it('names the flavour as close and the tonic as elsewhere when only the flavour matched', () => {
+  it('names the mode as right and the tonic as elsewhere when only the mode matched', () => {
     const feedback = selectFeedback([FLAVOUR_ONLY], false)
     expect(feedback.tone).toBe('warm')
-    expect(feedback.message).toMatch(/flavour/i)
-    expect(feedback.message).toMatch(/close/i)
+    expect(feedback.message).toMatch(/mode/i)
     expect(feedback.message).toMatch(/tonic/i)
   })
 
   // Step A4 — R3, AC7
-  it('says not it, no penalty, keep playing when neither half matched', () => {
+  it('says not it, keep playing when neither half matched', () => {
     const feedback = selectFeedback([NEITHER], false)
     expect(feedback.tone).toBe('warm')
     expect(feedback.message).toMatch(/not it/i)
-    expect(feedback.message).toMatch(/no penalty/i)
     expect(feedback.message).toMatch(/keep playing/i)
   })
 

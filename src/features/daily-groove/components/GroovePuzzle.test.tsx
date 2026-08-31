@@ -362,7 +362,7 @@ describe('GroovePuzzle', () => {
     // Neither half right.
     await guess(user, 'G', wrong)
     expect(dotStates()).toEqual(['spent', 'spent', 'unspent'])
-    expect(screen.getByText(/not it\. no penalty/i)).toBeInTheDocument()
+    expect(screen.getByText(/not it\. keep playing/i)).toBeInTheDocument()
   })
 
   it("reveals the day's root in a nudge after the second miss (E3 R5, R6, AC8, AC9)", async () => {
@@ -691,7 +691,7 @@ describe('GroovePuzzle', () => {
 
     // Two dots are still spent, and the feedback matches the second guess.
     expect(dotStates()).toEqual(['spent', 'spent', 'unspent'])
-    expect(screen.getByText(/not it\. no penalty/i)).toBeInTheDocument()
+    expect(screen.getByText(/not it\. keep playing/i)).toBeInTheDocument()
     // The nudge earned by those two misses is back with them.
     expect(nudge()).toBeInTheDocument()
 

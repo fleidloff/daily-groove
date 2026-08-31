@@ -68,6 +68,17 @@ function pairUp(
  * The drift is the integral of a tempo deviation, so its crest is
  * `driftDepth × passSec / 2π` — not `driftDepth × passSec`. See `applyDrift`.
  */
+/**
+ * A ghost stroke: a snare struck well below the backbeat.
+ *
+ * Read from the velocity, which is what tells a listener the two apart, rather
+ * than from where it lands — `GHOST_VELOCITY_RANGE` sits far enough under
+ * `GHOST_VELOCITY_THRESHOLD` that the humanize slop cannot carry one across.
+ */
+function isGhost(event: NoteEvent): boolean {
+  return event.voice === 'snare' && event.velocity < GHOST_VELOCITY_THRESHOLD
+}
+
 function driftBoundFor(
   template: { humanize: { driftDepth: number } },
   music: { bpm: number; bars: number },
@@ -678,7 +689,13 @@ describe('buildEvents — a groove is several passes of one figure — R3, R5, A
         }
       })
 
-      it('plays the same rhythm in every pass, voice by voice — AC3', () => {
+      // The figure, not every note. A groove's identity is its kick, its hats,
+      // its bass and its comp, plus where the backbeat falls — those repeat
+      // exactly, which is what makes pass three recognisable as the same music
+      // as pass one. The snare's ghost strokes are deliberately excluded: they
+      // are the quiet fill between the backbeats, they are drawn per bar, and
+      // the test below is the one that holds them to varying.
+      it('plays the same figure in every pass, voice by voice — AC3', () => {
         for (let seed = 1; seed <= 6; seed++) {
           const { events, music } = buildEvents({ id: 'g', template: feel.id, seed }, feel)
           const stepsPerPass = feel.subdivision * 4
@@ -686,6 +703,7 @@ describe('buildEvents — a groove is several passes of one figure — R3, R5, A
 
           const byPass = new Map<number, string[]>()
           events.forEach((event, i) => {
+            if (isGhost(event)) return
             const pass = Math.floor(steps[i] / stepsPerPass)
             const list = byPass.get(pass) ?? []
             list.push(`${event.voice}@${steps[i] % stepsPerPass}:${event.midi ?? '-'}`)
@@ -700,6 +718,29 @@ describe('buildEvents — a groove is several passes of one figure — R3, R5, A
             expect([...(byPass.get(pass) as string[])].sort(), `${feel.id}:${seed} pass ${pass}`)
               .toEqual(first)
           }
+        }
+      })
+
+      it('fills between the backbeats differently from bar to bar', () => {
+        for (let seed = 1; seed <= 6; seed++) {
+          const { events, music } = buildEvents({ id: 'g', template: feel.id, seed }, feel)
+          const steps = stepsOfLoop(events, music.bpm, feel.subdivision)
+
+          const byBar = new Map<number, string[]>()
+          events.forEach((event, i) => {
+            if (!isGhost(event)) return
+            const bar = Math.floor(steps[i] / feel.subdivision)
+            const list = byBar.get(bar) ?? []
+            list.push(String(steps[i] % feel.subdivision))
+            byBar.set(bar, list)
+          })
+
+          const shapes = [...byBar.values()].map((list) => [...list].sort().join(','))
+          expect(shapes.length, `${feel.id}:${seed} has no ghosts at all`).toBeGreaterThan(0)
+          expect(
+            new Set(shapes).size,
+            `${feel.id}:${seed} plays one ghost figure in every bar`,
+          ).toBeGreaterThan(1)
         }
       })
 
@@ -735,7 +776,14 @@ describe('buildEvents — a groove is several passes of one figure — R3, R5, A
 // that each one is a different performance of it: its own timing and velocity
 // deviations, drawn from its own generator.
 describe('buildEvents — every pass is a different take — R4, AC4', () => {
-  /** Every event's deviation from the grid, and its velocity, grouped by pass. */
+  /**
+   * Every event's deviation from the grid, and its velocity, grouped by pass.
+   *
+   * Ghost strokes are left out. This measures whether one pass is a different
+   * *performance* of the same notes — same grid, different timing and velocity —
+   * so it has to compare like with like, and the ghosts are drawn per bar and
+   * are deliberately not the same notes.
+   */
   function takesOf(feelId: string, seed: number) {
     const feel = templateById(feelId)
     const { events, music } = buildEvents({ id: 'g', template: feelId, seed }, feel)
@@ -747,6 +795,7 @@ describe('buildEvents — every pass is a different take — R4, AC4', () => {
       () => [] as { key: string; timing: number; velocity: number }[],
     )
     for (const event of events) {
+      if (isGhost(event)) continue
       const onGrid = Math.round(event.timeSec / step)
       rows[Math.floor(onGrid / stepsPerPass)].push({
         key: `${event.voice}@${onGrid % stepsPerPass}:${event.midi ?? '-'}`,
