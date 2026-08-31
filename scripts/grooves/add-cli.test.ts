@@ -54,6 +54,17 @@ function fixture() {
   }
 }
 
+/**
+ * A render is not a unit of work you can do in five seconds any more.
+ *
+ * Every candidate now carries per-pass humanization, a tempo drift, note-offs, a
+ * hi-hat choke, a Schroeder reverb and a fill, over a catalogue four times the
+ * length it was — and these tests shell out to the real CLI. Vitest's 5 s
+ * default was written against a much lighter pipeline; under parallel load these
+ * time out and read as flaky when nothing is flaky but the clock.
+ */
+const RENDER_TIMEOUT_MS = 60_000
+
 describe('grooves:add CLI', () => {
   it('mints the requested count and reports what it added', async () => {
     const f = fixture()
@@ -67,7 +78,7 @@ describe('grooves:add CLI', () => {
     for (const spec of catalogue.slice(2)) {
       expect(log.join('\n')).toContain(spec.id)
     }
-  })
+  }, RENDER_TIMEOUT_MS)
 
   it('refuses a missing or non-numeric count without touching the catalogue', async () => {
     const f = fixture()
