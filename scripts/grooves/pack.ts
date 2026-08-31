@@ -85,12 +85,56 @@ async function decodeAll(
     while (next < files.length) {
       const file = files[next]
       next += 1
-      buffers.set(file, await decode(join(dir, file), sampleRate))
+      buffers.set(file, startFromSilence(await decode(join(dir, file), sampleRate)))
     }
   })
 
   await Promise.all(workers)
   return buffers
+}
+
+/**
+ * How long a sample is ramped up from zero, if it does not already start there.
+ *
+ * Half a millisecond — 22 frames at 44.1 kHz — which is below the ear's ability
+ * to hear an attack soften and far shorter than the shortest transient in the
+ * pack.
+ */
+const LEAD_IN_SEC = 0.0005
+
+/** Below this a first frame is silence for practical purposes. */
+const SILENT_ENOUGH = 1e-4
+
+/**
+ * Ramp a sample up from zero if its first frame is not already there.
+ *
+ * A sample that begins mid-waveform is a step from silence, and the loop seam
+ * is where that step gets found: `mixTracks` folds the overhang onto bar one, so
+ * the first sample of the render survives into the wrapped buffer as a
+ * discontinuity against the decaying tail at the last one — and then `normalise`
+ * multiplies it by whatever gain the master needed. Three of the committed
+ * samples start as high as 0.008, all of them the cajon standing in for a kick,
+ * and after normalisation that is enough to put two grooves over the gate's
+ * seam threshold once anything shifts the mix balance.
+ *
+ * Trimming the sample properly is the real fix and belongs to whoever restocks
+ * the pack. Doing it here as well costs nothing and makes the guarantee hold for
+ * whatever arrives next, rather than for the files that happen to be committed
+ * today.
+ */
+function startFromSilence(pcm: Pcm): Pcm {
+  if (Math.abs(pcm.left[0]) < SILENT_ENOUGH && Math.abs(pcm.right[0]) < SILENT_ENOUGH) return pcm
+
+  const frames = Math.min(Math.round(LEAD_IN_SEC * pcm.sampleRate), pcm.left.length)
+  const left = Float32Array.from(pcm.left)
+  const right = Float32Array.from(pcm.right)
+  for (let i = 0; i < frames; i += 1) {
+    const ramp = i / frames
+    left[i] *= ramp
+    right[i] *= ramp
+  }
+
+  return { sampleRate: pcm.sampleRate, left, right }
 }
 
 function nearestNote<T extends { midi: number }>(notes: T[], midi: number | undefined): T {
