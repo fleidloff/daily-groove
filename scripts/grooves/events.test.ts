@@ -110,15 +110,23 @@ describe('buildEvents — the grid', () => {
     )
   })
 
-  it('ends the loop exactly on the end of its last bar', () => {
-    // renderVoices sizes its buffers from max(timeSec + durationSec), so the
-    // feel stages must never lengthen or shorten the loop. The loop is
-    // `loopBars` long, not `bars`: `bars` is the figure.
+  it('keeps every event inside the loop, and fills it to the last bar', () => {
+    // The loop's length is the buffer's, not the last note's. `renderVoices`
+    // sizes it from `bars` and `bpm`; `fitToLoop` used to stretch whichever
+    // event ended last so that `max(timeSec + durationSec)` landed on the end
+    // of the loop, and that stopped being free once `addAt` learned to stop a
+    // note at its duration — the stretch became an audibly longer note, chosen
+    // by whichever event happened to end last rather than by the music.
+    //
+    // What must still hold is that nothing spills past the loop and the groove
+    // plays right up to its last bar.
     for (let seed = 1; seed <= 12; seed++) {
       const { events, music } = buildEvents({ ...spec, seed }, template)
       const loopSec = (60 / music.bpm) * 4 * music.loopBars
+      const barSec = (60 / music.bpm) * 4
       const end = Math.max(...events.map((e) => e.timeSec + e.durationSec))
-      expect(Math.abs(end - loopSec)).toBeLessThan(1e-9)
+      expect(end, `seed ${seed} spills past the loop`).toBeLessThanOrEqual(loopSec + 1e-9)
+      expect(end, `seed ${seed} stops before its last bar`).toBeGreaterThan(loopSec - barSec)
     }
   })
 
@@ -478,12 +486,18 @@ describe('buildEvents — every template renders', () => {
         }
       })
 
-      it('ends the loop exactly on the end of its last bar', () => {
+      it('keeps every event inside the loop, and fills it to the last bar', () => {
         for (const seed of seeds) {
           const { events, music } = buildEvents({ id: 'g', template: feel.id, seed }, feel)
           const loopSec = (60 / music.bpm) * 4 * music.loopBars
+          const barSec = (60 / music.bpm) * 4
           const end = Math.max(...events.map((e) => e.timeSec + e.durationSec))
-          expect(Math.abs(end - loopSec), `${feel.id}:${seed}`).toBeLessThan(1e-9)
+          expect(end, `${feel.id}:${seed} spills past the loop`).toBeLessThanOrEqual(
+            loopSec + 1e-9,
+          )
+          expect(end, `${feel.id}:${seed} stops before its last bar`).toBeGreaterThan(
+            loopSec - barSec,
+          )
         }
       })
 
@@ -681,10 +695,21 @@ describe('buildEvents — a groove is several passes of one figure — R3, R5, A
           expect(music.bars, feel.id).toBe(4)
           expect(music.loopBars, feel.id).toBe(4 * feel.passes)
 
+          // The declared span is `loopBars`, and the events fill it: the last
+          // one ends inside the final bar and nothing spills past the end. It
+          // is not asserted to land *on* the end — that used to be manufactured
+          // by stretching whichever event happened to end last, which is now an
+          // audible note length rather than a free bit of bookkeeping. The
+          // buffer carries the loop's exact length, and `voices.test.ts` holds
+          // it to that.
           const barSec = (60 / music.bpm) * 4
+          const loopSec = barSec * music.loopBars
           const end = Math.max(...events.map((e) => e.timeSec + e.durationSec))
-          expect(Math.abs(end - barSec * music.loopBars), `${feel.id}:${seed}`).toBeLessThan(
-            1e-3,
+          expect(end, `${feel.id}:${seed} spills past the loop`).toBeLessThanOrEqual(
+            loopSec + 1e-9,
+          )
+          expect(end, `${feel.id}:${seed} stops before its last bar`).toBeGreaterThan(
+            loopSec - barSec,
           )
         }
       })

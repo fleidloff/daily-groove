@@ -1,5 +1,7 @@
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { PEAK_CEILING, SEAM_THRESHOLD, mixTracks, truePeak } from './mix.ts'
+import { PEAK_CEILING, ROOM_SEND, SEAM_THRESHOLD, applyRoom, mixTracks, truePeak } from './mix.ts'
 import type { FeelTemplate, Pcm, Track, VoiceName } from './types.ts'
 
 const SAMPLE_RATE = 44100
@@ -227,12 +229,27 @@ describe('mixTracks', () => {
       expect(mix.left.length).toBe(LOOP_FRAMES)
       expect(mix.right.length).toBe(LOOP_FRAMES)
 
-      const master = mix.left[BAR_FRAMES - 1] / ramp(BAR_FRAMES - 1)
+      // The bus that gets folded is the roomed one - Step D2 puts `applyRoom`
+      // before `wrap`, so bar 1 is what the room made of bar 5, not the dry
+      // bar 5. Fold the same arithmetic here and the two must agree.
+      const roomed = Float32Array.from(samples)
+      applyRoom(roomed, Float32Array.from(samples), SAMPLE_RATE)
+      const folded = (i: number): number => roomed[i] + roomed[i + LOOP_FRAMES]
+
+      const master = mix.left[BAR_FRAMES - 1] / folded(BAR_FRAMES - 1)
       expect(master).toBeGreaterThan(0)
-      for (const i of [1000, 10_000, 20_000, 30_000, BAR_FRAMES - 2]) {
-        expect(mix.left[i]).toBeCloseTo(master * ramp(i), 5)
+      for (const i of [0, 1000, 10_000, 20_000, 30_000, BAR_FRAMES - 2]) {
+        expect(mix.left[i]).toBeCloseTo(master * folded(i), 5)
       }
-      expect(mix.left[0]).toBeCloseTo(0, 6)
+      // And bar 5's ramp is still legible in bar 1: it rises across the bar,
+      // which is the assertion this test was written to make. (It no longer
+      // lands on `ramp` exactly, because the room is in the fold with it: a
+      // ramp is very nearly DC, and a comb filter has real gain at DC.)
+      let previous = mix.left[0]
+      for (const i of [1000, 10_000, 20_000, 30_000, BAR_FRAMES - 2]) {
+        expect(mix.left[i]).toBeGreaterThan(previous)
+        previous = mix.left[i]
+      }
     })
 
     it('returns exactly the loop length when the tracks are shorter than it', () => {
@@ -333,5 +350,139 @@ describe('mixTracks', () => {
       const last = mix.left.length - 1
       expect(Math.abs(mix.left[last] - mix.left[0])).toBeGreaterThan(SEAM_THRESHOLD)
     })
+  })
+})
+
+// Step D1 - R11, R12, AC12
+describe('the room', () => {
+  function impulse(frames: number): Float32Array {
+    const samples = new Float32Array(frames)
+    samples[0] = 1
+    return samples
+  }
+
+  function rms(channel: Float32Array, from: number, to: number): number {
+    return Math.sqrt(energy(channel, from, to) / (to - from))
+  }
+
+  /** Four consecutive windows of the tail, 0.1 s to 0.4 s after the impulse. */
+  function tailWindows(channel: Float32Array): number[] {
+    const width = 0.075
+    return [0, 1, 2, 3].map((n) =>
+      rms(
+        channel,
+        Math.round((0.1 + n * width) * SAMPLE_RATE),
+        Math.round((0.1 + (n + 1) * width) * SAMPLE_RATE),
+      ),
+    )
+  }
+
+  it('rings on after an impulse and decays away', () => {
+    const left = impulse(SAMPLE_RATE)
+    const right = impulse(SAMPLE_RATE)
+
+    applyRoom(left, right, SAMPLE_RATE)
+
+    const windows = tailWindows(left)
+    for (const window of windows) expect(window).toBeGreaterThan(0)
+    for (let i = 1; i < windows.length; i += 1) {
+      expect(windows[i]).toBeLessThan(windows[i - 1])
+    }
+    expect(tailWindows(right)).toEqual(windows)
+  })
+
+  it('is a short room - the tail is gone well inside a second', () => {
+    const left = impulse(SAMPLE_RATE)
+    const right = impulse(SAMPLE_RATE)
+
+    applyRoom(left, right, SAMPLE_RATE)
+
+    const early = rms(left, 0, Math.round(0.1 * SAMPLE_RATE))
+    const late = rms(left, Math.round(0.8 * SAMPLE_RATE), Math.round(0.9 * SAMPLE_RATE))
+    expect(late).toBeLessThan(early / 100)
+  })
+
+  it('leaves the dry signal in place and only adds to it', () => {
+    const left = impulse(64)
+    const right = impulse(64)
+
+    applyRoom(left, right, SAMPLE_RATE)
+
+    // Every delay line is longer than this buffer, so nothing has come back yet.
+    expect(left[0]).toBe(1)
+    expect(right[0]).toBe(1)
+    expect(left.length).toBe(64)
+  })
+
+  it('sends the same amount of every voice to the room', () => {
+    expect(ROOM_SEND).toBeGreaterThan(0)
+    expect(ROOM_SEND).toBeLessThan(1)
+  })
+
+  it('renders the same room twice, sample for sample', () => {
+    const a = { left: impulse(SAMPLE_RATE), right: impulse(SAMPLE_RATE) }
+    const b = { left: impulse(SAMPLE_RATE), right: impulse(SAMPLE_RATE) }
+
+    applyRoom(a.left, a.right, SAMPLE_RATE)
+    applyRoom(b.left, b.right, SAMPLE_RATE)
+
+    expect(Array.from(b.left)).toEqual(Array.from(a.left))
+    expect(Array.from(b.right)).toEqual(Array.from(a.right))
+  })
+
+  it('is arithmetic - the mix stage still imports nothing but its own types', () => {
+    const source = readFileSync(join(import.meta.dirname, 'mix.ts'), 'utf8')
+    const specifiers = [...source.matchAll(/\bfrom\s+['"]([^'"]+)['"]/g)].map((m) => m[1])
+
+    expect(specifiers).toEqual(['./types.ts'])
+    // No impulse-response file, no audio library, and nothing that reads a
+    // clock or a random source: the room is arithmetic, so it is repeatable.
+    expect(source).not.toMatch(/\.wav|\.aiff?|\.mp3|Math\.random|Date\.now|performance\.now/)
+  })
+})
+
+// Step D2 - R13, R15, AC13
+describe('the room folds into the loop', () => {
+  /** A short decaying note, ending just inside the loop and nothing after it. */
+  function lastNote(totalFrames: number, endFrame: number): Float32Array {
+    const samples = new Float32Array(totalFrames)
+    const length = Math.round(0.04 * SAMPLE_RATE)
+    for (let n = 0; n < length; n += 1) {
+      const i = endFrame - length + n
+      samples[i] =
+        0.8 * Math.sin((2 * Math.PI * 150 * n) / SAMPLE_RATE) * Math.exp(-n / (length / 3))
+    }
+    return samples
+  }
+
+  it('rings over bar one and keeps the seam closed', () => {
+    const samples = lastNote(5 * BAR_FRAMES, LOOP_FRAMES - Math.round(0.03 * SAMPLE_RATE))
+    // The dry signal writes nothing past the loop end, so anything the fold
+    // brings back onto bar 1 can only be the room's own tail.
+    expect(energy(samples, LOOP_FRAMES)).toBe(0)
+
+    const mix = mixTracks([fromSamples('comp', samples)], template(), {
+      loopBars: LOOP_BARS,
+      bpm: BPM,
+    })
+
+    const last = mix.left.length - 1
+    expect(Math.abs(mix.left[last] - mix.left[0])).toBeLessThan(SEAM_THRESHOLD)
+    expect(Math.abs(mix.right[last] - mix.right[0])).toBeLessThan(SEAM_THRESHOLD)
+
+    const opening = Math.sqrt(energy(mix.left, 0, 512) / 512)
+    expect(opening).toBeGreaterThan(1e-3)
+  })
+
+  it('still lands the master on the ceiling with the room in the mix', () => {
+    const samples = ringingTail(5 * BAR_FRAMES, LOOP_FRAMES - BAR_FRAMES / 2)
+
+    const mix = mixTracks([fromSamples('hatOpen', samples)], template(), {
+      loopBars: LOOP_BARS,
+      bpm: BPM,
+    })
+
+    expect(truePeak(mix)).toBeCloseTo(PEAK_CEILING, 5)
+    expect(peak(mix)).toBeLessThan(1)
   })
 })

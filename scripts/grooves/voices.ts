@@ -10,6 +10,10 @@
  * picks the layer, a per-voice counter rotates the alternates, and the buffer
  * can be sized to the tempo grid plus an overhang so a tail at the end of the
  * loop rings on for the mix stage to wrap back onto the start.
+ *
+ * Feature-9's Epic 4 gives the stage the two things a sample player needs
+ * before an arrangement stops sounding like a pattern: a note that stops when
+ * its `durationSec` runs out, and a closed hat that stops a ringing open one.
  */
 
 import { rngFor } from './rng.ts'
@@ -35,6 +39,30 @@ const ROUND_ROBIN_SPAN = 64
  * distortion when it does.
  */
 const MAX_LAYER_GAIN = 2
+
+/**
+ * How long a note takes to fall silent once its duration has run out.
+ *
+ * A duration used to be decoration: `addAt` copied the whole sample whatever
+ * the event said, so nothing had an ending. Cutting at the duration exactly
+ * would give it one, and a click with it — a waveform stopped mid-cycle is a
+ * step, and a step is a broadband transient. Eight milliseconds is long enough
+ * for the discontinuity to fall below what the ear picks out and short enough
+ * that the note still reads as stopping rather than fading.
+ *
+ * It is a stop, not an envelope. Shaping a note's decay is the sample's job.
+ */
+const RELEASE_SEC = 0.008
+
+/**
+ * How long a closed hat takes to silence a ringing open one.
+ *
+ * Shorter than a note's release, because a choke is a physical event — the foot
+ * closes on the cymbal and the ring stops — rather than a note ending. Five
+ * milliseconds still costs nothing in clicks, because the closed hat's own
+ * attack lands on top of it and masks whatever the fade leaves behind.
+ */
+const CHOKE_SEC = 0.005
 
 export type RenderOptions = {
   /**
@@ -97,10 +125,72 @@ export function renderVoices(
     const source = transpose(sample.pcm, event.midi, sample.rootMidi)
     const offset = Math.round(event.timeSec * sampleRate)
 
-    addAt(track.pcm, source, offset, gainFor(event.velocity, sample.nominalVelocity))
+    addAt(
+      track.pcm,
+      source,
+      offset,
+      gainFor(event.velocity, sample.nominalVelocity),
+      event.durationSec,
+    )
   }
 
+  chokeOpenHats(tracks, events, sampleRate)
+
   return [...tracks.values()]
+}
+
+/**
+ * A closed hi-hat stops a ringing open one.
+ *
+ * This is the one thing the voices stage does that a single event cannot say
+ * for itself, so it is a pass over the finished tracks rather than a rule on
+ * the events: an open hat is placed in full, and every closed hat that lands
+ * while it is still ringing wipes what is left of it.
+ *
+ * Deliberately a property of these two voices and not a general choke-group
+ * mechanism on the template. A hat pedal is the only choke a kit of seven
+ * voices has, and a template field for it would be a configuration point with
+ * exactly one correct setting.
+ *
+ * The silence runs from the closed hat up to the next open hat, not to the end
+ * of the buffer. An open hat struck after the pedal closed is a new sound, and
+ * a choke that ran past it would delete a note nobody played over.
+ */
+function chokeOpenHats(
+  tracks: Map<VoiceName, Track>,
+  events: NoteEvent[],
+  sampleRate: number,
+): void {
+  const open = tracks.get('hatOpen')
+  if (!open) return
+
+  const onsets = (voice: VoiceName) =>
+    events
+      .filter((event) => event.voice === voice)
+      .map((event) => event.timeSec)
+      .sort((a, b) => a - b)
+
+  const closed = onsets('hatClosed')
+  if (closed.length === 0) return
+  const opened = onsets('hatOpen')
+
+  const frames = open.pcm.left.length
+  const fade = Math.max(1, Math.round(CHOKE_SEC * sampleRate))
+
+  for (const timeSec of closed) {
+    const from = Math.max(0, Math.round(timeSec * sampleRate))
+    if (from >= frames) continue
+
+    const next = opened.find((onset) => onset >= timeSec)
+    const until = next === undefined ? frames : Math.min(frames, Math.round(next * sampleRate))
+
+    for (let i = from; i < until; i += 1) {
+      const elapsed = i - from
+      const level = elapsed < fade ? 1 - elapsed / fade : 0
+      open.pcm.left[i] *= level
+      open.pcm.right[i] *= level
+    }
+  }
 }
 
 /**
@@ -245,16 +335,41 @@ export function resample(pcm: Pcm, ratio: number): Pcm {
   return { sampleRate: pcm.sampleRate, left, right }
 }
 
-/** Adds `source` into `target` at `offset`, scaled by `gain`, clipped at the end. */
-export function addAt(target: Pcm, source: Pcm, offset: number, gain: number): void {
+/**
+ * Adds `source` into `target` at `offset`, scaled by `gain`, clipped at the end.
+ *
+ * With `durationSec`, the note also has an ending: the sample plays at full
+ * gain for that long and then falls to silence over `RELEASE_SEC`. A sample
+ * shorter than the duration is unaffected, which is why the drums barely notice
+ * — their declared durations already outrun their recordings — and the comp and
+ * the bass, whose samples ring for the best part of a second, are where this is
+ * the whole difference between a chord that ends and one that does not.
+ *
+ * Omitting the argument keeps the old behaviour of copying the whole sample.
+ */
+export function addAt(
+  target: Pcm,
+  source: Pcm,
+  offset: number,
+  gain: number,
+  durationSec?: number,
+): void {
   const start = Math.max(0, offset)
   const available = target.left.length - start
   if (available <= 0) return
 
-  const count = Math.min(source.left.length, available)
+  const held =
+    durationSec === undefined
+      ? source.left.length
+      : Math.max(0, Math.round(durationSec * target.sampleRate))
+  const release =
+    durationSec === undefined ? 0 : Math.max(1, Math.round(RELEASE_SEC * target.sampleRate))
+
+  const count = Math.min(source.left.length, available, held + release)
 
   for (let i = 0; i < count; i += 1) {
-    target.left[start + i] += source.left[i] * gain
-    target.right[start + i] += source.right[i] * gain
+    const level = i < held ? gain : gain * (1 - (i - held) / release)
+    target.left[start + i] += source.left[i] * level
+    target.right[start + i] += source.right[i] * level
   }
 }

@@ -2,7 +2,7 @@
  * The quality gate: a rendered candidate is accepted, or rejected with a named
  * reason.
  *
- * Three of these five checks already existed as assertions in Epics 2 and 3.
+ * Three of these six checks already existed as assertions in Epics 2 and 3.
  * This module lifts them out of the test suite and into the pipeline, so they
  * run on every groove ever minted rather than only on the ones someone wrote a
  * test for. A minted groove enters the catalogue only if `gateCandidate`
@@ -14,6 +14,7 @@
  */
 
 import { PEAK_CEILING, SEAM_THRESHOLD, truePeak } from './mix.ts'
+import { offScalePitches } from './theory/pitches.ts'
 import { isValidHarmony } from './theory/validity.ts'
 import type { Harmony } from './theory/harmony.ts'
 import type { FeelTemplate, GateFailure, MusicMeta, NoteEvent, Pcm } from './types.ts'
@@ -58,6 +59,7 @@ export function gateCandidate(args: {
     checkSilence(args.pcm) ??
     checkSeam(args.pcm) ??
     checkHarmony(args.music, args.harmony) ??
+    checkPitch(args.events, args.music, args.harmony) ??
     checkDensity(args.events, args.music, args.template)
   )
 }
@@ -125,6 +127,37 @@ function checkHarmony(music: MusicMeta, harmony: Harmony): GateFailure | null {
   return {
     check: 'harmony',
     detail: `${music.chord} / ${music.progression} is not valid in ${music.root} ${music.flavour} (harmony plays ${harmony.chordName} / ${harmony.progressionName})`,
+  }
+}
+
+/**
+ * The same claim as `checkHarmony`, one level down: the *events* must describe
+ * the audio too.
+ *
+ * `checkHarmony` reads the harmony object — chord names, degrees, pitch classes
+ * — and never a `NoteEvent`. That was enough while every emitted pitch was
+ * derived from `harmony.progressionMidi` and could not disagree with it. The
+ * bass's chromatic approach note ends that, so this check reads what is
+ * actually played. The rule, and its one named exception, live in
+ * `theory/pitches.ts` beside the harmony they bend.
+ *
+ * A hard failure with no warning mode and no exemptions: the whole catalogue
+ * passed it on the day it landed, which is the proof that the grooves shipped
+ * before it were already honest (R10a).
+ */
+function checkPitch(
+  events: NoteEvent[],
+  music: MusicMeta,
+  harmony: Harmony,
+): GateFailure | null {
+  const failures = offScalePitches(events, music, harmony)
+  if (failures.length === 0) return null
+
+  const [first] = failures
+  const rest = failures.length > 1 ? ` (and ${failures.length - 1} more)` : ''
+  return {
+    check: 'pitch',
+    detail: `${first.voice} plays MIDI ${first.midi} at ${first.timeSec.toFixed(3)}s, which ${music.scale} does not contain${rest}`,
   }
 }
 

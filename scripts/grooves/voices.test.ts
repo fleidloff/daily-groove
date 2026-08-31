@@ -599,3 +599,135 @@ describe('renderVoices', () => {
     })
   })
 })
+
+/**
+ * Feature-9, Epic 4, Track A. A note has to end, and a closed hat has to stop
+ * an open one, so both are measured against packs built for the purpose: a
+ * sample far longer than the event that plays it, so what silences the track
+ * can only be the note-off or the choke.
+ */
+
+/** Root-mean-square over a window, which is how "it stopped" is measured. */
+function rms(pcm: Pcm, fromSec: number, toSec: number): number {
+  const from = Math.max(0, Math.round(fromSec * pcm.sampleRate))
+  const to = Math.min(pcm.left.length, Math.round(toSec * pcm.sampleRate))
+  if (to <= from) return 0
+
+  let sum = 0
+  for (let i = from; i < to; i += 1) sum += pcm.left[i] * pcm.left[i]
+  return Math.sqrt(sum / (to - from))
+}
+
+/** A pack whose every voice is one steady tone of `lengthSec`, never decaying. */
+function steadyPack(lengthSec: number, sampleRate = SAMPLE_RATE): SamplePack {
+  const frames = Math.round(lengthSec * sampleRate)
+  const left = new Float32Array(frames)
+  const right = new Float32Array(frames)
+  for (let i = 0; i < frames; i += 1) {
+    const value = 0.5 * Math.sin((2 * Math.PI * 220 * i) / sampleRate)
+    left[i] = value
+    right[i] = value
+  }
+  const pcm: Pcm = { sampleRate, left, right }
+
+  return {
+    id: 'steady',
+    describe: () => ({ id: 'steady', sampleRate, voices: {} }),
+    // 1, so the layer stands for a hit at full velocity and `gainFor` passes
+    // the event's own velocity straight through.
+    get: () => ({ pcm, nominalVelocity: 1 }),
+  }
+}
+
+// Step A1 - R1, AC1
+describe('a note stops at its duration', () => {
+  it('has decayed by the end of a short duration, not the sample length', () => {
+    const [track] = renderVoices(
+      [{ voice: 'comp', timeSec: 0, durationSec: 0.1, velocity: 1, midi: 60 }],
+      steadyPack(2),
+      SAMPLE_RATE,
+      { bars: 1, bpm: 120 },
+    )
+
+    const held = rms(track.pcm, 0, 0.05)
+    const after = rms(track.pcm, 0.15, 0.5)
+
+    expect(held).toBeGreaterThan(0)
+    expect(after).toBeLessThan(held / 1000)
+  })
+
+  it('releases rather than cutting, so the stop is not a click', () => {
+    const [track] = renderVoices(
+      [{ voice: 'comp', timeSec: 0, durationSec: 0.1, velocity: 1, midi: 60 }],
+      steadyPack(2),
+      SAMPLE_RATE,
+      { bars: 1, bpm: 120 },
+    )
+
+    // The frames just past the duration are quieter than the held tone but
+    // still sounding: a hard cut would make them exactly zero.
+    const releasing = rms(track.pcm, 0.1, 0.104)
+    expect(releasing).toBeGreaterThan(0)
+    expect(releasing).toBeLessThan(rms(track.pcm, 0, 0.05))
+  })
+
+  it('leaves a sample shorter than its duration alone', () => {
+    const [track] = renderVoices(
+      [{ voice: 'comp', timeSec: 0, durationSec: 1, velocity: 1, midi: 60 }],
+      steadyPack(0.2),
+      SAMPLE_RATE,
+      { bars: 1, bpm: 120 },
+    )
+
+    expect(rms(track.pcm, 0, 0.2)).toBeGreaterThan(0)
+    expect(rms(track.pcm, 0.2, 0.5)).toBe(0)
+  })
+})
+
+// Step A3 - R2, AC3
+describe('a closed hat chokes an open one', () => {
+  /** An open hat that rings for a second, so only the choke can stop it. */
+  function hats(closedAt: number[]): NoteEvent[] {
+    return [
+      { voice: 'hatOpen', timeSec: 0, durationSec: 1, velocity: 1 },
+      ...closedAt.map((timeSec) => ({
+        voice: 'hatClosed' as const,
+        timeSec,
+        durationSec: 0.05,
+        velocity: 0.8,
+      })),
+    ]
+  }
+
+  function openTrack(events: NoteEvent[]) {
+    const tracks = renderVoices(events, steadyPack(1), SAMPLE_RATE, { bars: 1, bpm: 120 })
+    const open = tracks.find((track) => track.voice === 'hatOpen')
+    if (!open) throw new Error('no hatOpen track rendered')
+    return open
+  }
+
+  it('stops the open hat at the closed hat onset', () => {
+    const track = openTrack(hats([0.2]))
+
+    const ringing = rms(track.pcm, 0, 0.1)
+    const choked = rms(track.pcm, 0.25, 0.5)
+
+    expect(ringing).toBeGreaterThan(0)
+    expect(choked).toBeLessThan(ringing / 100)
+  })
+
+  it('leaves an open hat alone when no closed hat follows it', () => {
+    const track = openTrack(hats([]))
+
+    expect(rms(track.pcm, 0.25, 0.5)).toBeGreaterThan(rms(track.pcm, 0, 0.1) / 2)
+  })
+
+  it('does not silence an open hat that starts after the closed one', () => {
+    const track = openTrack([
+      { voice: 'hatClosed', timeSec: 0.2, durationSec: 0.05, velocity: 0.8 },
+      { voice: 'hatOpen', timeSec: 0.4, durationSec: 0.5, velocity: 1 },
+    ])
+
+    expect(rms(track.pcm, 0.45, 0.6)).toBeGreaterThan(0)
+  })
+})

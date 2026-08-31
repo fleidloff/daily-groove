@@ -8,6 +8,8 @@ import { loadPack } from './pack.ts'
 import { fileURLToPath } from 'node:url'
 import { renderVoices } from './voices.ts'
 import { gateCandidate } from './gate.ts'
+import { offScalePitches } from './theory/pitches.ts'
+import { pitchesOf } from './theory/scales.ts'
 import type { FeelTemplate, MusicMeta, NoteEvent, Pcm } from './types.ts'
 import type { Harmony } from './theory/harmony.ts'
 
@@ -394,5 +396,96 @@ describe('the ceiling comparison', () => {
     }
     const failure = gateCandidate({ pcm: hot, events, music, harmony, template })
     expect(failure?.check).toBe('peak')
+  })
+})
+
+// Feature 9, Epic 4, Steps C1–C3 — R9, R10, R10a, AC10, AC11, AC11a.
+//
+// `checkHarmony` validates the harmony OBJECT and never reads a `NoteEvent`.
+// These are the tests that the gate now reads the events too.
+describe('the pitch check — R9, R10, AC10, AC11', () => {
+  /** The good candidate with one bass note the scale does not contain. */
+  function withOffScaleBass(): Candidate {
+    const scale = new Set(pitchesOf(GOOD.music.root, GOOD.music.flavour))
+    const bass = GOOD.events.find((e) => e.voice === 'bass' && e.midi !== undefined)
+    expect(bass, 'the fixture groove has no bass').toBeDefined()
+
+    // A semitone up from a chord tone, mid-bar: not in the scale, and — because
+    // it is the FIRST bass event of the loop — nowhere near a bar's last
+    // off-beat, so the approach-note exception cannot admit it.
+    let midi = bass!.midi! + 1
+    while (scale.has(midi % 12)) midi += 1
+
+    const events = GOOD.events.map((e) => (e === bass ? { ...e, midi } : e))
+    return { ...GOOD, events }
+  }
+
+  it('rejects a groove whose events contradict its stated scale, naming the pitch check', () => {
+    const failure = gateCandidate(withOffScaleBass())
+    expect(failure?.check).toBe('pitch')
+  })
+
+  it('names the offending MIDI value in the failure’s detail', () => {
+    const candidate = withOffScaleBass()
+    const original = new Set(GOOD.events.map((e) => e.midi))
+    const changed = candidate.events.find((e) => !original.has(e.midi))!
+    const failure = gateCandidate(candidate)
+    expect(failure?.detail).toContain(String(changed.midi))
+  })
+
+  it('reads the events, not only the harmony object — the harmony is untouched', () => {
+    const candidate = withOffScaleBass()
+    // Same music, same harmony as the candidate the gate accepts: only the
+    // events differ, so nothing but an event-level check can catch this.
+    expect(candidate.music).toBe(GOOD.music)
+    expect(candidate.harmony).toBe(GOOD.harmony)
+    expect(gateCandidate(GOOD)).toBeNull()
+    expect(gateCandidate(candidate)?.check).toBe('pitch')
+  })
+
+  it('runs between the harmony and density checks', () => {
+    // Harmony first: a candidate broken in both ways reports the harmony.
+    const both = { ...withOffScaleBass(), music: { ...GOOD.music, chord: 'B♭dim7' } }
+    expect(gateCandidate(both)?.check).toBe('harmony')
+
+    // Density after: a candidate broken in both ways reports the pitch.
+    const pitchAndDensity = {
+      ...withOffScaleBass(),
+      template: {
+        ...GOOD.template,
+        density: { minPerBar: 1000, maxPerBar: 2000 },
+      },
+    }
+    expect(gateCandidate(pitchAndDensity)?.check).toBe('pitch')
+  })
+
+  it('rejects an off-scale COMP note too — the exception is the bass’s alone', () => {
+    const scale = new Set(pitchesOf(GOOD.music.root, GOOD.music.flavour))
+    const comp = GOOD.events.find((e) => e.voice === 'comp' && e.midi !== undefined)
+    expect(comp, 'the fixture groove has no comp').toBeDefined()
+    let midi = comp!.midi! + 1
+    while (scale.has(midi % 12)) midi += 1
+    const events = GOOD.events.map((e) => (e === comp ? { ...e, midi } : e))
+    expect(gateCandidate({ ...GOOD, events })?.check).toBe('pitch')
+  })
+
+  // R10a, AC11a — a hard failure from the moment it lands, with no warning
+  // period and no grandfathered entries. This sweep is the proof that today's
+  // catalogue was already honest.
+  it('accepts every groove in the catalogue', () => {
+    const specs = readCatalogue()
+    expect(specs.length).toBeGreaterThan(0)
+
+    for (const spec of specs) {
+      const template = templateById(spec.template)
+      const { events, music, harmony } = buildEvents(spec, template)
+      expect(
+        offScalePitches(events, music, harmony),
+        `${spec.id} plays a pitch outside ${music.scale}`,
+      ).toEqual([])
+      // And through the gate itself, on a buffer that passes the audio checks.
+      const failure = gateCandidate({ pcm: GOOD.pcm, events, music, harmony, template })
+      expect(failure?.check, `${spec.id}: ${failure?.detail ?? ''}`).not.toBe('pitch')
+    }
   })
 })

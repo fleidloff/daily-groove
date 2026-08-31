@@ -25,6 +25,30 @@ export const SEAM_THRESHOLD = 0.02
 const DEFAULT_SAMPLE_RATE = 44100
 const DEFAULT_BEATS_PER_BAR = 4
 
+/**
+ * How much of the summed bus is sent to the room. One amount for the whole mix
+ * (R11): the fault being fixed is that the voices sound like they are standing
+ * in different places, and a single shared send is the most direct statement
+ * that they are not. Tuned by ear - enough to glue seven dry voices, little
+ * enough to leave a sixteenth-note pattern legible.
+ */
+export const ROOM_SEND = 0.18
+
+/** Roughly how long the room takes to fall away. A small room, not a hall. */
+const ROOM_DECAY_SEC = 0.6
+
+/**
+ * Four parallel combs and two allpasses - a Schroeder network. The comb delays
+ * are mutually prime once rounded to frames (`primeFrames` below), so their
+ * echo trains never line up and the tail reads as a room rather than as a
+ * flutter. Seconds, not frames, so the room is the same room at any rate.
+ */
+const COMB_DELAYS_SEC = [0.0297, 0.0331, 0.0371, 0.0411]
+const ALLPASS_DELAYS_SEC = [0.005, 0.0017]
+
+/** The allpasses colour nothing; they only smear the combs into a density. */
+const ALLPASS_GAIN = 0.5
+
 /** Below this the bus is exactly linear; above it the crest is rounded. */
 const BUS_KNEE = 0.8
 
@@ -67,6 +91,15 @@ export function mixTracks(tracks: Track[], template: FeelTemplate, options: MixO
     }
   }
 
+  // The room goes on the summed bus BEFORE the overhang is folded, and the
+  // ordering is deliberate (R13). `wrap` folds the bar rendered past the loop
+  // end back onto bar 1, so a tail generated here lands in the overhang and is
+  // folded like every other tail: the room rings over bar 1 exactly as it would
+  // if the loop were really repeating. Reverberating the already-wrapped buffer
+  // would instead grow a fresh tail with nowhere to go, and the loop's last
+  // sample would no longer sit next to its first.
+  applyRoom(left, right, sampleRate)
+
   const master =
     loopFrames === undefined
       ? { left, right }
@@ -85,6 +118,94 @@ export function mixTracks(tracks: Track[], template: FeelTemplate, options: MixO
  */
 export function truePeak(pcm: Pcm): number {
   return Math.max(channelTruePeak(pcm.left), channelTruePeak(pcm.right))
+}
+
+/**
+ * Place the mix in one room: a Schroeder reverb, mixed in at `ROOM_SEND`.
+ *
+ * Four parallel comb filters make the echo train, two allpasses in series smear
+ * it into a density, and the result is added to the dry signal in place. Pure
+ * array arithmetic - no dependency, no impulse response, no committed asset,
+ * and nothing that reads the clock or a random source, so the same spec renders
+ * byte-identical audio (R12).
+ *
+ * Both channels run the same network. The dry signal keeps whatever image the
+ * panner gave it; the room itself is centred, which is what "one shared space"
+ * means and what keeps a centred voice identical in both channels.
+ */
+export function applyRoom(left: Float32Array, right: Float32Array, sampleRate: number): void {
+  room(left, sampleRate)
+  room(right, sampleRate)
+}
+
+function room(channel: Float32Array, sampleRate: number): void {
+  if (channel.length === 0) return
+
+  const wet = new Float32Array(channel.length)
+  for (const seconds of COMB_DELAYS_SEC) {
+    const delay = primeFrames(seconds, sampleRate)
+    comb(channel, wet, delay, feedbackFor(delay, sampleRate))
+  }
+  for (let i = 0; i < wet.length; i += 1) wet[i] /= COMB_DELAYS_SEC.length
+
+  for (const seconds of ALLPASS_DELAYS_SEC) {
+    allpass(wet, primeFrames(seconds, sampleRate))
+  }
+
+  for (let i = 0; i < channel.length; i += 1) channel[i] += ROOM_SEND * wet[i]
+}
+
+/**
+ * One comb, accumulated onto the wet bus: the output is the delay line, so the
+ * room starts after the first delay rather than doubling the dry signal.
+ */
+function comb(input: Float32Array, wet: Float32Array, delay: number, feedback: number): void {
+  const line = new Float32Array(delay)
+  let cursor = 0
+  for (let i = 0; i < input.length; i += 1) {
+    const delayed = line[cursor]
+    line[cursor] = input[i] + delayed * feedback
+    wet[i] += delayed
+    cursor = cursor + 1 === delay ? 0 : cursor + 1
+  }
+}
+
+/** One allpass stage, in place. Flat in magnitude; it only disperses in time. */
+function allpass(signal: Float32Array, delay: number): void {
+  const line = new Float32Array(delay)
+  let cursor = 0
+  for (let i = 0; i < signal.length; i += 1) {
+    const delayed = line[cursor]
+    const stored = signal[i] + ALLPASS_GAIN * delayed
+    signal[i] = delayed - ALLPASS_GAIN * stored
+    line[cursor] = stored
+    cursor = cursor + 1 === delay ? 0 : cursor + 1
+  }
+}
+
+/** Feedback that leaves the comb 60 dB down after `ROOM_DECAY_SEC`. */
+function feedbackFor(delay: number, sampleRate: number): number {
+  return 10 ** ((-3 * delay) / (ROOM_DECAY_SEC * sampleRate))
+}
+
+/**
+ * A delay in frames, rounded up to a prime. Distinct primes are mutually prime
+ * by construction, which is the property the network needs and which rounding a
+ * duration to the nearest frame does not give on its own.
+ */
+function primeFrames(seconds: number, sampleRate: number): number {
+  let frames = Math.max(2, Math.round(seconds * sampleRate))
+  while (!isPrime(frames)) frames += 1
+  return frames
+}
+
+function isPrime(n: number): boolean {
+  if (n < 2) return false
+  if (n % 2 === 0) return n === 2
+  for (let d = 3; d * d <= n; d += 2) {
+    if (n % d === 0) return false
+  }
+  return true
 }
 
 function resolveLoopFrames(options: MixOptions, sampleRate: number): number | undefined {

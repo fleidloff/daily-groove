@@ -8,7 +8,7 @@
  *                 the bounds the template declares, from the groove's own
  *                 seeded generator (R1-R6)
  *   applyDrift  — lets the tempo breathe within a pass and resolve at its end
- *   fitToLoop   — puts the loop back to exactly the length that was rendered
+ *   fitToLoop   — keeps every event inside the loop it belongs to
  *
  * Nothing here reads the clock or calls Math.random: every deviation comes from
  * the `rng` the caller passes in, which is what keeps "the same spec renders the
@@ -164,30 +164,30 @@ export function applyDrift(events: NoteEvent[], depth: number, passSec: number):
 }
 
 /**
- * Put the loop back to exactly `loopSec`.
+ * Keep every event inside `loopSec`.
  *
- * `renderVoices` derives its buffer length from `max(timeSec + durationSec)`, so
- * a groove is only as long as it should be for as long as that maximum lands
- * exactly on the end of its last bar. Swing and humanization both move it, so
- * this pins it back: onsets are kept inside the loop, endings are trimmed to
- * it, and whichever event ends last is stretched to meet it.
+ * Onsets are clamped into the loop and endings trimmed to it, and that is all.
+ *
+ * It used to do one more thing: stretch whichever event ended last so the
+ * maximum of `timeSec + durationSec` landed exactly on the end of the last bar,
+ * because `renderVoices` sized its buffer from that maximum and swing and
+ * humanization both moved it. That was free while a duration was a number
+ * nobody listened to. It stopped being free the moment `addAt` learned to stop
+ * a note at its duration: the stretch is now an audibly longer note, chosen by
+ * whichever event happened to end last rather than by the music. So the loop's
+ * length moved off the note and onto the buffer — `renderVoices` sizes it from
+ * `bars` and `bpm`, which every real caller supplies.
  */
 export function fitToLoop(events: NoteEvent[], loopSec: number): NoteEvent[] {
   if (events.length === 0) return []
 
-  const fitted = events.map((event) => {
-    const timeSec = clamp(event.timeSec, 0, loopSec - MIN_DURATION_SEC)
-    const durationSec = Math.max(MIN_DURATION_SEC, Math.min(event.durationSec, loopSec - timeSec))
-    return { ...event, timeSec, durationSec }
-  })
-
-  let last = fitted[0]
-  for (const event of fitted) {
-    if (event.timeSec + event.durationSec > last.timeSec + last.durationSec) last = event
-  }
-  last.durationSec = loopSec - last.timeSec
-
-  return fitted.sort((a, b) => a.timeSec - b.timeSec)
+  return events
+    .map((event) => {
+      const timeSec = clamp(event.timeSec, 0, loopSec - MIN_DURATION_SEC)
+      const durationSec = Math.max(MIN_DURATION_SEC, Math.min(event.durationSec, loopSec - timeSec))
+      return { ...event, timeSec, durationSec }
+    })
+    .sort((a, b) => a.timeSec - b.timeSec)
 }
 
 /**

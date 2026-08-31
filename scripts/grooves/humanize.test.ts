@@ -186,7 +186,7 @@ describe('humanize — reproducible from the seed, AC4', () => {
   })
 })
 
-describe('fitToLoop — the loop stays exactly four bars', () => {
+describe('fitToLoop — every event stays inside the loop', () => {
   const loopSec = STEP * 64
 
   it('pins the end of the last event to the end of the loop', () => {
@@ -200,14 +200,21 @@ describe('fitToLoop — the loop stays exactly four bars', () => {
     expect(end).toBeCloseTo(loopSec, 12)
   })
 
-  it('stretches the last event when humanization pulled it early', () => {
+  // Feature-9, Epic 4, Step A2 - R1, AC2. `fitToLoop` used to stretch whichever
+  // event ended last so the buffer, sized from the events, measured the loop.
+  // Once a duration is audible that stretch is a longer note, and the length
+  // now comes from `bars`/`bpm` in `renderVoices` instead.
+  it('does not stretch the last event to reach the end of the loop', () => {
+    const pulledEarly = loopSec - STEP - 0.02
     const events: NoteEvent[] = [
       { voice: 'kick', timeSec: 0, durationSec: STEP, velocity: 0.9 },
-      { voice: 'hatClosed', timeSec: loopSec - STEP - 0.02, durationSec: STEP, velocity: 0.5 },
+      { voice: 'hatClosed', timeSec: pulledEarly, durationSec: STEP, velocity: 0.5 },
     ]
     const fitted = fitToLoop(events, loopSec)
-    const end = Math.max(...fitted.map((e) => e.timeSec + e.durationSec))
-    expect(end).toBeCloseTo(loopSec, 12)
+    const last = fitted.find((e) => e.timeSec === pulledEarly)
+
+    expect(last?.durationSec).toBeCloseTo(STEP, 12)
+    expect(Math.max(...fitted.map((e) => e.timeSec + e.durationSec))).toBeLessThan(loopSec)
   })
 
   it('keeps every onset non-negative and inside the loop, with a positive duration', () => {
