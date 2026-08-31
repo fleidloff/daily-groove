@@ -447,29 +447,22 @@ Covers: R3, R4, R9
   and `cli.ts` simply passes a bigger one.
 - `OVERHANG_BARS` is unchanged.
 
-## Open questions
+## Decision log
 
-The current round. Tick one option per question (`- [x]`), or write your own,
-then re-run `/writespec feature-9 epic-1` — the answer gets applied to the
-design and steps, moved into the log, and replaced by whatever it opens up.
+Settled architectural decisions. The sections above are the source of truth —
+this records how they got there, and what each one cost. Append-only: never
+rewrite or prune a past cycle.
 
-### Q1. How are the eighteen existing answers preserved?
+### Cycle 1 — 2026-08-31
 
-The PRD requires every existing seed to render its current answer. The design
-above achieves it by construction — the music stream keeps the literal label
-`events` and its draw order — but that freezes a string forever, and the
-alternative is to move to a clean label and carry the old answers as data.
-
-- [ ] A) Freeze the label: the music stream keeps the string `events`, drawn in
-      today's order, and a comment says why *(recommended — the PRD's AC7 wants
-      the manifest diff itself to be the proof, and reproducing by construction
-      means no table can drift from the audio; reversing it later means every
-      answer moves and every stored result describes a different puzzle)*
-- [ ] B) Clean label `music`, plus a committed table of the eighteen answers
-      that `buildEvents` looks up for known seeds and derives for new ones —
-      honest naming, at the cost of two code paths
-- [ ] C) Clean label `music`, and accept that the eighteen re-key — the
-      answer-pinning test is then written against the *new* values
-- [ ] D) Freeze the label and additionally pin the draw order with a test that
-      asserts the first four draws of the music stream are consumed by bpm,
-      root, flavour and harmony in that order
+**Q1. How are the eighteen existing answers preserved?**
+Decision: **A) Freeze the label — the music stream keeps the string `events`,
+drawn in today's order, with a comment saying why** — the PRD's AC7 wants the
+manifest diff itself to be the proof, and reproducing by construction means no
+table can drift from the audio. Reversing it means every answer moves and every
+stored result describes a different puzzle.
+Changed: nothing was rewritten — the Architecture, the `MUSIC_LABEL` contract
+and Step B2 were already written to this shape. The decision fixes them: the
+string `events` is now permanent, and Step B2's green condition — that every
+existing bpm, root, flavour, chord and progression assertion passes unchanged —
+is the only acceptable evidence.

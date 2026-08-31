@@ -448,27 +448,20 @@ Covers: R1–R11, AC16
 - The reverb's delay lines are allocated per `mixTracks` call. A 40-second stereo
   render is ~7 MB of Float32 already; the delay lines add well under a megabyte.
 
-## Open questions
+## Decision log
 
-The current round. Tick one option per question (`- [x]`), or write your own,
-then re-run `/writespec feature-9 epic-4` — the answer gets applied to the
-design and steps, moved into the log, and replaced by whatever it opens up.
+Settled architectural decisions. The sections above are the source of truth —
+this records how they got there, and what each one cost. Append-only: never
+rewrite or prune a past cycle.
 
-### Q1. How is the room built?
+### Cycle 1 — 2026-08-31
 
-The PRD requires determinism, no new dependency and no committed impulse file.
-Two shapes satisfy that, and they produce different sounds and different render
-times. Reversing later means re-rendering every groove and re-taking every
-listening sign-off in this feature and in Epic 2.
-
-- [ ] A) A Schroeder network — four combs into two allpasses, written in
-      `mix.ts` *(recommended — it is about sixty lines of array arithmetic, runs
-      in milliseconds on a 40-second buffer, and its decay is a tunable constant;
-      the PRD's "algorithmic room, not a shipped IR" is exactly this)*
-- [ ] B) A synthesised impulse — exponentially decaying seeded noise — convolved
-      with the bus, giving a smoother tail at the cost of a convolution over
-      ~1.8 M frames per channel
-- [ ] C) A feedback delay network, richer than Schroeder and denser than a plain
-      comb bank, at the cost of more tuning to keep it from ringing
-- [ ] D) Early reflections only — a short tap delay bank with no tail — cheapest
-      and least likely to smear a sixteenth-note funk pattern, but it glues less
+**Q1. How is the room built?**
+Decision: **A) A Schroeder network — four combs into two allpasses, written in
+`mix.ts`** — about sixty lines of array arithmetic, milliseconds on a
+forty-second buffer, and a decay that is a tunable constant. Reversing it means
+re-rendering every groove and re-taking every listening sign-off in this feature
+and in Epic 2, including Epic 2's kit-coherence pass.
+Changed: nothing was rewritten — the Architecture's reverb description and
+Step D1's implementation were already written to this shape. The decision fixes
+`applyRoom`'s internals and, with them, `ROOM_SEND` as the single tuning knob.

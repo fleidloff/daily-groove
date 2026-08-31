@@ -46,6 +46,21 @@ you want to re-check an epic later, or after changing code by hand. It runs the
 tests, types, lint and build, traces every acceptance criterion, and reports
 done / partly / not done. It diagnoses, it doesn't fix.
 
+## `/create-feature-for-persona`
+
+A different way into step 1. It walks the live app in character as the persona in
+[persona.md](persona.md) — first run with empty `localStorage`, then as a
+returner — reports what that person likes, what they find unclear and what they
+miss, picks the single strongest finding, and hands it to `/create-feature` as
+the briefing for the next free number.
+
+```
+/create-feature-for-persona  →  briefing.md  →  /roadmap feature-N  →  …
+```
+
+It stops at the briefing, like `/create-feature` does. Use it when you want the
+next feature chosen by the player rather than by the person who built the app.
+
 ## Where things live
 
 ```

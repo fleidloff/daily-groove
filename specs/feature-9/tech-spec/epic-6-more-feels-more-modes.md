@@ -49,6 +49,19 @@ The minor-third side is the short one. Melodic minor (tonic `mMaj7`), dorian ♭
 (tonic `m7`) and dorian ♯4 (tonic `m7`) all clear all three; the major-third side
 has more candidates than it needs.
 
+**The family table stays hand-written, and a test makes it total.**
+`docs/architecture.md` makes `src/lib` a leaf that the generator reaches by
+relative path, and puts everything else in `src/` out of the generator's reach —
+so deriving the family from the generator's `INTERVALS` would mean moving that
+table into `src/lib` and shifting the vocabulary's centre of gravity across the
+boundary the architecture doc treats as load-bearing. A totality test catches a
+missing entry just as reliably and moves nothing: it reads the modes the shipped
+manifest actually carries and asserts every one grades.
+
+That is the important detail — the test is driven by `GROOVES`, not by a
+hardcoded list. A hardcoded list would pass on the day someone mints a groove in
+a thirteenth mode, which is precisely the day `familyOf` starts throwing.
+
 **Where a mode is declared.** Five places in the generator and one in the app:
 
 ```
@@ -238,21 +251,31 @@ Covers: R1, AC1
 
 ### Track C — The family table
 
-#### Step C1 — Every mode has a family
+#### Step C1 — The family table is total over what actually ships
 
 Covers: R6, R8, AC6, AC2b
 
 - **Test first** — `src/features/daily-groove/lib/theory/families.test.ts`:
-  assert `familyOf` returns a family and does not throw for each of the twelve
-  mode display names; assert six return `'Major'` and six `'Minor'`. Run it:
-  fails with `UnknownFamilyError: No family for mode "..."`.
+  derive the mode list from the manifest — `new Set(GROOVES.map(g => g.flavour))`
+  — and assert `familyOf` returns a family for every one without throwing. Add a
+  second assertion that the modes are evenly split: exactly half grade `'Major'`
+  and half `'Minor'`. Run it after Track B mints nothing yet and it passes
+  vacuously against today's six; run it after Step I1 and it fails with
+  `UnknownFamilyError: No family for mode "..."` for each new mode.
 - **Implement** — `families.ts`: add the four new modes to `FAMILY_OF` under the
   right family, with the existing "major third / minor third" comment structure.
-  Update the doc comment: the table is total over the twelve modes the rotation
-  can play, and locrian is still absent for the same stated reason.
+  Update the doc comment: the table is total over every mode the catalogue
+  carries, that totality is a test rather than a convention, and locrian is
+  still absent for the same stated reason.
 - **Green when** — both assertions pass and the `UnknownFamilyError` test for a
-  genuinely unknown string stays green.
+  genuinely unknown string stays green — `familyOf` must still throw rather than
+  default, because that is what makes the totality test meaningful.
 - **Refactor** — none.
+
+> Ordering note: this step's test is driven by the manifest, so it only goes red
+> once Step I1 has minted grooves in the new modes. Write the table in this step
+> anyway — the test is the regression guard that keeps it total, not the thing
+> that first reveals the gap.
 
 #### Step C2 — Simple mode is winnable on a new mode
 
@@ -297,8 +320,9 @@ Covers: R1, R9, R11, R12, AC1, AC9, AC10, AC11
   `selectSeeds` already spreads a batch across templates and continues ids from
   the highest ever used, so nothing is renumbered.
 - **Test** — `src/features/daily-groove/data/grooves.generated.test.ts`: assert
-  every entry's `flavour` has a family, and that no mode is carried by more than
-  twice as many grooves as the least-carried one.
+  no mode is carried by more than twice as many grooves as the least-carried
+  one. Step C1's totality test, driven by this same manifest, is what proves
+  every newly minted mode grades.
 - Confirm Epic 1's answer-pinning test still passes over the original eighteen.
 
 #### Step I2 — Verify and lock
@@ -368,30 +392,22 @@ Covers: R1, R7, AC13
   genuinely narrowed by hearing it.
 - Minting uses the existing `grooves:add` path and gate unchanged.
 
-## Open questions
+## Decision log
 
-The current round. Tick one option per question (`- [x]`), or write your own,
-then re-run `/writespec feature-9 epic-6` — the answer gets applied to the
-design and steps, moved into the log, and replaced by whatever it opens up.
+Settled architectural decisions. The sections above are the source of truth —
+this records how they got there, and what each one cost. Append-only: never
+rewrite or prune a past cycle.
 
-### Q1. Where does a mode's family live?
+### Cycle 1 — 2026-08-31
 
-`FAMILY_OF` in the app is a hand-maintained table, and `familyOf` throws on a
-gap — which is exactly the failure this epic has to avoid. The third is
-computable from the generator's interval table, so the table could be derived
-instead of written. Reversing this later means moving the vocabulary's centre of
-gravity across the `src/lib` boundary, which `docs/architecture.md` treats as
-load-bearing.
-
-- [ ] A) Keep the hand-written table, with a test asserting it is total over
-      every mode the manifest carries *(recommended — `docs/architecture.md`
-      makes `src/lib` a leaf and the generator's theory modules unreachable from
-      the app, so deriving would mean moving `INTERVALS` into `src/lib`; a
-      totality test catches the gap just as reliably and moves nothing)*
-- [ ] B) Derive it: move `INTERVALS` into `src/lib/groove.ts` so both the
-      generator and the app read one table, and compute the family from the
-      third
-- [ ] C) Have the generator write the family into each manifest entry, so
-      `families.ts` reads data rather than a table and can never be incomplete
-- [ ] D) Keep the table but make `familyOf` fall back to grading by the mode's
-      own name, so an unfamilied mode degrades instead of throwing
+**Q1. Where does a mode's family live?**
+Decision: **A) Keep the hand-written table, with a test asserting it is total
+over every mode the manifest carries** — `docs/architecture.md` makes `src/lib`
+a leaf and the generator's theory modules unreachable from the app, so deriving
+would mean moving `INTERVALS` across that boundary; a totality test catches the
+gap just as reliably and moves nothing.
+Changed: Architecture gains the reasoning and the boundary argument; **Step C1
+was rewritten** — its test now derives the mode list from `GROOVES` rather than
+hardcoding twelve, because a hardcoded list passes on exactly the day someone
+mints a thirteenth mode; Step I1's assertion was narrowed to distribution, with
+totality left to C1; a note records that C1's test only goes red after I1 mints.

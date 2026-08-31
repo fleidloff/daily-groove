@@ -24,7 +24,7 @@ tested and verified). Lettered candidates sit at ✏️ **Briefed** until promot
 | [6](feature-6/) | Playback and polish | 🔨 In progress | Ends the page at the puzzle — the played-grooves row and the shared-player machinery behind it are gone — fixes the loop visualisation so it tracks the groove you actually hear, evens out every chip row, and sets the headlines in a Real Book hand. |
 | [7](feature-7/) | Guessing clarity | 🛠 Ready to implement | Makes the puzzle winnable and honest — tempo back on the card, modes instead of flavours, the root handed over, a way to give up, a simple mode, and a rotation that plays every groove before repeating. |
 | [8](feature-8/) | First-run clarity | 🛠 Ready to implement | Names the app Eardle, says in one line what it is, greets a new or lapsed player with a four-point how-to-play that anyone can call back up, and makes the play button the obvious first move. |
-| [9](feature-9/) | Natural feel | 📋 Planned | Makes the grooves sound like a band rather than a sequencer — a real kit, bass and keyboard in place of the cajon and the FM piano, loops whose every pass is a different take, timing and dynamics with limbs, voicings and bass lines instead of arpeggios, a fill to end the last pass, and two more feels carrying four more modes. |
+| [9](feature-9/) | Natural feel | 🛠 Ready to implement | Makes the grooves sound like a band rather than a sequencer — a real kit, bass and keyboard in place of the cajon and the FM piano, loops whose every pass is a different take, timing and dynamics with limbs, voicings and bass lines instead of arpeggios, a fill to end the last pass, and two more feels carrying four more modes. |
 
 ## Prepared candidates
 

@@ -318,27 +318,20 @@ Covers: R5, R8, R10, AC13
 - `PLACEMENTS`'s rim rule still applies in ordinary bars; the fill bar replaces
   the rim along with the rest of the figure's drums.
 
-## Open questions
+## Decision log
 
-The current round. Tick one option per question (`- [x]`), or write your own,
-then re-run `/writespec feature-9 epic-5` — the answer gets applied to the
-design and steps, moved into the log, and replaced by whatever it opens up.
+Settled architectural decisions. The sections above are the source of truth —
+this records how they got there, and what each one cost. Append-only: never
+rewrite or prune a past cycle.
 
-### Q1. Does the fill replace the figure's drums or play on top of them?
+### Cycle 1 — 2026-08-31
 
-The architecture above replaces them. The alternative layers the fill over the
-bar the figure would have played. This decides the shape of `FILLS` — a phrase
-that stands alone versus one that only makes sense as an addition — and every
-acceptance criterion that compares the fill bar with an ordinary one, so
-reversing it rewrites Track C.
-
-- [ ] A) Replace the figure's drums; bass and comp play on *(recommended — a
-      fill is a phrase a drummer plays *instead of* the groove, and the PRD's
-      R10 asks the fill bar to differ from an ordinary bar in voices or density,
-      which layering would satisfy only by doubling it into the mush
-      `checkDensity` exists to catch)*
-- [ ] B) Layer over the figure — the groove never stops and the fill is an
-      addition, at the cost of the densest bar being twice as dense
-- [ ] C) Replace the snare and toms only, leaving the kick and hats running, so
-      the pulse is unbroken through the fill
-- [ ] D) Per template: the busy feels layer, the sparse ones replace
+**Q1. Does the fill replace the figure's drums or play on top of them?**
+Decision: **A) Replace the figure's drums; bass and comp play on** — a fill is a
+phrase a drummer plays *instead of* the groove, and layering would satisfy the
+PRD's R10 only by doubling the densest bar into the mush `checkDensity` exists
+to catch.
+Changed: nothing was rewritten — the Architecture's "the fill replaces the bar"
+and Step C2's *instead of* emission were already written to this shape. The
+decision fixes the shape of `FillPhrase` as a phrase that stands alone, which is
+what lets Step C4 derive the variation from it by removing voices.

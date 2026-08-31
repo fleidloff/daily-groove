@@ -49,8 +49,17 @@ than that is the wrong candidate.
 **Sounding pitch is measured, not read.** VCSL's Clavisynth is labelled two
 octaves below where it sounds. The replacement may have its own such trap, and
 getting it wrong makes the game unplayable rather than merely wrong-sounding, so
-the declared `midi` is established by measurement and the measurement is
-recorded.
+the declared `midi` is established by measurement — and the measured frequency
+is written into `pack.json` beside it as `measuredHz`.
+
+The measurement happens once, while preparing the samples, and the test does
+arithmetic on the committed numbers rather than decoding audio. That keeps
+`npm test` free of ffmpeg, which is the property `scripts/grooves/boundary.test.ts`
+and the whole `grooves:verify` design already protect: verifying what is
+committed must need nothing but Node. A test that decoded FLACs would quietly
+make the generator suite unrunnable on a machine without ffmpeg, and the
+`prebuild` guard's independence would stop being checkable by the suite that
+claims to check it.
 
 ## Contracts
 
@@ -63,8 +72,9 @@ already frozen in `types.ts`, plus two provenance conventions this epic adds:
 ```
 
 ```jsonc
-// scripts/grooves/samples/pack.json — unchanged shape; `midi` is the SOUNDING pitch
-{ "notes": [{ "midi": 24, "layers": [{ "maxVelocity": 0.45, "files": [...] }] }] }
+// scripts/grooves/samples/pack.json — `midi` is the SOUNDING pitch,
+// `measuredHz` is what it was measured at while preparing the sample
+{ "notes": [{ "midi": 24, "measuredHz": 32.70, "layers": [{ "maxVelocity": 0.45, "files": [...] }] }] }
 ```
 
 Register and spacing, asserted by `pack.test.ts`:
@@ -178,18 +188,25 @@ Covers: R11, R5b, AC6, AC1b
 - **Green when** — passes before and after.
 - **Refactor** — none.
 
-#### Step A6 — The declared pitch is the sounding pitch
+#### Step A6 — The declared pitch matches the measured pitch
 
 Covers: R8, AC3
 
-- **Test first** — `scripts/grooves/pack.test.ts`: for one sampled note per
-  octave of each pitched voice, decode it, estimate the fundamental, and assert
-  it is within a semitone of the declared `midi`. Run it against today's pack:
-  passes (the Clavisynth entries already carry the corrected +24 values), so it
-  is the guard against the replacement's own labelling trap.
-- **Implement** — a `fundamentalHz(pcm)` helper local to the test — autocorrelation
-  over a windowed slice is sufficient at this tolerance and needs no dependency.
-- **Green when** — passes for every probed note.
+- **Test first** — `scripts/grooves/pack.test.ts`: for every sampled note of
+  every pitched voice, assert `measuredHz` is present and that
+  `12 * Math.log2(measuredHz / 440) + 69` is within half a semitone of the
+  declared `midi`. The test decodes nothing and spawns nothing — it is
+  arithmetic on `pack.json`. Run it against today's pack: fails with
+  `expected undefined to be a number`, because no entry carries `measuredHz`
+  yet.
+- **Implement** — `scripts/grooves/types.ts`: add `measuredHz: number` to the
+  pitched-note declaration. `pack.json`: add the measured frequency to every
+  existing `bass` and `comp` note — today's entries are correct, so this is
+  recording what is already true, and it is what makes the trap catchable for
+  the replacement.
+- **Green when** — the assertion passes for every note of both pitched voices,
+  and `scripts/grooves/boundary.test.ts` still shows the verify path importing
+  nothing but `node:fs`, `node:crypto` and `node:path`.
 - **Refactor** — none.
 
 ### Track B — The samples
@@ -215,8 +232,9 @@ Covers: R3, R6, R7, R8, R9, AC1, AC2, AC3
 - **Test first** — A2, A3 and A6 are the test; A2 goes red the moment the old
   `bass` entries are removed and before the new ones cover the register.
 - **Implement** — prepare an electric bass sampled every four semitones across
-  sounding MIDI 22–50, layered and round-robined, and declare it with measured
-  sounding `midi` values.
+  sounding MIDI 22–50, layered and round-robined. Measure each sampled note's
+  fundamental during preparation and declare both the `midi` it implies and the
+  `measuredHz` it was read at.
 - **Green when** — A2, A3 and A6 pass for `bass`.
 - **Refactor** — none.
 
@@ -225,9 +243,10 @@ Covers: R3, R6, R7, R8, R9, AC1, AC2, AC3
 Covers: R4, R6, R7, R8, AC1, AC2, AC3
 
 - **Test first** — as B2, for `comp` over sounding MIDI 46–86.
-- **Implement** — prepare and declare the electric piano. Delete the Clavisynth
-  files and the `+24` compensation with them; the new declaration states measured
-  sounding pitches directly.
+- **Implement** — prepare and declare the electric piano, measuring each note as
+  in B2. Delete the Clavisynth files and the `+24` compensation with them; the
+  new declaration states measured sounding pitches directly, with `measuredHz`
+  as the evidence.
 - **Green when** — A2, A3 and A6 pass for `comp`.
 - **Refactor** — none.
 
@@ -335,32 +354,29 @@ Covers: R1–R5, R13
 - `pack.ts` is not touched. Epic 3 changes its return shape; this epic changes
   only what it reads.
 - Sample preparation is done with the same ffmpeg invocations the existing pack
-  was built with, so the new files are consistent with the old pipeline.
+  was built with, so the new files are consistent with the old pipeline. The
+  pitch measurement is taken during that preparation — any tuner or spectrum
+  reading will do — and only its result is committed, so no measurement tool
+  becomes a repo dependency.
 - Three velocity layers per drum voice is the target, two the floor. More
   alternates are taken only where the machine-gun effect is audible.
 
-## Open questions
+## Decision log
 
-The current round. Tick one option per question (`- [x]`), or write your own,
-then re-run `/writespec feature-9 epic-2` — the answer gets applied to the
-design and steps, moved into the log, and replaced by whatever it opens up.
+Settled architectural decisions. The sections above are the source of truth —
+this records how they got there, and what each one cost. Append-only: never
+rewrite or prune a past cycle.
 
-### Q1. How is "the declared pitch is the sounding pitch" verified?
+### Cycle 1 — 2026-08-31
 
-Step A6 decodes FLACs and estimates a fundamental inside `npm test`. Decoding
-goes through ffmpeg, which the render needs but the test suite has so far never
-required — `scripts/grooves/boundary.test.ts` exists precisely to keep the
-verify path free of it. Reversing this later means either ripping a test out of
-CI or discovering that CI cannot run the suite at all.
-
-- [ ] A) Measure at prepare time and commit the result; the test asserts the
-      recorded measurement matches `pack.json` *(recommended — it keeps `npm
-      test` free of ffmpeg, which is the property `boundary.test.ts` and the
-      `grooves:verify` design already protect, and it still fails loudly when
-      someone edits a `midi` value by hand)*
-- [ ] B) Decode and measure inside the test, accepting that the generator
-      project now needs ffmpeg on the machine running it
-- [ ] C) Decode and measure, but skip the test when ffmpeg is absent — full
-      coverage locally, silently reduced coverage in CI
-- [ ] D) Verify by ear during preparation and assert nothing — the Clavisynth
-      trap was caught by a person, not a test
+**Q1. How is "the declared pitch is the sounding pitch" verified?**
+Decision: **A) Measure at prepare time and commit the result; the test asserts
+the recorded measurement matches `pack.json`** — it keeps `npm test` free of
+ffmpeg, which is what `boundary.test.ts` and the `grooves:verify` design already
+protect, and it still fails loudly when a `midi` value is edited by hand.
+Changed: Architecture gains the reasoning and the `measuredHz` field; the
+`pack.json` contract carries it; **Step A6 was rewritten** from a decode-and-
+estimate test into arithmetic on committed numbers, and now goes red against
+today's pack rather than green; Steps B2 and B3 gained the measurement as part
+of preparation; Assumptions record that no measurement tool becomes a repo
+dependency.

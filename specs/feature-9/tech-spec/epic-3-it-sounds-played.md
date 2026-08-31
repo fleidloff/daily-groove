@@ -428,30 +428,21 @@ Covers: R1–R3, R10, R11, AC15
   template turns out to want its own, that is a field, and it belongs here
   before Epic 6 starts.
 
-## Open questions
+## Decision log
 
-The current round. Tick one option per question (`- [x]`), or write your own,
-then re-run `/writespec feature-9 epic-3` — the answer gets applied to the
-design and steps, moved into the log, and replaced by whatever it opens up.
+Settled architectural decisions. The sections above are the source of truth —
+this records how they got there, and what each one cost. Append-only: never
+rewrite or prune a past cycle.
 
-### Q1. Where does a velocity layer's nominal loudness come from?
+### Cycle 1 — 2026-08-31
 
-Step B1 defaults it to the midpoint of the layer's declared band. The alternative
-is to declare it per layer in `pack.json`, measured from the samples. This is
-shared with Epic 2, which is authoring `pack.json` at the same time, and
-changing it afterwards means re-tuning every template level again.
-
-- [ ] A) Derived from the band, with an optional per-layer override in
-      `pack.json` *(recommended — it needs no work from Epic 2 to be correct on
-      day one, and the override exists for the case where a layer's recorded
-      level turns out not to sit where its band says; the contract above already
-      carries both)*
-- [ ] B) Declared per layer, measured at prepare time — the levels then reflect
-      the samples rather than the declaration, at the cost of Epic 2 having to
-      measure every layer
-- [ ] C) Measured at load time from the decoded PCM's peak, so the declaration
-      cannot drift from the audio — at the cost of load-time work and a render
-      that changes when a sample is re-trimmed
-- [ ] D) Neither: normalise the layers on the way into the pack and carry the
-      dynamics entirely in the velocity multiply, reversing the "layers are not
-      normalised" rule
+**Q1. Where does a velocity layer's nominal loudness come from?**
+Decision: **A) Derived from the band, with an optional per-layer override in
+`pack.json`** — it needs no work from Epic 2 to be correct on day one, and the
+override exists for the case where a layer's recorded level does not sit where
+its band says.
+Changed: nothing was rewritten — the Architecture's `nominal = midpoint of that
+layer's band`, the optional `VelocityLayer.nominalVelocity` in Contracts and
+Step B1's `layer.nominalVelocity ?? (lowerBound + layer.maxVelocity) / 2` were
+already written to this shape. The decision fixes the contract Epic 2 authors
+`pack.json` against, so neither epic has to re-tune levels a second time.
