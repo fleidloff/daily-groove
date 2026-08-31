@@ -52,6 +52,54 @@ export const GHOST_LABEL = 'ghosts'
 const BASS_BASE_MIDI = 36
 
 /**
+ * How far a displaced bass note drops: one octave, into the register below
+ * `BASS_BASE_MIDI`. Down and never up, because up would put the line inside the
+ * comp's window and break the "bass under the comp" rule the arrangement rests
+ * on. `BASS_BASE_MIDI - 12` is the lowest note the sample pack carries.
+ */
+const BASS_OCTAVE_DROP = 12
+
+/**
+ * How the bass line is written, as the chances one draw of the rhythm stream is
+ * tested against per note.
+ *
+ * These three numbers are the whole of R7. Before them the bass was
+ * `chord[i % chord.length]` — every available step sounded, in a fixed order,
+ * inside one octave, which is an arpeggiator rather than a player. A rest, a
+ * repeat and an octave drop are the three things a bass player does that an
+ * arpeggiator does not, and they are drawn per note of the four-bar figure so
+ * the figure still repeats exactly in every pass (AC3).
+ *
+ * The downbeat is exempt from all three: it is always the bar's root, in the
+ * base octave. It anchors the bar, it is what the comp's rootless voicing
+ * depends on being there (R6), and it is what an approach note in the bar
+ * before resolves onto (R8).
+ */
+const BASS_REST_CHANCE = 0.18
+const BASS_REPEAT_CHANCE = 0.4
+const BASS_OCTAVE_CHANCE = 0.32
+
+/**
+ * How wide a comp chord is rolled, in seconds — the whole chord, first note to
+ * last, not a per-note step. One value is drawn per groove inside this band.
+ *
+ * A few milliseconds is the point (R4, AC5): enough that the notes do not all
+ * begin on the same sample, not so much that the chord reads as an arpeggio or
+ * that a note is heard as landing on the next subdivision.
+ */
+const COMP_SPREAD_RANGE: [number, number] = [0.005, 0.015]
+
+/**
+ * How much quieter each voice is than the one above it, as a fraction of the
+ * chord's metric velocity.
+ *
+ * The top voice is the melody a listener follows, so it keeps the full accent
+ * and everything under it steps down (R5, AC6). A drop rather than a fixed
+ * table, so a triad and a seventh are shaped by the same rule.
+ */
+const COMP_VOICE_DROP = 0.12
+
+/**
  * A groove is a backing track (R8): drums, a bass and a comp, and no lead. This
  * is the whole set of voices any template may play.
  */
@@ -301,12 +349,132 @@ function inRegister(midi: number, base: number): number {
   return base + (((midi % 12) + 12) % 12)
 }
 
-/** Fold a chord tone into the comp's fixed register window. */
+/** Fold a chord tone into the comp's fixed register window, on its own. */
 function inCompRegister(midi: number): number {
   let folded = midi
   while (folded >= COMP_REGISTER_CEILING) folded -= 12
   while (folded < COMP_REGISTER_LOW) folded += 12
   return folded
+}
+
+/**
+ * Every octave of a pitch class that fits inside the comp's window.
+ *
+ * Counted up from the window's floor, not from `inCompRegister`'s answer: that
+ * one folds DOWN only when a tone is above the ceiling, so it can hand back the
+ * upper of two legal octaves and hide the lower one — which is the octave a
+ * voicing usually wants.
+ */
+function compOctaves(midi: number): number[] {
+  const octaves: number[] = []
+  const lowest = COMP_REGISTER_LOW + (((midi - COMP_REGISTER_LOW) % 12) + 12) % 12
+  for (let candidate = lowest; candidate < COMP_REGISTER_CEILING; candidate += 12) {
+    octaves.push(candidate)
+  }
+  return octaves
+}
+
+/**
+ * Total semitone motion between two voicings, each voice to the one nearest it
+ * in register: the lowest to the lowest, and so on up.
+ *
+ * Pairing two ascending sequences by index is the cheapest bijection between
+ * them, so this is the motion a listener actually hears — not an artefact of
+ * which order the tones were written in.
+ */
+function voicingMotion(from: number[], to: number[]): number {
+  let total = 0
+  for (let i = 0; i < Math.min(from.length, to.length); i += 1) {
+    total += Math.abs(from[i] - to[i])
+  }
+  return total
+}
+
+/**
+ * The comp's voicing for a chord, led from the one before it.
+ *
+ * `inCompRegister` folds every tone on its own, which is what made the comp
+ * lurch: two chords a fourth apart come out in unrelated inversions, and the
+ * whole hand jumps an octave to play a chord whose nearest voicing is two
+ * semitones away. Leading is the fix, and after the note-offs it is the most
+ * audible thing in this epic (R3).
+ *
+ * Every tone can sit at one of two octaves inside a 21-semitone window, so the
+ * whole space of voicings for a seventh chord is sixteen of them. This walks
+ * all of them and keeps the one that moves least from the previous voicing,
+ * measured ascending voice by ascending voice. Choosing each tone's octave on
+ * its own — the obvious reading — is not the same thing and is not always
+ * better than folding independently: the tones re-sort once they are placed, so
+ * a choice that looks nearest per tone can be worse as a chord. Searching is
+ * what makes AC4's "no greater than the independent fold" true rather than
+ * likely, since the independent fold is one of the sixteen.
+ *
+ * `previous` of `null` (or empty) is bar one: there is nothing to lead from, so
+ * it is the independent fold, which is what keeps `music.chord` naming bar
+ * one's pitches exactly.
+ */
+export function voiceLead(previous: number[] | null, chordMidi: number[]): number[] {
+  const tones = [...chordMidi].sort((a, b) => a - b)
+  const independent = tones.map(inCompRegister).sort((a, b) => a - b)
+  if (!previous || previous.length === 0) return independent
+
+  const anchors = [...previous].sort((a, b) => a - b)
+  let best = independent
+  let least = voicingMotion(anchors, independent)
+
+  for (const voicing of octaveChoices(tones)) {
+    const sorted = [...voicing].sort((a, b) => a - b)
+    const moved = voicingMotion(anchors, sorted)
+    // Strictly less, so a tie leaves the independent fold in place and the
+    // answer is a function of the pitches rather than of the search order.
+    if (moved < least) {
+      least = moved
+      best = sorted
+    }
+  }
+  return best
+}
+
+/** Every way of placing each tone at one of its octaves inside the window. */
+function octaveChoices(tones: number[]): number[][] {
+  let voicings: number[][] = [[]]
+  for (const tone of tones) {
+    const next: number[][] = []
+    for (const voicing of voicings) {
+      for (const octave of compOctaves(tone)) next.push([...voicing, octave])
+    }
+    voicings = next
+  }
+  return voicings
+}
+
+/**
+ * The notes the comp actually strikes: the voicing, minus its root when the
+ * bass is already sounding it and the chord has four pitch classes (R6).
+ *
+ * Two instruments playing the same root an octave or two apart is the doubling
+ * that makes a generated arrangement sound stacked rather than voiced, and a
+ * seventh chord loses nothing by dropping it — the third and the seventh are
+ * what name the chord. A triad keeps its root: a triad minus its root is two
+ * notes, which is thinner than the fault being fixed.
+ *
+ * The chord the manifest names is untouched either way. This changes which
+ * notes are struck, not which chord they spell.
+ */
+export function playedVoicing(
+  voicing: number[],
+  chordMidi: number[],
+  bassMidi: number[],
+): number[] {
+  const tones = new Set(chordMidi.map(pitchClass))
+  if (tones.size < 4) return voicing
+  const root = pitchClass(chordMidi[0])
+  if (!bassMidi.some((midi) => pitchClass(midi) === root)) return voicing
+  return voicing.filter((midi) => pitchClass(midi) !== root)
+}
+
+function pitchClass(midi: number): number {
+  return ((Math.round(midi) % 12) + 12) % 12
 }
 
 /**
@@ -408,10 +576,12 @@ export function buildEvents(
     sixteenths: number,
     midi?: number,
     velocity?: number,
+    /** Seconds past the step, for a note struck a hair after the ones beside it. */
+    offsetSec = 0,
   ) => {
     const event: NoteEvent = {
       voice,
-      timeSec: (bar * template.subdivision + step) * stepSec,
+      timeSec: (bar * template.subdivision + step) * stepSec + offsetSec,
       durationSec: sixteenths * sixteenthSec,
       // Read the accent from where the hit lands in the bar, not from which
       // step of the template's grid it is: on an eighth grid, step 1 is the
@@ -424,6 +594,214 @@ export function buildEvents(
     }
     if (midi !== undefined) event.midi = midi
     events.push(event)
+  }
+
+  /** The chord a bar of the four-bar figure carries. */
+  const chordFor = (barInPass: number) =>
+    harmony.progressionMidi[barInPass % harmony.progressionMidi.length]
+
+  /**
+   * The root the bar line after `barInPass` lands on, or null when the chord
+   * does not change there.
+   *
+   * This is the same arithmetic `theory/pitches.ts` uses to decide whether an
+   * approach note is admissible, and it has to stay the same: the harmony
+   * repeats every `BARS_PER_PASS` bars, so with a three-chord progression bar
+   * four carries bar one's chord and the loop boundary is NOT a change. "The
+   * last bar gets an approach note" is wrong, and the gate rejects the note it
+   * would write (R8a).
+   */
+  const nextRootAt = (barInPass: number): number | null => {
+    const chords = harmony.progressionMidi
+    const here = barInPass % chords.length
+    const next = ((barInPass + 1) % BARS_PER_PASS) % chords.length
+    return next === here ? null : chords[next][0]
+  }
+
+  /** How wide the comp rolls a chord, drawn once for the whole groove (R4). */
+  const compSpreadSec =
+    COMP_SPREAD_RANGE[0] + (COMP_SPREAD_RANGE[1] - COMP_SPREAD_RANGE[0]) * rhythmRng()
+
+  type BassNote = { step: number; midi: number }
+
+  /**
+   * The bass line of the four-bar figure, written once and played in every pass.
+   *
+   * Written once because a groove is several passes of one figure: a line drawn
+   * afresh per bar of the loop would make pass three different music from pass
+   * one, which is exactly what AC3 forbids. Drawing it per bar of the FIGURE
+   * also fixes the number of values taken from the rhythm stream, so a
+   * template's pass count cannot move any later draw.
+   *
+   * Every bar opens on its root in the base octave — no rest, no repeat, no
+   * drop. That downbeat is what the comp's rootless voicing leans on (R6) and
+   * what the previous bar's approach note resolves onto (R8).
+   */
+  const bassFigure: BassNote[][] = []
+  /** Which bars of the figure carry an approach note, on their closing step. */
+  const approaches = new Set<number>()
+  let previousBass: number | null = null
+  for (let barInPass = 0; barInPass < BARS_PER_PASS; barInPass++) {
+    const chord = chordFor(barInPass)
+    const notes: BassNote[] = []
+
+    bassSteps.forEach((step, i) => {
+      // Three draws per note whatever the note turns out to be, so which shape
+      // the line takes never changes how much of the stream it consumes.
+      const rest = rhythmRng()
+      const repeat = rhythmRng()
+      const drop = rhythmRng()
+
+      if (i === 0) {
+        const root = inRegister(chord[0], BASS_BASE_MIDI)
+        previousBass = root
+        notes.push({ step, midi: root })
+        return
+      }
+      if (rest < BASS_REST_CHANCE) return
+
+      let midi: number
+      if (repeat < BASS_REPEAT_CHANCE && previousBass !== null) {
+        // The same pitch again — the thing an arpeggiator never does.
+        midi = previousBass
+      } else {
+        midi = inRegister(chord[i % chord.length], BASS_BASE_MIDI)
+        if (drop < BASS_OCTAVE_CHANCE) midi -= BASS_OCTAVE_DROP
+      }
+      previousBass = midi
+      notes.push({ step, midi })
+    })
+
+    // The approach note: on the bar's closing step — the last off-beat
+    // subdivision of an eighth or a sixteenth grid alike — a semitone above or
+    // below the root the next bar lands on, resolving into it (R8). It replaces
+    // whatever the line had written there rather than sounding beside it.
+    const nextRoot = nextRootAt(barInPass)
+    const direction = rhythmRng()
+    if (nextRoot === null) {
+      bassFigure.push(notes)
+      continue
+    }
+    const target = inRegister(nextRoot, BASS_BASE_MIDI)
+    const approachStep = template.subdivision - 1
+    const approach = direction < 0.5 ? target - 1 : target + 1
+    previousBass = approach
+    approaches.add(bassFigure.length)
+    bassFigure.push(
+      [...notes.filter((note) => note.step !== approachStep), { step: approachStep, midi: approach }]
+        .sort((a, b) => a.step - b.step),
+    )
+  }
+
+  /**
+   * The three things a line has that an arpeggiator does not — a rest, a
+   * repeated note and a note in the low octave — made certain rather than left
+   * to the draw.
+   *
+   * The chances above give all three on average, and only on average: a figure
+   * is eight or twelve drawn notes long, so a groove whose draws all came up
+   * the same way sits in one octave, sounds on every step it has, and never
+   * plays a pitch twice. That is the arpeggiator R7 is about, and it would make
+   * AC8 a property of the seed rather than of the writer. So the writer states
+   * all three, in this order: a rest first, since it removes a note; the octave
+   * next, chosen so the line's top note is untouched and the span therefore
+   * widens; the repeat last, since it only rewrites a pitch and is checked
+   * against what the first two left behind.
+   *
+   * Approach notes are exempt from all of it. One is already a semitone off its
+   * target, an octave below it is under the lowest note the pack samples, and
+   * silencing or repeating one would take away the resolution it exists for.
+   * Downbeats are exempt from the rest and the repeat, and not from the octave:
+   * a root an octave down is still the root, so the comp's rootless voicing and
+   * the previous bar's resolution both still hold.
+   */
+  const isApproach = (bar: number, note: BassNote) =>
+    approaches.has(bar) && note.step === template.subdivision - 1
+
+  /** Every note the writer may touch: not a downbeat, not an approach note. */
+  const movable = () =>
+    bassFigure.flatMap((notes, bar) =>
+      notes
+        .map((note, index) => ({ bar, index, note }))
+        .filter(({ index, note }) => index > 0 && !isApproach(bar, note)),
+    )
+
+  /**
+   * Whether any bar leaves a step unplayed that the line plays elsewhere.
+   *
+   * Read off the written figure rather than off the rest draws, and against the
+   * other bars rather than against the drawn pattern, because that is what a
+   * listener hears. A rest on a bar's closing step is inaudible as a rest when
+   * every other bar writes an approach note over that step — nothing is missing
+   * from the figure, the position simply belongs to the approach note.
+   */
+  const soundedIn = (bar: number) => bassFigure[bar].filter((note) => !isApproach(bar, note))
+  const restsSomewhere = () => {
+    const steps = new Set(
+      bassFigure.flatMap((_, bar) => soundedIn(bar).map((note) => note.step)),
+    )
+    return bassFigure.some((_, bar) => soundedIn(bar).length < steps.size)
+  }
+
+  if (!restsSomewhere()) {
+    const candidates = movable()
+    // Silenced by preference: a note whose step the line still plays in another
+    // bar, so the rest reads as a hole in the pattern rather than as a step the
+    // groove simply never uses.
+    const heard = candidates.filter(({ bar, note }) =>
+      bassFigure.some(
+        (other, otherBar) =>
+          otherBar !== bar && other.some((n) => n.step === note.step && !isApproach(otherBar, n)),
+      ),
+    )
+    const silenced = (heard.length > 0 ? heard : candidates).at(-1)
+    if (silenced) {
+      bassFigure[silenced.bar] = bassFigure[silenced.bar].filter((n) => n !== silenced.note)
+    }
+  }
+
+  const pitches = () => bassFigure.flat().map((note) => note.midi)
+  const top = Math.max(...pitches())
+  // Under the top note, so dropping it can only widen the line's span.
+  const droppable = bassFigure
+    .flatMap((notes, bar) => notes.filter((note) => !isApproach(bar, note)))
+    .filter((note) => note.midi >= BASS_BASE_MIDI && note.midi < top)
+  if (droppable.length > 0) {
+    droppable.reduce((low, note) => (note.midi < low.midi ? note : low)).midi -= BASS_OCTAVE_DROP
+  }
+
+  const repeatsSomewhere = () => {
+    const line = pitches()
+    return line.some((midi, i) => i > 0 && midi === line[i - 1])
+  }
+  if (!repeatsSomewhere()) {
+    for (const candidate of movable().reverse()) {
+      // Its predecessor inside the same bar, so a repeated pitch is still a
+      // tone of the chord that bar is playing.
+      const before = bassFigure[candidate.bar][candidate.index - 1]
+      if (!before) continue
+      const was = candidate.note.midi
+      candidate.note.midi = before.midi
+      const line = pitches()
+      if (repeatsSomewhere() && Math.max(...line) - Math.min(...line) > 12) break
+      candidate.note.midi = was
+    }
+  }
+
+  /**
+   * The comp's voicing for each bar of the figure, led from the bar before it
+   * and written once for the same reason the bass line is.
+   */
+  const compFigure: number[][] = []
+  let previousVoicing: number[] | null = null
+  for (let barInPass = 0; barInPass < BARS_PER_PASS; barInPass++) {
+    const chord = chordFor(barInPass)
+    const voicing = voiceLead(previousVoicing, chord)
+    // The next bar leads from the whole voicing, not from what is struck: the
+    // root is dropped from the sound, not from where the hand is sitting.
+    previousVoicing = voicing
+    const bassMidi = plays('bass') ? bassFigure[barInPass].map((note) => note.midi) : []
+    compFigure.push(playedVoicing(voicing, chord, bassMidi))
   }
 
   /**
@@ -442,8 +820,6 @@ export function buildEvents(
       // bar 5 carries bar 1's chord (R5) and the progression the manifest names
       // still describes the figure rather than the whole loop.
       const bar = pass * BARS_PER_PASS + barInPass
-      const chord =
-        harmony.progressionMidi[barInPass % harmony.progressionMidi.length]
 
       // Drums — the same figure every bar, because this epic is not yet played.
       if (plays('kick')) for (const step of kickSteps) add('kick', bar, step, 2)
@@ -465,18 +841,31 @@ export function buildEvents(
         for (const step of rimSteps) add('rim', bar, step, 1)
       }
 
-      // Bass — the bar's chord tones, root first, in the bass register.
+      // Bass — the written line, the same one in every pass.
       if (plays('bass')) {
-        bassSteps.forEach((step, i) => {
-          add('bass', bar, step, 2, inRegister(chord[i % chord.length], BASS_BASE_MIDI))
-        })
+        for (const note of bassFigure[barInPass]) add('bass', bar, note.step, 2, note.midi)
       }
 
-      // Comp — the whole chord, as written by the harmony module, so bar 1's
-      // pitches are exactly the ones `music.chord` names.
+      // Comp — the voice-led chord, rolled across a few milliseconds and shaped
+      // so the top voice sings over the ones under it (R3, R4, R5).
       if (plays('comp')) {
+        const voicing = compFigure[barInPass]
+        const spread = voicing.length > 1 ? compSpreadSec / (voicing.length - 1) : 0
         for (const step of compSteps) {
-          for (const midi of chord) add('comp', bar, step, 4, inCompRegister(midi))
+          const sixteenth = (step * PATTERN_RESOLUTION) / template.subdivision
+          const base = accentedVelocity('comp', step, sixteenth)
+          voicing.forEach((midi, index) => {
+            const below = voicing.length - 1 - index
+            add(
+              'comp',
+              bar,
+              step,
+              4,
+              midi,
+              clampVelocity(base * (1 - COMP_VOICE_DROP * below)),
+              index * spread,
+            )
+          })
         }
       }
     }

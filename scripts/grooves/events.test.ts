@@ -1,23 +1,70 @@
 import { describe, expect, it } from 'vitest'
-import type { GrooveSpec, NoteEvent } from './types.ts'
+import type { GrooveSpec, MusicMeta, NoteEvent } from './types.ts'
+import type { Harmony } from './theory/harmony.ts'
 import {
   BACKING_VOICES,
   COMP_REGISTER_CEILING,
+  COMP_REGISTER_LOW,
   GHOST_VELOCITY_THRESHOLD,
   MUSIC_LABEL,
   RHYTHM_LABEL,
   buildEvents,
+  playedVoicing,
+  voiceLead,
 } from './events.ts'
 import { intBetween, pick, rngFor } from './rng.ts'
 import { ROOTS } from './theory/notes.ts'
 import { allTemplates, templateById } from './templates/index.ts'
 import { buildHarmony, pitchClassesOf } from './theory/harmony.ts'
 import { pitchesOf, scaleName } from './theory/scales.ts'
+import { offScalePitches } from './theory/pitches.ts'
 
 const template = templateById('straight-funk')
 const spec: GrooveSpec = { id: 'g1', template: 'straight-funk', seed: 1 }
 
 const PITCHED = new Set(['bass', 'comp'])
+
+/**
+ * Whether a bass event is the chromatic approach note into the next chord.
+ *
+ * `theory/pitches.ts` admits one when the bar leads into a chord change, the
+ * note sits on the bar's closing step, and its pitch class is a semitone from
+ * the next chord's root. That is the one hole in "every pitch is a tone of the
+ * bar's chord" (R8), so the tests that assert the rule read the exception from
+ * here rather than each inventing its own exemption.
+ */
+function isApproachNote(
+  event: NoteEvent,
+  music: MusicMeta,
+  harmony: Harmony,
+  subdivision: number,
+): boolean {
+  if (event.voice !== 'bass' || event.midi === undefined) return false
+  const grid = Math.round(event.timeSec / (((60 / music.bpm) * 4) / subdivision))
+  if (grid % subdivision !== subdivision - 1) return false
+  const chords = harmony.progressionMidi
+  const bar = Math.floor(grid / subdivision)
+  const chordAt = (b: number) => (b % music.bars) % chords.length
+  if (chordAt(bar + 1) === chordAt(bar)) return false
+  const distance = (((event.midi - chords[chordAt(bar + 1)][0]) % 12) + 12) % 12
+  return Math.min(distance, 12 - distance) === 1
+}
+
+/**
+ * The pitch classes the comp strikes for a chord.
+ *
+ * The chord's own, minus its root where R6 drops it: a four-note chord whose
+ * root the bass is already sounding is voiced rootless, so the two instruments
+ * stop doubling it. `music.chord` and `music.progression` still name the whole
+ * chord — this is which notes are struck, not which chord they spell.
+ */
+function compPitchClasses(chordMidi: number[], bassPitchClasses: Set<number>): number[] {
+  const pc = (midi: number) => ((midi % 12) + 12) % 12
+  const tones = [...new Set(chordMidi.map(pc))].sort((a, b) => a - b)
+  const root = pc(chordMidi[0])
+  if (tones.length >= 4 && bassPitchClasses.has(root)) return tones.filter((t) => t !== root)
+  return tones
+}
 
 function stepSecFor(bpm: number): number {
   // 4 beats to the bar, `subdivision` steps to the bar.
@@ -274,10 +321,16 @@ describe('buildEvents — the words match the notes', () => {
 
   it('plays only pitches from the scale it names', () => {
     for (const seed of seeds) {
-      const { events, music } = buildEvents({ ...spec, seed }, template)
+      const { events, music, harmony } = buildEvents({ ...spec, seed }, template)
       const scale = pitchesOf(music.root, music.flavour)
+      // The bass's chromatic approach note is the one hole in this (R8), and it
+      // is not waved through here: `offScalePitches` holds every pitch the
+      // scale does not contain to the rule that admits it, and only then is it
+      // skipped below.
+      expect(offScalePitches(events, music, harmony)).toEqual([])
       for (const event of events) {
         if (event.midi === undefined) continue
+        if (isApproachNote(event, music, harmony, template.subdivision)) continue
         expect(scale).toContain(event.midi % 12)
       }
     }
@@ -285,15 +338,25 @@ describe('buildEvents — the words match the notes', () => {
 
   it('comps the named chord in bar 1', () => {
     for (const seed of seeds) {
-      const { events, music } = buildEvents({ ...spec, seed }, template)
-      const barOne = events.filter(
-        (e: NoteEvent) => e.voice === 'comp' && barOf(e, music.bpm) === 0,
-      )
+      const { events, music, harmony } = buildEvents({ ...spec, seed }, template)
+      const inBarOne = (e: NoteEvent) => barOf(e, music.bpm) === 0
+      const barOne = events.filter((e: NoteEvent) => e.voice === 'comp' && inBarOne(e))
       expect(barOne.length).toBeGreaterThan(0)
       const played = [...new Set(barOne.map((e) => (e.midi as number) % 12))].sort(
         (a, b) => a - b,
       )
-      expect(played).toEqual(pitchClassesOf(music.chord))
+      // The words are still exact: `music.chord` names bar one's chord tone for
+      // chord tone. What the hand strikes is those minus the root the bass is
+      // holding, when the chord has four of them (R6, AC7).
+      expect(pitchClassesOf(music.chord)).toEqual(
+        [...new Set(harmony.chordMidi.map((m) => m % 12))].sort((a, b) => a - b),
+      )
+      const bass = new Set(
+        events
+          .filter((e: NoteEvent) => e.voice === 'bass' && inBarOne(e))
+          .map((e) => (e.midi as number) % 12),
+      )
+      expect(played).toEqual(compPitchClasses(harmony.chordMidi, bass))
     }
   })
 
@@ -306,10 +369,12 @@ describe('buildEvents — the words match the notes', () => {
 
   it('walks the bass through the progression’s chord tones', () => {
     for (const seed of seeds) {
-      const { events, music } = buildEvents({ ...spec, seed }, template)
+      const { events, music, harmony } = buildEvents({ ...spec, seed }, template)
       const chords = music.progression.split('–')
       for (const event of events) {
         if (event.voice !== 'bass') continue
+        // Every note but the one chromatic approach into a chord change (R8).
+        if (isApproachNote(event, music, harmony, template.subdivision)) continue
         // The progression describes the four-bar figure (R5), so a bar of the
         // loop is read modulo the figure before it is read modulo the
         // progression.
@@ -544,7 +609,10 @@ describe('buildEvents — every template renders', () => {
       // flavours: the notes are the ones the words name.
       it('plays the harmony its metadata names', () => {
         for (const seed of seeds) {
-          const { events, music } = buildEvents({ id: 'g', template: feel.id, seed }, feel)
+          const { events, music, harmony } = buildEvents(
+            { id: 'g', template: feel.id, seed },
+            feel,
+          )
           const chords = music.progression.split('–')
           const step = ((60 / music.bpm) * 4) / feel.subdivision
           const barOfEvent = (time: number) =>
@@ -557,10 +625,21 @@ describe('buildEvents — every template renders', () => {
           const played = [...new Set(barOneComp.map((e) => (e.midi as number) % 12))].sort(
             (a, b) => a - b,
           )
-          expect(played, `${feel.id}:${seed}`).toEqual(pitchClassesOf(music.chord))
+          expect(pitchClassesOf(music.chord), `${feel.id}:${seed}`).toEqual(
+            [...new Set(harmony.chordMidi.map((m) => m % 12))].sort((a, b) => a - b),
+          )
+          const barOneBass = new Set(
+            events
+              .filter((e) => e.voice === 'bass' && barOfEvent(e.timeSec) === 0)
+              .map((e) => (e.midi as number) % 12),
+          )
+          expect(played, `${feel.id}:${seed}`).toEqual(
+            compPitchClasses(harmony.chordMidi, barOneBass),
+          )
 
           for (const event of events) {
             if (event.voice !== 'bass') continue
+            if (isApproachNote(event, music, harmony, feel.subdivision)) continue
             const chord =
               chords[(barOfEvent(event.timeSec) % music.bars) % chords.length]
             expect(
@@ -771,7 +850,10 @@ describe('buildEvents — a groove is several passes of one figure — R3, R5, A
 
       it('repeats the harmony every four bars, so bar 5 carries bar 1’s chord — R5, AC5', () => {
         for (let seed = 1; seed <= 6; seed++) {
-          const { events, music } = buildEvents({ id: 'g', template: feel.id, seed }, feel)
+          const { events, music, harmony } = buildEvents(
+            { id: 'g', template: feel.id, seed },
+            feel,
+          )
           const steps = stepsOfLoop(events, music.bpm, feel.subdivision)
           const barIn = (i: number) => Math.floor(steps[i] / feel.subdivision)
 
@@ -784,9 +866,20 @@ describe('buildEvents — a groove is several passes of one figure — R3, R5, A
               ),
             ].sort((a, b) => a - b)
 
+          const bassIn = (bar: number) =>
+            new Set(
+              events
+                .filter((_, i) => barIn(i) === bar && events[i].voice === 'bass')
+                .map((e) => (e.midi as number) % 12),
+            )
+
           const barOne = compIn(0)
           expect(barOne.length, `${feel.id}:${seed}`).toBeGreaterThan(0)
-          expect(barOne, `${feel.id}:${seed}`).toEqual(pitchClassesOf(music.chord))
+          // The chord the manifest names, minus the root the bass is holding
+          // where R6 drops it. What repeats every four bars is the whole hand.
+          expect(barOne, `${feel.id}:${seed}`).toEqual(
+            compPitchClasses(harmony.chordMidi, bassIn(0)),
+          )
           for (let pass = 1; pass < feel.passes; pass++) {
             expect(compIn(pass * 4), `${feel.id}:${seed} bar ${pass * 4 + 1}`).toEqual(barOne)
           }
@@ -963,7 +1056,7 @@ describe('buildEvents — ghosts and accents — R10, R11, R12', () => {
   it('leaves kick, snare, bass and comp reading from metric position — R12, AC11', () => {
     for (const feel of allTemplates()) {
       const events = placed(dry(feel))
-      for (const voice of ['kick', 'snare', 'bass', 'comp'] as const) {
+      for (const voice of ['kick', 'snare', 'bass'] as const) {
         // Every hit of one voice on one metric class is the same velocity: the
         // accent cycle belongs to the hats only. Ghosts are their own level.
         const byStep = new Map<number, Set<number>>()
@@ -976,6 +1069,32 @@ describe('buildEvents — ghosts and accents — R10, R11, R12', () => {
         for (const [step, velocities] of byStep) {
           expect(velocities.size, `${feel.id} ${voice}@${step}`).toBe(1)
         }
+      }
+
+      // The comp reads from metric position too, plus the one thing the hats'
+      // cycle is not: where a note sits in the voicing, so the top voice sings
+      // over the ones under it (R5, AC6). What must not vary is the shape — a
+      // chord struck on a given metric class is shaped the same way in every
+      // bar it falls in. A level says which voice of the chord this is, never
+      // how far along a cycle the bar is.
+      const struck = new Map<string, number[]>()
+      for (const event of events) {
+        if (event.voice !== 'comp') continue
+        const key = `${event.bar}:${event.sixteenth}`
+        struck.set(key, [...(struck.get(key) ?? []), event.velocity])
+      }
+      const shapes = new Map<number, Set<string>>()
+      for (const [key, velocities] of struck) {
+        const step = Number(key.split(':')[1])
+        if (!shapes.has(step)) shapes.set(step, new Set())
+        shapes.get(step)!.add([...velocities].sort((a, b) => a - b).join(','))
+      }
+      expect(shapes.size, `${feel.id} never comps`).toBeGreaterThan(0)
+      for (const [step, shape] of shapes) {
+        expect(shape.size, `${feel.id} comp@${step}`).toBe(1)
+        const voices = [...shape][0].split(',')
+        expect(voices.length, `${feel.id} comp@${step}`).toBeGreaterThan(1)
+        expect(new Set(voices).size, `${feel.id} comp@${step} is flat`).toBe(voices.length)
       }
 
       // And the backbeat still lands above what surrounds it: in every bar the
@@ -996,6 +1115,330 @@ describe('buildEvents — ghosts and accents — R10, R11, R12', () => {
             expect(snare.sixteenth % 4, where).not.toBe(0)
           }
         }
+      }
+    }
+  })
+})
+
+// Feature 9, Epic 4, Track B — R3–R8a, AC4–AC9a. The comp stops being a block
+// of chord tones folded into a window and becomes a hand: voice-led between
+// chords, rolled rather than stamped, shaped so the top voice sings, and
+// rootless when the bass is already holding the root. The bass stops being an
+// arpeggiator and becomes a player: repeated notes, octaves, rests, and one
+// chromatic approach note into each chord change.
+describe('buildEvents — hands and fingers — R3, R4, R5, R6, R7, R8, R8a', () => {
+  /** No swing and no slop, so an onset and a velocity are exactly what the builder wrote. */
+  const still = (feel = template) => ({
+    ...feel,
+    swing: 0,
+    humanize: { timingMs: 0, velocity: 0, lean: {}, driftDepth: 0 },
+  })
+
+  /** What `inCompRegister` did before this track: every tone folded on its own. */
+  const foldIndependently = (chord: number[]) =>
+    chord
+      .map((midi) => {
+        let folded = midi
+        while (folded >= COMP_REGISTER_CEILING) folded -= 12
+        while (folded < COMP_REGISTER_LOW) folded += 12
+        return folded
+      })
+      .sort((a, b) => a - b)
+
+  /**
+   * Total semitone motion between two voicings, paired ascending — the lowest
+   * voice to the lowest, and so on. Sorted pairing is the cheapest bijection
+   * between two sets of pitches, so this is the motion a listener hears.
+   */
+  const motion = (a: number[], b: number[]) => {
+    const x = [...a].sort((p, q) => p - q)
+    const y = [...b].sort((p, q) => p - q)
+    let total = 0
+    for (let i = 0; i < Math.min(x.length, y.length); i += 1) total += Math.abs(x[i] - y[i])
+    return total
+  }
+
+  const pc = (midi: number) => ((midi % 12) + 12) % 12
+
+  /** Semitones between two pitches, ignoring octave: 0..6. */
+  const interval = (a: number, b: number) => {
+    const distance = pc(a - b)
+    return Math.min(distance, 12 - distance)
+  }
+
+  /** Every event with the bar and the grid step it reads as. */
+  function played(feel = still(), seed = 1) {
+    const { events, music, harmony } = buildEvents({ id: 'g', template: feel.id, seed }, feel)
+    const stepSec = ((60 / music.bpm) * 4) / feel.subdivision
+    return {
+      music,
+      harmony,
+      events: events.map((event) => {
+        const grid = Math.round(event.timeSec / stepSec)
+        return {
+          ...event,
+          bar: Math.floor(grid / feel.subdivision),
+          step: grid % feel.subdivision,
+        }
+      }),
+    }
+  }
+
+  /** The comp's notes for one bar, grouped by the chord they were struck as. */
+  function compChords(events: { voice: string; bar: number; step: number }[]) {
+    const groups = new Map<string, typeof events>()
+    for (const event of events) {
+      if (event.voice !== 'comp') continue
+      const key = `${event.bar}:${event.step}`
+      const list = groups.get(key) ?? []
+      list.push(event)
+      groups.set(key, list)
+    }
+    return [...groups.values()]
+  }
+
+  // --- Step B1: the comp voice-leads -------------------------------------
+
+  it('seeds a voicing with the independent fold, so bar one is still the named chord — R3, AC4', () => {
+    const cm7 = [60, 63, 67, 70]
+    expect(voiceLead(null, cm7)).toEqual(foldIndependently(cm7))
+    expect(voiceLead([], cm7)).toEqual(foldIndependently(cm7))
+  })
+
+  it('folds each tone to the octave nearest the previous voicing — R3, AC4', () => {
+    // Cm7 to B♭7: folded independently the whole voicing jumps up a minor
+    // seventh and back down again. Led, it moves by a step or two.
+    const cm7 = [60, 63, 67, 70]
+    const bFlat7 = [70, 74, 77, 80]
+    const previous = voiceLead(null, cm7)
+    const led = voiceLead(previous, bFlat7)
+
+    expect(motion(previous, led)).toBeLessThan(motion(previous, foldIndependently(bFlat7)))
+    expect(new Set(led.map(pc))).toEqual(new Set(bFlat7.map(pc)))
+    for (const midi of led) {
+      expect(midi).toBeGreaterThanOrEqual(COMP_REGISTER_LOW)
+      expect(midi).toBeLessThan(COMP_REGISTER_CEILING)
+    }
+  })
+
+  it('never moves further than the independent fold would, and moves less somewhere — R3, AC4', () => {
+    let improved = false
+    for (const feel of allTemplates()) {
+      for (let seed = 1; seed <= 12; seed += 1) {
+        const { music, harmony } = buildEvents({ id: 'g', template: feel.id, seed }, feel)
+        const chords = harmony.progressionMidi
+        let previous = voiceLead(null, chords[0])
+        for (let bar = 1; bar < music.bars; bar += 1) {
+          const chord = chords[bar % chords.length]
+          const led = voiceLead(previous, chord)
+          const independent = foldIndependently(chord)
+          expect(
+            motion(previous, led),
+            `${feel.id}:${seed} bar ${bar + 1}`,
+          ).toBeLessThanOrEqual(motion(previous, independent))
+          if (motion(previous, led) < motion(previous, independent)) improved = true
+          previous = led
+        }
+      }
+    }
+    expect(improved, 'voice-leading never beat the independent fold anywhere').toBe(true)
+  })
+
+  // --- Step B2: spread and shape -----------------------------------------
+
+  it('spreads a chord like a hand rather than stamping it — R4, AC5', () => {
+    for (const feel of allTemplates()) {
+      const { events } = played(still(feel))
+      const chords = compChords(events as never)
+      expect(chords.length, feel.id).toBeGreaterThan(0)
+      for (const chord of chords as unknown as NoteEvent[][]) {
+        expect(chord.length, feel.id).toBeGreaterThan(1)
+        const times = chord.map((e) => e.timeSec)
+        expect(new Set(times).size, `${feel.id} stamps a chord`).toBe(times.length)
+        const span = Math.max(...times) - Math.min(...times)
+        expect(span, feel.id).toBeGreaterThan(0)
+        expect(span, `${feel.id} spreads a chord too far`).toBeLessThanOrEqual(0.015 + 1e-9)
+        // The roll runs up the voicing, the way a hand crosses the strings.
+        const byPitch = [...chord].sort((a, b) => (a.midi as number) - (b.midi as number))
+        for (let i = 1; i < byPitch.length; i += 1) {
+          expect(byPitch[i].timeSec, feel.id).toBeGreaterThan(byPitch[i - 1].timeSec)
+        }
+      }
+    }
+  })
+
+  it('shapes a chord so the top voice sings and the inner voices sit under it — R5, AC6', () => {
+    for (const feel of allTemplates()) {
+      const { events } = played(still(feel))
+      for (const chord of compChords(events as never) as unknown as NoteEvent[][]) {
+        const byPitch = [...chord].sort((a, b) => (a.midi as number) - (b.midi as number))
+        const velocities = byPitch.map((e) => e.velocity)
+        expect(new Set(velocities).size, `${feel.id} plays a chord flat`).toBeGreaterThan(1)
+        const top = velocities[velocities.length - 1]
+        for (const velocity of velocities.slice(0, -1)) {
+          expect(velocity, `${feel.id} buries its top voice`).toBeLessThan(top)
+        }
+      }
+    }
+  })
+
+  // --- Step B3: rootless four-note voicings -------------------------------
+
+  it('drops the root of a four-note chord the bass is already sounding — R6, AC7', () => {
+    const seventh = [60, 64, 67, 70]
+    const voicing = voiceLead(null, seventh)
+    expect(playedVoicing(voicing, seventh, [36])).toEqual(voicing.filter((m) => m % 12 !== 0))
+    // No root in the bass, no doubling to fix.
+    expect(playedVoicing(voicing, seventh, [40])).toEqual(voicing)
+  })
+
+  it('keeps a triad’s root — a triad minus its root is two notes — R6, AC7', () => {
+    const triad = [60, 64, 67]
+    const voicing = voiceLead(null, triad)
+    expect(playedVoicing(voicing, triad, [36])).toEqual(voicing)
+  })
+
+  it('voices the whole loop rootless where the bass has the root, and never adds a tone — R6, AC7', () => {
+    for (const feel of allTemplates()) {
+      for (let seed = 1; seed <= 6; seed += 1) {
+        const { events, music, harmony } = played(still(feel), seed)
+        const chords = harmony.progressionMidi
+        for (let bar = 0; bar < music.loopBars; bar += 1) {
+          const chord = chords[(bar % music.bars) % chords.length]
+          const tones = new Set(chord.map(pc))
+          const rootPc = pc(chord[0])
+          const comp = new Set(
+            events.filter((e) => e.voice === 'comp' && e.bar === bar).map((e) => pc(e.midi!)),
+          )
+          const bass = new Set(
+            events.filter((e) => e.voice === 'bass' && e.bar === bar).map((e) => pc(e.midi!)),
+          )
+          const where = `${feel.id}:${seed} bar ${bar + 1}`
+          for (const tone of comp) expect(tones, where).toContain(tone)
+          if (tones.size >= 4 && bass.has(rootPc)) {
+            expect(comp.has(rootPc), `${where} doubles the bass’s root`).toBe(false)
+          } else {
+            expect(comp.has(rootPc), `${where} lost its root`).toBe(true)
+          }
+        }
+        // The words are untouched either way (AC7).
+        expect(music.chord, feel.id).toBe(harmony.chordName)
+        expect(music.progression, feel.id).toBe(harmony.progressionName)
+      }
+    }
+  })
+
+  // --- Step B4: the bass plays a line -------------------------------------
+
+  it('plays a line, not an arpeggio: repeats, octaves and rests — R7, AC8', () => {
+    for (const feel of allTemplates()) {
+      for (let seed = 1; seed <= 20; seed += 1) {
+        const { events, music, harmony } = played(still(feel), seed)
+        const bass = events.filter((e) => e.voice === 'bass')
+        const pitches = bass.map((e) => e.midi as number)
+        const where = `${feel.id}:${seed}`
+
+        expect(
+          pitches.some((midi, i) => i > 0 && midi === pitches[i - 1]),
+          `${where} never repeats a note`,
+        ).toBe(true)
+        expect(
+          Math.max(...pitches) - Math.min(...pitches),
+          `${where} stays inside one octave`,
+        ).toBeGreaterThan(12)
+
+        // Rests: the line does not sound on every step it plays somewhere else.
+        // The pattern's steps are read off the line itself — every step it ever
+        // plays, minus the approach notes, which are written on the bar's
+        // closing step in the bars that lead into a chord change and nowhere
+        // else. A line with no rest plays every one of them in every bar.
+        const chords = harmony.progressionMidi
+        const chordIndex = (b: number) => (b % music.bars) % chords.length
+        const written = bass.filter(
+          (e) =>
+            !(e.step === feel.subdivision - 1 && chordIndex(e.bar + 1) !== chordIndex(e.bar)),
+        )
+        const steps = new Set(written.map((e) => e.step))
+        expect(written.length, `${where} rests nowhere`).toBeLessThan(
+          steps.size * music.loopBars,
+        )
+      }
+    }
+  })
+
+  // --- Step B5: the approach note -----------------------------------------
+
+  it('walks into every chord change with a chromatic approach note — R8, AC9', () => {
+    for (const feel of allTemplates()) {
+      for (let seed = 1; seed <= 12; seed += 1) {
+        const { events, music, harmony } = played(still(feel), seed)
+        const chords = harmony.progressionMidi
+        const chordIndex = (bar: number) => (bar % music.bars) % chords.length
+        const bass = events.filter((e) => e.voice === 'bass')
+        let found = 0
+
+        for (let bar = 0; bar < music.loopBars; bar += 1) {
+          if (chordIndex(bar + 1) === chordIndex(bar)) continue
+          const where = `${feel.id}:${seed} bar ${bar + 1}`
+          const inBar = bass.filter((e) => e.bar === bar)
+          expect(inBar.length, where).toBeGreaterThan(0)
+          const last = inBar[inBar.length - 1]
+          const nextRoot = chords[chordIndex(bar + 1)][0]
+
+          expect(last.step, `${where} approaches off the last step`).toBe(feel.subdivision - 1)
+          expect(interval(last.midi as number, nextRoot), `${where} is not a semitone away`).toBe(1)
+
+          // It resolves: the next bass onset is that root. In the final bar the
+          // next onset is bar one's, when the loop comes round (R8a).
+          const after = bass.find((e) => e.timeSec > last.timeSec) ?? bass[0]
+          expect(pc(after.midi as number), `${where} resolves nowhere`).toBe(pc(nextRoot))
+          found += 1
+        }
+
+        expect(found, `${feel.id}:${seed} never walks into a change`).toBeGreaterThan(0)
+      }
+    }
+  })
+
+  it('writes no approach note where the loop boundary is not a chord change — R8a', () => {
+    // Three chords over a four-bar figure: bar four carries bar one's chord, so
+    // the loop boundary is not a change and nothing chromatic belongs there.
+    let checked = 0
+    for (let seed = 1; seed <= 24 && checked < 3; seed += 1) {
+      const { events, music, harmony } = played(still(), seed)
+      if (harmony.progressionMidi.length !== 3) continue
+      checked += 1
+      const chord = harmony.progressionMidi[0]
+      const tones = new Set(chord.map(pc))
+      const lastBar = music.loopBars - 1
+      for (const event of events) {
+        if (event.voice !== 'bass' || event.bar !== lastBar) continue
+        expect(tones, `seed ${seed} bar ${lastBar + 1}`).toContain(pc(event.midi as number))
+      }
+    }
+    expect(checked, 'no three-chord progression in the first 24 seeds').toBeGreaterThan(0)
+  })
+
+  it('keeps the approach note inside the loop — R8a, AC9a', () => {
+    for (const feel of allTemplates()) {
+      for (let seed = 1; seed <= 6; seed += 1) {
+        const { events, music } = buildEvents({ id: 'g', template: feel.id, seed }, feel)
+        const loopSec = (60 / music.bpm) * 4 * music.loopBars
+        for (const event of events) {
+          expect(event.timeSec, `${feel.id}:${seed}`).toBeLessThan(loopSec)
+          expect(event.timeSec + event.durationSec, `${feel.id}:${seed}`).toBeLessThanOrEqual(
+            loopSec + 1e-9,
+          )
+        }
+      }
+    }
+  })
+
+  it('plays no pitch its scale forbids but the one the approach note buys — R9, AC10', () => {
+    for (const feel of allTemplates()) {
+      for (let seed = 1; seed <= 12; seed += 1) {
+        const { events, music, harmony } = buildEvents({ id: 'g', template: feel.id, seed }, feel)
+        expect(offScalePitches(events, music, harmony), `${feel.id}:${seed}`).toEqual([])
       }
     }
   })
