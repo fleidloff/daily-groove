@@ -4,9 +4,9 @@
  * The same `hashString` seeds the generator's RNG (`scripts/grooves/rng.ts`,
  * which imports this file by relative path) *and* picks the player's groove of
  * the day (`selectGrooveForDate`). Change a single character and both move:
- * every groove re-renders to different audio, breaking the freeze rule in
- * `scripts/grooves/README.md`, and every past date is reassigned a different
- * puzzle from the one the player was shown.
+ * every groove re-renders to different audio, and — the half that cannot be
+ * undone by re-rendering — every past date is reassigned a different puzzle
+ * from the one the player was shown.
  *
  * `src/lib/hash.test.ts` pins it against a fixed table for exactly that reason.
  * If that table fails, the fix is to restore the function — never to regenerate

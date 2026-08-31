@@ -86,8 +86,12 @@ Re-renders every entry in `catalogue.json` from scratch: all the mp3s, the manif
 the lock. On an unchanged tree with an unchanged generator, `git status` afterwards shows
 nothing — the render is deterministic given the catalogue.
 
-You need this after changing the generator, and after any hand edit to `catalogue.json`.
-See the freeze rule below before you reach for it on a whim.
+You need this after changing the generator, and after any hand edit to
+`catalogue.json`. It is a normal operation, not a last resort: a groove is defined by its
+`{ id, template, seed }` entry, and the audio and the answers are output. Changing the
+generator and re-rendering is how the whole catalogue is meant to change. Expect the
+committed mp3s to change bytes when you do — that is the point of the command, and the
+diff is reviewed by listening.
 
 ## What is committed, and why
 
@@ -134,24 +138,18 @@ It reports three kinds of failure, each naming the file:
 
 A missing lock file is also a failure — the guard tells you to run `npm run grooves`.
 
-## The freeze rule
+## Ids never move
 
-**From the merge of this feature's last epic onward, a groove's `id`, its audio and its
-answers do not change. Ever.**
+**A groove's `id` is permanent. Re-rendering may change what `groove-07` sounds like;
+nothing may make `groove-07` a different entry in the catalogue.**
 
-Adding grooves must never re-render, renumber or re-answer an existing one. `grooves:add`
-is built to guarantee that mechanically: it only ever appends, and existing entries come
-out of a mint byte-identical.
+The reason is the player, not tidiness. A player's stored history refers to grooves by id,
+so renumbering silently reassigns their history to other music. `grooves:add` guarantees
+this mechanically: it only ever appends, and new ids continue from the highest number ever
+used rather than from the catalogue's length, so retiring a groove renumbers nothing.
 
-The reason is the player, not tidiness. A player's stored history refers to grooves by id.
-Re-rendering `groove-07` means someone who solved `groove-07` last week now has a record
-of solving something that no longer exists, and if the answers moved too, a record that is
-simply wrong. Renumbering is worse: it silently reassigns their history to other music.
-
-Before that merge — while Epics 1–3 were still building the renderer — re-rendering the
-whole catalogue was a normal operation, and Epic 2 existed precisely to change how every
-groove sounds. Afterwards it is a breaking change. If you genuinely need different music,
-mint new grooves and retire the old ones from rotation; do not re-render them.
+Re-rendering is the safe half of that: `groove-07` stays `groove-07`, and a player who
+solved it has a record of a groove that still exists.
 
 ## Requirements
 
@@ -176,8 +174,7 @@ catalogue or the generator, run `npm run grooves`, and commit.
 **The build names a groove as missing, empty or checksum-mismatched.** Its mp3 is not the
 one that was minted. Restore it from git if the change was accidental (`git checkout --
 public/grooves/groove-NN.mp3`). If it is genuinely gone, `npm run grooves` re-renders it —
-but note that re-rendering is a freeze violation unless the file was corrupted rather than
-changed.
+it renders the whole catalogue, so commit every mp3 that changes, not just the named one.
 
 **`grooves:add` fails naming an attempt limit.** The gate rejected every candidate it
 tried. Nothing was written; the tree is exactly as it was. This usually means a template

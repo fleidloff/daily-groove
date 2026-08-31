@@ -31,13 +31,15 @@ function goodCandidate(): Candidate {
   const spec = readCatalogue()[0]
   const template = templateById(spec.template)
   const { events, music, harmony } = buildEvents(spec, template)
+  // `loopBars`, not `bars`: a groove is several passes of the four-bar figure,
+  // and the buffer is as long as what was rendered.
   const tracks = renderVoices(events, placeholderPack(), SAMPLE_RATE, {
     id: spec.id,
-    bars: music.bars,
+    bars: music.loopBars,
     bpm: music.bpm,
     overhangBars: OVERHANG_BARS,
   })
-  const pcm = mixTracks(tracks, template, { loopBars: music.bars, bpm: music.bpm })
+  const pcm = mixTracks(tracks, template, { loopBars: music.loopBars, bpm: music.bpm })
   return { pcm, events, music, harmony, template }
 }
 
@@ -64,6 +66,11 @@ const DISCONTINUOUS = pcmOf((i, n) => (0.5 * i) / n)
 
 /** Ten whole cycles across the buffer, so the last sample sits next to the first. */
 const CLEAN_LOOP = pcmOf((i, n) => 0.5 * Math.sin((2 * Math.PI * 10 * i) / n))
+
+/** More events than the template's ceiling allows over the whole rendered loop. */
+function tooManyEvents(): NoteEvent[] {
+  return eventsOf((GOOD.template.density.maxPerBar + 10) * GOOD.music.loopBars)
+}
 
 function eventsOf(count: number): NoteEvent[] {
   return Array.from({ length: count }, (_, i) => ({
@@ -174,13 +181,13 @@ describe('gateCandidate', () => {
 
   // Step A4 — R5, R6, AC4
   describe('density', () => {
-    it('rejects two events over four bars, naming the density check', () => {
+    it('rejects two events over the whole loop, naming the density check', () => {
       const failure = gateCandidate({ ...GOOD, events: eventsOf(2) })
       expect(failure?.check).toBe('density')
     })
 
-    it('rejects several hundred events over four bars', () => {
-      const failure = gateCandidate({ ...GOOD, events: eventsOf(600) })
+    it('rejects far more events than the template’s ceiling allows', () => {
+      const failure = gateCandidate({ ...GOOD, events: tooManyEvents() })
       expect(failure?.check).toBe('density')
     })
 
@@ -189,7 +196,7 @@ describe('gateCandidate', () => {
     })
 
     it('reads its bounds from the template, not from a constant', () => {
-      const perBar = GOOD.events.length / GOOD.music.bars
+      const perBar = GOOD.events.length / GOOD.music.loopBars
       const narrow: FeelTemplate = {
         ...GOOD.template,
         density: { minPerBar: perBar + 1, maxPerBar: perBar + 2 },
@@ -203,8 +210,35 @@ describe('gateCandidate', () => {
       expect(gateCandidate({ ...GOOD, template: wide })).toBeNull()
     })
 
+    // Feature 9, Epic 1, Step B5 — R13, AC13. A groove is now several passes of
+    // the four-bar figure, so dividing by the figure would report four times
+    // the density that is actually there and reject a perfectly good groove.
+    it('measures over the bars rendered, not over the figure — R13, AC13', () => {
+      const { minPerBar, maxPerBar } = GOOD.template.density
+      const loopBars = 16
+      const perBar = Math.round((minPerBar + maxPerBar) / 2)
+      const music: MusicMeta = { ...GOOD.music, bars: 4, loopBars }
+
+      expect(
+        gateCandidate({
+          ...GOOD,
+          pcm: CLEAN_LOOP,
+          music,
+          events: eventsOf(perBar * loopBars),
+        }),
+        'a mid-density sixteen-bar groove was rejected',
+      ).toBeNull()
+    })
+
+    it('names the rendered length in a density failure — R13', () => {
+      const music: MusicMeta = { ...GOOD.music, bars: 4, loopBars: 16 }
+      const failure = gateCandidate({ ...GOOD, pcm: CLEAN_LOOP, music, events: eventsOf(2) })
+      expect(failure?.check).toBe('density')
+      expect(failure?.detail).toContain('over 16 bars')
+    })
+
     it('accepts a real render, which sits inside its own template bounds', () => {
-      const perBar = GOOD.events.length / GOOD.music.bars
+      const perBar = GOOD.events.length / GOOD.music.loopBars
       expect(perBar).toBeGreaterThanOrEqual(GOOD.template.density.minPerBar)
       expect(perBar).toBeLessThanOrEqual(GOOD.template.density.maxPerBar)
       expect(gateCandidate(GOOD)).toBeNull()
@@ -222,8 +256,16 @@ describe('gateCandidate', () => {
         candidate: { ...GOOD, music: { ...GOOD.music, chord: 'B♭dim7' } },
         detail: /B♭dim7/,
       },
-      { check: 'density', candidate: { ...GOOD, events: eventsOf(2) }, detail: /0\.5/ },
-      { check: 'density', candidate: { ...GOOD, events: eventsOf(600) }, detail: /150/ },
+      {
+        check: 'density',
+        candidate: { ...GOOD, events: eventsOf(2) },
+        detail: new RegExp(`2 over ${GOOD.music.loopBars} bars`),
+      },
+      {
+        check: 'density',
+        candidate: { ...GOOD, events: tooManyEvents() },
+        detail: new RegExp(`over ${GOOD.music.loopBars} bars`),
+      },
     ]
 
     for (const { check, candidate, detail } of rejections) {
@@ -242,13 +284,40 @@ describe('gateCandidate', () => {
       expect(gateCandidate({ ...GOOD, pcm: DISCONTINUOUS })!.detail).toContain(
         String(SEAM_THRESHOLD),
       )
-      const dense = gateCandidate({ ...GOOD, events: eventsOf(600) })!.detail
+      const dense = gateCandidate({ ...GOOD, events: tooManyEvents() })!.detail
       expect(dense).toContain(String(GOOD.template.density.maxPerBar))
     })
 
     it('returns null — not a failure with an empty check — for a good candidate', () => {
       expect(gateCandidate(GOOD)).toBeNull()
     })
+  })
+})
+
+// Feature 9, Epic 1, Step B4 — R4, AC4. The gate's own fixture is a real,
+// fully rendered candidate, which makes it the cheapest place to assert the
+// thing the epic exists for: the seventh repeat a listener hears is not the
+// same bytes as the first.
+describe('a rendered candidate — R4, AC4', () => {
+  it('is several passes long, and no two of them are byte-identical', () => {
+    const passes = GOOD.music.loopBars / GOOD.music.bars
+    expect(passes, 'the fixture is a single-pass groove').toBeGreaterThan(1)
+
+    const frames = Math.floor(GOOD.pcm.left.length / passes)
+    expect(frames).toBeGreaterThan(0)
+
+    const digest = (pass: number) => {
+      const from = pass * frames
+      return Array.from(GOOD.pcm.left.slice(from, from + frames)).join(',')
+    }
+    const seen = new Set<string>()
+    for (let pass = 0; pass < passes; pass++) {
+      const bytes = digest(pass)
+      expect(seen.has(bytes), `pass ${pass} repeats an earlier pass sample for sample`).toBe(
+        false,
+      )
+      seen.add(bytes)
+    }
   })
 })
 
@@ -270,11 +339,11 @@ describe('the ceiling comparison', () => {
     const { events, music, harmony } = buildEvents(spec, template)
     const tracks = renderVoices(events, placeholderPack(), 44100, {
       id: spec.id,
-      bars: music.bars,
+      bars: music.loopBars,
       bpm: music.bpm,
       overhangBars: 1,
     })
-    const pcm = mixTracks(tracks, template, { loopBars: music.bars, bpm: music.bpm })
+    const pcm = mixTracks(tracks, template, { loopBars: music.loopBars, bpm: music.bpm })
 
     // The mix really does land on the ceiling — that is the premise of the bug.
     expect(truePeak(pcm)).toBeCloseTo(PEAK_CEILING, 6)
@@ -294,11 +363,11 @@ describe('the ceiling comparison', () => {
     const { events, music, harmony } = buildEvents(spec, template)
     const tracks = renderVoices(events, placeholderPack(), 44100, {
       id: spec.id,
-      bars: music.bars,
+      bars: music.loopBars,
       bpm: music.bpm,
       overhangBars: 1,
     })
-    const base = mixTracks(tracks, template, { loopBars: music.bars, bpm: music.bpm })
+    const base = mixTracks(tracks, template, { loopBars: music.loopBars, bpm: music.bpm })
     const hot = {
       sampleRate: base.sampleRate,
       left: base.left.map((v) => v * 1.05) as Float32Array,

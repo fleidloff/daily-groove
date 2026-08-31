@@ -63,15 +63,25 @@ describe('generate', () => {
     const manifest = readFileSync(opts.manifestPath, 'utf8')
     expect(manifest).toContain('export const GROOVES')
     for (const e of entries) expect(manifest).toContain(e.name)
+    // AC8: the app reads the loop length out of the module, so it has to be in
+    // the text, not only on the in-memory entry.
+    for (const e of entries) {
+      expect(manifest).toMatch(new RegExp(`^ {4}loopBars: ${e.loopBars},$`, 'm'))
+    }
   })
 
-  it('describes each groove with all eleven fields', async () => {
+  it('describes each groove with all twelve fields', async () => {
     const opts = tempRun()
     writeFileSync(opts.cataloguePath, JSON.stringify(SPECS))
     const { entries } = await generate(opts)
     for (const e of entries) {
       expect(e.audioSrc).toBe(`/grooves/${e.id}.mp3`)
       expect(e.bars).toBe(4)
+      // Feature 9, Step C2 — R7, AC8. The figure is always four bars; the file
+      // is whole passes of it, so the entry states both and the second is a
+      // multiple of the first.
+      expect(e.loopBars, `${e.id} states no loop length`).toBeGreaterThanOrEqual(e.bars)
+      expect(e.loopBars! % e.bars, `${e.id} is not whole passes`).toBe(0)
       expect(e.bpm).toBeGreaterThan(40)
       expect(e.name.length).toBeGreaterThan(0)
       expect(e.scale.startsWith(e.root)).toBe(true)
@@ -136,12 +146,15 @@ describe('generate', () => {
     }
   })
 
-  it('renders a groove of exactly four bars at its stated tempo', async () => {
+  // Feature 9, Step C2 — R15, AC15. What is rendered is the whole loop, not the
+  // four-bar figure it repeats: the pipeline hands the renderers `loopBars`, so
+  // the audio is as long as the entry says the loop is.
+  it('renders a loop as long as the entry says it is, at its stated tempo', async () => {
     const { entries, pcm } = await generate({ ...tempRun(), encode: false })
     for (const e of entries) {
       const buffer = pcm.get(e.id)!
-      const expectedFrames = Math.ceil((60 / e.bpm) * 4 * e.bars * buffer.sampleRate)
-      expect(Math.abs(buffer.left.length - expectedFrames)).toBeLessThanOrEqual(1)
+      const expectedFrames = Math.ceil((60 / e.bpm) * 4 * e.loopBars! * buffer.sampleRate)
+      expect(Math.abs(buffer.left.length - expectedFrames), e.id).toBeLessThanOrEqual(1)
     }
   })
 
@@ -187,7 +200,7 @@ describe('toGroove', () => {
     const music = {
       bpm: 96,
       bars: 4,
-    loopBars: 4,
+      loopBars: 4,
       root: 'A',
       flavour: 'harmonic-minor',
       scale: 'A harmonic minor',
@@ -197,6 +210,28 @@ describe('toGroove', () => {
     expect(toGroove(SPECS[0], music, 0.025057).headDelaySeconds).toBe(0.025057)
     // A different file, a different number: nothing here is shared.
     expect(toGroove(SPECS[1], music, 0.031111).headDelaySeconds).toBe(0.031111)
+  })
+
+  // Feature 9, Step C2 — R7, AC8. The figure and the file are two numbers, and
+  // the entry carries both: `bars` is what a player counts, `loopBars` is what
+  // the mp3 actually contains.
+  it('carries both lengths: the four-bar figure and the rendered loop', () => {
+    const music = {
+      bpm: 96,
+      bars: 4,
+      loopBars: 8,
+      root: 'A',
+      flavour: 'harmonic-minor',
+      scale: 'A harmonic minor',
+      chord: 'AmMaj7',
+      progression: 'Am–Dm–E7',
+    } as const
+    const entry = toGroove(SPECS[0], music, 0.025057)
+    expect(entry.bars).toBe(4)
+    expect(entry.loopBars).toBe(8)
+    // A longer feel is a bigger number on the same entry shape; nothing here is
+    // derived from a constant.
+    expect(toGroove(SPECS[0], { ...music, loopBars: 16 }, 0.025057).loopBars).toBe(16)
   })
 })
 
@@ -220,7 +255,7 @@ describe('displayFlavour', () => {
     const groove = toGroove(SPECS[0], {
       bpm: 96,
       bars: 4,
-    loopBars: 4,
+      loopBars: 4,
       root: 'A',
       flavour: 'harmonic-minor',
       scale: 'A harmonic minor',
@@ -236,21 +271,24 @@ describe('displayFlavour', () => {
 // Step I2 — everything the finished pipeline must be true of, asserted on one
 // render through the real pack rather than the placeholder.
 describe('the finished pipeline, through the real pack', () => {
-  it('renders a loop that is exactly four bars, peaks on the ceiling, and closes its seam', async () => {
+  it('renders the whole loop, peaks on the ceiling, and closes its seam', async () => {
     const pack = await loadPack(DEFAULT_PACK_DIR)
     for (const spec of readCatalogue().slice(0, 3)) {
       const template = templateById(spec.template)
       const { events, music } = buildEvents(spec, template)
       const tracks = renderVoices(events, pack, SAMPLE_RATE, {
         id: spec.id,
-        bars: music.bars,
+        bars: music.loopBars,
         bpm: music.bpm,
         overhangBars: OVERHANG_BARS,
       })
-      const master = mixTracks(tracks, template, { loopBars: music.bars, bpm: music.bpm })
+      const master = mixTracks(tracks, template, { loopBars: music.loopBars, bpm: music.bpm })
 
-      const expected = Math.round((60 / music.bpm) * 4 * music.bars * SAMPLE_RATE)
-      expect(Math.abs(master.left.length - expected), `${spec.id} is not 4 bars`).toBeLessThanOrEqual(1)
+      const expected = Math.round((60 / music.bpm) * 4 * music.loopBars * SAMPLE_RATE)
+      expect(
+        Math.abs(master.left.length - expected),
+        `${spec.id} is not ${music.loopBars} bars`,
+      ).toBeLessThanOrEqual(1)
 
       expect(truePeak(master)).toBeCloseTo(PEAK_CEILING, 3)
       let stored = 0

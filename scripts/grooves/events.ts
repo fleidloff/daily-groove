@@ -9,8 +9,34 @@ import { scaleName } from './theory/scales.ts'
 /** 4/4 throughout the feature. */
 const BEATS_PER_BAR = 4
 
-/** Every groove is a four-bar loop. */
-const BARS = 4
+/** The musical figure every groove is written as: four bars. */
+const BARS_PER_PASS = 4
+
+/**
+ * The label of the stream that draws what a groove IS — its tempo, root,
+ * flavour and harmony.
+ *
+ * FROZEN. Eighteen committed answers are derived from this exact string, drawn
+ * in exactly the order below, so a player's record of solving `groove-07` keeps
+ * describing the groove it described the day they solved it. Changing the
+ * string, the draw order, or the number of draws taken before `buildHarmony`
+ * re-keys the whole catalogue. The same class of rule as `src/lib/hash.ts`.
+ *
+ * Nothing may be added to this stream. Later epics draw from `RHYTHM_LABEL` or
+ * from a labelled stream of their own.
+ */
+export const MUSIC_LABEL = 'events'
+
+/**
+ * The label of the stream that draws how a groove is PLAYED — which kick, hat,
+ * bass and comp pattern it uses.
+ *
+ * Separate from `MUSIC_LABEL` on purpose. A single sequential stream means one
+ * added draw on the rhythm side shifts every draw after it, so a change to how
+ * a hi-hat pattern is chosen would silently re-key every answer in the
+ * catalogue (R6). Split, the rhythm side is free to change.
+ */
+export const RHYTHM_LABEL = 'rhythm'
 
 /** The octave the bass plays in, as a MIDI offset applied to a pitch class. */
 const BASS_BASE_MIDI = 36
@@ -209,12 +235,15 @@ export function buildEvents(
   spec: GrooveSpec,
   template: FeelTemplate,
 ): { events: NoteEvent[]; music: MusicMeta; harmony: Harmony } {
-  const rng = rngFor(`${spec.template}:${spec.seed}:events`)
+  // The two streams of R6. The draw order inside the music stream is frozen;
+  // see MUSIC_LABEL.
+  const musicRng = rngFor(`${spec.template}:${spec.seed}:${MUSIC_LABEL}`)
+  const rhythmRng = rngFor(`${spec.template}:${spec.seed}:${RHYTHM_LABEL}`)
 
-  const bpm = intBetween(rng, template.tempoRange[0], template.tempoRange[1])
-  const root = pick(rng, ROOTS)
-  const flavour = pick(rng, template.flavours)
-  const harmony = buildHarmony(root, flavour, rng)
+  const bpm = intBetween(musicRng, template.tempoRange[0], template.tempoRange[1])
+  const root = pick(musicRng, ROOTS)
+  const flavour = pick(musicRng, template.flavours)
+  const harmony = buildHarmony(root, flavour, musicRng)
 
   // Every rhythm is written on the sixteenth grid and resolved onto the
   // template's own, so an eighth-note template plays the same vocabulary at its
@@ -222,10 +251,10 @@ export function buildEvents(
   const grid = (steps: number[]) => gridSteps(steps, template.subdivision)
   const placement = placementFor(template.id)
 
-  const kickSteps = grid(pick(rng, KICK_PATTERNS))
-  const hatSteps = grid(pick(rng, HAT_PATTERNS))
-  const bassSteps = grid(pick(rng, BASS_PATTERNS))
-  const compSteps = grid(pick(rng, COMP_PATTERNS))
+  const kickSteps = grid(pick(rhythmRng, KICK_PATTERNS))
+  const hatSteps = grid(pick(rhythmRng, HAT_PATTERNS))
+  const bassSteps = grid(pick(rhythmRng, BASS_PATTERNS))
+  const compSteps = grid(pick(rhythmRng, COMP_PATTERNS))
   const snareSteps = grid(placement.snare)
   const hatOpenSteps = grid(placement.hatOpen)
   const rimSteps = grid(placement.rim)
@@ -259,51 +288,77 @@ export function buildEvents(
     events.push(event)
   }
 
-  for (let bar = 0; bar < BARS; bar++) {
-    const chord = harmony.progressionMidi[bar % harmony.progressionMidi.length]
+  /**
+   * Where each pass begins and ends in `events`. The feel stages below map over
+   * the list one for one and in order, so these indices still address the same
+   * pass afterwards — which is what lets every pass be humanized on a generator
+   * of its own (R4).
+   */
+  const passRanges: { start: number; end: number }[] = []
 
-    // Drums — the same figure every bar, because this epic is not yet played.
-    if (plays('kick')) for (const step of kickSteps) add('kick', bar, step, 2)
-    if (plays('snare')) for (const step of snareSteps) add('snare', bar, step, 2)
-    if (plays('hatClosed')) {
-      const closed = plays('hatOpen')
-        ? hatSteps.filter((s) => !hatOpenSteps.includes(s))
-        : hatSteps
-      for (const step of closed) add('hatClosed', bar, step, 1)
-    }
-    if (plays('hatOpen')) for (const step of hatOpenSteps) add('hatOpen', bar, step, 2)
-    if (plays('rim') && placement.rimBars.includes(bar)) {
-      for (const step of rimSteps) add('rim', bar, step, 1)
-    }
+  for (let pass = 0; pass < template.passes; pass++) {
+    const start = events.length
 
-    // Bass — the bar's chord tones, root first, in the bass register.
-    if (plays('bass')) {
-      bassSteps.forEach((step, i) => {
-        add('bass', bar, step, 2, inRegister(chord[i % chord.length], BASS_BASE_MIDI))
-      })
-    }
+    for (let barInPass = 0; barInPass < BARS_PER_PASS; barInPass++) {
+      // The figure stays four bars long however many passes are rendered, so
+      // bar 5 carries bar 1's chord (R5) and the progression the manifest names
+      // still describes the figure rather than the whole loop.
+      const bar = pass * BARS_PER_PASS + barInPass
+      const chord =
+        harmony.progressionMidi[barInPass % harmony.progressionMidi.length]
 
-    // Comp — the whole chord, as written by the harmony module, so bar 1's
-    // pitches are exactly the ones `music.chord` names.
-    if (plays('comp')) {
-      for (const step of compSteps) {
-        for (const midi of chord) add('comp', bar, step, 4, inCompRegister(midi))
+      // Drums — the same figure every bar, because this epic is not yet played.
+      if (plays('kick')) for (const step of kickSteps) add('kick', bar, step, 2)
+      if (plays('snare')) for (const step of snareSteps) add('snare', bar, step, 2)
+      if (plays('hatClosed')) {
+        const closed = plays('hatOpen')
+          ? hatSteps.filter((s) => !hatOpenSteps.includes(s))
+          : hatSteps
+        for (const step of closed) add('hatClosed', bar, step, 1)
+      }
+      if (plays('hatOpen')) for (const step of hatOpenSteps) add('hatOpen', bar, step, 2)
+      if (plays('rim') && placement.rimBars.includes(barInPass)) {
+        for (const step of rimSteps) add('rim', bar, step, 1)
+      }
+
+      // Bass — the bar's chord tones, root first, in the bass register.
+      if (plays('bass')) {
+        bassSteps.forEach((step, i) => {
+          add('bass', bar, step, 2, inRegister(chord[i % chord.length], BASS_BASE_MIDI))
+        })
+      }
+
+      // Comp — the whole chord, as written by the harmony module, so bar 1's
+      // pitches are exactly the ones `music.chord` names.
+      if (plays('comp')) {
+        for (const step of compSteps) {
+          for (const midi of chord) add('comp', bar, step, 4, inCompRegister(midi))
+        }
       }
     }
+
+    passRanges.push({ start, end: events.length })
   }
 
   // The feel stages, in order: the accents are already in place above, so the
   // grid is swung, then every note is nudged, and then the loop is pinned back
-  // to exactly four bars. The humanize generator is labelled from
+  // to exactly the length that was rendered. The generators are labelled from
   // { template, seed } like every other draw here, so a groove's feel travels
   // with its identity rather than with its name.
-  const barsSec = barSec * BARS
+  //
+  // Swing is a property of the figure, so it is applied once over the whole
+  // loop. The nudge is a property of the performance, so every pass draws its
+  // own from its own generator: that is what makes pass two a different take of
+  // the same music rather than the same bytes again (R4).
+  const barsSec = barSec * BARS_PER_PASS * template.passes
   const swung = applySwing(events, template.swing, template.subdivision, bpm)
-  const nudged = humanize(
-    swung,
-    template,
-    rngFor(`${spec.template}:${spec.seed}:humanize`),
-    bpm,
+  const nudged = passRanges.flatMap(({ start, end }, pass) =>
+    humanize(
+      swung.slice(start, end),
+      template,
+      rngFor(`${spec.template}:${spec.seed}:humanize:${pass}`),
+      bpm,
+    ),
   )
   const shaped = fitToLoop(nudged, barsSec)
 
@@ -320,10 +375,8 @@ export function buildEvents(
 
   const music: MusicMeta = {
     bpm,
-    bars: BARS,
-    // Track B replaces this with BARS_PER_PASS * template.passes once the pass
-    // loop renders more than one pass.
-    loopBars: BARS,
+    bars: BARS_PER_PASS,
+    loopBars: BARS_PER_PASS * template.passes,
     root,
     flavour,
     scale: scaleName(root, flavour),

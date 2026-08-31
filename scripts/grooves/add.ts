@@ -185,13 +185,17 @@ export function renderCandidate(
   template: FeelTemplate,
   pack: SamplePack,
 ): Pcm {
+  // The rendered length, not the figure: `bars` is the four-bar phrase the
+  // manifest names, `loopBars` is what the pass loop actually emitted. Sizing
+  // the buffer from `bars` would render four bars of a longer event list and
+  // silently drop every pass after the first.
   const tracks = renderVoices(events, pack, SAMPLE_RATE, {
     id: spec.id,
-    bars: music.bars,
+    bars: music.loopBars,
     bpm: music.bpm,
     overhangBars: OVERHANG_BARS,
   })
-  return mixTracks(tracks, template, { loopBars: music.bars, bpm: music.bpm })
+  return mixTracks(tracks, template, { loopBars: music.loopBars, bpm: music.bpm })
 }
 
 /**

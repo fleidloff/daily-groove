@@ -208,10 +208,16 @@ describe("today's options, as the page resolves them", () => {
 
 describe('loopSecondsOf', () => {
   it('gives the musical length of the loop from its tempo and bar count', () => {
+    // The loop length is `loopBars`, so it is stated rather than inherited from
+    // the catalogue entry these fixtures are spread from — that entry is a
+    // real sixteen-bar groove and would drown the arithmetic under test.
     // 4 bars of 4/4 at 96bpm is 16 beats, and 16 * 60/96 = 10s exactly.
-    expect(loopSecondsOf({ ...GROOVES[0], bpm: 96, bars: 4 })).toBeCloseTo(10, 6)
-    expect(loopSecondsOf({ ...GROOVES[0], bpm: 105, bars: 4 })).toBeCloseTo(9.142857, 6)
-    expect(loopSecondsOf({ ...GROOVES[0], bpm: 120, bars: 8 })).toBeCloseTo(16, 6)
+    expect(loopSecondsOf({ ...GROOVES[0], bpm: 96, bars: 4, loopBars: 4 })).toBeCloseTo(10, 6)
+    expect(loopSecondsOf({ ...GROOVES[0], bpm: 105, bars: 4, loopBars: 4 })).toBeCloseTo(
+      9.142857,
+      6,
+    )
+    expect(loopSecondsOf({ ...GROOVES[0], bpm: 120, bars: 8, loopBars: 8 })).toBeCloseTo(16, 6)
   })
 
   it('is positive and finite for every groove in the catalogue', () => {
@@ -225,6 +231,36 @@ describe('loopSecondsOf', () => {
   it('refuses a tempo that would make the length meaningless', () => {
     expect(loopSecondsOf({ ...GROOVES[0], bpm: 0 })).toBe(0)
     expect(loopSecondsOf({ ...GROOVES[0], bpm: -1 })).toBe(0)
+  })
+
+  // Feature-9, Epic 1, Step D1 (R8, AC8). The file is several passes of the
+  // four-bar figure, so the loop the player must bracket is `loopBars` long,
+  // not `bars`. Measuring the figure would cut a sixteen-bar groove off after
+  // its first quarter.
+  it("measures the file's loop, not the four-bar figure (R8, AC8)", () => {
+    // 16 bars of 4/4 at 100bpm is 64 beats, and 64 * 60/100 = 38.4s exactly.
+    expect(
+      loopSecondsOf({ ...GROOVES[0], bpm: 100, bars: 4, loopBars: 16 }),
+    ).toBeCloseTo(38.4, 6)
+  })
+
+  it('falls back to `bars` when an entry carries no `loopBars` (R8)', () => {
+    // A manifest written before the field existed still describes a groove.
+    // The field has to be removed deliberately: every entry in the shipped
+    // catalogue now carries it, so spreading one in would smuggle it back.
+    const groove = { ...GROOVES[0], bpm: 100, bars: 4 }
+    delete groove.loopBars
+    expect('loopBars' in groove).toBe(false)
+    expect(loopSecondsOf(groove)).toBeCloseTo(9.6, 6)
+  })
+
+  it('falls back to `bars` when `loopBars` cannot describe a length (R8)', () => {
+    expect(
+      loopSecondsOf({ ...GROOVES[0], bpm: 100, bars: 4, loopBars: 0 }),
+    ).toBeCloseTo(9.6, 6)
+    expect(
+      loopSecondsOf({ ...GROOVES[0], bpm: 100, bars: 4, loopBars: -8 }),
+    ).toBeCloseTo(9.6, 6)
   })
 })
 

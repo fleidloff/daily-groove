@@ -4,10 +4,14 @@ import {
   BACKING_VOICES,
   COMP_REGISTER_CEILING,
   GHOST_VELOCITY_THRESHOLD,
+  MUSIC_LABEL,
+  RHYTHM_LABEL,
   buildEvents,
 } from './events.ts'
+import { intBetween, pick, rngFor } from './rng.ts'
+import { ROOTS } from './theory/notes.ts'
 import { allTemplates, templateById } from './templates/index.ts'
-import { pitchClassesOf } from './theory/harmony.ts'
+import { buildHarmony, pitchClassesOf } from './theory/harmony.ts'
 import { pitchesOf, scaleName } from './theory/scales.ts'
 
 const template = templateById('straight-funk')
@@ -62,7 +66,9 @@ describe('buildEvents — the grid', () => {
   // Epic 2 replaces Epic 1's exact-grid assertion: swing and humanization move
   // notes off the grid on purpose (R4, R5). What must still hold — AC13 — is
   // that every onset still READS as a subdivision of the stated tempo, in every
-  // one of the four bars, which means it never crosses into its neighbour.
+  // bar of the loop, which means it never crosses into its neighbour. Feature 9
+  // makes the loop several passes of the figure, so every bar of every pass is
+  // played rather than only the four of the figure.
   it('keeps every onset inside its own subdivision of the stated tempo — AC13', () => {
     const { events, music } = buildEvents(spec, template)
     const step = stepSecFor(music.bpm)
@@ -74,25 +80,28 @@ describe('buildEvents — the grid', () => {
       expect(Math.abs(steps - Math.round(steps))).toBeLessThan(0.5)
       barsSeen.add(Math.floor(Math.round(steps) / template.subdivision))
     }
-    expect([...barsSeen].sort()).toEqual([0, 1, 2, 3])
+    expect([...barsSeen].sort((a, b) => a - b)).toEqual(
+      Array.from({ length: music.loopBars }, (_, bar) => bar),
+    )
   })
 
-  it('ends the loop exactly on the end of bar four', () => {
+  it('ends the loop exactly on the end of its last bar', () => {
     // renderVoices sizes its buffers from max(timeSec + durationSec), so the
-    // feel stages must never lengthen or shorten the loop.
+    // feel stages must never lengthen or shorten the loop. The loop is
+    // `loopBars` long, not `bars`: `bars` is the figure.
     for (let seed = 1; seed <= 12; seed++) {
       const { events, music } = buildEvents({ ...spec, seed }, template)
-      const loopSec = (60 / music.bpm) * 4 * music.bars
+      const loopSec = (60 / music.bpm) * 4 * music.loopBars
       const end = Math.max(...events.map((e) => e.timeSec + e.durationSec))
       expect(Math.abs(end - loopSec)).toBeLessThan(1e-9)
     }
   })
 
-  it('fits inside four bars at the chosen tempo', () => {
+  it('fits inside its loop at the chosen tempo', () => {
     const { events, music } = buildEvents(spec, template)
     expect(music.bars).toBe(4)
     const barSec = (60 / music.bpm) * 4
-    const loopSec = barSec * music.bars
+    const loopSec = barSec * music.loopBars
     const last = Math.max(...events.map((e) => e.timeSec))
     expect(last).toBeLessThan(loopSec)
     expect(last).toBeGreaterThan(loopSec - barSec)
@@ -268,7 +277,10 @@ describe('buildEvents — the words match the notes', () => {
       const chords = music.progression.split('–')
       for (const event of events) {
         if (event.voice !== 'bass') continue
-        const chord = chords[barOf(event, music.bpm) % chords.length]
+        // The progression describes the four-bar figure (R5), so a bar of the
+        // loop is read modulo the figure before it is read modulo the
+        // progression.
+        const chord = chords[(barOf(event, music.bpm) % music.bars) % chords.length]
         expect(pitchClassesOf(chord)).toContain((event.midi as number) % 12)
       }
     }
@@ -427,16 +439,16 @@ describe('buildEvents — every template renders', () => {
         }
       })
 
-      it('ends the loop exactly on the end of bar four', () => {
+      it('ends the loop exactly on the end of its last bar', () => {
         for (const seed of seeds) {
           const { events, music } = buildEvents({ id: 'g', template: feel.id, seed }, feel)
-          const loopSec = (60 / music.bpm) * 4 * music.bars
+          const loopSec = (60 / music.bpm) * 4 * music.loopBars
           const end = Math.max(...events.map((e) => e.timeSec + e.durationSec))
           expect(Math.abs(end - loopSec), `${feel.id}:${seed}`).toBeLessThan(1e-9)
         }
       })
 
-      it('keeps every onset on its own grid, inside all four bars', () => {
+      it('keeps every onset on its own grid, inside every bar of the loop', () => {
         for (const seed of seeds) {
           const { events, music } = buildEvents({ id: 'g', template: feel.id, seed }, feel)
           const step = ((60 / music.bpm) * 4) / feel.subdivision
@@ -451,7 +463,9 @@ describe('buildEvents — every template renders', () => {
             ).toBeLessThan(0.5)
             bars.add(Math.floor(Math.round(steps) / feel.subdivision))
           }
-          expect([...bars].sort(), `${feel.id}:${seed}`).toEqual([0, 1, 2, 3])
+          expect([...bars].sort((a, b) => a - b), `${feel.id}:${seed}`).toEqual(
+            Array.from({ length: music.loopBars }, (_, bar) => bar),
+          )
         }
       })
 
@@ -494,7 +508,8 @@ describe('buildEvents — every template renders', () => {
 
           for (const event of events) {
             if (event.voice !== 'bass') continue
-            const chord = chords[barOfEvent(event.timeSec) % chords.length]
+            const chord =
+              chords[(barOfEvent(event.timeSec) % music.bars) % chords.length]
             expect(
               pitchClassesOf(chord),
               `${feel.id}:${seed} bass over ${chord}`,
@@ -556,6 +571,215 @@ describe('buildEvents — per-template placement', () => {
           expect(seen.has(key), `${feel.id}:${seed} ${key}`).toBe(false)
           seen.add(key)
         }
+      }
+    }
+  })
+})
+
+// Feature 9, Epic 1, Step B2 — R6, AC6. Today a single sequential stream draws
+// tempo, root, flavour, harmony and then the four rhythm patterns, so adding
+// one draw on the rhythm side shifts every draw after it and silently re-keys
+// the whole catalogue. Splitting the stream is what lets later epics change how
+// a groove sounds without changing what it is.
+describe('buildEvents — the music stream is not the rhythm stream — R6, AC6', () => {
+  it('labels the music stream with the frozen string "events"', () => {
+    // FROZEN: eighteen committed answers are derived from this exact string.
+    expect(MUSIC_LABEL).toBe('events')
+  })
+
+  it('draws the rhythm from a different label', () => {
+    expect(RHYTHM_LABEL).not.toBe(MUSIC_LABEL)
+  })
+
+  it('gives the two labels unrelated sequences for the same spec', () => {
+    const music = rngFor(`${spec.template}:${spec.seed}:${MUSIC_LABEL}`)
+    const rhythm = rngFor(`${spec.template}:${spec.seed}:${RHYTHM_LABEL}`)
+    const pairs = Array.from({ length: 10 }, () => [music(), rhythm()])
+    for (const [a, b] of pairs) expect(a).not.toBe(b)
+  })
+
+  it('takes bpm, root, flavour and harmony from the music stream, in that order', () => {
+    // The proof that the answers did not move: rebuild the first four draws by
+    // hand from the frozen label and check the groove agrees.
+    for (let seed = 1; seed <= 12; seed++) {
+      const feel = template
+      const rng = rngFor(`${feel.id}:${seed}:${MUSIC_LABEL}`)
+      const bpm = intBetween(rng, feel.tempoRange[0], feel.tempoRange[1])
+      const root = pick(rng, ROOTS)
+      const flavour = pick(rng, feel.flavours)
+      const harmony = buildHarmony(root, flavour, rng)
+
+      const { music } = buildEvents({ ...spec, seed }, feel)
+      expect(music.bpm, `seed ${seed}`).toBe(bpm)
+      expect(music.root, `seed ${seed}`).toBe(root)
+      expect(music.flavour, `seed ${seed}`).toBe(flavour)
+      expect(music.chord, `seed ${seed}`).toBe(harmony.chordName)
+      expect(music.progression, `seed ${seed}`).toBe(harmony.progressionName)
+    }
+  })
+})
+
+// Feature 9, Epic 1, Step B3 — R3, R5, AC2, AC3, AC5. A groove stops being one
+// four-bar recording on repeat: it is several passes of the same four-bar
+// figure, so the seventh repeat a listener hears is not the same bytes as the
+// first. The figure itself does not change — same patterns, same harmony.
+describe('buildEvents — a groove is several passes of one figure — R3, R5, AC2, AC3, AC5', () => {
+  /** The step every event lands on, counting from the top of the whole loop. */
+  function stepsOfLoop(events: NoteEvent[], bpm: number, subdivision: number) {
+    const step = ((60 / bpm) * 4) / subdivision
+    return events.map((e) => Math.round(e.timeSec / step))
+  }
+
+  for (const feel of allTemplates()) {
+    describe(feel.id, () => {
+      it('spans its template’s declared pass count times four bars — AC2', () => {
+        for (let seed = 1; seed <= 6; seed++) {
+          const { events, music } = buildEvents({ id: 'g', template: feel.id, seed }, feel)
+          expect(music.bars, feel.id).toBe(4)
+          expect(music.loopBars, feel.id).toBe(4 * feel.passes)
+
+          const barSec = (60 / music.bpm) * 4
+          const end = Math.max(...events.map((e) => e.timeSec + e.durationSec))
+          expect(Math.abs(end - barSec * music.loopBars), `${feel.id}:${seed}`).toBeLessThan(
+            1e-3,
+          )
+        }
+      })
+
+      it('plays the same rhythm in every pass, voice by voice — AC3', () => {
+        for (let seed = 1; seed <= 6; seed++) {
+          const { events, music } = buildEvents({ id: 'g', template: feel.id, seed }, feel)
+          const stepsPerPass = feel.subdivision * 4
+          const steps = stepsOfLoop(events, music.bpm, feel.subdivision)
+
+          const byPass = new Map<number, string[]>()
+          events.forEach((event, i) => {
+            const pass = Math.floor(steps[i] / stepsPerPass)
+            const list = byPass.get(pass) ?? []
+            list.push(`${event.voice}@${steps[i] % stepsPerPass}:${event.midi ?? '-'}`)
+            byPass.set(pass, list)
+          })
+
+          expect([...byPass.keys()].sort((a, b) => a - b), `${feel.id}:${seed}`).toEqual(
+            Array.from({ length: feel.passes }, (_, p) => p),
+          )
+          const first = [...(byPass.get(0) as string[])].sort()
+          for (let pass = 1; pass < feel.passes; pass++) {
+            expect([...(byPass.get(pass) as string[])].sort(), `${feel.id}:${seed} pass ${pass}`)
+              .toEqual(first)
+          }
+        }
+      })
+
+      it('repeats the harmony every four bars, so bar 5 carries bar 1’s chord — R5, AC5', () => {
+        for (let seed = 1; seed <= 6; seed++) {
+          const { events, music } = buildEvents({ id: 'g', template: feel.id, seed }, feel)
+          const steps = stepsOfLoop(events, music.bpm, feel.subdivision)
+          const barIn = (i: number) => Math.floor(steps[i] / feel.subdivision)
+
+          const compIn = (bar: number) =>
+            [
+              ...new Set(
+                events
+                  .filter((_, i) => barIn(i) === bar && events[i].voice === 'comp')
+                  .map((e) => (e.midi as number) % 12),
+              ),
+            ].sort((a, b) => a - b)
+
+          const barOne = compIn(0)
+          expect(barOne.length, `${feel.id}:${seed}`).toBeGreaterThan(0)
+          expect(barOne, `${feel.id}:${seed}`).toEqual(pitchClassesOf(music.chord))
+          for (let pass = 1; pass < feel.passes; pass++) {
+            expect(compIn(pass * 4), `${feel.id}:${seed} bar ${pass * 4 + 1}`).toEqual(barOne)
+          }
+        }
+      })
+    })
+  }
+})
+
+// Feature 9, Epic 1, Step B4 — R4, AC4. The passes carry the same figure, so
+// the only thing that can stop a listener pointing at the moment it repeats is
+// that each one is a different performance of it: its own timing and velocity
+// deviations, drawn from its own generator.
+describe('buildEvents — every pass is a different take — R4, AC4', () => {
+  /** Every event's deviation from the grid, and its velocity, grouped by pass. */
+  function takesOf(feelId: string, seed: number) {
+    const feel = templateById(feelId)
+    const { events, music } = buildEvents({ id: 'g', template: feelId, seed }, feel)
+    const step = ((60 / music.bpm) * 4) / feel.subdivision
+    const stepsPerPass = feel.subdivision * 4
+
+    const rows = Array.from(
+      { length: feel.passes },
+      () => [] as { key: string; timing: number; velocity: number }[],
+    )
+    for (const event of events) {
+      const onGrid = Math.round(event.timeSec / step)
+      rows[Math.floor(onGrid / stepsPerPass)].push({
+        key: `${event.voice}@${onGrid % stepsPerPass}:${event.midi ?? '-'}`,
+        timing: event.timeSec - onGrid * step,
+        velocity: event.velocity,
+      })
+    }
+
+    // Ordered by grid position rather than by emission order: the final sort is
+    // by onset, so two passes of the same figure order their simultaneous
+    // events differently precisely BECAUSE they are played differently.
+    return rows.map((row) => {
+      const sorted = [...row].sort((a, b) => (a.key < b.key ? -1 : a.key > b.key ? 1 : 0))
+      return {
+        grid: sorted.map((r) => r.key),
+        timing: sorted.map((r) => r.timing),
+        velocity: sorted.map((r) => r.velocity),
+      }
+    })
+  }
+
+  it('puts every pass on the same grid but plays none of them the same way', () => {
+    for (const feel of allTemplates()) {
+      for (let seed = 1; seed <= 4; seed++) {
+        const takes = takesOf(feel.id, seed)
+        expect(takes.length, feel.id).toBe(feel.passes)
+
+        for (let pass = 1; pass < takes.length; pass++) {
+          const where = `${feel.id}:${seed} pass ${pass}`
+          expect(takes[pass].grid, where).toEqual(takes[0].grid)
+          expect(takes[pass].timing, where).not.toEqual(takes[0].timing)
+          expect(takes[pass].velocity, where).not.toEqual(takes[0].velocity)
+        }
+      }
+    }
+  })
+
+  it('draws each pass from its own generator, reproducibly', () => {
+    // R4 is a different performance every pass, not a random one: the same spec
+    // must still render the same audio (AC4 of Epic 2, unchanged).
+    for (const feel of allTemplates()) {
+      const a = buildEvents({ id: 'one', template: feel.id, seed: 5 }, feel)
+      const b = buildEvents({ id: 'another', template: feel.id, seed: 5 }, feel)
+      expect(a.events, feel.id).toEqual(b.events)
+    }
+  })
+
+  it('keeps every pass’s deviations inside the template’s declared bounds', () => {
+    for (const feel of allTemplates()) {
+      const flat = buildEvents(
+        { id: 'g', template: feel.id, seed: 3 },
+        { ...feel, humanize: { timingMs: 0, velocity: 0 } },
+      )
+      const loose = buildEvents({ id: 'g', template: feel.id, seed: 3 }, feel)
+      const bound = feel.humanize.timingMs / 1000
+      expect(flat.events, feel.id).toHaveLength(loose.events.length)
+
+      for (const { before, after } of pairUp(flat.events, loose.events)) {
+        expect(Math.abs(after.timeSec - before.timeSec), feel.id).toBeLessThanOrEqual(
+          bound + 1e-9,
+        )
+        expect(
+          Math.abs(after.velocity - before.velocity),
+          feel.id,
+        ).toBeLessThanOrEqual(feel.humanize.velocity + 1e-9)
       }
     }
   })

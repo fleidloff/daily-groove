@@ -314,10 +314,11 @@ formerly crossing from `scripts/grooves/` into
 
 **`src/lib/hash.ts` is frozen. Editing it is a re-release, not a refactor.** The
 same `hashString` seeds the generator's RNG *and* picks the player's groove of
-the day. Change one character and both move: every groove re-renders to
-different audio, breaking the freeze rule in `scripts/grooves/README.md`, and
-every past date is reassigned a different puzzle from the one the player was
-actually shown. It was duplicated across the boundary until Epic 3, held
+the day. Re-rendering a groove is a normal operation — the audio is output, and
+`scripts/grooves/README.md` says so. The date mapping is not: change one
+character of the hash and every past date is reassigned a different puzzle from
+the one the player was actually shown, so a stored result describes music that
+player never saw. It was duplicated across the boundary until Epic 3, held
 together by a comment in `scripts/grooves/rng.ts` claiming the two copies were
 "byte-for-byte the same", with nothing checking it. `src/lib/hash.test.ts` now
 pins the function against a fixed input/output table. When that table fails, the
@@ -332,7 +333,7 @@ reads source has to keep itself out of its own search.
 
 *human-checked* — motivated by `src/lib/hash.ts`, `src/lib/hash.test.ts` and
 `scripts/grooves/rng.ts`. A linter can forbid an import; it cannot know that
-this particular function's output is baked into sixteen committed mp3s.
+this particular function's output decides which puzzle every past date showed.
 
 ---
 
@@ -500,7 +501,7 @@ would catch it. Five of them in particular are conventions a reviewer owns:
 | No I/O adapter is constructed in a component file | [Anti-patterns](#anti-patterns-and-their-fixes) | `new Audio(...)` is a constructor call, not an import |
 | Generated data lives in `data/`, never `lib/` | [Feature slices](#feature-slices) | nothing in a file's text says it was generated |
 | Feature components are grouped by screen region | [Feature slices](#feature-slices) | which region a component belongs to is a judgement about the screen |
-| `src/lib/hash.ts` is frozen | [Shared code](#shared-code-srclib) | a linter cannot know this function's output is baked into sixteen committed mp3s |
+| `src/lib/hash.ts` is frozen | [Shared code](#shared-code-srclib) | a linter cannot know this function's output decides which puzzle every past date showed |
 
 Several human-checked rules do have a test standing behind them —
 `src/components/structure.test.ts`,

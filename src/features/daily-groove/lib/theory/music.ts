@@ -74,11 +74,23 @@ const BEATS_PER_BAR = 4
  * rendered exactly `bars` bars at exactly `bpm`, and it wrote both into the
  * manifest.
  *
+ * The length measured is `loopBars`, not `bars`. A groove is several passes of
+ * the same four-bar figure, so the file's loop is longer than the figure the
+ * transport draws: `bars` is the musical figure and `loopBars` is what was
+ * rendered. Bracketing the figure would cut a sixteen-bar groove off a quarter
+ * of the way in. An entry written before the field existed carries no
+ * `loopBars`, and falls back to `bars` — which is exactly right for it, because
+ * back then the two were the same number.
+ *
  * Returns 0 for a tempo that cannot describe a length, so callers can fall back
  * rather than divide by zero.
  */
 export function loopSecondsOf(groove: Groove): number {
   if (!Number.isFinite(groove.bpm) || groove.bpm <= 0) return 0
-  if (!Number.isFinite(groove.bars) || groove.bars <= 0) return 0
-  return (groove.bars * BEATS_PER_BAR * 60) / groove.bpm
+  const loopBars =
+    Number.isFinite(groove.loopBars) && (groove.loopBars ?? 0) > 0
+      ? (groove.loopBars as number)
+      : groove.bars
+  if (!Number.isFinite(loopBars) || loopBars <= 0) return 0
+  return (loopBars * BEATS_PER_BAR * 60) / groove.bpm
 }

@@ -154,3 +154,33 @@ describe('every template', () => {
     }
   })
 })
+
+// Feature 9, Epic 1, Step B1 — R2, R2a, AC2. A groove is several passes of the
+// same four-bar figure, and how many is a property of the feel: the count sits
+// beside the tempo range that causes the spread, so a slow feel can declare
+// fewer without every other feel getting shorter.
+describe('the pass count — R2, R2a, AC2', () => {
+  it('declares a whole number of passes on every template', () => {
+    for (const template of allTemplates()) {
+      expect(Number.isInteger(template.passes), template.id).toBe(true)
+    }
+  })
+
+  it('never declares fewer than two passes', () => {
+    // One pass is a loop that repeats itself byte for byte — the behaviour
+    // passes exist to replace (R2a).
+    for (const template of allTemplates()) {
+      expect(template.passes, template.id).toBeGreaterThanOrEqual(2)
+    }
+  })
+
+  it('lets the slow feel declare fewer passes than the fast ones', () => {
+    // R2: templates may differ. Half-time's 68–80 bpm makes four passes a
+    // ~56-second file, so it declares two.
+    const counts = new Set(allTemplates().map((t) => t.passes))
+    expect(counts.size).toBeGreaterThan(1)
+    expect(templateById('half-time').passes).toBeLessThan(
+      templateById('straight-funk').passes,
+    )
+  })
+})

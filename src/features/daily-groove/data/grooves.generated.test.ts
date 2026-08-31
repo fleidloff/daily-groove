@@ -258,3 +258,63 @@ describe('the catalogue is a real rotation', () => {
     )
   })
 })
+
+/**
+ * The answers as they stood before feature-9 re-rendered the catalogue.
+ *
+ * This is a regression guard, not a description. Feature-9 changes how every
+ * groove *sounds* — passes, instruments, timing, voicings, fills — and none of
+ * that may change what a groove *is*, because a player's stored history refers
+ * to grooves by id. A record of solving `groove-07` has to keep describing the
+ * music it described when they solved it.
+ *
+ * The generator guarantees this by construction: the stream that draws tempo,
+ * root, flavour and harmony keeps the label `events` and its draw order, and
+ * every later change draws from `rhythm` instead. This table is what proves the
+ * guarantee held.
+ *
+ * When it fails, the fix is the generator's draw order — never this table.
+ */
+const ANSWERS_BEFORE_FEATURE_9 = [
+  { id: 'groove-01', bpm: 105, scale: 'C mixolydian', chord: 'C7', progression: 'C7–Em7♭5–B♭maj7–Fmaj7', root: 'C', flavour: 'Mixolydian' },
+  { id: 'groove-02', bpm: 96, scale: 'E dorian', chord: 'Em7', progression: 'Em7–Bm7–C♯m7♭5', root: 'E', flavour: 'Dorian' },
+  { id: 'groove-03', bpm: 103, scale: 'E♭ dorian', chord: 'E♭m7', progression: 'E♭m7–A♭7–Fm7', root: 'E♭', flavour: 'Dorian' },
+  { id: 'groove-04', bpm: 103, scale: 'E mixolydian', chord: 'E7', progression: 'E7–Amaj7–Bm7–Amaj7', root: 'E', flavour: 'Mixolydian' },
+  { id: 'groove-07', bpm: 91, scale: 'G aeolian', chord: 'Gm7', progression: 'Gm7–B♭maj7–Cm7', root: 'G', flavour: 'Aeolian' },
+  { id: 'groove-08', bpm: 91, scale: 'F♯ aeolian', chord: 'F♯m7', progression: 'F♯m7–Amaj7–A♭m7♭5', root: 'F♯', flavour: 'Aeolian' },
+  { id: 'groove-09', bpm: 126, scale: 'C♯ lydian', chord: 'C♯maj7', progression: 'C♯maj7–E♭7–Fm7–B♭m7', root: 'C♯', flavour: 'Lydian' },
+  { id: 'groove-10', bpm: 121, scale: 'F lydian', chord: 'Fmaj7', progression: 'Fmaj7–Am7–G7–Dm7', root: 'F', flavour: 'Lydian' },
+  { id: 'groove-11', bpm: 120, scale: 'B ionian', chord: 'Bmaj7', progression: 'Bmaj7–Emaj7–C♯m7', root: 'B', flavour: 'Ionian' },
+  { id: 'groove-12', bpm: 130, scale: 'A ionian', chord: 'Amaj7', progression: 'Amaj7–A♭m7♭5–F♯m7', root: 'A', flavour: 'Ionian' },
+  { id: 'groove-13', bpm: 79, scale: 'A♭ phrygian', chord: 'A♭m7', progression: 'A♭m7–Amaj7–F♯m7–Amaj7', root: 'A♭', flavour: 'Phrygian' },
+  { id: 'groove-14', bpm: 72, scale: 'D phrygian', chord: 'Dm7', progression: 'Dm7–Gm7–E♭maj7', root: 'D', flavour: 'Phrygian' },
+  { id: 'groove-17', bpm: 126, scale: 'D lydian', chord: 'Dmaj7', progression: 'Dmaj7–Bm7–E7', root: 'D', flavour: 'Lydian' },
+  { id: 'groove-18', bpm: 96, scale: 'D mixolydian', chord: 'D7', progression: 'D7–Bm7–F♯m7♭5', root: 'D', flavour: 'Mixolydian' },
+  { id: 'groove-19', bpm: 79, scale: 'C♯ aeolian', chord: 'C♯m7', progression: 'C♯m7–A♭m7–B7', root: 'C♯', flavour: 'Aeolian' },
+  { id: 'groove-20', bpm: 70, scale: 'E phrygian', chord: 'Em7', progression: 'Em7–Am7–Fmaj7–Dm7', root: 'E', flavour: 'Phrygian' },
+  { id: 'groove-21', bpm: 126, scale: 'C ionian', chord: 'Cmaj7', progression: 'Cmaj7–Bm7♭5–Dm7–Bm7♭5', root: 'C', flavour: 'Ionian' },
+  { id: 'groove-22', bpm: 106, scale: 'A dorian', chord: 'Am7', progression: 'Am7–Cmaj7–D7', root: 'A', flavour: 'Dorian' },
+] as const
+
+describe('the answers feature-9 must not move', () => {
+  it('covers every groove in the catalogue', () => {
+    expect(ANSWERS_BEFORE_FEATURE_9.map((a) => a.id)).toEqual(GROOVES.map((g) => g.id))
+  })
+
+  it.each(ANSWERS_BEFORE_FEATURE_9)(
+    'renders $id with the answer it has always had',
+    (pinned) => {
+      const groove = GROOVES.find((g) => g.id === pinned.id)
+      expect(groove).toBeDefined()
+      expect({
+        id: groove!.id,
+        bpm: groove!.bpm,
+        scale: groove!.scale,
+        chord: groove!.chord,
+        progression: groove!.progression,
+        root: groove!.root,
+        flavour: groove!.flavour,
+      }).toEqual({ ...pinned })
+    },
+  )
+})

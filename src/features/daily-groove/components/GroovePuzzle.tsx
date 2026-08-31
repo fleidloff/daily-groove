@@ -140,6 +140,17 @@ function GroovePuzzleView({ groove }: { groove: Groove }) {
     [groove],
   )
 
+  // How many passes of the four-bar figure this groove's file is. The panel
+  // draws four bars whatever the file's length, so it needs this to turn a
+  // position over the whole loop into a position within a pass (F9 E1 R9a).
+  // Derived here rather than in the panel: the panel is never handed a groove,
+  // and rounding keeps an entry with no `loopBars` — where the file is exactly
+  // its figure — at 1.
+  const passes = useMemo(
+    () => Math.max(1, Math.round((groove.loopBars ?? groove.bars) / groove.bars)),
+    [groove],
+  )
+
   // One groove on the page, so the transport's own boolean is the answer — no
   // control has to ask whether the sounding groove is the one it belongs to.
   const {
@@ -259,6 +270,7 @@ function GroovePuzzleView({ groove }: { groove: Groove }) {
                 <TransportPanel
                   position={isPlaying ? position : 0}
                   isPlaying={isPlaying}
+                  passes={passes}
                 />
                 {/* The control leads and the caption follows it, rather than
                     sitting beside it in a row (E2 R4, AC3). */}

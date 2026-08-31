@@ -61,6 +61,7 @@ export function toGroove(
     root: music.root,
     flavour: displayFlavour(music.flavour),
     bars: music.bars,
+    loopBars: music.loopBars,
     headDelaySeconds,
   }
 }
@@ -107,15 +108,18 @@ export async function generate(options: GenerateOptions = {}): Promise<GenerateR
     const template = templateById(spec.template)
     const { events, music } = buildEvents(spec, template)
     // Render past the loop end, then fold the overhang back onto the start, so a
-    // cymbal ringing at bar 4 rings over bar 1 the way a real repeat would.
+    // cymbal ringing at the last bar rings over bar 1 the way a real repeat
+    // would. What is rendered is `loopBars` — every pass of the figure, not the
+    // four bars it repeats — so both renderers are given the file's length,
+    // never the figure's.
     const tracks = renderVoices(events, pack, SAMPLE_RATE, {
       id: spec.id,
-      bars: music.bars,
+      bars: music.loopBars,
       bpm: music.bpm,
       overhangBars: OVERHANG_BARS,
     })
     const master = mixTracks(tracks, template, {
-      loopBars: music.bars,
+      loopBars: music.loopBars,
       bpm: music.bpm,
     })
 

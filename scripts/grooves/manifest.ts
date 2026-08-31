@@ -17,7 +17,7 @@ const BANNER = `/**
  * change the catalogue or the generator instead.
  */`
 
-/** The eleven fields of a Groove, in the order the type declares them. */
+/** The twelve fields of a Groove, in the order the type declares them. */
 const FIELDS = [
   'id',
   'audioSrc',
@@ -29,6 +29,7 @@ const FIELDS = [
   'root',
   'flavour',
   'bars',
+  'loopBars',
   'headDelaySeconds',
 ] as const
 
@@ -48,7 +49,13 @@ function literal(value: string | number): string {
 }
 
 function renderEntry(entry: Groove): string {
-  const lines = FIELDS.map((field) => `    ${field}: ${literal(entry[field])},`)
+  // `loopBars` is optional on Groove — a manifest written before the field
+  // existed still describes a groove — so a field the entry does not carry is
+  // left out rather than written as the word `undefined`.
+  const lines = FIELDS.flatMap((field) => {
+    const value = entry[field]
+    return value === undefined ? [] : [`    ${field}: ${literal(value)},`]
+  })
   return ['  {', ...lines, '  },'].join('\n')
 }
 

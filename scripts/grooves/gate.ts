@@ -128,28 +128,37 @@ function checkHarmony(music: MusicMeta, harmony: Harmony): GateFailure | null {
   }
 }
 
-/** Too sparse to state its harmony, or so dense it turns to mush. */
+/**
+ * Too sparse to state its harmony, or so dense it turns to mush.
+ *
+ * Measured over `loopBars` — what was actually rendered — and not over `bars`,
+ * which is the four-bar figure. A groove is several passes of that figure, so
+ * dividing by the figure would report the density of one pass multiplied by the
+ * pass count and reject a perfectly playable groove for being four times as
+ * busy as it is (R13).
+ */
 function checkDensity(
   events: NoteEvent[],
   music: MusicMeta,
   template: FeelTemplate,
 ): GateFailure | null {
   const { minPerBar, maxPerBar } = template.density
+  const bars = music.loopBars
 
-  if (music.bars <= 0) {
+  if (bars <= 0) {
     return {
       check: 'density',
-      detail: `${events.length} events over ${music.bars} bars cannot be measured per bar`,
+      detail: `${events.length} events over ${bars} bars cannot be measured per bar`,
     }
   }
 
-  const perBar = events.length / music.bars
+  const perBar = events.length / bars
   if (perBar >= minPerBar && perBar <= maxPerBar) return null
 
   const direction = perBar < minPerBar ? 'below' : 'above'
   return {
     check: 'density',
-    detail: `${perBar.toFixed(2)} events per bar (${events.length} over ${music.bars} bars) is ${direction} the template's ${minPerBar}–${maxPerBar}`,
+    detail: `${perBar.toFixed(2)} events per bar (${events.length} over ${bars} bars) is ${direction} the template's ${minPerBar}–${maxPerBar}`,
   }
 }
 

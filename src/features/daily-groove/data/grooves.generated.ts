@@ -20,6 +20,7 @@ export const GROOVES: Groove[] = [
     root: 'C',
     flavour: 'Mixolydian',
     bars: 4,
+    loopBars: 16,
     headDelaySeconds: 0.025057,
   },
   {
@@ -33,6 +34,7 @@ export const GROOVES: Groove[] = [
     root: 'E',
     flavour: 'Dorian',
     bars: 4,
+    loopBars: 16,
     headDelaySeconds: 0.025057,
   },
   {
@@ -46,6 +48,7 @@ export const GROOVES: Groove[] = [
     root: 'E♭',
     flavour: 'Dorian',
     bars: 4,
+    loopBars: 16,
     headDelaySeconds: 0.025057,
   },
   {
@@ -59,6 +62,7 @@ export const GROOVES: Groove[] = [
     root: 'E',
     flavour: 'Mixolydian',
     bars: 4,
+    loopBars: 16,
     headDelaySeconds: 0.025057,
   },
   {
@@ -72,6 +76,7 @@ export const GROOVES: Groove[] = [
     root: 'G',
     flavour: 'Aeolian',
     bars: 4,
+    loopBars: 16,
     headDelaySeconds: 0.025057,
   },
   {
@@ -85,6 +90,7 @@ export const GROOVES: Groove[] = [
     root: 'F♯',
     flavour: 'Aeolian',
     bars: 4,
+    loopBars: 16,
     headDelaySeconds: 0.025057,
   },
   {
@@ -98,6 +104,7 @@ export const GROOVES: Groove[] = [
     root: 'C♯',
     flavour: 'Lydian',
     bars: 4,
+    loopBars: 16,
     headDelaySeconds: 0.025057,
   },
   {
@@ -111,6 +118,7 @@ export const GROOVES: Groove[] = [
     root: 'F',
     flavour: 'Lydian',
     bars: 4,
+    loopBars: 16,
     headDelaySeconds: 0.025057,
   },
   {
@@ -124,6 +132,7 @@ export const GROOVES: Groove[] = [
     root: 'B',
     flavour: 'Ionian',
     bars: 4,
+    loopBars: 16,
     headDelaySeconds: 0.025057,
   },
   {
@@ -137,6 +146,7 @@ export const GROOVES: Groove[] = [
     root: 'A',
     flavour: 'Ionian',
     bars: 4,
+    loopBars: 16,
     headDelaySeconds: 0.025057,
   },
   {
@@ -150,6 +160,7 @@ export const GROOVES: Groove[] = [
     root: 'A♭',
     flavour: 'Phrygian',
     bars: 4,
+    loopBars: 8,
     headDelaySeconds: 0.025057,
   },
   {
@@ -163,6 +174,7 @@ export const GROOVES: Groove[] = [
     root: 'D',
     flavour: 'Phrygian',
     bars: 4,
+    loopBars: 8,
     headDelaySeconds: 0.025057,
   },
   {
@@ -176,6 +188,7 @@ export const GROOVES: Groove[] = [
     root: 'D',
     flavour: 'Lydian',
     bars: 4,
+    loopBars: 16,
     headDelaySeconds: 0.025057,
   },
   {
@@ -189,6 +202,7 @@ export const GROOVES: Groove[] = [
     root: 'D',
     flavour: 'Mixolydian',
     bars: 4,
+    loopBars: 16,
     headDelaySeconds: 0.025057,
   },
   {
@@ -202,6 +216,7 @@ export const GROOVES: Groove[] = [
     root: 'C♯',
     flavour: 'Aeolian',
     bars: 4,
+    loopBars: 16,
     headDelaySeconds: 0.025057,
   },
   {
@@ -215,6 +230,7 @@ export const GROOVES: Groove[] = [
     root: 'E',
     flavour: 'Phrygian',
     bars: 4,
+    loopBars: 8,
     headDelaySeconds: 0.025057,
   },
   {
@@ -228,6 +244,7 @@ export const GROOVES: Groove[] = [
     root: 'C',
     flavour: 'Ionian',
     bars: 4,
+    loopBars: 16,
     headDelaySeconds: 0.025057,
   },
   {
@@ -241,6 +258,7 @@ export const GROOVES: Groove[] = [
     root: 'A',
     flavour: 'Dorian',
     bars: 4,
+    loopBars: 16,
     headDelaySeconds: 0.025057,
   },
 ]

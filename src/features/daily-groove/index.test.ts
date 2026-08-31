@@ -1,9 +1,12 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
+import { createElement } from 'react'
+import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import * as publicSurface from './index'
 import { GroovePuzzle } from './index'
 import type { Answer, Attempt, DailyResult, Flavour, Groove, Root } from './index'
+import { renderFeature, settleFeature } from './testing/renderFeature'
 
 const featureDir = resolve(process.cwd(), 'src/features/daily-groove')
 const componentDir = join(featureDir, 'components')
@@ -147,5 +150,71 @@ describe('daily-groove public surface', () => {
       pattern.test(readFileSync(file, 'utf8')),
     )
     expect(offenders).toEqual([])
+  })
+})
+
+/**
+ * Feature-9, Epic 1, Step D3 (R9a, R10; AC9, AC10).
+ *
+ * The transport cannot derive the sounding bar from position alone once the
+ * file is longer than the four-bar figure, so the page hands it a pass count
+ * derived from the groove's own two lengths. That derivation is the feature's,
+ * not the panel's — and nothing it produces reaches the screen as wording.
+ */
+describe('the composed feature and its pass count', () => {
+  /** A groove of two passes: an eight-bar file of a four-bar figure. */
+  const twoPassGroove: Groove = {
+    id: 'groove-01',
+    audioSrc: '/grooves/groove-01.mp3',
+    name: 'Velvet Pocket',
+    bpm: 98,
+    scale: 'G dorian',
+    chord: 'Gm7',
+    progression: 'Gm–C–Gm',
+    root: 'G',
+    flavour: 'Dorian',
+    bars: 4,
+    loopBars: 8,
+    headDelaySeconds: 0.025057,
+  }
+
+  async function renderGroove(groove: Groove) {
+    const result = render(createElement(GroovePuzzle, { groove }))
+    await settleFeature()
+    return result
+  }
+
+  it('renders a groove whose file is longer than its figure (R9a, AC9)', async () => {
+    await renderGroove(twoPassGroove)
+
+    // The transport is composed and satisfied: a missing pass count would
+    // leave the panel unrenderable rather than merely mis-scaled.
+    expect(screen.getByRole('progressbar')).toBeInTheDocument()
+    expect(screen.getAllByTestId('progress-divider')).toHaveLength(4 - 1)
+  })
+
+  it('still renders an entry that carries no loop length at all (R9a)', async () => {
+    // A manifest written before `loopBars` existed: one pass, drawn as today.
+    const noLoopBars: Groove = { ...twoPassGroove }
+    delete noLoopBars.loopBars
+    await renderGroove(noLoopBars)
+
+    expect(screen.getByRole('progressbar')).toBeInTheDocument()
+  })
+
+  it('names or counts no sounding pass anywhere on the page (R10, AC10)', async () => {
+    const { container } = await renderGroove(twoPassGroove)
+
+    expect(screen.queryByText(/of 4/)).toBeNull()
+    expect(screen.queryByText(/of 2/)).toBeNull()
+    expect(screen.queryByText(/pass/i)).toBeNull()
+    expect(container.textContent).not.toMatch(/\bpass(es)?\b/i)
+  })
+
+  it("says nothing about passes on today's real groove either (R10, AC10)", async () => {
+    const { container } = await renderFeature()
+
+    expect(screen.queryByText(/pass/i)).toBeNull()
+    expect(container.textContent).not.toMatch(/\bpass(es)?\b/i)
   })
 })

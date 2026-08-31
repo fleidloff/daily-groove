@@ -16,6 +16,7 @@ const ENTRY: Groove = {
   root: 'C♯',
   flavour: 'Harmonic minor',
   bars: 4,
+  loopBars: 16,
   headDelaySeconds: 0.025057,
 }
 
@@ -30,6 +31,7 @@ const SECOND: Groove = {
   root: 'E♭',
   flavour: 'Dorian',
   bars: 4,
+  loopBars: 8,
   headDelaySeconds: 0.026122,
 }
 
@@ -100,8 +102,8 @@ describe('renderManifest', () => {
     expect(source).toContain('export const GROOVES: Groove[] = [')
   })
 
-  // AC7: every entry carries all eleven fields, with the right values.
-  it('writes all eleven fields of every entry', () => {
+  // AC7: every entry carries all twelve fields, with the right values.
+  it('writes all twelve fields of every entry', () => {
     const grooves = evaluate(renderManifest([ENTRY, SECOND]))
     expect(grooves).toEqual([ENTRY, SECOND])
     for (const groove of grooves) {
@@ -118,6 +120,40 @@ describe('renderManifest', () => {
     expect(source.indexOf('bars: 4,')).toBeLessThan(
       source.indexOf('headDelaySeconds: 0.025057,'),
     )
+  })
+
+  // Feature 9, Step C1 — R7, AC8. The figure and the file are two different
+  // lengths, so the manifest states both: `bars` is the four-bar figure, and
+  // `loopBars` is how much of it the mp3 actually contains. A renderer that
+  // lists one and not the other hands the app a groove that cannot say how
+  // long it is.
+  it("writes each entry's loop length, between its bar count and its head delay", () => {
+    const source = renderManifest([ENTRY])
+    expect(source).toMatch(/^ {4}loopBars: 16,$/m)
+    expect(source.indexOf('bars: 4,')).toBeLessThan(
+      source.indexOf('loopBars: 16,'),
+    )
+    expect(source.indexOf('loopBars: 16,')).toBeLessThan(
+      source.indexOf('headDelaySeconds: 0.025057,'),
+    )
+  })
+
+  it('keeps the two lengths apart, entry by entry', () => {
+    const grooves = evaluate(renderManifest([ENTRY, SECOND]))
+    expect(grooves.map((g) => g.bars)).toEqual([4, 4])
+    expect(grooves.map((g) => g.loopBars)).toEqual([16, 8])
+  })
+
+  // `loopBars` is optional on `Groove`, so a manifest can be rendered from an
+  // entry that predates the field. It must come out as a module a human could
+  // have written, not one carrying the word `undefined`.
+  it('omits a field the entry does not carry, rather than writing undefined', () => {
+    const older: Groove = { ...ENTRY }
+    delete older.loopBars
+    const source = renderManifest([older])
+    expect(source).not.toContain('undefined')
+    expect(source).not.toContain('loopBars')
+    expect(evaluate(source)).toEqual([older])
   })
 
   it('escapes a quote inside a value rather than breaking the literal', () => {
