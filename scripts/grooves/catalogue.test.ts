@@ -27,8 +27,12 @@ const RETIRED = ['groove-05', 'groove-06', 'groove-15', 'groove-16']
 const IDS_EVER_ISSUED = 22
 
 describe('the committed catalogue', () => {
-  it('holds eighteen grooves, drawn from every template', () => {
-    expect(specs).toHaveLength(18)
+  it('draws grooves from every template', () => {
+    // Not a count. The catalogue grows whenever `grooves:add` runs, and pinning
+    // a number here only records the day the test was written. What must hold is
+    // that no feel is unrepresented — a template nothing is minted from is a
+    // feel no player ever hears.
+    expect(specs.length).toBeGreaterThanOrEqual(18)
     for (const template of allTemplates()) {
       expect(
         specs.filter((s) => s.template === template.id).length,
@@ -45,16 +49,14 @@ describe('the committed catalogue', () => {
 
   // Step B2 — R6a, AC7b. `selectSeeds` allocates from the highest number ever
   // used, never from the catalogue's length, so a groove that leaves the
-  // rotation does not free its id for different audio. The high-water mark is
-  // therefore 22 even though only eighteen grooves remain, and a re-issued id
-  // shows up here as a mark that has regressed to the count.
+  // rotation does not free its id for different audio. A re-issued id shows up
+  // here as a mark that has regressed toward the count.
   it('never re-issues an id — the high-water mark is every id ever issued', () => {
     const numbers = specs.map((s) => numberOf(s.id))
     expect(new Set(numbers).size, 'an id was issued twice').toBe(numbers.length)
-    expect(Math.max(...numbers)).toBe(IDS_EVER_ISSUED)
-    // The mark stands above the count precisely because four ids were retired
-    // and none of them came back.
-    expect(IDS_EVER_ISSUED - specs.length).toBe(RETIRED.length)
+    // The mark stands above the count by exactly the retired ids, however many
+    // grooves have been minted since. Four left the rotation and none came back.
+    expect(Math.max(...numbers) - specs.length).toBe(RETIRED.length)
   })
 
   // Step C1 — R4, AC5. The retirement is a deletion from the catalogue, not a
@@ -70,22 +72,30 @@ describe('the committed catalogue', () => {
     for (const s of specs) expect(() => templateById(s.template)).not.toThrow()
   })
 
-  // Step C3 — R5a, AC6a. Six modes, three grooves each. `blues` and
-  // `harmonic-minor` are still in their templates' flavour arrays, so the
-  // assertion is about what the catalogue carries, not about what a seed could
-  // in principle draw.
-  it('puts exactly three grooves behind each of the six modes, and none behind blues or harmonic minor', () => {
+  // Feature-9 Epic 6 widened the vocabulary from six modes to twelve, so the
+  // old "three grooves behind each of six" no longer describes the catalogue.
+  // What survives is the property that assertion existed for: every mode the
+  // game can offer has grooves behind it, and none dominates the answers.
+  it('puts grooves behind every mode its templates offer', () => {
     const counts = new Map<Flavour, number>()
     for (const { music } of built) counts.set(music.flavour, (counts.get(music.flavour) ?? 0) + 1)
-    expect([...counts.keys()].sort()).toEqual([
-      'aeolian',
-      'dorian',
-      'ionian',
-      'lydian',
-      'mixolydian',
-      'phrygian',
-    ])
-    for (const [flavour, n] of counts) expect(n, flavour).toBe(3)
+
+    const offered = new Set(allTemplates().flatMap((t) => t.flavours))
+    for (const flavour of offered) {
+      expect(counts.get(flavour) ?? 0, `${flavour} has no groove behind it`).toBeGreaterThan(0)
+    }
+    for (const flavour of counts.keys()) {
+      expect(offered, `${flavour} is not offered by any template`).toContain(flavour)
+    }
+  })
+
+  it('lets no mode dominate the answers', () => {
+    const counts = new Map<Flavour, number>()
+    for (const { music } of built) counts.set(music.flavour, (counts.get(music.flavour) ?? 0) + 1)
+    const n = [...counts.values()]
+    expect(Math.max(...n), 'one mode carries more than three times the least').toBeLessThanOrEqual(
+      Math.min(...n) * 3,
+    )
   })
 
   it('asks a different question every time — no repeated root and flavour', () => {
@@ -122,7 +132,16 @@ describe('the committed catalogue', () => {
   // no survivor re-seeded, re-templated or renumbered.
   it('leaves every first-generation survivor exactly as selectSeeds produced it', async () => {
     const { selectSeeds } = await import('./select.ts')
-    const original = selectSeeds(allTemplates(), { perTemplate: 4 })
+    const original = selectSeeds(
+      // The four that existed when these grooves were minted, not whatever the
+      // registry holds now. The subject is history: this asserts that the
+      // survivors are byte-for-byte what `selectSeeds` produced at the time.
+      // Reading the live registry made it a claim about the present, which broke
+      // the first time a template was added — and would have broken again on
+      // every one after.
+      allTemplates().slice(0, 4),
+      { perTemplate: 4 },
+    )
     expect(original).toHaveLength(16)
 
     const survivors = specs.filter((s) => numberOf(s.id) <= 16)
@@ -130,18 +149,11 @@ describe('the committed catalogue', () => {
     expect(survivors).toEqual(original.filter((s) => !RETIRED.includes(s.id)))
   })
 
-  // The six Epic 4 grooves are appended after the first generation, never
-  // interleaved into it, so the file reads as the mint history it is.
-  it('lists the grooves in issue order, with the Epic 4 mint at the end', () => {
+  // Every mint is appended after the ones before it, never interleaved, so the
+  // file reads as the mint history it is. Naming a particular batch's ids here
+  // only dated the assertion; the ordering is the claim.
+  it('lists the grooves in issue order', () => {
     const numbers = specs.map((s) => numberOf(s.id))
     expect(numbers).toEqual([...numbers].sort((a, b) => a - b))
-    expect(specs.slice(-6).map((s) => s.id)).toEqual([
-      'groove-17',
-      'groove-18',
-      'groove-19',
-      'groove-20',
-      'groove-21',
-      'groove-22',
-    ])
   })
 })

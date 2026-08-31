@@ -57,6 +57,16 @@ export const FLAVOUR_INTERVALS: Record<Flavour, number[]> = {
   Locrian: [0, 1, 3, 5, 6, 8, 10],
   'Harmonic minor': [0, 2, 3, 5, 7, 8, 11],
   Blues: [0, 3, 5, 6, 7, 10],
+  // Feature-9 Epic 6. The speller has its own table because it spells notes
+  // rather than pitch classes, and it is called unguarded by the solved panel —
+  // a mode the generator can mint and this cannot spell is a crash on that
+  // mode's day, not a missing label. These four must stay in step with
+  // `scripts/grooves/theory/scales.ts`, and
+  // `data/grooves.generated.test.ts` is the tripwire that says so.
+  'Melodic minor': [0, 2, 3, 5, 7, 9, 11],
+  'Lydian dominant': [0, 2, 4, 6, 7, 9, 10],
+  'Phrygian dominant': [0, 1, 4, 5, 7, 8, 10],
+  'Harmonic major': [0, 2, 4, 5, 7, 8, 11],
 }
 
 /**

@@ -129,3 +129,75 @@ describe('buildPools', () => {
     }
   })
 })
+
+/**
+ * The modes added when the vocabulary grew from eight to twelve, in the
+ * lower-case flavour spelling the renderer emits. Every one of them needs
+ * distractors, or the day its mode is the answer is the day the wrong options
+ * beside it are all in some other mode — which reads as a hint.
+ */
+const NEW_MODES = [
+  'melodic minor',
+  'lydian dominant',
+  'phrygian dominant',
+  'harmonic major',
+]
+
+/**
+ * The full distractor vocabulary: `buildPools` on an empty catalogue is
+ * exactly the fixed list, so the assertions below reach it without the module
+ * having to export its internals.
+ */
+const SCALE_DISTRACTORS = buildPools([]).scales
+
+describe('SCALE_DISTRACTORS', () => {
+  // AC3/AC4: each new mode is present, and present on more than one root, so
+  // the pool never has to reuse a root to fill a set.
+  it.each(NEW_MODES)('carries at least two entries for %s, on different roots', (mode) => {
+    const entries = SCALE_DISTRACTORS.filter((s) => s.endsWith(` ${mode}`))
+    expect(entries.length, `${mode}: ${entries.join(', ')}`).toBeGreaterThanOrEqual(2)
+    const roots = new Set(entries.map((s) => s.slice(0, -` ${mode}`.length)))
+    expect(roots.size, `${mode} roots: ${[...roots].join(', ')}`).toBe(entries.length)
+  })
+
+  // AC4: the accidental is the Unicode glyph the renderer emits, never ASCII.
+  // 'B♭ lydian dominant', not 'Bb lydian dominant' — a distractor spelled
+  // differently from the answers stands out as the odd one, which is a hint.
+  it('spells every accidental with ♯ or ♭, never # or b', () => {
+    for (const entry of SCALE_DISTRACTORS) {
+      const [root] = entry.split(' ')
+      expect(root, entry).not.toMatch(/[#b]/)
+      expect(root, entry).toMatch(/^[A-G][♯♭]?$/)
+    }
+  })
+
+  // AC4: the flavour is the modal name, lower case. 'A ionian', never
+  // 'A major' — feature-7 renamed the answers and left the pool behind once,
+  // and a pool whose distractors read 'A major' hands over the answer by its
+  // spelling alone.
+  it('names every flavour modally, in lower case', () => {
+    const MODAL = new Set([
+      'ionian',
+      'dorian',
+      'phrygian',
+      'lydian',
+      'mixolydian',
+      'aeolian',
+      'harmonic minor',
+      'blues',
+      ...NEW_MODES,
+    ])
+    for (const entry of SCALE_DISTRACTORS) {
+      const flavour = entry.slice(entry.indexOf(' ') + 1)
+      expect(flavour, entry).toBe(flavour.toLowerCase())
+      expect(MODAL, entry).toContain(flavour)
+    }
+  })
+
+  it('still leaves every pool with at least four distinct values', () => {
+    const pools = buildPools(ENTRIES)
+    for (const name of POOL_NAMES) {
+      expect(new Set(pools[name]).size, name).toBeGreaterThanOrEqual(4)
+    }
+  })
+})

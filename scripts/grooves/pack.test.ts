@@ -473,3 +473,213 @@ describe('the committed pack’s bass', () => {
     }
   })
 })
+
+/**
+ * Feature 9, Epic 2 — the upright piano and the cross-stick.
+ *
+ * The last two stand-ins. `comp` was a TX81Z Clavisynth and is now VSCO 2 CE's
+ * `Keys/Upright Piano`; `rim` was a woodblock and is now `Snare2_stick`, the
+ * cross-stick of the very snare drum the pack already plays. Both read the
+ * committed declaration and the committed audio from disk, because the
+ * mistakes that matter — a stereo file, a normalised layer, a note declared at
+ * a pitch it does not sound — are only visible in the bytes.
+ */
+
+/** The register `comp` is required to cover, from the PRD's R7. */
+const COMP_REGISTER = { lowest: 46, highest: 86 }
+
+describe('the committed pack’s comp', () => {
+  it('is an upright piano from VSCO 2 CE, and no Clavisynth file survives', () => {
+    const files = pitchedFilesOf('comp')
+    expect(files.length, 'comp declares no files').toBeGreaterThan(0)
+    for (const file of files) {
+      expect(file, `${file} is not an Upright Piano sample`).toMatch(
+        /^comp\/Player_dyn[123]_rr1_\d{3}\.flac$/,
+      )
+    }
+    expect(readdirSync(join(SAMPLES, 'comp')).sort()).toEqual(
+      files.map((file) => file.slice('comp/'.length)).sort(),
+    )
+  })
+
+  it('names only comp files that are on disk', () => {
+    for (const file of pitchedFilesOf('comp')) {
+      expect(existsSync(join(SAMPLES, file)), `${file} is declared but missing`).toBe(true)
+    }
+  })
+
+  it('stores every comp sample as mono 44.1 kHz FLAC', () => {
+    for (const file of pitchedFilesOf('comp')) {
+      expect(format(file), `${file} is not mono 44.1 kHz FLAC`).toBe('flac,44100,1')
+    }
+  }, 120_000)
+
+  it('starts every comp sample near silence and never leaves it silent', () => {
+    for (const file of pitchedFilesOf('comp')) {
+      const pcm = samplesOf(file)
+      expect(pcm.length, `${file} decodes to nothing`).toBeGreaterThan(0)
+      expect(Math.abs(pcm[0]), `${file} opens on a discontinuity`).toBeLessThan(0.01)
+      expect(peakOf(file), `${file} is silent`).toBeGreaterThan(0.001)
+    }
+  }, 120_000)
+
+  // VSCO's `dyn1`, `dyn2` and `dyn3` are three strikes of one key at three
+  // dynamics. A pack whose three measure the same has been normalised, and the
+  // renderer's layer choice would then carry no information at all.
+  it('leaves each note’s velocity layers un-normalised, so dyn3 is louder than dyn1', () => {
+    const notes = notesOf('comp')
+    expect(notes.length, 'comp declares no notes').toBeGreaterThan(0)
+    for (const note of notes) {
+      expect(
+        note.layers.length,
+        `comp MIDI ${note.midi} does not carry three dynamics`,
+      ).toBeGreaterThanOrEqual(3)
+      const levels = note.layers.map(levelOf)
+      for (let i = 1; i < levels.length; i += 1) {
+        expect(
+          levels[i],
+          `comp MIDI ${note.midi}: layer ${i} is not louder than layer ${i - 1} — was it normalised?`,
+        ).toBeGreaterThan(levels[i - 1])
+      }
+    }
+  }, 120_000)
+
+  it('covers the comp register with no gap wider than four semitones', () => {
+    const midi = notesOf('comp').map((note) => note.midi)
+    expect(midi.length, 'comp has too few sampled notes').toBeGreaterThanOrEqual(11)
+    for (let i = 1; i < midi.length; i += 1) {
+      expect(
+        midi[i] - midi[i - 1],
+        `comp has a ${midi[i] - midi[i - 1]}-semitone gap at MIDI ${midi[i - 1]}`,
+      ).toBeLessThanOrEqual(4)
+    }
+    // Nearest-note selection reaches two semitones either side of a sample.
+    expect(midi[0] - 2, 'comp does not reach the bottom of its register').toBeLessThanOrEqual(
+      COMP_REGISTER.lowest,
+    )
+    expect(
+      midi[midi.length - 1] + 2,
+      'comp does not reach the top of its register',
+    ).toBeGreaterThanOrEqual(COMP_REGISTER.highest)
+  })
+
+  // AC3 — sounding pitch is measured, never read off the filename. This is the
+  // assertion the Clavisynth's two-octave mislabelling bought.
+  it('declares a midi that its measured fundamental agrees with, within half a semitone', () => {
+    const notes = notesOf('comp')
+    expect(notes.length).toBeGreaterThan(0)
+    for (const note of notes) {
+      expect(typeof note.measuredHz, `comp MIDI ${note.midi} has no measuredHz`).toBe('number')
+      const measured = midiOf(note.measuredHz!)
+      expect(
+        Math.abs(measured - note.midi),
+        `comp MIDI ${note.midi} was measured at ${note.measuredHz} Hz, which sounds ${measured.toFixed(2)}`,
+      ).toBeLessThan(0.5)
+    }
+  })
+
+  /**
+   * VSCO's file index is neither a MIDI number nor a semitone offset: the
+   * filenames step by 2 where the pitch steps by 4. Pinning that relation is
+   * what stops a later note being added by reading the number off the name.
+   */
+  it('is not the pitch the file index would suggest read as a semitone offset', () => {
+    const notes = notesOf('comp')
+    const indexOf = (note: (typeof notes)[number]) =>
+      Number(note.layers[0].files[0].match(/_(\d{3})\.flac$/)![1])
+
+    for (const note of notes) {
+      expect(indexOf(note), `comp MIDI ${note.midi} is indexed as its own MIDI number`).not.toBe(
+        note.midi,
+      )
+    }
+    for (let i = 1; i < notes.length; i += 1) {
+      expect(indexOf(notes[i]) - indexOf(notes[i - 1]), 'the file index does not step by 2').toBe(2)
+      expect(notes[i].midi - notes[i - 1].midi, 'the pitch does not step by 4').toBe(4)
+    }
+  })
+
+  it('records a VSCO 2 CE Upright Piano provenance entry for every comp file', () => {
+    const recorded = new Map(committedProvenance.samples.map((s) => [s.file, s]))
+    for (const file of pitchedFilesOf('comp')) {
+      const entry = recorded.get(file)
+      expect(entry, `${file} is in the pack but not in provenance.json`).toBeDefined()
+      expect(entry!.source, `${file} does not name VSCO 2 CE`).toContain('VSCO-2-CE')
+      expect(entry!.licence).toBe('CC0')
+      expect(entry!.sourceFile).toMatch(/^Keys\/Upright Piano\//)
+    }
+  })
+})
+
+describe('the committed pack’s rim', () => {
+  it('is the cross-stick of the snare already in the pack, and no woodblock survives', () => {
+    const files = filesOf('rim')
+    expect(files.length, 'rim declares no files').toBeGreaterThan(0)
+    for (const file of files) {
+      expect(file, `${file} is not a cross-stick sample`).toMatch(/^rim\/Snare2_stick_/)
+    }
+    expect(readdirSync(join(SAMPLES, 'rim')).sort()).toEqual(
+      files.map((file) => file.slice('rim/'.length)).sort(),
+    )
+  })
+
+  it('comes off the same drum as the snare, so the kit coheres by source', () => {
+    const recorded = new Map(committedProvenance.samples.map((s) => [s.file, s]))
+    const drumOf = (file: string) => {
+      const entry = recorded.get(file)
+      expect(entry, `${file} is in the pack but not in provenance.json`).toBeDefined()
+      expect(entry!.licence).toBe('CC0')
+      return entry!.sourceFile.split('/').slice(0, 3).join('/')
+    }
+    const snare = drumOf(filesOf('snare')[0])
+    expect(snare).toBe('Membranophones/Struck Membranophones/Snare Drum, Modern 1')
+    for (const file of filesOf('rim')) {
+      expect(drumOf(file), `${file} is not the snare's own drum`).toBe(snare)
+    }
+  })
+
+  /**
+   * VCSL recorded `Snare2_stick` at one velocity only — `v1`, two round-robin
+   * alternates. Splitting those two into a soft and a hard layer would declare
+   * a dynamic the recording does not carry, which is the erasure the
+   * un-normalised pack exists to avoid. So the rim is round-robined instead,
+   * exactly as `hatOpen` is.
+   */
+  it('round-robins the one velocity the source holds, so a repeat never replays one file', () => {
+    const layers = layersOf('rim')
+    expect(layers.length, 'rim declares no layers').toBe(1)
+    expect(layers[0].maxVelocity, 'rim’s single layer does not reach full velocity').toBe(1)
+    expect(
+      layers[0].files.length,
+      'rim has one velocity layer and too few alternates',
+    ).toBeGreaterThanOrEqual(2)
+    expect(new Set(layers[0].files).size).toBe(layers[0].files.length)
+  })
+
+  /**
+   * AC10 — the README names the pack that ships. The Clavisynth and the
+   * woodblock survive elsewhere in the file as the lesson they taught, so this
+   * reads the voice-mapping table rather than the whole document.
+   */
+  it('is named in the README’s voice-mapping table, and so is the piano', () => {
+    const readme = readFileSync(join(SAMPLES, 'README.md'), 'utf8')
+    const table = readme
+      .split('\n')
+      .filter((line) => line.startsWith('| `'))
+      .join('\n')
+    expect(table).toMatch(/^\| `rim` \| .*cross-stick/m)
+    expect(table).toMatch(/^\| `comp` \| .*Upright Piano/m)
+    expect(table, 'the table still offers a woodblock').not.toMatch(/Woodblock/i)
+    expect(table, 'the table still offers a Clavisynth').not.toMatch(/Clavisynth/i)
+  })
+
+  it('stores every rim sample as mono 44.1 kHz FLAC, starting near silence and never silent', () => {
+    for (const file of filesOf('rim')) {
+      expect(format(file), `${file} is not mono 44.1 kHz FLAC`).toBe('flac,44100,1')
+      const pcm = samplesOf(file)
+      expect(pcm.length, `${file} decodes to nothing`).toBeGreaterThan(0)
+      expect(Math.abs(pcm[0]), `${file} opens on a discontinuity`).toBeLessThan(0.01)
+      expect(peakOf(file), `${file} is silent`).toBeGreaterThan(0.001)
+    }
+  }, 120_000)
+})

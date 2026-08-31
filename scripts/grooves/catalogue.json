@@ -88,5 +88,135 @@
     "id": "groove-22",
     "template": "straight-funk",
     "seed": 1464324440
+  },
+  {
+    "id": "groove-23",
+    "template": "straight-funk",
+    "seed": 1469794848
+  },
+  {
+    "id": "groove-24",
+    "template": "shuffle",
+    "seed": 1469794849
+  },
+  {
+    "id": "groove-25",
+    "template": "bright-straight",
+    "seed": 1469794850
+  },
+  {
+    "id": "groove-26",
+    "template": "half-time",
+    "seed": 1469794851
+  },
+  {
+    "id": "groove-27",
+    "template": "double-time",
+    "seed": 1469794852
+  },
+  {
+    "id": "groove-28",
+    "template": "swung-sixteenth",
+    "seed": 1469794853
+  },
+  {
+    "id": "groove-29",
+    "template": "straight-funk",
+    "seed": 1469820338
+  },
+  {
+    "id": "groove-30",
+    "template": "shuffle",
+    "seed": 1469820339
+  },
+  {
+    "id": "groove-31",
+    "template": "bright-straight",
+    "seed": 1469820340
+  },
+  {
+    "id": "groove-32",
+    "template": "half-time",
+    "seed": 1469820341
+  },
+  {
+    "id": "groove-33",
+    "template": "double-time",
+    "seed": 1469820342
+  },
+  {
+    "id": "groove-34",
+    "template": "swung-sixteenth",
+    "seed": 1469820343
+  },
+  {
+    "id": "groove-35",
+    "template": "straight-funk",
+    "seed": 1469848184
+  },
+  {
+    "id": "groove-36",
+    "template": "shuffle",
+    "seed": 1469848185
+  },
+  {
+    "id": "groove-37",
+    "template": "bright-straight",
+    "seed": 1469848186
+  },
+  {
+    "id": "groove-38",
+    "template": "half-time",
+    "seed": 1469848187
+  },
+  {
+    "id": "groove-39",
+    "template": "double-time",
+    "seed": 1469848188
+  },
+  {
+    "id": "groove-40",
+    "template": "swung-sixteenth",
+    "seed": 1469848189
+  },
+  {
+    "id": "groove-41",
+    "template": "straight-funk",
+    "seed": 1469996599
+  },
+  {
+    "id": "groove-42",
+    "template": "shuffle",
+    "seed": 1469996602
+  },
+  {
+    "id": "groove-43",
+    "template": "straight-funk",
+    "seed": 1470316406
+  },
+  {
+    "id": "groove-44",
+    "template": "shuffle",
+    "seed": 1470316408
+  },
+  {
+    "id": "groove-45",
+    "template": "bright-straight",
+    "seed": 1470316412
+  },
+  {
+    "id": "groove-46",
+    "template": "half-time",
+    "seed": 1470316414
+  },
+  {
+    "id": "groove-47",
+    "template": "double-time",
+    "seed": 1470316417
+  },
+  {
+    "id": "groove-48",
+    "template": "swung-sixteenth",
+    "seed": 1470316419
   }
 ]

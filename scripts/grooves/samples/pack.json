@@ -107,19 +107,10 @@
     "rim": {
       "layers": [
         {
-          "maxVelocity": 0.5,
-          "files": [
-            "rim/wood_click_pp_rr1.flac",
-            "rim/wood_click_pp_rr2.flac",
-            "rim/wood_click_pp_rr3.flac"
-          ]
-        },
-        {
           "maxVelocity": 1.0,
           "files": [
-            "rim/wood_click_f_rr1.flac",
-            "rim/wood_click_f_rr2.flac",
-            "rim/wood_click_ff.flac"
+            "rim/Snare2_stick_v1_rr1_Mid.flac",
+            "rim/Snare2_stick_v1_rr2_Mid.flac"
           ]
         }
       ]
@@ -320,231 +311,265 @@
     "comp": {
       "notes": [
         {
-          "midi": 48,
+          "midi": 45,
+          "measuredHz": 109.27,
           "layers": [
             {
               "maxVelocity": 0.45,
               "files": [
-                "comp/Clavisynth_C1_vl1.flac"
+                "comp/Player_dyn1_rr1_012.flac"
               ]
             },
             {
               "maxVelocity": 0.8,
               "files": [
-                "comp/Clavisynth_C1_vl2.flac"
+                "comp/Player_dyn2_rr1_012.flac"
               ]
             },
             {
               "maxVelocity": 1.0,
               "files": [
-                "comp/Clavisynth_C1_vl3.flac"
+                "comp/Player_dyn3_rr1_012.flac"
               ]
             }
           ]
         },
         {
-          "midi": 52,
+          "midi": 49,
+          "measuredHz": 138.45,
           "layers": [
             {
               "maxVelocity": 0.45,
               "files": [
-                "comp/Clavisynth_E1_vl1.flac"
+                "comp/Player_dyn1_rr1_014.flac"
               ]
             },
             {
               "maxVelocity": 0.8,
               "files": [
-                "comp/Clavisynth_E1_vl2.flac"
+                "comp/Player_dyn2_rr1_014.flac"
               ]
             },
             {
               "maxVelocity": 1.0,
               "files": [
-                "comp/Clavisynth_E1_vl3.flac"
+                "comp/Player_dyn3_rr1_014.flac"
               ]
             }
           ]
         },
         {
-          "midi": 56,
+          "midi": 53,
+          "measuredHz": 174.4,
           "layers": [
             {
               "maxVelocity": 0.45,
               "files": [
-                "comp/Clavisynth_G#1_vl1.flac"
+                "comp/Player_dyn1_rr1_016.flac"
               ]
             },
             {
               "maxVelocity": 0.8,
               "files": [
-                "comp/Clavisynth_G#1_vl2.flac"
+                "comp/Player_dyn2_rr1_016.flac"
               ]
             },
             {
               "maxVelocity": 1.0,
               "files": [
-                "comp/Clavisynth_G#1_vl3.flac"
+                "comp/Player_dyn3_rr1_016.flac"
               ]
             }
           ]
         },
         {
-          "midi": 60,
+          "midi": 57,
+          "measuredHz": 219.94,
           "layers": [
             {
               "maxVelocity": 0.45,
               "files": [
-                "comp/Clavisynth_C2_vl1.flac"
+                "comp/Player_dyn1_rr1_018.flac"
               ]
             },
             {
               "maxVelocity": 0.8,
               "files": [
-                "comp/Clavisynth_C2_vl2.flac"
+                "comp/Player_dyn2_rr1_018.flac"
               ]
             },
             {
               "maxVelocity": 1.0,
               "files": [
-                "comp/Clavisynth_C2_vl3.flac"
+                "comp/Player_dyn3_rr1_018.flac"
               ]
             }
           ]
         },
         {
-          "midi": 64,
+          "midi": 61,
+          "measuredHz": 277.48,
           "layers": [
             {
               "maxVelocity": 0.45,
               "files": [
-                "comp/Clavisynth_E2_vl1.flac"
+                "comp/Player_dyn1_rr1_020.flac"
               ]
             },
             {
               "maxVelocity": 0.8,
               "files": [
-                "comp/Clavisynth_E2_vl2.flac"
+                "comp/Player_dyn2_rr1_020.flac"
               ]
             },
             {
               "maxVelocity": 1.0,
               "files": [
-                "comp/Clavisynth_E2_vl3.flac"
+                "comp/Player_dyn3_rr1_020.flac"
               ]
             }
           ]
         },
         {
-          "midi": 68,
+          "midi": 65,
+          "measuredHz": 349.31,
           "layers": [
             {
               "maxVelocity": 0.45,
               "files": [
-                "comp/Clavisynth_G#2_vl1.flac"
+                "comp/Player_dyn1_rr1_022.flac"
               ]
             },
             {
               "maxVelocity": 0.8,
               "files": [
-                "comp/Clavisynth_G#2_vl2.flac"
+                "comp/Player_dyn2_rr1_022.flac"
               ]
             },
             {
               "maxVelocity": 1.0,
               "files": [
-                "comp/Clavisynth_G#2_vl3.flac"
+                "comp/Player_dyn3_rr1_022.flac"
               ]
             }
           ]
         },
         {
-          "midi": 72,
+          "midi": 69,
+          "measuredHz": 440.72,
           "layers": [
             {
               "maxVelocity": 0.45,
               "files": [
-                "comp/Clavisynth_C3_vl1.flac"
+                "comp/Player_dyn1_rr1_024.flac"
               ]
             },
             {
               "maxVelocity": 0.8,
               "files": [
-                "comp/Clavisynth_C3_vl2.flac"
+                "comp/Player_dyn2_rr1_024.flac"
               ]
             },
             {
               "maxVelocity": 1.0,
               "files": [
-                "comp/Clavisynth_C3_vl3.flac"
+                "comp/Player_dyn3_rr1_024.flac"
               ]
             }
           ]
         },
         {
-          "midi": 76,
+          "midi": 73,
+          "measuredHz": 555.77,
           "layers": [
             {
               "maxVelocity": 0.45,
               "files": [
-                "comp/Clavisynth_E3_vl1.flac"
+                "comp/Player_dyn1_rr1_026.flac"
               ]
             },
             {
               "maxVelocity": 0.8,
               "files": [
-                "comp/Clavisynth_E3_vl2.flac"
+                "comp/Player_dyn2_rr1_026.flac"
               ]
             },
             {
               "maxVelocity": 1.0,
               "files": [
-                "comp/Clavisynth_E3_vl3.flac"
+                "comp/Player_dyn3_rr1_026.flac"
               ]
             }
           ]
         },
         {
-          "midi": 80,
+          "midi": 77,
+          "measuredHz": 699.08,
           "layers": [
             {
               "maxVelocity": 0.45,
               "files": [
-                "comp/Clavisynth_G#3_vl1.flac"
+                "comp/Player_dyn1_rr1_028.flac"
               ]
             },
             {
               "maxVelocity": 0.8,
               "files": [
-                "comp/Clavisynth_G#3_vl2.flac"
+                "comp/Player_dyn2_rr1_028.flac"
               ]
             },
             {
               "maxVelocity": 1.0,
               "files": [
-                "comp/Clavisynth_G#3_vl3.flac"
+                "comp/Player_dyn3_rr1_028.flac"
               ]
             }
           ]
         },
         {
-          "midi": 84,
+          "midi": 81,
+          "measuredHz": 882.73,
           "layers": [
             {
               "maxVelocity": 0.45,
               "files": [
-                "comp/Clavisynth_C4_vl1.flac"
+                "comp/Player_dyn1_rr1_030.flac"
               ]
             },
             {
               "maxVelocity": 0.8,
               "files": [
-                "comp/Clavisynth_C4_vl2.flac"
+                "comp/Player_dyn2_rr1_030.flac"
               ]
             },
             {
               "maxVelocity": 1.0,
               "files": [
-                "comp/Clavisynth_C4_vl3.flac"
+                "comp/Player_dyn3_rr1_030.flac"
+              ]
+            }
+          ]
+        },
+        {
+          "midi": 85,
+          "measuredHz": 1117.2,
+          "layers": [
+            {
+              "maxVelocity": 0.45,
+              "files": [
+                "comp/Player_dyn1_rr1_032.flac"
+              ]
+            },
+            {
+              "maxVelocity": 0.8,
+              "files": [
+                "comp/Player_dyn2_rr1_032.flac"
+              ]
+            },
+            {
+              "maxVelocity": 1.0,
+              "files": [
+                "comp/Player_dyn3_rr1_032.flac"
               ]
             }
           ]

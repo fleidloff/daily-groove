@@ -1785,3 +1785,81 @@ describe('buildEvents — the last pass ends with a fill — R5, R6, R7, R8, R9,
     })
   })
 })
+
+// Feature-9, Epic 6, Step B3 — R1, AC1. The two feels Epic 6 added play, and
+// what they play survives the gate.
+//
+// Every other suite in this file reasons about events. This one renders them:
+// a template is a set of numbers, and the only proof that a *new* set of them
+// is a groove rather than a plausible-looking table is to put it through the
+// same stages the pipeline runs and ask the gate. It uses the committed sample
+// pack for the same reason `gate.test.ts` does — the seam check is calibrated
+// for real samples, and the synthesized stand-in fails it on events the pack
+// renders cleanly.
+describe('the feels Epic 6 added — R1, AC1', () => {
+  const SAMPLE_RATE = 44100
+  const OVERHANG_BARS = 1
+  const NEW_FEELS = ['double-time', 'swung-sixteenth']
+
+  it('registers both of them', () => {
+    for (const id of NEW_FEELS) expect(templateById(id).id).toBe(id)
+  })
+
+  for (const id of NEW_FEELS) {
+    describe(id, () => {
+      const feel = templateById(id)
+
+      it('renders a groove the gate accepts', async () => {
+        const { loadPack } = await import('./pack.ts')
+        const { renderVoices } = await import('./voices.ts')
+        const { mixTracks } = await import('./mix.ts')
+        const { gateCandidate } = await import('./gate.ts')
+        const { fileURLToPath } = await import('node:url')
+        const pack = await loadPack(fileURLToPath(new URL('./samples', import.meta.url)))
+
+        for (const seed of [1, 2, 3]) {
+          const spec: GrooveSpec = { id: `${id}-${seed}`, template: id, seed }
+          const { events, music, harmony } = buildEvents(spec, feel)
+          expect(events.length, `${id}:${seed} renders nothing`).toBeGreaterThan(0)
+
+          const tracks = renderVoices(events, pack, SAMPLE_RATE, {
+            id: spec.id,
+            bars: music.loopBars,
+            bpm: music.bpm,
+            passes: music.loopBars / music.bars,
+            overhangBars: OVERHANG_BARS,
+          })
+          const pcm = mixTracks(tracks, feel, { loopBars: music.loopBars, bpm: music.bpm })
+          const failure = gateCandidate({ pcm, events, music, harmony, template: feel })
+          expect(failure && `${failure.check}: ${failure.detail}`, `${id}:${seed}`).toBeNull()
+        }
+      })
+    })
+  }
+})
+
+// Feature-9, Epic 6, Step B1 — R1, AC1. A template's `density` band is the
+// gate's only opinion about how busy a groove may be, and it is hand-written.
+// A band that does not admit what its own feel renders rejects every groove
+// minted from it — which shows up as `grooves:add` quietly failing rather than
+// as a broken test, so the check belongs here.
+describe('every template’s density band admits its own grooves', () => {
+  for (const feel of allTemplates()) {
+    it(`${feel.id} renders inside its declared band`, () => {
+      let lowest = Infinity
+      let highest = -Infinity
+      for (let seed = 1; seed <= 120; seed += 1) {
+        const { events, music } = buildEvents({ id: 'g', template: feel.id, seed }, feel)
+        const perBar = events.length / music.loopBars
+        lowest = Math.min(lowest, perBar)
+        highest = Math.max(highest, perBar)
+      }
+      expect(lowest, `${feel.id} renders sparser than its floor`).toBeGreaterThanOrEqual(
+        feel.density.minPerBar,
+      )
+      expect(highest, `${feel.id} renders denser than its ceiling`).toBeLessThanOrEqual(
+        feel.density.maxPerBar,
+      )
+    })
+  }
+})

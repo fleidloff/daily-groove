@@ -100,6 +100,16 @@ const harmonicMinor: ValidityRule = ({ scalePitchClasses, chordPitchClasses, deg
 /**
  * One rule per flavour the game offers. Adding a flavour means adding a row
  * here, never loosening a rule that already holds.
+ *
+ * The four Epic 6 added all take `strictDiatonic`, and that is a statement
+ * rather than a default. Each of them already contains, as an ordinary scale
+ * tone, the alteration that gives it its character — melodic minor's raised
+ * seventh, lydian dominant's ♯4, phrygian dominant's ♭2, harmonic major's ♭6 —
+ * so the chords that make each one recognisable fall straight out of strict
+ * membership. `harmonicMinor` and `blues` exist because their idiomatic chords
+ * reach *outside* their scales; none of these four does, so giving them a
+ * looser reading would admit borrowed chords the mode was never chosen for and
+ * blur exactly the distinctions the answer row asks a player to hear.
  */
 export const VALIDITY: Record<Flavour, ValidityRule> = {
   ionian: strictDiatonic,
@@ -110,6 +120,10 @@ export const VALIDITY: Record<Flavour, ValidityRule> = {
   phrygian: strictDiatonic,
   'harmonic-minor': harmonicMinor,
   blues,
+  'melodic-minor': strictDiatonic,
+  'lydian-dominant': strictDiatonic,
+  'phrygian-dominant': strictDiatonic,
+  'harmonic-major': strictDiatonic,
 }
 
 /** The distinct pitch classes of a set of MIDI numbers, ascending. */

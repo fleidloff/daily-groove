@@ -4,6 +4,8 @@ import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import type { Groove } from '../../src/lib/groove.ts'
 import { renderManifest, writeManifest } from './manifest.ts'
+import { allTemplates } from './templates/index.ts'
+import { displayFlavour } from './cli.ts'
 
 const ENTRY: Groove = {
   id: 'groove-01',
@@ -318,36 +320,52 @@ describe('the committed manifest', () => {
     return groups
   }
 
-  it('holds eighteen grooves', () => {
-    expect(grooves).toHaveLength(18)
-  })
-
-  it('groups into exactly six modes of three', () => {
+  it('holds a groove for every mode, and lets none dominate', () => {
+    // Neither a count nor a fixed mode list: both only record the day they were
+    // written, and the catalogue grows every time `grooves:add` runs. What has
+    // to hold is that each mode the game can ask about has grooves behind it,
+    // and that the older modes have not crowded out the newer ones — a rotation
+    // where one answer is six times likelier than another is a worse quiz.
     const groups = byFlavour()
-    expect(groups.size, [...groups.keys()].sort().join(', ')).toBe(6)
-    for (const [flavour, group] of groups) expect(group.length, flavour).toBe(3)
+    const sizes = [...groups.values()].map((g) => g.length)
+    expect(groups.size, 'the manifest carries fewer modes than expected').toBeGreaterThanOrEqual(
+      12,
+    )
+    expect(Math.max(...sizes)).toBeLessThanOrEqual(Math.min(...sizes) * 3)
   })
 
-  it('names the six modes and nothing else', () => {
-    expect([...byFlavour().keys()].sort()).toEqual([
-      'Aeolian',
-      'Dorian',
-      'Ionian',
-      'Lydian',
-      'Mixolydian',
-      'Phrygian',
-    ])
-  })
-
-  it('offers no groove whose flavour is Blues or Harmonic minor', () => {
-    for (const groove of grooves) {
-      expect(['Blues', 'Harmonic minor'], groove.id).not.toContain(groove.flavour)
+  // Feature-9 Epic 6 took the vocabulary from six modes to twelve, so listing
+  // them here would only date the assertion again. The claim that matters is
+  // that the manifest names nothing the templates do not offer — a flavour in
+  // the manifest with no template behind it is a groove nobody can be asked for
+  // honestly.
+  it('names only modes the templates offer', () => {
+    const offered = new Set(allTemplates().flatMap((t) => t.flavours).map(displayFlavour))
+    for (const flavour of byFlavour().keys()) {
+      expect(offered, `${flavour} is in the manifest but no template offers it`).toContain(flavour)
     }
   })
 
-  it('spells every scale modally, with no major or minor left in it', () => {
+  // Feature-7 removed the blues and harmonic-minor grooves from the catalogue
+  // while leaving both in their templates' flavour arrays, so the pair stayed
+  // mintable and ungraded — which was a live crash in simple mode waiting on the
+  // day either came up. Feature-9 Epic 6 grades them, and the catalogue carries
+  // them again. This is the assertion that reversed; it is kept, inverted, so
+  // the reversal is visible rather than an absence.
+  it('carries the blues and harmonic-minor grooves its templates offer', () => {
+    const flavours = new Set(grooves.map((g) => g.flavour))
+    expect(flavours, 'shuffle offers blues but nothing is minted in it').toContain('Blues')
+    expect(flavours, 'half-time offers harmonic minor').toContain('Harmonic minor')
+  })
+
+  // "C major" and "C minor" were the feature-7 spellings this replaced. The two
+  // words survive only inside a mode's own name — harmonic minor, melodic minor,
+  // harmonic major — where they are part of the name rather than a substitute
+  // for one.
+  it('spells every scale modally, with no bare major or minor left in it', () => {
     for (const groove of grooves) {
-      expect(groove.scale, groove.id).not.toMatch(/\b(major|minor)\b/)
+      const bare = groove.scale.replace(/\b(harmonic|melodic) (minor|major)\b/g, '')
+      expect(bare, groove.id).not.toMatch(/\b(major|minor)\b/)
     }
   })
 })

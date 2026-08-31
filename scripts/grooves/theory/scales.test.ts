@@ -11,7 +11,14 @@ const ALL: Flavour[] = [
   'phrygian',
   'harmonic-minor',
   'blues',
+  'melodic-minor',
+  'lydian-dominant',
+  'phrygian-dominant',
+  'harmonic-major',
 ]
+
+/** The four Epic 6 added, on top of the eight that shipped before it. */
+const ADDED: Flavour[] = ['melodic-minor', 'lydian-dominant', 'phrygian-dominant', 'harmonic-major']
 
 describe('intervalsFor', () => {
   it('knows the natural minor', () => {
@@ -31,7 +38,14 @@ describe('intervalsFor', () => {
     expect(intervalsFor('harmonic-minor')).toEqual([0, 2, 3, 5, 7, 8, 11])
   })
 
-  it('covers all eight flavours with ascending, distinct, in-octave intervals', () => {
+  it('knows the four modes Epic 6 added', () => {
+    expect(intervalsFor('melodic-minor')).toEqual([0, 2, 3, 5, 7, 9, 11])
+    expect(intervalsFor('lydian-dominant')).toEqual([0, 2, 4, 6, 7, 9, 10])
+    expect(intervalsFor('phrygian-dominant')).toEqual([0, 1, 4, 5, 7, 8, 10])
+    expect(intervalsFor('harmonic-major')).toEqual([0, 2, 4, 5, 7, 8, 11])
+  })
+
+  it('covers all twelve flavours with ascending, distinct, in-octave intervals', () => {
     expect(FLAVOURS).toEqual(ALL)
     for (const flavour of ALL) {
       const intervals = intervalsFor(flavour)
@@ -91,6 +105,15 @@ describe('scaleName', () => {
   it('spells the hyphenated flavour as words', () => {
     expect(scaleName('A', 'harmonic-minor')).toBe('A harmonic minor')
   })
+
+  it('spells the four hyphenated modes Epic 6 added as words', () => {
+    // The ids stay hyphenated so `scaleName`'s existing replacement is all the
+    // display spelling needs — the same bargain 'harmonic-minor' already made.
+    expect(scaleName('C', 'melodic-minor')).toBe('C melodic minor')
+    expect(scaleName('C', 'lydian-dominant')).toBe('C lydian dominant')
+    expect(scaleName('E♭', 'phrygian-dominant')).toBe('E♭ phrygian dominant')
+    expect(scaleName('A', 'harmonic-major')).toBe('A harmonic major')
+  })
 })
 
 describe('pitchesOf', () => {
@@ -112,5 +135,62 @@ describe('pitchesOf', () => {
         expect([...pcs].sort((a, b) => a - b)).toEqual(pcs)
       }
     }
+  })
+})
+
+/**
+ * Epic 6 — twelve modes, not eight. The gate every candidate had to clear is
+ * the perfect fifth: without it `chordsForScale` can build no nameable tonic
+ * and the app's `familyOf` has no honest third to grade by. That is what
+ * excludes locrian and every symmetric scale, and it is asserted here rather
+ * than left as a comment in `scales.ts`.
+ */
+describe('the twelve-mode vocabulary', () => {
+  it('offers twelve flavours', () => {
+    expect(FLAVOURS.length).toBe(12)
+    expect(new Set(FLAVOURS).size).toBe(12)
+  })
+
+  it('does not offer locrian', () => {
+    // Its diminished fifth makes it neither family in any honest reading, and
+    // leaves `chordsForScale` no in-scale tonic to name.
+    expect(FLAVOURS).not.toContain('locrian')
+  })
+
+  it('carries the four added modes', () => {
+    for (const flavour of ADDED) expect(FLAVOURS).toContain(flavour)
+  })
+
+  it('gives every added mode ascending intervals from 0', () => {
+    for (const flavour of ADDED) {
+      const intervals = intervalsFor(flavour)
+      expect(intervals[0]).toBe(0)
+      for (let i = 1; i < intervals.length; i++) {
+        expect(intervals[i]).toBeGreaterThan(intervals[i - 1])
+        expect(intervals[i]).toBeLessThan(12)
+      }
+    }
+  })
+
+  it('gives every flavour a perfect fifth', () => {
+    for (const flavour of FLAVOURS) {
+      expect({ flavour, hasFifth: intervalsFor(flavour).includes(7) }).toEqual({
+        flavour,
+        hasFifth: true,
+      })
+    }
+  })
+
+  it('leaves the eight that shipped before it untouched', () => {
+    expect(FLAVOURS.slice(0, 8)).toEqual([
+      'ionian',
+      'aeolian',
+      'dorian',
+      'mixolydian',
+      'lydian',
+      'phrygian',
+      'harmonic-minor',
+      'blues',
+    ])
   })
 })

@@ -86,6 +86,13 @@ band rather than re-tuned after it.
   soft and a hard hit is carried by the samples themselves.
 - **R10** — Every percussive voice declares at least two velocity layers, and
   every layer at least two round-robin alternates.
+- **R10a** — Except where the recording does not carry two. `rim` is the
+  cross-stick of the pack's own snare, and VCSL holds exactly two files for it:
+  one velocity group, two takes. Splitting those takes into a soft and a hard
+  layer would declare a dynamic the recording does not have — they differ by
+  1.7 dB of take-to-take variation — which is the same thing R9 forbids, wearing
+  a different hat. The exemption is named and pinned by a test, as the `bass`
+  one is; it is not a licence to declare fewer layers than a source holds.
 - **R11** — Every file in `samples/` has an entry in `provenance.json` naming
   its original VCSL path, and `samples/LICENSE.txt` remains the single licence
   covering the whole pack.
@@ -266,10 +273,10 @@ So R3 and R4 could not both be met inside VCSL. The player's call was to bring i
 | Voice | Source | Instrument |
 | :-- | :-- | :-- |
 | `kick` | VCSL | Cajon, bass tone — **kept**, see R1 |
-| `rim` | VCSL | `Snare2_stick` — the cross-stick of the snare already in the pack |
+| `rim` | VCSL | `Snare2_stick` — the cross-stick of the snare already in the pack, one velocity group (see R10a) |
 | `snare`, `hatClosed`, `hatOpen`, `tomHigh`, `tomLow` | VCSL | unchanged |
 | `bass` | **VSCO 2 CE** | Solo Contrabass, **pizzicato** — an upright bass |
-| `comp` | **VSCO 2 CE** | Upright Piano |
+| `comp` | **VSCO 2 CE** | Upright Piano — eleven notes at 4-semitone spacing, the rule's limit |
 
 **R3 is amended: the bass is an upright, not an electric.** Q2 chose electric
 because no upright was thought to be available; one is, in VSCO 2 CE, and the

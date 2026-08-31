@@ -209,29 +209,35 @@ describe('the catalogue is a real rotation', () => {
   // Epic 4 (feature-7) took the rotation from sixteen to eighteen: six
   // replacements minted, then the two `Blues` and two `Harmonic minor` grooves
   // deleted from `catalogue.json`. The rotation only ever grew — 16 → 22 → 18.
-  it('holds eighteen grooves', () => {
-    expect(GROOVES).toHaveLength(18)
+  it('holds enough grooves for a real rotation', () => {
+    // Not a fixed count. The catalogue grows every time `grooves:add` runs, and
+    // pinning a number records the day the test was written rather than a
+    // property of the rotation.
+    expect(GROOVES.length).toBeGreaterThanOrEqual(18)
   })
 
-  it('puts exactly three grooves behind each of the six modes it offers', () => {
+  // Feature-9 Epic 6 took the vocabulary from six modes to twelve, so a fixed
+  // list of six no longer describes it. The property that list existed for is
+  // that no answer is much likelier than another.
+  it('lets no mode dominate the answers', () => {
     const counts = new Map<string, number>()
     for (const g of GROOVES) counts.set(g.flavour, (counts.get(g.flavour) ?? 0) + 1)
-    expect([...counts.keys()].sort()).toEqual([
-      'Aeolian',
-      'Dorian',
-      'Ionian',
-      'Lydian',
-      'Mixolydian',
-      'Phrygian',
-    ])
-    for (const [flavour, n] of counts) expect(n, flavour).toBe(3)
+    const n = [...counts.values()]
+    expect(counts.size, 'the catalogue carries fewer modes than expected').toBeGreaterThanOrEqual(
+      12,
+    )
+    expect(Math.max(...n)).toBeLessThanOrEqual(Math.min(...n) * 3)
   })
 
-  // The retirement is a deletion from the catalogue, not a filter in front of
-  // it: nothing downstream knows these ever existed.
-  it('offers no groove whose flavour is not a mode', () => {
+  // Feature-7 retired the blues and harmonic-minor grooves while leaving both
+  // modes in their templates, so they stayed mintable and ungraded — a crash in
+  // simple mode waiting on the day either came up. Feature-9 Epic 6 grades them
+  // and the catalogue carries them again. This assertion is inverted rather than
+  // deleted so the reversal is visible in the record.
+  it('carries every mode its own family table can grade', async () => {
+    const { familyOf } = await import('../lib/theory/families')
     for (const g of GROOVES) {
-      expect(['Blues', 'Harmonic minor'], g.id).not.toContain(g.flavour)
+      expect(() => familyOf(g.flavour), `${g.id} (${g.flavour}) cannot be graded`).not.toThrow()
     }
   })
 
@@ -297,8 +303,16 @@ const ANSWERS_BEFORE_FEATURE_9 = [
 ] as const
 
 describe('the answers feature-9 must not move', () => {
-  it('covers every groove in the catalogue', () => {
-    expect(ANSWERS_BEFORE_FEATURE_9.map((a) => a.id)).toEqual(GROOVES.map((g) => g.id))
+  it('still covers every groove it was written to protect', () => {
+    // A subset, not the whole catalogue. The table guards the eighteen that
+    // existed when feature-9 began re-rendering — grooves whose ids are already
+    // in players' stored history. Grooves minted since have no history to
+    // protect and must not be pinned, or every future mint would have to edit
+    // this table to pass.
+    const pinned = ANSWERS_BEFORE_FEATURE_9.map((a) => a.id)
+    const present = new Set(GROOVES.map((g) => g.id))
+    expect(pinned).toHaveLength(18)
+    for (const id of pinned) expect(present, `${id} has left the catalogue`).toContain(id)
   })
 
   it.each(ANSWERS_BEFORE_FEATURE_9)(

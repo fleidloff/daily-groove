@@ -16,19 +16,38 @@ export const FAMILIES: Family[] = ['Major', 'Minor']
 /**
  * Which family each mode belongs to, graded by its third.
  *
- * Total over exactly the six modes the rotation plays. Locrian is absent
- * deliberately: its fifth is diminished, so it is neither of these two answers
- * in any honest reading — which is why the catalogue no longer carries it.
+ * Total over every mode the catalogue can play, and that totality is a test
+ * rather than a convention: `families.test.ts` derives the mode list from the
+ * shipped manifest and asserts each one grades. A hardcoded list would pass on
+ * exactly the day a thirteenth mode is minted, which is the day `familyOf`
+ * starts throwing for every player in simple mode.
+ *
+ * Twelve modes, six of each family, so neither answer is the better blind
+ * guess — a mode that skewed the split was passed over when the vocabulary
+ * grew from eight to twelve.
+ *
+ * Locrian is absent deliberately, and still for the same reason: its fifth is
+ * diminished, so it is neither of these two answers in any honest reading —
+ * which is why the catalogue no longer carries it.
  */
 const FAMILY_OF: Record<string, Family> = {
   // Major third.
   Ionian: 'Major',
   Lydian: 'Major',
   Mixolydian: 'Major',
+  'Lydian dominant': 'Major',
+  'Phrygian dominant': 'Major',
+  'Harmonic major': 'Major',
   // Minor third.
   Dorian: 'Minor',
   Phrygian: 'Minor',
   Aeolian: 'Minor',
+  // Both of these were already mintable — `shuffle` offers blues and
+  // `half-time` offers harmonic minor — so their absence here was a live crash
+  // waiting on the day either came up in simple mode, not a new gap.
+  Blues: 'Minor',
+  'Harmonic minor': 'Minor',
+  'Melodic minor': 'Minor',
 }
 
 /** Thrown when a mode has no family, so the gap fails loudly. */

@@ -41,7 +41,7 @@ export const brightStraight: FeelTemplate = {
     snare: -8,
     hatClosed: -11,
     hatOpen: -12,
-    rim: -14,
+    rim: -4,
     bass: -3,
     comp: -8,
   },

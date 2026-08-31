@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Flavour, VoiceName } from '../types.ts'
-import { FLAVOURS } from '../theory/scales.ts'
+import { FLAVOURS, INTERVALS } from '../theory/scales.ts'
 import { TEMPLATES, allTemplates, templateById } from './index.ts'
 
 /** Half of one subdivision step at the fastest tempo a template allows, in ms. */
@@ -37,29 +37,37 @@ describe('the registry', () => {
   })
 })
 
-// Step A1 — R1, AC1. Four templates that differ in the three things a listener
+// Step A1 — R1, AC1. Templates that differ in the three things a listener
 // would call the feel, not only in name.
+//
+// Feature-9, Epic 6, Step B1 — R1, R2a, AC1. Four became six. Every count here
+// is stated as `TEMPLATE_COUNT` rather than as a literal, because these
+// assertions are all the same claim — no two feels are the same feel — and a
+// seventh template should have to be given its own pocket in one place, not
+// argued with in four.
+const TEMPLATE_COUNT = 6
+
 describe('the template set — R1, AC1', () => {
-  it('holds four templates with unique ids', () => {
+  it('holds six templates with unique ids', () => {
     const templates = allTemplates()
-    expect(templates).toHaveLength(4)
+    expect(templates).toHaveLength(TEMPLATE_COUNT)
     const ids = templates.map((t) => t.id)
-    expect(new Set(ids).size).toBe(4)
+    expect(new Set(ids).size).toBe(TEMPLATE_COUNT)
   })
 
   it('does not give every template the same subdivision, swing or tempo range', () => {
     const templates = allTemplates()
     expect(new Set(templates.map((t) => t.subdivision)).size).toBeGreaterThan(1)
-    expect(new Set(templates.map((t) => t.swing)).size).toBe(4)
-    expect(new Set(templates.map((t) => t.tempoRange.join('-'))).size).toBe(4)
+    expect(new Set(templates.map((t) => t.swing)).size).toBe(TEMPLATE_COUNT)
+    expect(new Set(templates.map((t) => t.tempoRange.join('-'))).size).toBe(TEMPLATE_COUNT)
   })
 
   it('gives each template its own mix and its own feel', () => {
     const templates = allTemplates()
     const mixes = templates.map((t) => JSON.stringify([t.gain, t.pan]))
-    expect(new Set(mixes).size).toBe(4)
+    expect(new Set(mixes).size).toBe(TEMPLATE_COUNT)
     const humanizes = templates.map((t) => JSON.stringify(t.humanize))
-    expect(new Set(humanizes).size).toBe(4)
+    expect(new Set(humanizes).size).toBe(TEMPLATE_COUNT)
   })
 
   // Instrumentation used to be unique per template too, and is no longer: every
@@ -80,9 +88,12 @@ describe('the template set — R1, AC1', () => {
   })
 })
 
-// Step A2 — R2, R5, AC15. The four pairs are what makes the game's chip row
+// Step A2 — R2, R5, AC15. The pairs are what makes the game's chip row
 // honest: every flavour offered has grooves behind it, and no groove answers to
 // a flavour the game does not offer.
+//
+// Feature-9, Epic 6, Step B2 — R2, R2a, R6b, AC2, AC2b. The same invariant over
+// six templates and twelve modes, plus the family split it now has to hold.
 describe('flavour coverage — R2, R5, AC15', () => {
   it('gives every template exactly two flavours', () => {
     for (const template of allTemplates()) {
@@ -91,7 +102,7 @@ describe('flavour coverage — R2, R5, AC15', () => {
     }
   })
 
-  it('keeps the four pairs pairwise disjoint', () => {
+  it('keeps the pairs pairwise disjoint', () => {
     const templates = allTemplates()
     for (let i = 0; i < templates.length; i++) {
       for (let j = i + 1; j < templates.length; j++) {
@@ -103,10 +114,30 @@ describe('flavour coverage — R2, R5, AC15', () => {
     }
   })
 
-  it('covers exactly the eight flavours the game offers', () => {
+  it('covers exactly the twelve flavours the game offers', () => {
     const union = allTemplates().flatMap((t) => t.flavours)
-    expect(union).toHaveLength(8)
+    expect(union).toHaveLength(2 * TEMPLATE_COUNT)
+    expect(union).toHaveLength(FLAVOURS.length)
     expect([...new Set(union)].sort()).toEqual([...(FLAVOURS as Flavour[])].sort())
+  })
+
+  // Feature-9, Epic 6, Step B2 — R6b, R6c, AC2b. Simple mode offers Major and
+  // Minor and grades a mode by its third, so an uneven set makes one of the two
+  // answers the better blind guess. Six and six, and the split is asserted here
+  // rather than only in the app's family table because it is a property of the
+  // set the TEMPLATES choose, and this is the file that chooses it.
+  it('splits the twelve evenly between the two families', () => {
+    const union = allTemplates().flatMap((t) => t.flavours)
+    const byThird = { major: [] as Flavour[], minor: [] as Flavour[] }
+    for (const flavour of union) {
+      const intervals = INTERVALS[flavour]
+      const major = intervals.includes(4)
+      const minor = intervals.includes(3)
+      expect(major !== minor, `${flavour} has no single third to grade it by`).toBe(true)
+      byThird[major ? 'major' : 'minor'].push(flavour)
+    }
+    expect(byThird.major.sort(), 'major-third modes').toHaveLength(TEMPLATE_COUNT)
+    expect(byThird.minor.sort(), 'minor-third modes').toHaveLength(TEMPLATE_COUNT)
   })
 
   it('pairs each flavour with a feel that suits it', () => {
@@ -123,6 +154,18 @@ describe('flavour coverage — R2, R5, AC15', () => {
     expect([...templateById('half-time').flavours].sort()).toEqual([
       'harmonic-minor',
       'phrygian',
+    ])
+    // Epic 6's two. Melodic minor and lydian dominant are one scale heard two
+    // ways; phrygian dominant and harmonic major both put a ♭6 against a major
+    // third. Each pair is narrow on purpose — hearing the feel has to leave a
+    // real choice, not a formality.
+    expect([...templateById('double-time').flavours].sort()).toEqual([
+      'lydian-dominant',
+      'melodic-minor',
+    ])
+    expect([...templateById('swung-sixteenth').flavours].sort()).toEqual([
+      'harmonic-major',
+      'phrygian-dominant',
     ])
   })
 })

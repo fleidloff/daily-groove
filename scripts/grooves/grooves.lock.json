@@ -1,96 +1,226 @@
 {
-  "catalogueSha256": "20b7578b04a67d229a60071077d00c5f509dbb92bbabfbecbf76e315a919ea26",
-  "manifestSha256": "de78dc25e6de116c2a130556a649b720ee4312c3ef63d31a124bb8aea89f3422",
+  "catalogueSha256": "d03c022465532ef373b9e9e91f9b0347447495e866903857e07cbf1cb8c5ddf7",
+  "manifestSha256": "a9def900df3e4884d0b001e77f65bee878e4134f2b3d5636b10ce870ebd3cfe3",
   "grooves": [
     {
       "id": "groove-01",
-      "sha256": "121ac82f532473d20c255167fd23e5ba0092624d8d727d9d967c81cfc6038ee6",
+      "sha256": "b509f9a7302f660d86362e4470e61bff0d074067438440df573703bce5a673cd",
       "bytes": 879011
     },
     {
       "id": "groove-02",
-      "sha256": "1947f6983f5d588ee1a0971ea8d2afefd39e66757ba96180cce9dd3b829c1425",
+      "sha256": "f748641606e350ced90b28851f4c788e97fa82b8522efab2e8ecf407095217b6",
       "bytes": 961767
     },
     {
       "id": "groove-03",
-      "sha256": "ee6ea430026330c9604e3137e1f504a7a872c637a4bb82eb963c93b2fd7eeead",
+      "sha256": "69499ce7650fc08d3b518ad42d1646a5902ff356aed6c2f346a8345549cef7f4",
       "bytes": 896565
     },
     {
       "id": "groove-04",
-      "sha256": "c39c0b584e677bffd19e76c3288dcd971b9add6d8dcac25a6ce10387a36d8915",
+      "sha256": "335c6a3c174ece7b0839cd410dcf7d11416fc3a44ad598b4dac35a6fc8e7780c",
       "bytes": 896565
     },
     {
       "id": "groove-07",
-      "sha256": "e4b3d6ee73bdae2e2a33a7e3cb676c90686377bf9e6f8e02ddc2c71dd3f97e21",
+      "sha256": "a70de7f113e881c8d915c0982c86c9fb36e87870c1289e1e229fa1d1e1d1d2ca",
       "bytes": 1014430
     },
     {
       "id": "groove-08",
-      "sha256": "4e446f45b01b6c18e5b7c2bd8bb7858fca4391af344627cf3fcef92212209501",
+      "sha256": "6bf9d6d5d91fc22ea74400abb6443488a7f0c74dbc448db1fd25478c505ae9e1",
       "bytes": 1014430
     },
     {
       "id": "groove-09",
-      "sha256": "405cd1fd4905e7613b641fbff25b6c2874bb62057bcc1bfb8ef7b9c22a3e1ad0",
+      "sha256": "e3c16ae534c9c1b2921126c3c9015f52e9259ee12374f8ce8b5905768c40ad7f",
       "bytes": 732934
     },
     {
       "id": "groove-10",
-      "sha256": "a96a880bc9353c40756f179b0cb4b67252ac42b0f99fb7cab6a302aeb49a569e",
+      "sha256": "ef372da4e1fbd72492e42b68f24299d4c5bcbb1ea0d671b424663749ed6aaab5",
       "bytes": 763027
     },
     {
       "id": "groove-11",
-      "sha256": "26f450273e6e92299c49b81c3adddadf0fcc9fbd8f693af17aa389afb2f49cea",
+      "sha256": "2cc455bdc9cddd6a257afa5fcbb3e5a6223888b5359dc999f19c89f4e26832df",
       "bytes": 769296
     },
     {
       "id": "groove-12",
-      "sha256": "812b3848b458212e5f89f3bc728c2bd652c0d347b2e8757983c4fd43c0139c84",
+      "sha256": "218596f639e761511c3da55cb41d87674b0978b2b34ffff1c892abf932976272",
       "bytes": 710364
     },
     {
       "id": "groove-13",
-      "sha256": "ae3288cf4158a01a7f484a5cf327b1aefe507d7773460e8d3d727a266ebbe384",
+      "sha256": "60bc15fa069f02a00aadbd69c13457dce3a0e891f9b954ced4252b219d90bbf0",
       "bytes": 584976
     },
     {
       "id": "groove-14",
-      "sha256": "455e3007ae8a387ad709272d290e56c23ed458cc4828b47a20f98b1157015b01",
+      "sha256": "04606896e18070aa2ebc09a86ed388562cf78f3425dbb3de9eda68761c1cf5c0",
       "bytes": 641401
     },
     {
       "id": "groove-17",
-      "sha256": "871f860b93c03234a4f8655eea78c8d84443942d7deb198508d22cb0d69389c4",
+      "sha256": "7e5c150eb0d959543e2346d3583a8ad9bd202bf3151e69c64b7223f5c496c7fc",
       "bytes": 732934
     },
     {
       "id": "groove-18",
-      "sha256": "f2f36b2ca970396c3fd8002819fc7f5e4153ffce545b5079b9a38253797ce9ea",
+      "sha256": "5fc28129d11113c6dc0d6e4ab12fbb4546d1054cb0c2d25948a1a0823e758064",
       "bytes": 961767
     },
     {
       "id": "groove-19",
-      "sha256": "5c19ba773fa39e6ca7efc6e04b6fec5cf2c571e77d1d106d897842fa62dd137d",
+      "sha256": "f0b8c64474b660c8872ab51f931e63458fc73b28a90aa374b2caa7d46172de0b",
       "bytes": 1168030
     },
     {
       "id": "groove-20",
-      "sha256": "57ca88a00e6a8e314d3d423e7a70c676aff0782144cc363cefda028d30941084",
+      "sha256": "a4880fc7f267644b3c1b20f75ba21a85daaa99901f292d0dbc2b47a84baba4af",
       "bytes": 659582
     },
     {
       "id": "groove-21",
-      "sha256": "2814e1d1782adcf2ee3858f83b66ea996b8787523bb461749e8925121d1465a8",
+      "sha256": "01c5515ea04988962c4b0bf2fabbcaad0134f7971672d8c908870ddb4902658e",
       "bytes": 732934
     },
     {
       "id": "groove-22",
-      "sha256": "2177a3088171db06501293bed2725c1a5889ff00f3242c71e4a8b759339cc636",
+      "sha256": "ec4f6452346bf6591ecf62eb8579a91c066f9d4b65133b3da6370986b0c39a97",
       "bytes": 870861
+    },
+    {
+      "id": "groove-23",
+      "sha256": "2aee8ac5d224d1f373914ba097cf21bdf1bcbc07b660f61964cbb2dfe8374396",
+      "bytes": 879011
+    },
+    {
+      "id": "groove-24",
+      "sha256": "92b97b79714e075819ebfc2be8c1661fed172829d4ac95c4982d917dac335205",
+      "bytes": 1183076
+    },
+    {
+      "id": "groove-25",
+      "sha256": "514bc8917e8eae5fdc18e1f6d33425102610f2f4fa856ddba05d80a79a0f83f3",
+      "bytes": 782462
+    },
+    {
+      "id": "groove-26",
+      "sha256": "72d12da1a11feadfe12be4e4d648a549bf34c809e0f4abf603b64b02d806c2a4",
+      "bytes": 608173
+    },
+    {
+      "id": "groove-27",
+      "sha256": "c60c3a7755df8f026a1b9134c09b6434377bfa128b72a53197e0479f15ee6b01",
+      "bytes": 655194
+    },
+    {
+      "id": "groove-28",
+      "sha256": "3dbe243b86599415259a34f3c79a03f4aaddb922190d6b7fe33fbaff7f27f746",
+      "bytes": 855187
+    },
+    {
+      "id": "groove-29",
+      "sha256": "f5b6cb02d6bbac643c8e1360d5783fad6e8b54196f70806cec3fc50ed31a4540",
+      "bytes": 951736
+    },
+    {
+      "id": "groove-30",
+      "sha256": "3b0f23cb953774b05049715a9d033cd5fa223aea65eef76dfc0d45a7ff349ad3",
+      "bytes": 1085901
+    },
+    {
+      "id": "groove-31",
+      "sha256": "2d31c8f5a2a8079b8af2ca979504d08a3a06212775469432a025bf4f96ecf1cf",
+      "bytes": 763027
+    },
+    {
+      "id": "groove-32",
+      "sha256": "71c7d741339565ade9b8d3a3e7320dbc5134a5bfb695188489e3e2ed18511eea",
+      "bytes": 679017
+    },
+    {
+      "id": "groove-33",
+      "sha256": "6a488f14dd577d7bafc573289353b1e33186297758c34bb09c93c769b07efeb2",
+      "bytes": 637012
+    },
+    {
+      "id": "groove-34",
+      "sha256": "86e81d81304ea60482e728976786add483c14b51defb62c5ec028a4dc2c0566f",
+      "bytes": 855187
+    },
+    {
+      "id": "groove-35",
+      "sha256": "57346476bc18dd5f6150538cf1df02b279f2e097ac3deb158b57ae07d026b6f0",
+      "bytes": 932301
+    },
+    {
+      "id": "groove-36",
+      "sha256": "42dc85b0d83b585d6fbf8c2c162774871b5291ee4f207e715a165d6e6fd2be42",
+      "bytes": 1098439
+    },
+    {
+      "id": "groove-37",
+      "sha256": "6b4d1856c8f56681a121479d4763fa3f843c1dcb180dfd07001c60b8161a7d27",
+      "bytes": 782462
+    },
+    {
+      "id": "groove-38",
+      "sha256": "6e37c6a03db9a55f621a21f9c1ac449f6e4ea9440993074f6f08e8cb5decd226",
+      "bytes": 592500
+    },
+    {
+      "id": "groove-39",
+      "sha256": "46bf3452a7f4dfab659755b331f18e6a24c459d7cc83258c8c0f9edb5cbcf385",
+      "bytes": 664598
+    },
+    {
+      "id": "groove-40",
+      "sha256": "ee2ad81f953d6c1119f107a2e19f88702d436767799a904225536bef89bbd3cb",
+      "bytes": 839514
+    },
+    {
+      "id": "groove-41",
+      "sha256": "4be5d41b49f2865774b680622dee4b96a9a5c4060ff7000f81cd594eec3cd0c3",
+      "bytes": 971798
+    },
+    {
+      "id": "groove-42",
+      "sha256": "0a1e88ac3bb3a23c428da04229b27854800485fb3105cf86ce89cdc0adbefb19",
+      "bytes": 1098439
+    },
+    {
+      "id": "groove-43",
+      "sha256": "e21f433b5301c7fd224a14e637726d6a4811cfc317ccf47109e052b42a8d669c",
+      "bytes": 887788
+    },
+    {
+      "id": "groove-44",
+      "sha256": "24b745434ed520ab0f83a65b3eb27cb8853908b8d9c1653f40cc119ed6781993",
+      "bytes": 1139190
+    },
+    {
+      "id": "groove-45",
+      "sha256": "d6e558191db19f94c962fc3ab1d1202c6447290c6fe4504c2f9487b4f43f6545",
+      "bytes": 721649
+    },
+    {
+      "id": "groove-46",
+      "sha256": "c1574c6ef326d9a51a1e1fd550e4fa9ef790531a240067d39bcfe7016794fba0",
+      "bytes": 624474
+    },
+    {
+      "id": "groove-47",
+      "sha256": "451b64a228cec8e83a42decf091699269e5025ad417c1ef8a362967dec83d9b0",
+      "bytes": 632624
+    },
+    {
+      "id": "groove-48",
+      "sha256": "412372e407401ec5b7a9e72824b9e72a1d59f79d0b7fe95ec8d0ff5f82982210",
+      "bytes": 810048
     }
   ]
 }

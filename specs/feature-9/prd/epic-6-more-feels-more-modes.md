@@ -67,10 +67,16 @@ way to widen the vocabulary without breaking that.
   scales. Locrian is excluded, as it already is, because its diminished fifth
   makes it neither family in any honest reading; symmetric scales are excluded
   by R5 as well.
-- **R6b** — The four new modes are two with a major third and two with a minor
-  third, so the twelve-mode set stays evenly split between the families. A mode
-  that is musically more interesting is passed over when taking it would skew
-  the split.
+- **R6b** — The twelve-mode set is evenly split between the families: **six
+  graded Major and six graded Minor**. A mode that is musically more interesting
+  is passed over when taking it would skew the split.
+- **R6c** — Reaching that split takes **three new major-third modes and one
+  minor-third**, not two of each. The existing eight are three major and five
+  minor, because `blues` is graded by its minor third; an earlier draft of R6b
+  said "two and two" on the false premise that they were four and four, which
+  would have produced a 5/7 set and made *Minor* the better blind guess in simple
+  mode — the exact failure R8 forbids. The split is arithmetic, not taste, and it
+  is the reason the four modes are the four they are.
 - **R7** — The mode row continues to offer four options: the day's answer plus
   three distractors, seeded by the date, drawn uniformly from the pool. The
   draw is not biased toward or away from the answer's family; the wider pool is

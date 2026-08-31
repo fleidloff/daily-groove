@@ -8,7 +8,14 @@
 
 import type { Root } from '../../src/lib/groove.ts'
 
-/** The eight flavours the game offers, as the generator names them internally. */
+/**
+ * The twelve flavours the game offers, as the generator names them internally.
+ *
+ * Eight shipped first; Epic 6 added the last four, two with a major third and
+ * two with a minor third, so the set stays evenly split between the families
+ * the app's simple mode grades by. Ids stay hyphenated where the display is two
+ * words — `scaleName` turns the hyphen into a space.
+ */
 export type Flavour =
   | 'ionian'
   | 'aeolian'
@@ -18,6 +25,10 @@ export type Flavour =
   | 'phrygian'
   | 'harmonic-minor'
   | 'blues'
+  | 'melodic-minor'
+  | 'lydian-dominant'
+  | 'phrygian-dominant'
+  | 'harmonic-major'
 
 /**
  * `Root` is not declared here. The twelve chromatic roots are the contract the

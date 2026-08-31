@@ -72,11 +72,33 @@ export function selectSeeds(
   const accepted: GrooveSpec[] = []
 
   for (const template of templates) {
-    // Spread this template's allocation evenly across the flavours it offers.
+    // Spread this template's allocation evenly across the flavours it offers,
+    // starting from the flavour the *catalogue* has least of.
+    //
+    // The share alone is not enough, and was silently inert for the commonest
+    // batch there is: `grooves:add 6` over six templates allocates one each, and
+    // `floor(1 / 2)` is zero, so every flavour began over quota and the first
+    // valid candidate won regardless of which one it was. A template could go
+    // three mints running without its second flavour ever being drawn — which is
+    // exactly what happened to `shuffle`'s blues.
+    //
+    // Seeding the quota by scarcity fixes it at any batch size: the flavour with
+    // fewer grooves behind it is asked for first, and only once it has had its
+    // turn does the other become eligible through `spare`.
+    const scarcity = (flavour: Flavour) => flavourCounts.get(flavour) ?? 0
+    const byScarcity = [...template.flavours].sort((a, b) => scarcity(a) - scarcity(b))
+
     const quota = new Map<Flavour, number>()
     const share = Math.floor(perTemplate / template.flavours.length)
     for (const flavour of template.flavours) quota.set(flavour, share)
     let spare = perTemplate - share * template.flavours.length
+    // Hand the remainder to the scarcest flavours rather than to whichever the
+    // seed stream happens to offer first.
+    for (const flavour of byScarcity) {
+      if (spare <= 0) break
+      quota.set(flavour, (quota.get(flavour) ?? 0) + 1)
+      spare -= 1
+    }
 
     let takenHere = 0
     let seed = startSeed

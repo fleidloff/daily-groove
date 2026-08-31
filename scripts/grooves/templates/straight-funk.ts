@@ -38,7 +38,7 @@ export const straightFunk: FeelTemplate = {
     snare: -6,
     hatClosed: -9,
     hatOpen: -11,
-    rim: -17,
+    rim: -7,
     bass: -1,
     comp: -11,
   },

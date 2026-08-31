@@ -217,11 +217,78 @@ describe('harmonic minor', () => {
   })
 })
 
+// Epic 6 — the four modes added on top of the original eight.
+describe('the modes Epic 6 added', () => {
+  const ADDED: Flavour[] = [
+    'melodic-minor',
+    'lydian-dominant',
+    'phrygian-dominant',
+    'harmonic-major',
+  ]
+
+  it('accepts a triad stacked by scale degree, on every degree', () => {
+    for (const flavour of ADDED) {
+      for (const root of ['C', 'F♯', 'B♭'] as Root[]) {
+        const scale = scaleDegreePitchClasses(root, flavour)
+        for (let degree = 0; degree < scale.length; degree++) {
+          const triad = [
+            scale[degree],
+            scale[(degree + 2) % scale.length],
+            scale[(degree + 4) % scale.length],
+          ]
+          expect({ flavour, root, degree, ok: accepts(flavour, root, degree, triad) }).toEqual({
+            flavour,
+            root,
+            degree,
+            ok: true,
+          })
+        }
+      }
+    }
+  })
+
+  it('rejects a chord borrowing one note from outside the scale', () => {
+    for (const flavour of ADDED) {
+      for (const root of ['C', 'F♯', 'B♭'] as Root[]) {
+        const scale = scaleDegreePitchClasses(root, flavour)
+        const alien = foreignPitchClass(root, flavour)
+        const triad = [scale[0], scale[2], scale[4]]
+        expect(accepts(flavour, root, 0, triad)).toBe(true)
+        expect({ flavour, root, ok: accepts(flavour, root, 0, [...triad, alien]) }).toEqual({
+          flavour,
+          root,
+          ok: false,
+        })
+      }
+    }
+  })
+
+  it('refuses the alterations the neighbouring modes are built on', () => {
+    // Melodic minor is aeolian with a raised sixth and seventh; the natural
+    // sixth an aeolian tonic-region chord leans on is not one of its tones.
+    const flatSixth = chordOn('C', 'melodic-minor', 3, [0, 3, 7, 10])
+    expect(accepts('melodic-minor', 'C', 3, flatSixth)).toBe(false)
+    // Lydian dominant keeps the ♯4; the natural fourth mixolydian would use is
+    // outside it, so a IV chord spelled from the natural fourth is refused.
+    expect(accepts('lydian-dominant', 'C', 0, [0, 4, 5, 7])).toBe(false)
+    // Phrygian dominant's second is ♭2; the natural second is foreign.
+    expect(accepts('phrygian-dominant', 'C', 0, [0, 2, 4, 7])).toBe(false)
+    // Harmonic major lowers the sixth; the natural sixth ionian carries is not
+    // a tone of it.
+    expect(accepts('harmonic-major', 'C', 0, [0, 4, 7, 9])).toBe(false)
+  })
+})
+
 // Step B4 — every flavour has a rule, and wrong harmony is rejected.
 describe('VALIDITY', () => {
-  it('has a rule for exactly the eight flavours the game offers', () => {
+  it('has a rule for exactly the flavours the game offers', () => {
+    // Total over FLAVOURS, derived rather than hardcoded: a hardcoded count
+    // passes on exactly the day someone adds a thirteenth mode and forgets a
+    // row here, which is the day `isValidHarmony` starts refusing it.
     expect(Object.keys(VALIDITY).sort()).toEqual([...FLAVOURS].sort())
-    expect(Object.keys(VALIDITY).length).toBe(8)
+    expect(Object.keys(VALIDITY).length).toBe(FLAVOURS.length)
+    expect(FLAVOURS.length).toBe(12)
+    for (const flavour of FLAVOURS) expect(typeof VALIDITY[flavour]).toBe('function')
   })
 
   it('rejects a deliberately wrong harmony for every flavour', () => {

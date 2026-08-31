@@ -11,8 +11,8 @@ domain, no attribution required, redistribution permitted:
 
 | Library | Voices | Licence text |
 | :-- | :-- | :-- |
-| [Versilian Community Sample Library (VCSL)](https://github.com/sgossner/VCSL) | `kick`, `snare`, `hatClosed`, `hatOpen`, `rim`, `tomHigh`, `tomLow`, `comp` | `LICENSE.txt` |
-| [VSCO 2 Community Edition](https://github.com/sgossner/VSCO-2-CE) | `bass` | `LICENSE-VSCO-2-CE.txt` |
+| [Versilian Community Sample Library (VCSL)](https://github.com/sgossner/VCSL) | `kick`, `snare`, `hatClosed`, `hatOpen`, `rim`, `tomHigh`, `tomLow` | `LICENSE.txt` |
+| [VSCO 2 Community Edition](https://github.com/sgossner/VSCO-2-CE) | `bass`, `comp` | `LICENSE-VSCO-2-CE.txt` |
 
 `provenance.json` records, for every file, which library it came from, its path inside
 that library, its licence and what was done to it.
@@ -33,11 +33,13 @@ ffmpeg -i in.wav \
 
 The length cap is per voice — long enough to hold that voice's decay and no longer —
 and the fade is the last 80 ms of it. The kick, the snare and the toms are capped at
-one second; the hats, the rim and the pitched voices at their own lengths. The
-pizzicato bass is capped at two seconds (`afade=t=out:st=1.92:d=0.08 -t 2`), which
-holds a plucked note's useful decay; VSCO's takes run on for up to five. A source
-shorter than the fade's start comes through untouched: nothing was cut, so there is
-nothing to fade.
+one second; the hats and the rim at their own, shorter lengths — a cross-stick is over
+almost as soon as it starts, so `rim` is capped at 0.8 s. The pitched voices ring, and
+are capped where the ring stops being useful: the pizzicato bass at two seconds
+(`afade=t=out:st=1.92:d=0.08 -t 2`), which holds a plucked note's useful decay, and the
+upright piano at two and a half (`afade=t=out:st=2.42:d=0.08 -t 2.5`) — VSCO's piano
+takes run on for twelve. A source shorter than the fade's start comes through
+untouched: nothing was cut, so there is nothing to fade.
 
 Nothing is trimmed at the *front*: every file keeps its source lead-in, so a bass note
 lands with the kick it is written beside rather than ahead of it.
@@ -50,11 +52,11 @@ lands with the kick it is written beside rather than ahead of it.
 | `snare` | Snare Drum, Modern 1 (`HitNS`) | 4 × 2 |
 | `hatClosed` | Hi-Hat Cymbal (`HitC`) | 4 × 2 |
 | `hatOpen` | Hi-Hat Cymbal (`HitO`, `HitLoose`) | 1 × 4 |
-| `rim` | Woodblock | 2 × 3 |
+| `rim` | Snare Drum, Modern 1, cross-stick (`stick`) | 1 × 2 |
 | `tomHigh` | Tom 1, stick (`HitS`) | 3 × 2 |
 | `tomLow` | Tom 2, stick (`HitS`) | 3 × 2 |
 | `bass` | Solo Contrabass, pizzicato (VSCO 2 CE) | 8 notes; 5 × 2 layers × 2, 3 × 1 layer × 2 |
-| `comp` | TX81Z Clavisynth | 10 notes × 3 |
+| `comp` | Upright Piano (VSCO 2 CE) | 11 notes × 3 |
 
 ## Two toms, and three layers that mean something
 
@@ -68,19 +70,42 @@ off-sixteenth reaches `v2`, an off-eighth `v3`, a quarter-note position `v4`. A
 fill's accents therefore change which drum hit is heard, not just how loudly the
 same one is replayed.
 
-## ⚠ Clavisynth is labelled two octaves below its sounding pitch
+## ⚠ A sampled note's sounding pitch is measured, never read off its filename
 
-VCSL's `Clavisynth_C2_vl2.wav` sounds at **C4**, not C2. This was measured, not assumed:
-there is no spectral energy at all at the named frequency, and the fundamental sits
-consistently 24 semitones above the filename across every note and octave sampled. FM
-Piano, by contrast, is labelled correctly.
+This is the pack's oldest rule and the one it has been burned by twice.
 
-`pack.json` therefore declares `midi` values that are the **sounding** pitch — the
-filename plus 24 for every `comp` entry. Do not "correct" them to match the filenames;
-every comp chord would move two octaves and the game would be unplayable.
+VCSL's TX81Z Clavisynth — the stand-in `comp` used to be — is labelled two octaves
+below where it sounds: `Clavisynth_C2_vl2.wav` sounds at **C4**, with no spectral energy
+at all at the named frequency. Had that been read rather than measured, every comp chord
+would have been two octaves out and the game unplayable. VSCO 2 CE's contrabass is the
+second instance, and names octaves with C3 as middle C (see below). Neither sample is
+still in the pack; the rule outlives both, and both pitched voices carry the frequency
+they were measured at as `measuredHz` in `pack.json` so the claim can be re-checked
+rather than trusted.
 
-The lesson generalises, and the bass is the second instance of it: **a sampled note's
-sounding pitch is established by measurement, never read off its filename.**
+The trap has a third shape, and the upright piano is it. VSCO 2 CE's `Keys/Upright
+Piano` names its files `Player_dyn{1,2,3}_rr1_{000..044}.wav`, and the numeric suffix is
+neither a MIDI number nor a semitone offset: the files step by 2 while the pitch steps by
+**4 semitones**, so index `012` sounds at MIDI 45, `014` at 49, `024` at 69 (measured
+440.7 Hz), and so on. The set's own `MappingChart.txt` says as much, and measurement
+agrees with it note for note across the register the pack uses.
+
+Measured against equal temperament the piano is stretched, as a real piano is: −11 cents
+at MIDI 45, within ±5 of nominal through the middle, +13 at MIDI 85. That is Railsback
+stretch, not a tuning error. `pack.test.ts` allows half a semitone.
+
+## ⚠ The cross-stick has one velocity layer
+
+`rim` is the cross-stick of the snare already in the pack — the same drum, so it is
+coherent with the kit by construction rather than by mixing. VCSL recorded it once:
+`Snare2_stick` is a single velocity group, `v1`, with two round-robin alternates and
+nothing above or below it. So `rim` ships one layer and two alternates.
+
+The two alternates could have been split into a soft and a hard layer — they differ by
+about 1.7 dB — but that difference is take-to-take variation, not a dynamic the player
+produced. Promoting it would put a number in `pack.json` that the recording does not
+support, which is the same erasure normalising would be. `hatOpen` is declared the same
+way and for the same reason.
 
 ## Note spacing
 
@@ -89,11 +114,18 @@ note — the bound that keeps linear interpolation transparent — so no gap bet
 sampled notes may be wider than 4 semitones.
 
 - `bass` sounding MIDI 28–49, covering 26–51. Widest gap 4 semitones.
-- `comp` sounding MIDI 48–84, covering 46–86. Sampled every 4 semitones (C, E, G♯).
+- `comp` sounding MIDI 45–85, covering 43–87. Widest gap 4 semitones.
 
-`comp` is on an even 4-semitone grid because the TX81Z was sampled that way. `bass` is
-not: a real instrument is sampled where its player found it useful, so the contrabass's
-notes fall at 28, 31, 34, 36, 40, 42, 45, 49 — uneven, but never more than 4 apart.
+`comp` is on an even 4-semitone grid because the upright piano was sampled that way —
+the library holds a note every 4 semitones from MIDI 21 up, and the pack takes the
+eleven of them that cover its register: 45, 49, 53, 57, 61, 65, 69, 73, 77, 81, 85.
+`bass` is not: a real instrument is sampled where its player found it useful, so the
+contrabass's notes fall at 28, 31, 34, 36, 40, 42, 45, 49 — uneven, but never more than
+4 apart.
+
+`Keys/Upright Nr1` was the other upright on offer and was rejected: it samples every
+five to seven semitones, which would ask the resampler for 3.5-semitone shifts and break
+the bound it is transparent within.
 
 ## ⚠ The bass does not reach the bottom of its declared register
 
@@ -119,7 +151,7 @@ so it would have added no information — only the appearance of coverage.
 the contrabass's open low E. Read as scientific notation, `E0` would be 21 Hz, an octave
 below anything the instrument can play; read as a written contrabass part — which is
 notated an octave above sounding pitch — it would be an octave the other way. Both are
-wrong, and both are the kind of wrong the Clavisynth warning above is about.
+wrong, and both are the kind of wrong the measurement rule above is about.
 
 The declared `midi` values were established by measuring the fundamental of every file,
 and each note carries the frequency it was measured at as `measuredHz` in `pack.json`.

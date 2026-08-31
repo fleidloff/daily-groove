@@ -220,6 +220,50 @@ describe('buildHarmony — the blues idiom', () => {
   })
 })
 
+// Epic 6 — the four modes added on top of the original eight. The sweeps above
+// already cover them by iterating FLAVOURS; this states the property those
+// modes were chosen for, so a candidate that could not name its own tonic
+// could never have been adopted quietly.
+describe('buildHarmony — the modes Epic 6 added', () => {
+  const ADDED: Flavour[] = [
+    'melodic-minor',
+    'lydian-dominant',
+    'phrygian-dominant',
+    'harmonic-major',
+  ]
+
+  it('names a tonic chord the scale entirely contains, for all 48 combinations', () => {
+    for (const flavour of ADDED) {
+      for (const root of ROOTS) {
+        const scale = pitchesOf(root, flavour)
+        const h = buildHarmony(root, flavour, rngFor(`e6:${root}:${flavour}`))
+        const outside = pitchClassesOf(h.chordName).filter((pc) => !scale.includes(pc))
+        expect({ root, flavour, outside }).toEqual({ root, flavour, outside: [] })
+        expect(h.chordName.startsWith(root)).toBe(true)
+      }
+    }
+  })
+
+  it('states the tonic quality each mode was chosen for', () => {
+    const expected: Record<string, string> = {
+      'melodic-minor': 'mMaj7',
+      'lydian-dominant': '7',
+      'phrygian-dominant': '7',
+      'harmonic-major': 'maj7',
+    }
+    for (const flavour of ADDED) {
+      for (const root of ROOTS) {
+        const h = buildHarmony(root, flavour, rngFor(`e6q:${root}:${flavour}`))
+        expect({ root, flavour, chord: h.chordName }).toEqual({
+          root,
+          flavour,
+          chord: `${root}${expected[flavour]}`,
+        })
+      }
+    }
+  })
+})
+
 describe('buildHarmony — the harmonic-minor idiom', () => {
   it('builds the tonic as a minor-major seventh and offers the V7', () => {
     for (const root of ROOTS) {
