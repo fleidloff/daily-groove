@@ -1,4 +1,5 @@
 import { spawnSync } from 'node:child_process'
+import { createHash } from 'node:crypto'
 import { existsSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -79,5 +80,60 @@ describe.skipIf(!HAS_FFMPEG)('npm run notes', () => {
     expect(lock.catalogueSha256).toBe(GROOVES_ONLY.catalogueSha256)
     expect(lock.manifestSha256).toBe(GROOVES_ONLY.manifestSha256)
     expect(lock.grooves).toEqual(GROOVES_ONLY.grooves)
+  })
+})
+
+/**
+ * AC15, end to end. The suite above proves `renderNote` is a pure function of
+ * the pack — two calls agree sample for sample — but the artifact the lock
+ * hashes is the *encoded* file, and nothing above ever encodes twice. A drift
+ * between PCM and mp3 (a nondeterministic step between render and encode, or an
+ * ffmpeg that stopped being reproducible for fixed input) would leave every
+ * other test green while the determinism the lock rests on was gone.
+ *
+ * It renders both runs itself rather than reusing the suite above: that one
+ * removes its directory in `afterAll`, so its files are gone by the time this
+ * block executes.
+ */
+describe.skipIf(!HAS_FFMPEG)('npm run notes, run twice', () => {
+  const runs: string[] = []
+  const locks: Lock[] = []
+
+  beforeAll(async () => {
+    for (const tag of ['a', 'b']) {
+      const root = mkdtempSync(join(tmpdir(), `groove-notes-twice-${tag}-`))
+      const lockPath = join(root, 'grooves.lock.json')
+      writeFileSync(lockPath, `${JSON.stringify(GROOVES_ONLY, null, 2)}\n`, 'utf8')
+      await main({
+        outDir: join(root, 'notes'),
+        manifestPath: join(root, 'data', 'notes.generated.ts'),
+        lockPath,
+      })
+      runs.push(root)
+      locks.push(JSON.parse(readFileSync(lockPath, 'utf8')) as Lock)
+    }
+  }, 600_000)
+
+  afterAll(() => {
+    for (const root of runs) rmSync(root, { recursive: true, force: true })
+  })
+
+  const sha256 = (path: string) =>
+    createHash('sha256').update(readFileSync(path)).digest('hex')
+
+  it('encodes twelve byte-identical files (AC15)', () => {
+    for (const spec of noteSpecs()) {
+      const name = noteFileName(spec.root)
+      expect(
+        sha256(join(runs[1], 'notes', name)),
+        `${name} differs between two renders of an unchanged pack`,
+      ).toBe(sha256(join(runs[0], 'notes', name)))
+    }
+  })
+
+  it('records the same hashes in the lock both times (AC15)', () => {
+    expect(locks[1].notes).toEqual(locks[0].notes)
+    expect(locks[1].notesManifestSha256).toBe(locks[0].notesManifestSha256)
+    expect(locks[1].packSha256).toBe(locks[0].packSha256)
   })
 })

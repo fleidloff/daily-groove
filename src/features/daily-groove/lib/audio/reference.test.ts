@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createReferenceVoice } from './reference'
+import { createAudioPlayer } from './audio'
 import {
   hasAudioContext,
   releaseAudioContext,
@@ -302,5 +303,46 @@ describe('disposing (R13, R16)', () => {
 
     expect(fake.fetchCalls).toBe(2)
     next.dispose()
+  })
+})
+
+/**
+ * AC13, as the criterion actually states it. Two halves of this are already
+ * asserted apart — `audio.test.ts` proves disposing the player leaves the
+ * context open, and the suite above proves the voice plays through a shared
+ * context — but nothing composed them. A regression that closed the context on
+ * some later path would leave both of those green while the scenario the AC
+ * describes, dispose the player and then tap a root, was broken.
+ */
+describe('a note after the groove’s player is gone', () => {
+  afterEach(async () => {
+    vi.unstubAllGlobals()
+    await releaseAudioContext()
+  })
+
+  it('still sounds once the player has been disposed (R16, AC13)', async () => {
+    const fake = installFakeAudioContext()
+
+    const player = createAudioPlayer({
+      src: '/grooves/groove-01.mp3',
+      loopSeconds: 9.142857,
+      headDelaySeconds: 0.025057,
+    })
+    await player.play()
+    const groovePlayed = fake.sources.length
+    player.dispose()
+
+    const voice = createReferenceVoice(TWO)
+    await voice.play('C')
+
+    // A node beyond the groove's own, started, on the one surviving context.
+    expect(fake.sources.length).toBeGreaterThan(groovePlayed)
+    const note = fake.sources[fake.sources.length - 1]
+    expect(note.loop).toBe(false)
+    expect(note.start).toHaveBeenCalledTimes(1)
+    expect(fake.contexts).toHaveLength(1)
+    expect(fake.contexts[0].state).not.toBe('closed')
+
+    voice.dispose()
   })
 })
