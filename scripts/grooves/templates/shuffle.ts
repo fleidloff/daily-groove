@@ -47,5 +47,7 @@ export const shuffle: FeelTemplate = {
     bass: 0,
     comp: 0.28,
   },
+  /** Four passes: ~45 s at the 78–92 range's midpoint. */
+  passes: 4,
   density: { minPerBar: 16, maxPerBar: 38 },
 }

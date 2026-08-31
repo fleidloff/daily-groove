@@ -16,6 +16,7 @@ function musicFor(root: Root, flavour: Flavour, chord: string, progression: stri
   return {
     bpm: 100,
     bars: 4,
+  loopBars: 4,
     root,
     flavour,
     scale: scaleName(root, flavour),

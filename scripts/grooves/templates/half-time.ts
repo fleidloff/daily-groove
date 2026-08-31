@@ -42,5 +42,7 @@ export const halfTime: FeelTemplate = {
     bass: 0,
     comp: -0.34,
   },
+  /** Two passes, not four. At 68–80 bpm four would be ~56 s and ~1.3 MB; two is ~28 s, in line with the faster feels. */
+  passes: 2,
   density: { minPerBar: 14, maxPerBar: 48 },
 }

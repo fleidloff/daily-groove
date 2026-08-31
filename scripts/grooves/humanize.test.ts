@@ -18,7 +18,8 @@ function feel(overrides: Partial<FeelTemplate> = {}): FeelTemplate {
     humanize: { timingMs: 0, velocity: 0 },
     gain: {},
     pan: {},
-    density: { minPerBar: 1, maxPerBar: 999 },
+    passes: 4,
+  density: { minPerBar: 1, maxPerBar: 999 },
     ...overrides,
   }
 }

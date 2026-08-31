@@ -321,6 +321,9 @@ export function buildEvents(
   const music: MusicMeta = {
     bpm,
     bars: BARS,
+    // Track B replaces this with BARS_PER_PASS * template.passes once the pass
+    // loop renders more than one pass.
+    loopBars: BARS,
     root,
     flavour,
     scale: scaleName(root, flavour),

@@ -51,7 +51,14 @@ export type Groove = {
    */
   root: Root
   flavour: Flavour
-  bars: number // loop length, always 4
+  bars: number // the musical figure, always 4
+  /**
+   * The file's loop: `bars` times the feel's pass count, so 16 for a four-pass
+   * groove and 8 for a two-pass one. Optional so a manifest written before the
+   * field existed still describes a groove; `loopSecondsOf` falls back to
+   * `bars`.
+   */
+  loopBars?: number
   /**
    * Seconds of encoder delay at the head of this file, measured from the mp3
    * itself at mint time. The music begins here, not at 0.

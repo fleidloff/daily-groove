@@ -44,5 +44,7 @@ export const straightFunk: FeelTemplate = {
     bass: 0,
     comp: -0.2,
   },
+  /** Four passes of four bars: ~38 s at the 94–106 range's midpoint. */
+  passes: 4,
   density: { minPerBar: 18, maxPerBar: 44 },
 }

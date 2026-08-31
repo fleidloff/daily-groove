@@ -65,6 +65,13 @@ export type FeelTemplate = {
   /** Per-voice stereo position, -1 hard left to +1 hard right. Applied by Epic 2. */
   pan: Partial<Record<VoiceName, number>>
   /**
+   * How many passes of the four-bar figure a groove from this feel is rendered
+   * as. Always at least 2: one pass is a loop that repeats itself byte for
+   * byte, which is the thing passes exist to replace. Slow feels declare fewer
+   * — four passes at 68 bpm is a 56-second file.
+   */
+  passes: number
+  /**
    * Acceptable note events per bar. Epic 4's quality gate rejects a minted
    * groove outside this band — a groove too sparse to state its harmony, or so
    * dense it turns to mush.
@@ -92,7 +99,10 @@ export type NoteEvent = {
 /** The words that describe what the events play. */
 export type MusicMeta = {
   bpm: number
+  /** The musical figure: always 4. */
   bars: number
+  /** What was actually rendered: `bars * template.passes`. */
+  loopBars: number
   root: Root
   flavour: Flavour
   /** Display string, e.g. "C minor". */

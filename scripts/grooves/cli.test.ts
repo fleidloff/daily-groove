@@ -187,6 +187,7 @@ describe('toGroove', () => {
     const music = {
       bpm: 96,
       bars: 4,
+    loopBars: 4,
       root: 'A',
       flavour: 'harmonic-minor',
       scale: 'A harmonic minor',
@@ -219,6 +220,7 @@ describe('displayFlavour', () => {
     const groove = toGroove(SPECS[0], {
       bpm: 96,
       bars: 4,
+    loopBars: 4,
       root: 'A',
       flavour: 'harmonic-minor',
       scale: 'A harmonic minor',

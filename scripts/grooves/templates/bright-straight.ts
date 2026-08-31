@@ -43,5 +43,7 @@ export const brightStraight: FeelTemplate = {
     bass: 0,
     comp: 0.3,
   },
+  /** Four passes: ~31 s at the 116–132 range's midpoint — the shortest of the four. */
+  passes: 4,
   density: { minPerBar: 17, maxPerBar: 40 },
 }
