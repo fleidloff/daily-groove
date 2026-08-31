@@ -75,6 +75,9 @@ past that, coordination overhead grows faster than throughput.
 
 ## 5. Dispatch (default: subagents)
 
+First mark the feature 🔨 In progress in `specs/features.md` and commit that
+edit alone (§10) — a run that dies after this point still leaves an honest row.
+
 Spawn one agent per unit in the current wave, in a single message so they run
 concurrently. Give each the brief in
 [references/worker-brief.md](references/worker-brief.md) — teammates and
@@ -168,18 +171,46 @@ Verification stays in `/verify-epic` and repair stays here, deliberately: a
 verifier that can also fix is a verifier that can talk itself into a green
 report.
 
-## 10. Mark the feature done in `specs/features.md`
+## 10. Keep the status column true
 
 `specs/features.md` carries a **Status** column running 📋 Planned → 🛠 Ready to
-implement → 🔨 In progress → ✅ Done. This step moves the row off whatever
-`/writespec` left it on, using the verified results — never the sense that the
-run went well.
+implement → 🔨 In progress → ✅ Done. The column has one job: to tell the next
+reader what is actually built. It is wrong as often as it is stale, so it is
+edited twice in a run, not once.
+
+**The row must never be left behind reality.** A row still reading 🛠 Ready to
+implement over a feature whose code shipped weeks ago is the same failure as a
+premature ✅ — both send the next person to the wrong place. If you notice, at
+any point in a run, that a row disagrees with the tree, say so and correct it,
+whether or not it is the feature you were asked to build.
+
+### When the run starts
+
+Before dispatching the first wave, set every feature you are about to build to
+🔨 **In progress**, and commit that edit on its own.
+
+This is not bookkeeping. A run can die mid-wave, be interrupted, or be held at a
+precondition, and every one of those paths skips the end-of-run edit below. A
+row moved at the start degrades to "someone was working on this" — which is
+true and useful. A row left untouched degrades to "nobody has started", which is
+false and sends the next person to re-implement finished work.
+
+Skip this only when the run is held before any unit is dispatched. Then nothing
+was started, and the row should keep saying so.
+
+### When the run ends
+
+Move the row using the verified results — never the sense that the run went
+well.
 
 - **Every epic in the feature passed `/verify-epic` clean, and every AC is
   marked Done** → set the status to ✅ Done.
 - **Some epics done, others not started or not clean** → 🔨 In progress.
 - **A single AC is Partly or Not done** → the feature is not Done. Leave it
   🔨 In progress and say so in the report.
+- **The run was abandoned, blocked or held** → say which in the report, and
+  leave the row at whatever the truth is. An abandoned run still owes the column
+  an accurate value.
 
 Run narrowed to one epic (`/implement-feature feature-8 epic-2`)? Only the
 epics you ran can change status. The rest of the feature is untouched, so unless

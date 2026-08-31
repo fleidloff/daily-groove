@@ -159,7 +159,7 @@ describe('flavour coverage — R2, R5, AC15', () => {
     // ways; phrygian dominant and harmonic major both put a ♭6 against a major
     // third. Each pair is narrow on purpose — hearing the feel has to leave a
     // real choice, not a formality.
-    expect([...templateById('double-time').flavours].sort()).toEqual([
+    expect([...templateById('open-ballad').flavours].sort()).toEqual([
       'lydian-dominant',
       'melodic-minor',
     ])

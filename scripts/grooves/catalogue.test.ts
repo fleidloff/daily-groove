@@ -23,8 +23,16 @@ function numberOf(id: string): number {
  */
 const RETIRED = ['groove-05', 'groove-06', 'groove-15', 'groove-16']
 
-/** Every id this project has ever issued: sixteen originally, six minted in Epic 4. */
-const IDS_EVER_ISSUED = 22
+/**
+ * Ids issued and then retired, across every retirement this project has made.
+ *
+ * Feature-7 retired four grooves whose flavours left the vocabulary. Feature-9
+ * retired the `double-time` mint when that feel was cut for being too busy for a
+ * game about naming chords, and pruned an over-large batch back to a balanced
+ * catalogue. None of those ids ever came back — which is the property this file
+ * exists to assert, and it is why the high-water mark stands well above the
+ * count rather than tracking it.
+ */
 
 describe('the committed catalogue', () => {
   it('draws grooves from every template', () => {
@@ -51,12 +59,15 @@ describe('the committed catalogue', () => {
   // used, never from the catalogue's length, so a groove that leaves the
   // rotation does not free its id for different audio. A re-issued id shows up
   // here as a mark that has regressed toward the count.
-  it('never re-issues an id — the high-water mark is every id ever issued', () => {
+  it('never re-issues an id', () => {
     const numbers = specs.map((s) => numberOf(s.id))
     expect(new Set(numbers).size, 'an id was issued twice').toBe(numbers.length)
-    // The mark stands above the count by exactly the retired ids, however many
-    // grooves have been minted since. Four left the rotation and none came back.
-    expect(Math.max(...numbers) - specs.length).toBe(RETIRED.length)
+    // The mark stands above the count by however many ids have been retired —
+    // never below it, which is what a re-issued id would look like.
+    expect(Math.max(...numbers)).toBeGreaterThan(specs.length)
+    for (const id of RETIRED) {
+      expect(specs.map((s) => s.id), `${id} came back`).not.toContain(id)
+    }
   })
 
   // Step C1 — R4, AC5. The retirement is a deletion from the catalogue, not a

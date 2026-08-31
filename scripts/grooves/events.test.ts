@@ -1799,7 +1799,7 @@ describe('buildEvents — the last pass ends with a fill — R5, R6, R7, R8, R9,
 describe('the feels Epic 6 added — R1, AC1', () => {
   const SAMPLE_RATE = 44100
   const OVERHANG_BARS = 1
-  const NEW_FEELS = ['double-time', 'swung-sixteenth']
+  const NEW_FEELS = ['open-ballad', 'swung-sixteenth']
 
   it('registers both of them', () => {
     for (const id of NEW_FEELS) expect(templateById(id).id).toBe(id)

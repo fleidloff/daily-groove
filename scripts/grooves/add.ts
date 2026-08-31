@@ -123,6 +123,15 @@ export async function addGrooves(n: number, opts: AddOptions = {}): Promise<Groo
 
   const minted: Minted[] = []
   let cursor = startSeed
+  // Feels ordered by how little the catalogue holds of each, so a batch tops up
+  // what is behind rather than what is already ahead. Computed once: it must not
+  // shift as the batch mints, or a single run would keep re-targeting itself.
+  const heldBy = new Map<string, number>()
+  for (const spec of existing) heldBy.set(spec.template, (heldBy.get(spec.template) ?? 0) + 1)
+  const byScarcity = [...templates].sort(
+    (a, b) => (heldBy.get(a.id) ?? 0) - (heldBy.get(b.id) ?? 0),
+  )
+
   let attempts = 0
 
   while (minted.length < n) {
@@ -136,9 +145,18 @@ export async function addGrooves(n: number, opts: AddOptions = {}): Promise<Groo
     }
     attempts += 1
 
-    // Round-robin the template across the batch, so four new grooves land on
-    // four feels rather than piling onto the first one (R4).
-    const template = templates[minted.length % templates.length]
+    // Round-robin the template across the batch, starting from the feel the
+    // catalogue has least of, so four new grooves land on four feels rather
+    // than piling onto the first one (R4).
+    //
+    // The order is by scarcity rather than by registration, and that is not a
+    // nicety: `minted.length % templates.length` alone always starts at index
+    // zero, so a batch smaller than the template count could only ever mint the
+    // first few feels. A newly registered template — which is last in the
+    // registry and has nothing behind it — was unreachable by any batch smaller
+    // than the whole set, while repeated small batches piled onto the feels that
+    // already had the most.
+    const template = byScarcity[minted.length % byScarcity.length]
 
     // One shared definition of an acceptable groove. Passing every template
     // (rotated so the wanted one comes first) lets the search account for the

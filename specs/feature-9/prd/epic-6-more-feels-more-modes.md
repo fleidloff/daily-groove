@@ -225,6 +225,31 @@ table and mode pool — but not the guess card's structure.
 - Minting uses the existing `grooves:add` path and gate. Nothing about the
   minting process changes here.
 
+## Decided after listening — `double-time` is out, `open-ballad` is in
+
+Recorded 2026-08-31, after the player heard both new feels.
+
+`swung-sixteenth` was confirmed. **`double-time` was rejected: "too much…
+focus is on harmony detection and not complicated grooves."** It put a sixteenth
+grid at 138–152 bpm, which is a groove that asks to be admired — and this game
+asks a player to name a chord, so a busy kit competes with the only thing they
+are listening for.
+
+It is **replaced rather than dropped**, by `open-ballad`: 62–74 bpm, an eighth
+grid, swing 0.02, two passes, the sparsest density band of the six and the only
+template that mixes the comp *above* the snare. It carries the same pair —
+melodic minor and lydian dominant — and that pairing is better served here than
+it was there. Lydian dominant is the fourth mode of melodic minor, so the two
+share every note and differ only in where the ear places the tonic: the answer is
+a bass note and a comp voicing, and it needs to be audible rather than fast.
+
+The four `double-time` grooves were retired from the catalogue and their ids were
+not re-issued.
+
+**A principle worth keeping**, since it is now stated twice: the kit exists to
+tell a player the feel, which narrows the mode. Beyond that it should get out of
+the way. Any future template should be judged against that before its tempo.
+
 ## Question log
 
 Answered questions, kept for traceability. The requirements above are the source
