@@ -109,6 +109,8 @@ export const BACKING_VOICES: VoiceName[] = [
   'hatClosed',
   'hatOpen',
   'rim',
+  'tomHigh',
+  'tomLow',
   'bass',
   'comp',
 ]
@@ -156,6 +158,10 @@ const VELOCITIES: Record<VoiceName, { strong: number; medium: number; weak: numb
   hatClosed: { strong: 0.75, medium: 0.45, weak: 0.32 },
   hatOpen: { strong: 0.75, medium: 0.68, weak: 0.6 },
   rim: { strong: 0.55, medium: 0.5, weak: 0.42 },
+  // Toms are struck about as hard as a snare and sound only in a fill, where
+  // the accent shape is the phrase's rather than the bar's.
+  tomHigh: { strong: 0.92, medium: 0.8, weak: 0.68 },
+  tomLow: { strong: 0.95, medium: 0.83, weak: 0.71 },
   bass: { strong: 0.92, medium: 0.8, weak: 0.68 },
   comp: { strong: 0.72, medium: 0.62, weak: 0.52 },
 }

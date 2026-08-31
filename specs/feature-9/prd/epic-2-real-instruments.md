@@ -243,6 +243,27 @@ compatible because this epic only adds declarations.
 - Whether VCSL holds a single coherent kit is settled by auditioning, not
   assumed either way in advance.
 
+## Finding — VCSL has no upright bass, and the bass stays electric
+
+Recorded 2026-08-31, from listening to the Epic 3 and Epic 4 renders.
+
+Having heard the current bass — still the TX81Z FM Piano stand-in, since this
+epic has not run — the player asked whether it could be an upright instead.
+
+**VCSL has no bowed string bass at all.** Checked against the library's tree at
+`c1ea7bc`: its Chordophones are harps, pianos, harpsichords, a strumstick, a
+psaltery and a Dan Tranh. No double bass, no contrabass, no cello to pitch down.
+An upright would have meant a source outside the library, reversing Q3.
+
+**Decided: the bass stays electric, and the pack stays VCSL-only.** Both logged
+answers below stand unchanged. The player's words: *"please just use the electric
+bass for all. If there is no upright, there's not much we can do."*
+
+Worth keeping because it is evidence rather than preference: Q2 was answered
+before anyone had heard a groove, and the answer survived hearing one. The
+constraint that decided it — VCSL's string section holds nothing in the register
+— is also the kind of thing worth not rediscovering.
+
 ## Question log
 
 Answered questions, kept for traceability. The requirements above are the source

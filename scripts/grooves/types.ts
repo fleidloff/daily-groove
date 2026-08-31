@@ -32,6 +32,13 @@ export type VoiceName =
   | 'hatClosed'
   | 'hatOpen'
   | 'rim'
+  /**
+   * Two toms, not three. The spec allowed for either; the library holds a high
+   * and a low, and inventing a middle one by pitching a neighbour would be a
+   * third tom that sounds like a detuned copy of one of these.
+   */
+  | 'tomHigh'
+  | 'tomLow'
   | 'bass'
   | 'comp'
 

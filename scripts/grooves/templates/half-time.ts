@@ -36,6 +36,8 @@ export const halfTime: FeelTemplate = {
   // in half-time the two big hits are the groove, and the hat is a timekeeper
   // nobody should be listening to.
   gain: {
+    tomHigh: -6,
+    tomLow: -5,
     kick: -2,
     snare: -4,
     hatClosed: -18,
@@ -43,6 +45,8 @@ export const halfTime: FeelTemplate = {
     comp: -13,
   },
   pan: {
+    tomHigh: 0.2,
+    tomLow: -0.24,
     kick: 0,
     snare: -0.08,
     hatClosed: 0.28,

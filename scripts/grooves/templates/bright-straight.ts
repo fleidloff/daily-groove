@@ -35,6 +35,8 @@ export const brightStraight: FeelTemplate = {
   // Everything a few dB down from the funk kit, and the comp brought up: a
   // light band playing at volume rather than a heavy one playing quietly.
   gain: {
+    tomHigh: -11,
+    tomLow: -10,
     kick: -7,
     snare: -8,
     hatClosed: -16,
@@ -43,6 +45,8 @@ export const brightStraight: FeelTemplate = {
     comp: -8,
   },
   pan: {
+    tomHigh: 0.24,
+    tomLow: -0.28,
     kick: 0,
     snare: 0.08,
     hatClosed: 0.42,

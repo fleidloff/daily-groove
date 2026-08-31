@@ -32,6 +32,8 @@ export const straightFunk: FeelTemplate = {
     driftDepth: 0.005,
   },
   gain: {
+    tomHigh: -9,
+    tomLow: -8,
     kick: -3,
     snare: -6,
     hatClosed: -14,
@@ -43,6 +45,8 @@ export const straightFunk: FeelTemplate = {
   // Kick, snare and bass hold the centre; the cymbals and the comp open the
   // image out either side, the way a kit sits from behind.
   pan: {
+    tomHigh: 0.22,
+    tomLow: -0.26,
     kick: 0,
     snare: -0.05,
     hatClosed: 0.35,
