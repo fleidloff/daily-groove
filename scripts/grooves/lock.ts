@@ -29,12 +29,23 @@ export type Lock = {
   catalogueSha256: string
   manifestSha256: string
   grooves: LockEntry[]
+  /**
+   * The reference notes, their manifest, and the pack they were rendered from.
+   * All optional: a lock written before `npm run notes` existed still parses,
+   * and `verifyLock` reports on whichever families it finds.
+   */
+  notes?: LockEntry[]
+  notesManifestSha256?: string
+  packSha256?: string
 }
 
 export type LockPaths = {
   grooveDir: string
   cataloguePath: string
   manifestPath: string
+  notesDir?: string
+  notesManifestPath?: string
+  packDeclarationPath?: string
 }
 
 const REGENERATE = 'run `npm run grooves` to regenerate'
