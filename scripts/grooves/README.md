@@ -67,6 +67,10 @@ A batch is spread across the templates rather than piled onto one, and new ids c
 from the highest number ever used — never from the catalogue's length — so removing a
 groove from rotation does not renumber anything.
 
+Each new groove is also given a uuid, minted at the moment the candidate is accepted, so a
+groove is shareable from the run that created it. The seed search itself stays
+deterministic and mints nothing: the uuid is stamped on outside it.
+
 When it succeeds, the working tree contains everything the new grooves need: the appended
 `catalogue.json` entries, their mp3s, the regenerated manifest, and their lock entries.
 There is no follow-up edit. Commit the lot. The command does not touch git itself.
@@ -97,7 +101,7 @@ diff is reviewed by listening.
 
 | Path | Role |
 | :-- | :-- |
-| `scripts/grooves/catalogue.json` | **The input.** One `{ id, template, seed }` per groove — that is the entire definition of a groove. |
+| `scripts/grooves/catalogue.json` | **The input.** One `{ id, uuid, template, seed }` per groove. `template` and `seed` are the entire definition of the music; `uuid` is the groove's permanent identity, the only thing a share link carries. |
 | `public/grooves/groove-NN.mp3` | Output. The rendered audio the app serves. |
 | `src/features/daily-groove/lib/grooves.generated.ts` | Output. The manifest the app imports directly: every groove's answers, plus the distractor pools built from them. Marked do-not-edit; a hand edit is lost on the next render *and* fails the build guard. |
 | `scripts/grooves/grooves.lock.json` | Output. A sha256 and byte count per mp3, plus one hash for the manifest and one for the catalogue. |
@@ -120,11 +124,12 @@ npm run grooves:verify
 
 This runs automatically as `prebuild`, so `npm run build` cannot ship a broken catalogue.
 It reads `grooves.lock.json` and compares it against what is on disk. It renders nothing,
-imports no audio code, and touches neither ffmpeg nor the sample pack — its whole
-dependency list is `node:fs`, `node:crypto` and `node:path`, and there is a test that
-reads the source and asserts exactly that. It runs on any CI machine with Node on it.
+imports no audio code, and touches neither ffmpeg nor the sample pack — it imports only
+`node:fs`, `node:crypto`, `node:path`, the catalogue reader and the uuid rules, and there
+is a test that reads the source and asserts exactly that against an explicit allowlist. It
+runs on any CI machine with Node on it.
 
-It reports three kinds of failure, each naming the file:
+It reports four kinds of failure, each naming the file or the groove:
 
 - **A broken mp3** — `missing`, `empty` (zero bytes), or `checksum` (the bytes changed).
   The zero-byte case is the one that matters historically: this project once shipped seven
@@ -135,6 +140,12 @@ It reports three kinds of failure, each naming the file:
   re-rendered. This is the one the audio checksums cannot see: the manifest and the lock
   still agree with each other perfectly, while both disagree with the input that produced
   them.
+
+- **A broken uuid** — `uuid-missing`, `uuid-malformed` or `uuid-duplicate`, naming the
+  groove that holds it, and both grooves when two share one. This is the only check on the
+  catalogue's *content* rather than its hash: a uuid is what a share link carries, so a
+  groove without one is a groove nobody can be sent. `npm run grooves:uuid` mints what is
+  missing; it is idempotent, so it leaves every uuid that is already there alone.
 
 A missing lock file is also a failure — the guard tells you to run `npm run grooves`.
 

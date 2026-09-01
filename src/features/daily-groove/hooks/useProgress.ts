@@ -119,8 +119,20 @@ export function useProgress(
       // disabled storage — must never cost the player the guess they just made
       // (R6, AC5). `createLocalStore` already swallows its own write failures;
       // this guards an injected store that does not.
-      setAll((prev) => [...prev.filter((x) => x.date !== record.date), record])
-      setTodayResult(record)
+      //
+      // Unless the store keeps nothing by design. `all` is what the streak is
+      // derived from, so merging a record that was never written would make a
+      // shared groove advance a streak it did not earn: the panel would say
+      // "streak now N+1" and a reload would take it back. A store that persists
+      // nothing feeds nothing (F12 E1 R19, AC9).
+      //
+      // The record is still built and still handed to `save` — dropping the
+      // write here instead would put the knowledge of a non-writing store in
+      // two places, and `save` is the seam that is allowed to know.
+      if (store.persists !== false) {
+        setAll((prev) => [...prev.filter((x) => x.date !== record.date), record])
+        setTodayResult(record)
+      }
       try {
         await store.save(record)
       } catch {

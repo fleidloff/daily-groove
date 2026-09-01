@@ -11,6 +11,7 @@ import type { Groove } from '@/lib/groove'
 export const GROOVES: Groove[] = [
   {
     id: 'groove-01',
+    uuid: 'f12e18e4-c781-4195-ace6-5908cb0a2915',
     audioSrc: '/grooves/groove-01.mp3',
     name: 'Rusted Shuffle',
     bpm: 105,
@@ -25,6 +26,7 @@ export const GROOVES: Groove[] = [
   },
   {
     id: 'groove-02',
+    uuid: '323eedd7-0c46-4394-abed-21e601dd0f94',
     audioSrc: '/grooves/groove-02.mp3',
     name: 'Dusty Ravine',
     bpm: 96,
@@ -39,6 +41,7 @@ export const GROOVES: Groove[] = [
   },
   {
     id: 'groove-03',
+    uuid: '427ca78f-675e-4fc7-a30c-dc89bf0de679',
     audioSrc: '/grooves/groove-03.mp3',
     name: 'Feathered Pocket',
     bpm: 103,
@@ -53,6 +56,7 @@ export const GROOVES: Groove[] = [
   },
   {
     id: 'groove-04',
+    uuid: 'd65589bc-3bbc-48ee-8c2d-9a576c04b3eb',
     audioSrc: '/grooves/groove-04.mp3',
     name: 'Quiet Drizzle',
     bpm: 103,
@@ -67,6 +71,7 @@ export const GROOVES: Groove[] = [
   },
   {
     id: 'groove-07',
+    uuid: '4f574115-57c4-40c7-be39-57bfd9243c46',
     audioSrc: '/grooves/groove-07.mp3',
     name: 'Humid Lagoon',
     bpm: 91,
@@ -81,6 +86,7 @@ export const GROOVES: Groove[] = [
   },
   {
     id: 'groove-08',
+    uuid: '2a06094b-3459-46b5-a37c-8c4c205b9a7d',
     audioSrc: '/grooves/groove-08.mp3',
     name: 'Gilded Lagoon',
     bpm: 91,
@@ -95,6 +101,7 @@ export const GROOVES: Groove[] = [
   },
   {
     id: 'groove-09',
+    uuid: 'c0d364d4-1436-4083-8c50-ed41b4207005',
     audioSrc: '/grooves/groove-09.mp3',
     name: 'Hazy Awning',
     bpm: 126,
@@ -109,6 +116,7 @@ export const GROOVES: Groove[] = [
   },
   {
     id: 'groove-10',
+    uuid: '75be2390-4050-491f-8f87-1690bfe6d4f5',
     audioSrc: '/grooves/groove-10.mp3',
     name: 'Humid Alley',
     bpm: 121,
@@ -123,6 +131,7 @@ export const GROOVES: Groove[] = [
   },
   {
     id: 'groove-11',
+    uuid: 'a1ed8a53-0c00-4632-a87f-b22e4bf1ac0d',
     audioSrc: '/grooves/groove-11.mp3',
     name: 'Midnight Parlour',
     bpm: 120,
@@ -137,6 +146,7 @@ export const GROOVES: Groove[] = [
   },
   {
     id: 'groove-12',
+    uuid: '575634b3-7ff8-4ce5-90a3-c12bff6273b8',
     audioSrc: '/grooves/groove-12.mp3',
     name: 'Wandering Basement',
     bpm: 130,
@@ -151,6 +161,7 @@ export const GROOVES: Groove[] = [
   },
   {
     id: 'groove-13',
+    uuid: 'da953189-43ff-47a5-aa34-30152adffb49',
     audioSrc: '/grooves/groove-13.mp3',
     name: 'Sunken Lullaby',
     bpm: 79,
@@ -165,6 +176,7 @@ export const GROOVES: Groove[] = [
   },
   {
     id: 'groove-14',
+    uuid: '367a0649-d43a-4746-8bc1-fe37c96a271a',
     audioSrc: '/grooves/groove-14.mp3',
     name: 'Smoky Harbour',
     bpm: 72,
@@ -179,6 +191,7 @@ export const GROOVES: Groove[] = [
   },
   {
     id: 'groove-17',
+    uuid: '2d960964-37a4-4f9c-b638-630a76233ad0',
     audioSrc: '/grooves/groove-17.mp3',
     name: 'Salted Cabin',
     bpm: 126,
@@ -193,6 +206,7 @@ export const GROOVES: Groove[] = [
   },
   {
     id: 'groove-18',
+    uuid: 'b57d8551-7ee6-4095-a1fa-abfa4b3178a4',
     audioSrc: '/grooves/groove-18.mp3',
     name: 'Tilted Boulevard',
     bpm: 96,
@@ -207,6 +221,7 @@ export const GROOVES: Groove[] = [
   },
   {
     id: 'groove-19',
+    uuid: '201a5bd6-fd90-4dbc-b7aa-4ec774f3b2dc',
     audioSrc: '/grooves/groove-19.mp3',
     name: 'Molten Harbour',
     bpm: 79,
@@ -221,6 +236,7 @@ export const GROOVES: Groove[] = [
   },
   {
     id: 'groove-20',
+    uuid: '470a40ea-a004-4ae3-94b1-051d81ab462f',
     audioSrc: '/grooves/groove-20.mp3',
     name: 'Amber Lantern',
     bpm: 70,
@@ -235,6 +251,7 @@ export const GROOVES: Groove[] = [
   },
   {
     id: 'groove-21',
+    uuid: 'baf90061-1f6b-4457-82ce-6ff39e316b91',
     audioSrc: '/grooves/groove-21.mp3',
     name: 'Neon Carousel',
     bpm: 126,
@@ -249,6 +266,7 @@ export const GROOVES: Groove[] = [
   },
   {
     id: 'groove-22',
+    uuid: 'c804b1df-5f1b-4cd2-936a-8225c40547e7',
     audioSrc: '/grooves/groove-22.mp3',
     name: 'Drowsy Cassette',
     bpm: 106,
@@ -263,6 +281,7 @@ export const GROOVES: Groove[] = [
   },
   {
     id: 'groove-28',
+    uuid: '6751d1de-962b-43ac-b2e1-94aea044162e',
     audioSrc: '/grooves/groove-28.mp3',
     name: 'Molten Shuffle',
     bpm: 108,
@@ -277,6 +296,7 @@ export const GROOVES: Groove[] = [
   },
   {
     id: 'groove-34',
+    uuid: 'd60a7a22-f991-436a-8b13-74fac0585f21',
     audioSrc: '/grooves/groove-34.mp3',
     name: 'Smoky Meadow',
     bpm: 108,
@@ -291,6 +311,7 @@ export const GROOVES: Groove[] = [
   },
   {
     id: 'groove-38',
+    uuid: 'f29bf1d8-5799-467e-8616-7268a7d43db6',
     audioSrc: '/grooves/groove-38.mp3',
     name: 'Patient Basement',
     bpm: 78,
@@ -305,6 +326,7 @@ export const GROOVES: Groove[] = [
   },
   {
     id: 'groove-40',
+    uuid: '12fa50e9-318e-4180-bd04-8b63d90b7485',
     audioSrc: '/grooves/groove-40.mp3',
     name: 'Smoky Awning',
     bpm: 110,
@@ -319,6 +341,7 @@ export const GROOVES: Groove[] = [
   },
   {
     id: 'groove-42',
+    uuid: '45d84df7-18a2-40f7-80a5-24726266255b',
     audioSrc: '/grooves/groove-42.mp3',
     name: 'Hazy Basement',
     bpm: 84,
@@ -333,6 +356,7 @@ export const GROOVES: Groove[] = [
   },
   {
     id: 'groove-44',
+    uuid: 'f4828027-ea17-46d3-b6c4-2d8b315e6a3c',
     audioSrc: '/grooves/groove-44.mp3',
     name: 'Smoky Awning',
     bpm: 81,
@@ -347,6 +371,7 @@ export const GROOVES: Groove[] = [
   },
   {
     id: 'groove-46',
+    uuid: '88b0070c-8909-431c-ba32-865ab5eed64d',
     audioSrc: '/grooves/groove-46.mp3',
     name: 'Marbled Ravine',
     bpm: 74,
@@ -361,6 +386,7 @@ export const GROOVES: Groove[] = [
   },
   {
     id: 'groove-48',
+    uuid: 'c4b79639-8d00-4d98-a958-eb7b10e55b5a',
     audioSrc: '/grooves/groove-48.mp3',
     name: 'Drowsy Shuffle',
     bpm: 114,
@@ -375,6 +401,7 @@ export const GROOVES: Groove[] = [
   },
   {
     id: 'groove-49',
+    uuid: '40582d50-d06b-48cb-9c19-f016b8e1dc89',
     audioSrc: '/grooves/groove-49.mp3',
     name: 'Hazy Awning',
     bpm: 71,
@@ -389,6 +416,7 @@ export const GROOVES: Groove[] = [
   },
   {
     id: 'groove-50',
+    uuid: '4aeaeb8c-dde5-487e-a063-ed1367013272',
     audioSrc: '/grooves/groove-50.mp3',
     name: 'Crooked Boulevard',
     bpm: 114,
@@ -403,6 +431,7 @@ export const GROOVES: Groove[] = [
   },
   {
     id: 'groove-51',
+    uuid: 'bae35df1-eaa8-48ef-b02c-814fbfe2340f',
     audioSrc: '/grooves/groove-51.mp3',
     name: 'Rusted Shuffle',
     bpm: 67,
@@ -417,6 +446,7 @@ export const GROOVES: Groove[] = [
   },
   {
     id: 'groove-52',
+    uuid: '663a6eda-b223-4a70-9842-647cc36255ab',
     audioSrc: '/grooves/groove-52.mp3',
     name: 'Tender Parlour',
     bpm: 86,

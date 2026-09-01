@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { Heading } from '@/components/typography/Heading'
 import { Text } from '@/components/typography/Text'
 import { Row } from '@/components/layout/Row'
@@ -18,6 +19,13 @@ type GrooveHeaderProps = {
    * control: the header is told once, not twice.
    */
   onShowHelp: (() => void) | null
+  /**
+   * Rendered beside the streak badge. The header never learns what it is
+   * (F12 E2 R1a): a `ReactNode` slot is what keeps a layout of parts from
+   * importing a groove, a URL or anything about sharing — and is what lets a
+   * page that is not the daily one reuse this header unchanged.
+   */
+  share?: ReactNode
 }
 
 /**
@@ -43,7 +51,7 @@ type GrooveHeaderProps = {
  * are already looking at is noise. The page says so by passing no handler
  * (F8 E3 R10).
  */
-export function GrooveHeader({ streak, onShowHelp }: GrooveHeaderProps) {
+export function GrooveHeader({ streak, onShowHelp, share }: GrooveHeaderProps) {
   return (
     <header>
       <Row gap="lg" align="center" justify="between" collapseBelow="sm">
@@ -63,8 +71,21 @@ export function GrooveHeader({ streak, onShowHelp }: GrooveHeaderProps) {
           </Stack>
         </div>
 
+        {/* The page-level furniture, anchored as one: whatever is slotted in
+            sits beside the pill at every width, and below `sm` both stay at the
+            end of their own line rather than centring (F12 E2 R1a, R1b). The
+            Row only appears when there is a second thing to align — a flex row
+            around one child would change the header for every caller that
+            slots nothing in. */}
         <div className="self-end sm:self-auto">
-          <StreakBadge streak={streak} />
+          {share ? (
+            <Row gap="sm" align="center">
+              {share}
+              <StreakBadge streak={streak} />
+            </Row>
+          ) : (
+            <StreakBadge streak={streak} />
+          )}
         </div>
       </Row>
     </header>

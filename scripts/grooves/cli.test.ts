@@ -21,8 +21,8 @@ const REAL_LOCK = join(process.cwd(), 'scripts', 'grooves', 'grooves.lock.json')
 const REAL_MP3 = join(process.cwd(), 'public', 'grooves', 'groove-01.mp3')
 
 const SPECS: GrooveSpec[] = [
-  { id: 'groove-01', template: 'straight-funk', seed: 1 },
-  { id: 'groove-02', template: 'straight-funk', seed: 2 },
+  { id: 'groove-01', uuid: '20b80c61-ed92-4203-8451-b988b09ad8c2', template: 'straight-funk', seed: 1 },
+  { id: 'groove-02', uuid: 'eaaa0108-1bd4-4472-aee7-b5726b5b89ad', template: 'straight-funk', seed: 2 },
 ]
 
 function tempRun() {
@@ -81,12 +81,17 @@ describe('generate', () => {
     }
   })
 
-  it('describes each groove with all twelve fields', async () => {
+  it('describes each groove with all thirteen fields', async () => {
     const opts = tempRun()
     writeFileSync(opts.cataloguePath, JSON.stringify(SPECS))
     const { entries } = await generate(opts)
     for (const e of entries) {
       expect(e.audioSrc).toBe(`/grooves/${e.id}.mp3`)
+      // Feature 12, Epic 1 — R1, R5. Copied from the spec, never minted here:
+      // that is what keeps two runs of `generate` byte-identical.
+      expect(e.uuid, `${e.id} carries no uuid`).toBe(
+        SPECS.find((spec) => spec.id === e.id)?.uuid,
+      )
       expect(e.bars).toBe(4)
       // Feature 9, Step C2 — R7, AC8. The figure is always four bars; the file
       // is whole passes of it, so the entry states both and the second is a
@@ -187,6 +192,13 @@ describe('generate', () => {
     const b = await generate({ ...tempRun(), encode: false })
 
     expect(a.entries).toEqual(b.entries)
+    // Feature-12, Epic 1, Step A5 — R2, R5, AC2. The uuid is input, not output:
+    // it is copied out of the catalogue, so two runs agree on it. If the
+    // renderer ever minted one, this is the assertion that would catch it —
+    // `toEqual` above would too, but only by accident, and only until someone
+    // narrowed it.
+    expect(a.entries.map((e) => e.uuid)).toEqual(SPECS.map((s) => s.uuid))
+    expect(a.entries.map((e) => e.uuid)).toEqual(b.entries.map((e) => e.uuid))
     for (const spec of SPECS) {
       const left = a.pcm.get(spec.id)!
       const right = b.pcm.get(spec.id)!
@@ -260,6 +272,27 @@ describe('toGroove', () => {
     expect(toGroove(SPECS[0], music, 0.025057).headDelaySeconds).toBe(0.025057)
     // A different file, a different number: nothing here is shared.
     expect(toGroove(SPECS[1], music, 0.031111).headDelaySeconds).toBe(0.031111)
+  })
+
+  // Feature-12, Epic 1, Step A5 — R1, R4, AC1. The entry carries the catalogue's
+  // uuid, byte for byte. `toGroove` is the one place the field crosses from the
+  // generator's input to the app's contract, so it is the one place that could
+  // silently substitute a fresh one.
+  it("carries the spec's uuid onto the entry, unchanged", () => {
+    const music = {
+      bpm: 96,
+      bars: 4,
+      loopBars: 4,
+      root: 'A',
+      flavour: 'harmonic-minor',
+      scale: 'A harmonic minor',
+      chord: 'AmMaj7',
+      progression: 'Am\u2013Dm\u2013E7',
+    } as const
+    expect(toGroove(SPECS[0], music, 0).uuid).toBe(SPECS[0].uuid)
+    // A different groove, a different uuid: nothing here is shared or derived.
+    expect(toGroove(SPECS[1], music, 0).uuid).toBe(SPECS[1].uuid)
+    expect(toGroove(SPECS[0], music, 0).uuid).not.toBe(SPECS[1].uuid)
   })
 
   // Feature 9, Step C2 — R7, AC8. The figure and the file are two numbers, and

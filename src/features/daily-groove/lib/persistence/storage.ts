@@ -11,6 +11,19 @@ export type ResultStore = {
   get(date: string): Promise<DailyResult | null>
   getAll(): Promise<DailyResult[]>
   save(result: DailyResult): Promise<void>
+  /**
+   * `false` on a store whose `save` keeps nothing *by design*, so a caller
+   * holding results in memory can tell "this write went nowhere" apart from
+   * "this write failed". Absent means it persists, which is what every store
+   * that actually writes leaves it as.
+   *
+   * `useProgress` is the one reader: it merges each record into the list the
+   * streak is derived from before the write, so that a failing store never costs
+   * the player their guess. A store that persists nothing must not feed that
+   * list at all, or a shared groove would move a streak it never wrote
+   * (F12 E1 R19, AC9).
+   */
+  readonly persists?: boolean
 }
 
 /**
@@ -101,5 +114,44 @@ export function createLocalStore(): ResultStore {
       envelope.byDate[result.date] = result
       writeEnvelope(envelope)
     },
+  }
+}
+
+/**
+ * The seam a shared groove is played through (F12 E1 R18, R19).
+ *
+ * A decorator rather than a flag threaded to each write site: `ResultStore` is
+ * already the one place saved results are read and written, so wrapping it here
+ * means a shared session has no write path left to reach by accident, however
+ * the puzzle grows.
+ *
+ * The two reads are deliberately *not* symmetrical, and the asymmetry is the
+ * whole design:
+ *
+ * - `getAll` delegates, because the streak the header shows is derived from the
+ *   real saved results and a shared page shows the player's true streak. It just
+ *   must not move it (R19; F12 E3 R7a).
+ * - `get` does not, because it answers "what has been played on this date", and
+ *   on a shared groove the answer is always nothing. Delegating it would hydrate
+ *   *today's* saved attempts into a puzzle for a different groove — a shared
+ *   link opened after the daily was solved would show as already solved, its
+ *   attempt row scored against another answer entirely. A shared groove opens
+ *   fresh every visit (R21, AC11).
+ *
+ * `save` is dropped but still resolves, so every caller's `await` behaves
+ * exactly as it does on the daily page, and `persists: false` tells the one
+ * caller that holds records in memory not to hold this one.
+ */
+export function createReadOnlyStore(inner: ResultStore): ResultStore {
+  return {
+    async get(): Promise<DailyResult | null> {
+      return null
+    },
+    getAll: () => inner.getAll(),
+    async save(): Promise<void> {
+      // Deliberately nothing. A shared groove is practice: no record is created
+      // or amended under today's date, or under any date (R18).
+    },
+    persists: false,
   }
 }

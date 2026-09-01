@@ -11,6 +11,7 @@ import { readLock } from './lock.ts'
 import { allTemplates } from './templates/index.ts'
 import { placeholderPack } from './testing/placeholderPack.ts'
 import type { GateFailure, GrooveSpec } from './types.ts'
+import { isCanonicalUuid } from './uuid.ts'
 
 /**
  * The committed artifacts, read once at module load — before any test runs.
@@ -72,11 +73,11 @@ function headDelays(manifest: string): Record<string, number> {
 }
 
 const FIVE: GrooveSpec[] = [
-  { id: 'groove-01', template: 'straight-funk', seed: 1 },
-  { id: 'groove-02', template: 'straight-funk', seed: 2 },
-  { id: 'groove-03', template: 'straight-funk', seed: 3 },
-  { id: 'groove-04', template: 'straight-funk', seed: 4 },
-  { id: 'groove-05', template: 'shuffle', seed: 5 },
+  { id: 'groove-01', uuid: '6e48e341-7821-4980-be8b-0595cc854d35', template: 'straight-funk', seed: 1 },
+  { id: 'groove-02', uuid: '42c659b3-a1af-41a1-8cdf-dabed78e961b', template: 'straight-funk', seed: 2 },
+  { id: 'groove-03', uuid: 'c78377c1-f51b-4701-af4b-4c2107456851', template: 'straight-funk', seed: 3 },
+  { id: 'groove-04', uuid: 'f52dfb38-ef29-4efb-b6d6-3897d297ba2a', template: 'straight-funk', seed: 4 },
+  { id: 'groove-05', uuid: '61b80299-0b4a-459a-a487-c5c9eab95848', template: 'shuffle', seed: 5 },
 ]
 
 const TWO = FIVE.slice(0, 2)
@@ -195,6 +196,43 @@ describe('addGrooves', () => {
     for (const [name, bytes] of Object.entries(before)) {
       expect(readFileSync(join(f.outDir, name), 'utf8'), `${name} was rewritten`).toBe(bytes)
     }
+  }, MINT_TIMEOUT_MS)
+
+  // Feature-12, Epic 1, Step A6 — R7, AC6. A groove is shareable the moment it
+  // exists, so the uuid is minted where the groove is, not by a later pass over
+  // the catalogue. `selectSeeds` stays out of it: it is deterministic, and
+  // randomness must not enter it.
+  it('mints a uuid for every groove it appends, and touches no existing one', async () => {
+    const f = fixture()
+    const MINTED_UUID = 'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee'
+
+    const minted = await addGrooves(1, {
+      startSeed: 1400,
+      gate: PASS,
+      mintUuid: () => MINTED_UUID,
+      ...f,
+    })
+
+    expect(minted[0].uuid).toBe(MINTED_UUID)
+
+    const after = readCatalogue(f.cataloguePath)
+    expect(after.at(-1)!.uuid).toBe(MINTED_UUID)
+    // The two that were already there keep the uuids they came with.
+    expect(after.slice(0, 2).map((s) => s.uuid)).toEqual(TWO.map((s) => s.uuid))
+    // And the manifest the mint rewrites carries it, so the link works without
+    // a follow-up render.
+    expect(readFileSync(f.manifestPath, 'utf8')).toContain(`uuid: '${MINTED_UUID}',`)
+  }, MINT_TIMEOUT_MS)
+
+  it('mints a real, unique uuid when nobody injects one', async () => {
+    const f = fixture()
+    const minted = await addGrooves(2, { startSeed: 1500, gate: PASS, ...f })
+
+    for (const spec of minted) {
+      expect(isCanonicalUuid(spec.uuid), `${spec.id}: ${String(spec.uuid)}`).toBe(true)
+    }
+    const all = readCatalogue(f.cataloguePath)
+    expect(new Set(all.map((s) => s.uuid)).size).toBe(all.length)
   }, MINT_TIMEOUT_MS)
 
   it('regenerates the manifest so the new grooves need no follow-up edit', async () => {

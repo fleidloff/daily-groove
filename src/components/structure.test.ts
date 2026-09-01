@@ -9,7 +9,7 @@ const GROUPS = ['controls', 'display', 'layout', 'surfaces', 'typography']
 const COMPONENTS: Record<string, string[]> = {
   layout: ['Container', 'PageShell', 'Row', 'Stack', 'LabelledColumn'],
   surfaces: ['Card', 'Panel'],
-  controls: ['Button', 'Chip', 'ChipGroup', 'PlayControl'],
+  controls: ['Button', 'Chip', 'ChipGroup', 'InlineButton', 'PlayControl'],
   typography: ['Heading', 'Text', 'EyebrowLabel', 'SectionLabel', 'Lettering'],
   display: ['Pill', 'ProgressTrack'],
 }
@@ -144,6 +144,14 @@ describe('design system structure', () => {
 
     expect(tooltips).toEqual([])
   })
+
+  // Epic 2 Step A2 — R1c, AC12: `InlineButton` is listed above, so the two
+  // assertions either side of this comment already cover it — it must sit in
+  // `controls/` beside its own test, and it may climb out of no folder. The
+  // other half of AC12, "its source names nothing from `src/features`", is
+  // owned repo-wide by guard I2 in `src/app/globals.test.ts`, which reads every
+  // design-system file from disk. A local copy here would be a worse second
+  // copy of that guard, so there is none.
 
   // Step A3 — R10, AC8
   it('has no import that climbs out of its own folder', () => {

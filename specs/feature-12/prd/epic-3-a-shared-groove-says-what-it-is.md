@@ -94,11 +94,18 @@ link, meanwhile, has nothing at all to say.
 
 ### When the shared groove is today's groove
 
-- **R13** — A link to today's own groove is still framed and still behaves as a
-  shared groove: it records nothing, and it says so.
-- **R14** — On that page the way back to today is unmistakable, because the two
+- **R13** — ~~A link to today's own groove is still framed and still behaves as a
+  shared groove: it records nothing, and it says so.~~
+- **R14** — ~~On that page the way back to today is unmistakable, because the two
   pages otherwise show the same groove and the difference is the part that
-  matters.
+  matters.~~
+
+**Both superseded by the addendum below.** There is no such page any more: a link
+to today's own groove redirects to `/`. The framing R13 asked for was the
+mitigation for a page that offered nothing; removing the page removes the need
+for it. R13 and R14 still describe the *puzzle's* behaviour — handed today's
+groove in shared mode it frames it as shared and records nothing — which is what
+lets the redirect live in the route alone.
 
 ## Behaviour details
 
@@ -135,9 +142,10 @@ stateDiagram-v2
   inspected, then it is a not-found response.
 - **AC9** (R12) — Given the not-found page, when it is read, then it contains no
   puzzle, no attempt row, no answer and no audio.
-- **AC10** (R13, R14) — Given today's groove's own uuid, when opened at
+- **AC10** (R13, R14) — ~~Given today's groove's own uuid, when opened at
   `/groove/<uuid>`, then it is framed as a shared groove, it records nothing, and
-  the way back to today is present.
+  the way back to today is present.~~ **Superseded:** opening it redirects to `/`.
+  See Epic 1's addendum, AC24.
 - **AC11** (R1a) — Given a shared page, when the groove card's meta line is read,
   then it shows the tempo followed by "shared groove" and no date; and given `/`,
   the same line still shows the tempo and today's date.
@@ -199,3 +207,23 @@ Answer: **A) Yes, on the same new-or-lapsed rule `/` uses** — a shared link is
 the likeliest first contact anyone has with the app, and feature-8 built the box
 for exactly that arrival.
 Applied to: R7b, AC13
+
+## Addendum — 2026-09-01
+
+A shared link whose uuid is today's own groove now redirects to `/` rather than
+rendering this epic's framing. The requirement, the reasoning and the acceptance
+criterion are recorded once, in
+[Epic 1's addendum](epic-1-open-a-groove-by-its-link.md#addendum--2026-09-01)
+(R24–R27, AC24), because the uuid and the route are Epic 1's.
+
+What it changes here: R13, R14 and AC10 are struck through above. Everything else
+in this epic stands unchanged — the notice, the meta line, the way back, both
+endings' invitation and the not-found page all apply to every shared groove that
+is not today's, which is 29 of 30 on any given day.
+
+One consequence worth naming: this epic's Step A5 was written to prove the
+*absence* of a special case for today's groove. That proof still holds where it
+was written — `GroovePuzzle` in shared mode branches on nothing — and the special
+case lives one level up, in `src/app/groove/[uuid]/SharedGroove.tsx`. The
+decision about where to send a player is the route's; which groove belongs to
+which day is the feature's, answered by `isTodaysGroove`.

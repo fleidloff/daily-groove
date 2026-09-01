@@ -4,8 +4,9 @@ import { createElement } from 'react'
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import * as publicSurface from './index'
-import { GroovePuzzle } from './index'
+import { GroovePuzzle, grooveByUuid, grooveHref, shareUrlOf } from './index'
 import type { Answer, Attempt, DailyResult, Flavour, Groove, Root } from './index'
+import { GROOVES } from './data/grooves.generated'
 import { renderFeature, settleFeature } from './testing/renderFeature'
 
 const featureDir = resolve(process.cwd(), 'src/features/daily-groove')
@@ -42,10 +43,21 @@ describe('daily-groove public surface', () => {
     expect(typeof GroovePuzzle).toBe('function')
   })
 
-  it('exports only GroovePuzzle and the shared types (no lib/component internals)', () => {
-    // Types are erased at runtime; only the component remains as a value export.
-    const runtimeExports = Object.keys(publicSurface)
-    expect(runtimeExports).toEqual(['GroovePuzzle'])
+  it('exports only the named surface and the shared types (no lib/component internals)', () => {
+    // Types are erased at runtime, so what remains is the component plus the
+    // four functions feature-12's route and share control build against.
+    const runtimeExports = Object.keys(publicSurface).sort()
+    expect(runtimeExports).toEqual([
+      'GroovePuzzle',
+      'grooveByUuid',
+      'grooveHref',
+      // The route asks this to decide whether a shared link points at the groove
+      // `/` is already serving, and redirect instead of playing it as practice.
+      // A predicate crosses the surface rather than the rotation itself, so
+      // `selectGrooveForDate` and `GROOVES` stay internal.
+      'isTodaysGroove',
+      'shareUrlOf',
+    ])
     // Guard against leaking internals as runtime values.
     expect(runtimeExports).not.toContain('createDailyGrooveStore')
     expect(runtimeExports).not.toContain('buildOptions')
@@ -54,6 +66,53 @@ describe('daily-groove public surface', () => {
     expect(runtimeExports).not.toContain('toArchiveEntries')
     expect(runtimeExports).not.toContain('ArchiveStrip')
     expect(runtimeExports).not.toContain('SolvedPanel')
+    // lib/share/share.ts is internal: the control that offers the link lives
+    // inside the feature, so its decision never has to cross the surface.
+    expect(runtimeExports).not.toContain('shareLink')
+    expect(runtimeExports).not.toContain('browserShareDeps')
+    expect(runtimeExports).not.toContain('GROOVE_PATH')
+    expect(runtimeExports).not.toContain('selectGrooveForDate')
+    expect(runtimeExports).not.toContain('GROOVES')
+  })
+
+  /**
+   * Feature-12, Epic 1, Step B3 — R15. The route and Epic 2's share control
+   * reach the feature only through this file, so the three names are read from
+   * the source as well as called: a value export could otherwise be satisfied
+   * by an accidental re-export from somewhere else.
+   */
+  it('names grooveByUuid, grooveHref, isTodaysGroove and shareUrlOf among its exports (R15)', () => {
+    const source = readFileSync(join(featureDir, 'index.ts'), 'utf8')
+    const blocks = [...source.matchAll(/export\s+\{([^}]*)\}/g)]
+    const names = blocks
+      .flatMap((block) => block[1].split(','))
+      .map((name) => name.trim())
+      .filter(Boolean)
+      .sort()
+
+    expect(names).toEqual([
+      'GroovePuzzle',
+      'grooveByUuid',
+      'grooveHref',
+      'isTodaysGroove',
+      'shareUrlOf',
+    ])
+  })
+
+  it('resolves the three feature-12 functions as callable values (R15)', () => {
+    expect(typeof grooveByUuid).toBe('function')
+    expect(typeof grooveHref).toBe('function')
+    expect(typeof shareUrlOf).toBe('function')
+  })
+
+  it('resolves a groove by uuid and builds its link, through the index alone (R12, R15)', () => {
+    // The route's whole job, exercised across the public surface only.
+    const groove = grooveByUuid(GROOVES[0].uuid)
+    expect(groove?.id).toBe(GROOVES[0].id)
+    expect(grooveHref(GROOVES[0])).toBe(`/groove/${GROOVES[0].uuid}`)
+    expect(shareUrlOf(GROOVES[0], 'https://example.test/')).toBe(
+      `https://example.test/groove/${GROOVES[0].uuid}`,
+    )
   })
 
   it('exports exactly the six shared type names (AC14)', () => {
@@ -94,6 +153,7 @@ describe('daily-groove public surface', () => {
     // Groove comes through the same surface, re-exported from src/lib/groove.
     const groove: Groove = {
       id: 'groove-01',
+      uuid: '39185f2b-f4bf-4fef-b928-65543664a6ec',
       audioSrc: '/grooves/groove-01.mp3',
       name: 'Velvet Pocket',
       bpm: 98,
@@ -165,6 +225,7 @@ describe('the composed feature and its pass count', () => {
   /** A groove of two passes: an eight-bar file of a four-bar figure. */
   const twoPassGroove: Groove = {
     id: 'groove-01',
+    uuid: '93669912-e0dd-4127-872c-decd7543df6b',
     audioSrc: '/grooves/groove-01.mp3',
     name: 'Velvet Pocket',
     bpm: 98,

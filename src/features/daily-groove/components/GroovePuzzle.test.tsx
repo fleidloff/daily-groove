@@ -18,7 +18,10 @@ const { mockStore } = vi.hoisted(() => ({
     save: vi.fn(),
   },
 }))
-vi.mock('../lib/persistence/storage', () => ({
+// Only the module singleton is stood in for: `createReadOnlyStore` stays the
+// real decorator, because the shared session below is the real one.
+vi.mock('../lib/persistence/storage', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../lib/persistence/storage')>()),
   createLocalStore: () => mockStore,
 }))
 
@@ -44,6 +47,7 @@ import {
 
 const GROOVE: Groove = {
   id: 'groove-01',
+  uuid: '61607a6c-3f9e-4fd7-9724-99ea22d32e4a',
   audioSrc: '/grooves/groove-01.mp3',
   name: 'Test Groove',
   bpm: 90,
@@ -2242,9 +2246,18 @@ describe('GroovePuzzle', () => {
 
     await guess(user, 'C', 'Aeolian')
 
-    // One line under the groove's name, tempo first.
+    // One line under the groove's name, tempo first. Since F12 E3 the answer
+    // joins the *end* of that line rather than the middle of it: the card is
+    // handed a finished meta line ("<bpm> bpm · <day>", or "· shared groove")
+    // and cannot take it apart to insert anything — which is exactly what stops
+    // it deciding the line again. Same subject, same rendered node.
     expect(
-      screen.getByText(new RegExp(`^${GROOVE.bpm} bpm · C Aeolian · `)),
+      screen.getByText(
+        // Strict again: the answer sits between the tempo and the day, exactly
+        // where feature-11 put it. `metaLine` composes the whole line, so the
+        // shared page's wording needed no room made for it here (F12 E3).
+        new RegExp(`^${GROOVE.bpm} bpm · C Aeolian · `),
+      ),
     ).toBeInTheDocument()
   })
 
@@ -2284,5 +2297,815 @@ describe('GroovePuzzle', () => {
     // cannot disagree about which chord bar four is.
     expect(trackChords()).toEqual(sheetBars)
     expect(trackChords()).toEqual(CHANGES_READ.split(' · '))
+  })
+
+  // --- Feature 12, Epic 1: the session that records nothing -----------------
+
+  /**
+   * A shared groove is practice. It plays the whole puzzle and writes nothing —
+   * the page hands the session a `ResultStore` whose write path is gone, so
+   * there is no save site left to reach (F12 E1 R18, R20, R21, R22).
+   *
+   * Nothing about how the page *reads* changes, and nothing about how it *looks*
+   * changes here: the shared framing, the way back to today and the date line
+   * are all Epic 3's. This block is the persistence switch and only that.
+   */
+  describe('a shared groove (F12 E1)', () => {
+    /** The shared page, rendered and settled exactly as the daily one is. */
+    const renderShared = () =>
+      renderPuzzle(<GroovePuzzle groove={GROOVE} mode="shared" />)
+
+    /** A solved day, N days back — the streak's raw material. */
+    const solved = (daysAgo: number): DailyResult => ({
+      date: isoDate(new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000)),
+      answer: { root: 'C', flavour: 'Aeolian' },
+      attempts: [SOLVING],
+      solved: true,
+      grooveId: 'groove-02',
+    })
+
+    it('writes nothing when it is played through to a solve (R18, AC9)', async () => {
+      const user = userEvent.setup()
+      await renderShared()
+
+      await guess(user, 'C', wrongFlavour())
+      await guess(user, 'C', 'Aeolian')
+
+      // The day was played: the panel is on screen and the control says so.
+      expect(
+        screen.getByRole('heading', { name: 'C Aeolian' }),
+      ).toBeInTheDocument()
+      expect(control()).toHaveAccessibleName('Solved')
+      // ...and nothing was recorded, under today's date or any other.
+      expect(mockStore.save).not.toHaveBeenCalled()
+    })
+
+    it('writes nothing when it is given up on either (R18, AC9)', async () => {
+      const user = userEvent.setup()
+      await renderShared()
+      const wrong = wrongFlavour()
+
+      await guess(user, 'C', wrong)
+      await guess(user, 'G', wrong)
+      await guess(user, 'G', otherWrongFlavour())
+      await user.click(giveUp() as HTMLElement)
+      await user.click(giveUp() as HTMLElement)
+
+      expect(solutionPanel()).toBeInTheDocument()
+      expect(mockStore.save).not.toHaveBeenCalled()
+    })
+
+    it('still shows the streak the saved records imply (R19, AC9)', async () => {
+      const records = [solved(1), solved(2), solved(3)]
+      mockStore.get.mockResolvedValue(null)
+      mockStore.getAll.mockResolvedValue(records)
+
+      const user = userEvent.setup()
+      await renderShared()
+
+      // Read, not written: a shared page shows the player's real run.
+      expect(screen.getByLabelText(/current streak/i)).toHaveTextContent(
+        '3 days streak',
+      )
+      expect(mockStore.getAll).toHaveBeenCalled()
+
+      await guess(user, 'C', wrongFlavour())
+
+      // A miss on a shared groove does not break the run — the unsolved day it
+      // would have written is never written.
+      expect(screen.getByLabelText(/current streak/i)).toHaveTextContent(
+        '3 days streak',
+      )
+      expect(mockStore.save).not.toHaveBeenCalled()
+    })
+
+    /**
+     * The case that actually regressed while this epic was built, so it is
+     * asserted where it was visible: on the page (R19, AC9).
+     *
+     * `useProgress` merges the day into the record set the streak derives from
+     * *before* it writes, so that a store which throws never costs the player
+     * their guess. A store that keeps nothing by design is not a store that
+     * failed — and until `ResultStore.persists` told the two apart, solving a
+     * shared groove made the pill and the payoff panel both read one higher
+     * than the player's real run, until a reload took it back.
+     *
+     * A miss is asserted above. A solve is the harder half: it is the only
+     * ending that would move a streak forward.
+     */
+    it('leaves the streak where it was across a shared solve (R19, AC9)', async () => {
+      const user = userEvent.setup()
+      // Yesterday and the day before, both solved: a live run of 2, which a
+      // solve dated today would carry to 3 if it were recorded.
+      mockStore.getAll.mockResolvedValue([solved(1), solved(2)])
+      await renderShared()
+
+      const before = screen.getByLabelText(/current streak/i).textContent
+      expect(before).toMatch(/2 days streak/)
+
+      await guess(user, 'C', 'Aeolian')
+
+      // The day ended, and ended solved...
+      expect(control()).toHaveAccessibleName('Solved')
+      // ...and the number is byte-identical to what it was before the play.
+      expect(screen.getByLabelText(/current streak/i).textContent).toBe(before)
+      // Including in the payoff panel, which names the streak in its own words
+      // and was the surface the inflated number showed up on.
+      expect(solutionPanel()?.textContent ?? '').not.toMatch(/3 days/)
+      expect(mockStore.save).not.toHaveBeenCalled()
+    })
+
+    it('plays like the daily puzzle in every other respect (R22)', async () => {
+      const user = userEvent.setup()
+      await renderShared()
+      const wrong = wrongFlavour()
+
+      // The same two rows, the same twelve roots and four modes.
+      expect(within(rootGroup()).getAllByRole('button').map(chipLabel)).toEqual(
+        ROOTS,
+      )
+      expect(
+        within(flavourGroup())
+          .getAllByRole('button')
+          .map((b) => b.textContent),
+      ).toEqual(flavours())
+
+      // The same check control: prompting, then naming the pair, then locked.
+      expect(control()).toHaveAccessibleName('Pick a root and a mode')
+      expect(control()).toBeDisabled()
+      await user.click(within(rootGroup()).getByRole('button', { name: 'C' }))
+      await user.click(
+        within(flavourGroup()).getByRole('button', { name: wrong }),
+      )
+      expect(control()).toHaveAccessibleName(`Check C ${wrong}`)
+      expect(control()).toBeEnabled()
+
+      // The same dots and the same feedback.
+      expect(dotStates()).toEqual(['unspent', 'unspent', 'unspent'])
+      await user.click(control())
+      expect(dotStates()).toEqual(['spent', 'unspent', 'unspent'])
+      expect(screen.getByText(/right home note/i)).toBeInTheDocument()
+
+      // The same nudge on the second miss, at the same threshold.
+      expect(nudge()).not.toBeInTheDocument()
+      await guess(user, 'G', wrong)
+      expect((nudge() as HTMLElement).textContent).toMatch(/root is C\./)
+
+      // The same way out, offered from the third miss.
+      expect(giveUp()).toBeNull()
+      await guess(user, 'G', otherWrongFlavour())
+      expect(giveUp()).toHaveAccessibleName('Give up and show the answer')
+
+      // The same simple-mode toggle, narrowing both rows.
+      await user.click(screen.getByRole('switch', { name: /simple mode/i }))
+      expect(
+        within(rootGroup()).getAllByRole('button').map(chipLabel),
+      ).toEqual(simpleRootOptions(new Date(), answerOf(GROOVE)))
+      expect(
+        within(flavourGroup())
+          .getAllByRole('button')
+          .map((b) => b.textContent),
+      ).toEqual(['Major', 'Minor'])
+    })
+
+    it('opens clean on the next visit (R21, AC11)', async () => {
+      const user = userEvent.setup()
+      const first = await renderShared()
+
+      await guess(user, 'C', wrongFlavour())
+      await guess(user, 'G', wrongFlavour())
+      expect(dotStates()).toEqual(['spent', 'spent', 'unspent'])
+      first.unmount()
+
+      // Reload. Nothing was stored, so there is nothing to restore.
+      await renderShared()
+
+      expect(dotStates()).toEqual(['unspent', 'unspent', 'unspent'])
+      expect(control()).toHaveAccessibleName('Pick a root and a mode')
+      expect(control()).toBeDisabled()
+      expect(
+        within(rootGroup())
+          .getAllByRole('button')
+          .filter((b) => b.getAttribute('aria-pressed') === 'true'),
+      ).toHaveLength(0)
+      expect(nudge()).not.toBeInTheDocument()
+    })
+
+    it('leaves the day at / unplayed and its storage untouched (R18, R20)', async () => {
+      // NOTE: `GROOVE` is a fixture, never the groove the rotation actually
+      // serves today, so this is the general "a shared play writes nothing"
+      // claim through real storage rather than R20's today's-groove case. A
+      // shared link to today's own groove no longer reaches this page at all —
+      // the route redirects it to `/`, asserted in
+      // `src/app/groove/[uuid]/SharedGroove.test.tsx`.
+      // Through the real localStorage-backed store, so "nothing was written" is
+      // a claim about the actual key rather than about a spy.
+      const { createLocalStore: realStore } = await vi.importActual<
+        typeof import('../lib/persistence/storage')
+      >('../lib/persistence/storage')
+      const real = realStore()
+      mockStore.get.mockImplementation((date: string) => real.get(date))
+      mockStore.getAll.mockImplementation(() => real.getAll())
+      mockStore.save.mockImplementation((result: DailyResult) =>
+        real.save(result),
+      )
+
+      try {
+        const user = userEvent.setup()
+
+        // GROOVE stands for today's groove, opened by its own share link.
+        const shared = await renderShared()
+        await guess(user, 'C', wrongFlavour())
+        await guess(user, 'C', 'Aeolian')
+        expect(
+          screen.getByRole('heading', { name: 'C Aeolian' }),
+        ).toBeInTheDocument()
+        shared.unmount()
+
+        // Nothing reached storage at all.
+        expect(localStorage.getItem('daily-groove:v2:results')).toBeNull()
+
+        // ...and today's puzzle is still waiting at `/`, unplayed.
+        await renderPuzzle()
+        expect(dotStates()).toEqual(['unspent', 'unspent', 'unspent'])
+        expect(
+          screen.queryByRole('heading', { name: 'C Aeolian' }),
+        ).not.toBeInTheDocument()
+        expect(screen.getByLabelText(/current streak/i)).toHaveTextContent(
+          /no streak yet/i,
+        )
+
+        // The daily puzzle still records, which is the difference under test.
+        await guess(user, 'C', 'Aeolian')
+        expect(await real.get(TODAY())).not.toBeNull()
+      } finally {
+        localStorage.removeItem('daily-groove:v2:results')
+      }
+    })
+
+    it('records the day when the mode is daily, given or defaulted (R23)', async () => {
+      const user = userEvent.setup()
+
+      const explicit = await renderPuzzle(
+        <GroovePuzzle groove={GROOVE} mode="daily" />,
+      )
+      await guess(user, 'C', wrongFlavour())
+      expect(mockStore.save).toHaveBeenCalledTimes(1)
+      explicit.unmount()
+
+      mockStore.save.mockClear()
+
+      // The default is the daily mode, so every existing caller is unchanged.
+      await renderPuzzle()
+      await guess(user, 'C', wrongFlavour())
+      expect(mockStore.save).toHaveBeenCalledTimes(1)
+      expect(mockStore.save.mock.calls[0][0].date).toBe(TODAY())
+    })
+  })
+
+  // --- F12 Epic 2, Step C5: the share control on the page ------------------
+
+  describe('sharing the groove (F12 E2)', () => {
+    const shareControl = () => screen.getByRole('button', { name: 'Share' })
+
+    /** The link this fixture lives at, from the page's own origin (R3, AC2). */
+    const link = () => `${window.location.origin}/groove/${GROOVE.uuid}`
+
+    /**
+     * A browser with a Web Share sheet, installed the way the fake
+     * `AudioContext` is: the control feature-detects `navigator.share` at press
+     * time, so standing one up is what makes the offered URL observable through
+     * the composed page rather than through a prop nobody in the app passes.
+     */
+    function installShareSheet() {
+      const share = vi.fn().mockResolvedValue(undefined)
+      Object.defineProperty(navigator, 'share', {
+        configurable: true,
+        writable: true,
+        value: share,
+      })
+      return share
+    }
+
+    afterEach(() => {
+      Reflect.deleteProperty(navigator, 'share')
+    })
+
+    it('offers share from the first frame, with nothing played yet (R1, R2, AC1)', async () => {
+      await renderPuzzle()
+
+      expect(shareControl()).toBeInTheDocument()
+      expect(shareControl()).toHaveAccessibleName('Share')
+      // Nothing has been spent: the control is there before the game is played,
+      // not as a reward for finishing it.
+      expect(dotStates()).toEqual(['unspent', 'unspent', 'unspent'])
+    })
+
+    it('still offers it after a solve, under the same label (R2, AC1)', async () => {
+      const user = userEvent.setup()
+      await renderPuzzle()
+
+      await guess(user, 'C', wrongFlavour())
+      expect(shareControl()).toHaveAccessibleName('Share')
+
+      await guess(user, 'C', 'Aeolian')
+      expect(control()).toHaveAccessibleName('Solved')
+      expect(shareControl()).toHaveAccessibleName('Share')
+    })
+
+    it('still offers it after a reveal, under the same label (R2, AC1)', async () => {
+      const user = userEvent.setup()
+      await renderPuzzle()
+      const wrong = wrongFlavour()
+
+      await guess(user, 'C', wrong)
+      await guess(user, 'G', wrong)
+      await guess(user, 'G', otherWrongFlavour())
+      await user.click(giveUp() as HTMLElement)
+      await user.click(giveUp() as HTMLElement)
+
+      expect(solutionPanel()).toBeInTheDocument()
+      expect(shareControl()).toHaveAccessibleName('Share')
+    })
+
+    it("offers this groove's own link, and nothing else in it (R3, R7, AC2, AC3)", async () => {
+      const share = installShareSheet()
+      const user = userEvent.setup()
+      await renderPuzzle()
+
+      // With the day spent and the answer on screen, the link is still only a
+      // uuid: there is nothing in it to spoil.
+      await guess(user, 'C', 'Aeolian')
+      await user.click(shareControl())
+      await waitFor(() => expect(share).toHaveBeenCalledTimes(1))
+
+      expect(share).toHaveBeenCalledWith({ url: link() })
+      const offered = (share.mock.calls[0][0] as { url: string }).url
+      for (const secret of [
+        'Aeolian',
+        GROOVE.scale,
+        GROOVE.chord,
+        GROOVE.progression,
+        GROOVE.name,
+        GROOVE.id,
+      ]) {
+        expect(offered).not.toContain(secret)
+      }
+    })
+
+    it('leaves playback and the day alone when it is pressed (R5, AC8)', async () => {
+      const share = installShareSheet()
+      const user = userEvent.setup()
+      await renderPuzzle()
+
+      // The two things a stray press could disturb: a sounding groove and a
+      // chosen root.
+      await play(user)
+      await user.click(within(rootGroup()).getByRole('button', { name: 'C' }))
+      await advance(loopFraction(0.25))
+
+      await user.click(shareControl())
+      await waitFor(() => expect(share).toHaveBeenCalledTimes(1))
+
+      // Still playing, and still playing the same pass.
+      expect(
+        screen.getByRole('button', { name: 'Stop the loop' }),
+      ).toBeInTheDocument()
+      await advance(loopFraction(0.25))
+      expect(
+        screen.getByRole('button', { name: 'Stop the loop' }),
+      ).toBeInTheDocument()
+
+      // No attempt was spent, the selection survived, and nothing was recorded.
+      expect(dotStates()).toEqual(['unspent', 'unspent', 'unspent'])
+      expect(
+        within(rootGroup()).getByRole('button', { name: 'C' }),
+      ).toHaveAttribute('aria-pressed', 'true')
+      expect(control()).toHaveAccessibleName('Pick a root and a mode')
+      expect(mockStore.save).not.toHaveBeenCalled()
+      expect(screen.queryByRole('alert')).toBeNull()
+    })
+
+    it('offers the same control on a shared groove (R4, AC10)', async () => {
+      const share = installShareSheet()
+      const user = userEvent.setup()
+      await renderPuzzle(<GroovePuzzle groove={GROOVE} mode="shared" />)
+
+      expect(shareControl()).toHaveAccessibleName('Share')
+
+      // A groove that arrived by link can be passed on, and passing it on
+      // offers that same groove.
+      await user.click(shareControl())
+      await waitFor(() => expect(share).toHaveBeenCalledTimes(1))
+      expect(share).toHaveBeenCalledWith({ url: link() })
+    })
+  })
+
+  // --- F12 Epic 3, Track A: the framing on a shared page -------------------
+
+  /**
+   * Steps A4 and A5. Epic 1 made `/groove/<uuid>` play the same puzzle with
+   * `mode="shared"`; this is what that mode is allowed to change about the
+   * page. Exactly two things: a notice above the card, and the words "shared
+   * groove" where the date stands. Everything else — the header, the streak
+   * pill, the how-to-play box, both cards and every control on them — is the
+   * daily page, unchanged, and most of the assertions below are about that.
+   */
+  describe('the framing on a shared groove (F12 E3)', () => {
+    const renderShared = (groove: Groove = GROOVE) =>
+      renderPuzzle(<GroovePuzzle groove={groove} mode="shared" />)
+
+    /** The notice above the card, found by its own opening words. */
+    const notice = () => screen.queryByText(/this is a shared groove/i)
+
+    /** The way back, which is the notice's own link. */
+    const wayBack = () => screen.getByRole('link', { name: /back to today/i })
+
+    /**
+     * The groove card's meta line: the one paragraph on the page that opens
+     * with a tempo. Located by what it says rather than by a test id, because
+     * what it says is the whole subject of R1a.
+     */
+    const cardMeta = () =>
+      screen.getByText(
+        (_content, element) =>
+          element?.tagName === 'P' &&
+          /^\d+ bpm/.test(element.textContent ?? ''),
+      )
+
+    /** A solved day, N days back — the streak's raw material. */
+    const solvedDaysAgo = (daysAgo: number): DailyResult => ({
+      date: isoDate(new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000)),
+      answer: { root: 'C', flavour: 'Aeolian' },
+      attempts: [SOLVING],
+      solved: true,
+      grooveId: 'groove-02',
+    })
+
+    /** The how-to-play box, by its own heading, and the header's question mark. */
+    const helpBox = () =>
+      screen.queryByRole('heading', { level: 2, name: 'How to play' })
+    const helpToggle = () => screen.queryByRole('button', { name: 'How to play' })
+
+    /** The streak pill's whole line, as the header renders it. */
+    const streakLine = () =>
+      screen.getByLabelText(/current streak/i).textContent
+
+    // --- Step A4: it says what it is, before anything is pressed ------------
+
+    it('says this is a shared groove rather than today’s puzzle, before any press (R1, R3, AC1)', async () => {
+      await renderShared()
+
+      const framing = notice() as HTMLElement
+      expect(framing).toBeInTheDocument()
+      expect(framing.textContent ?? '').toMatch(
+        /not today's puzzle|not today’s puzzle/i,
+      )
+      // Nothing has been played: the framing is on the first painted frame, not
+      // a consolation shown after a solve.
+      expect(dotStates()).toEqual(['unspent', 'unspent', 'unspent'])
+      expect(control()).toHaveAccessibleName('Pick a root and a mode')
+    })
+
+    it('says playing it leaves the streak and the day alone (R2, AC2)', async () => {
+      const user = userEvent.setup()
+      mockStore.getAll.mockResolvedValue([solvedDaysAgo(1), solvedDaysAgo(2)])
+      await renderShared()
+
+      expect((notice() as HTMLElement).textContent ?? '').toMatch(/streak/i)
+      expect((notice() as HTMLElement).textContent ?? '').toMatch(/day/i)
+
+      // And the page keeps that promise: a miss moves neither the pill nor the
+      // record behind it.
+      const before = streakLine()
+      await guess(user, 'G', wrongFlavour())
+      expect(streakLine()).toBe(before)
+      expect(mockStore.save).not.toHaveBeenCalled()
+    })
+
+    it('sits above the groove card, where the how-to-play box sits (R3, AC1)', async () => {
+      const { container } = await renderShared()
+
+      // Source order is the reading order: the notice precedes the game it
+      // frames, and never covers it.
+      const framing = notice() as HTMLElement
+      const name = screen.getByRole('heading', { name: GROOVE.name })
+      expect(
+        framing.compareDocumentPosition(name) &
+          Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy()
+      // ...and inside the feature's own region, not bolted above it.
+      expect(
+        container.querySelector(`section[aria-label="${APP_NAME}"]`),
+      ).toContainElement(framing)
+    })
+
+    it('reads "shared groove" where the date stands, and shows no date (R1a, R4, AC11)', async () => {
+      await renderShared()
+
+      expect(cardMeta().textContent).toBe(`${GROOVE.bpm} bpm · shared groove`)
+      expect(cardMeta().textContent).not.toContain(dateLine(new Date()))
+    })
+
+    it('leaves the daily card’s line exactly as it was (R1a, R4, AC11)', async () => {
+      await renderPuzzle()
+
+      expect(cardMeta().textContent).toBe(
+        `${GROOVE.bpm} bpm · ${dateLine(new Date())}`,
+      )
+      expect(notice()).toBeNull()
+    })
+
+    it('points every link that leaves the page at today, and offers one while in play (R5, R7, AC5)', async () => {
+      const user = userEvent.setup()
+      await renderShared()
+
+      // Anchors only: the share control is an action, not navigation, and it
+      // renders no link at all — it can only ever print a URL as plain text.
+      const links = () => screen.queryAllByRole('link')
+      expect(links()).toHaveLength(1)
+      expect(links()[0]).toHaveAttribute('href', '/')
+      expect(wayBack()).toBe(links()[0])
+
+      // Still one, and still `/`, once the game is under way.
+      await play(user)
+      await guess(user, 'G', wrongFlavour())
+      expect(links()).toHaveLength(1)
+      expect(links()[0]).toHaveAttribute('href', '/')
+    })
+
+    it('adds the only link the daily page never had (R5, AC5)', async () => {
+      await renderPuzzle()
+
+      // The daily page carries no link out at all, which is what makes the
+      // one on the shared page identifiable as the way back.
+      expect(screen.queryAllByRole('link')).toEqual([])
+    })
+
+    it('renders the header with the player’s real streak, as on / (R7a, AC12)', async () => {
+      mockStore.getAll.mockResolvedValue([
+        solvedDaysAgo(1),
+        solvedDaysAgo(2),
+        solvedDaysAgo(3),
+      ])
+
+      const shared = await renderShared()
+      expect(streakLine()).toMatch(/3 days streak/)
+      const sharedHeader = streakLine()
+      shared.unmount()
+
+      // The same value, written the same way, as the daily page writes it.
+      await renderPuzzle()
+      expect(streakLine()).toBe(sharedHeader)
+    })
+
+    it('follows the same new-or-lapsed rule for how to play in both modes (R7b, AC13)', async () => {
+      const user = userEvent.setup()
+
+      // Nothing saved: a shared link is the likeliest first contact anyone has
+      // with the app, and it explains itself.
+      const first = await renderShared()
+      expect(helpBox()).toBeInTheDocument()
+      first.unmount()
+
+      // A returning player: no box on either page, and the question mark still
+      // brings it back on both.
+      mockStore.getAll.mockResolvedValue([solvedDaysAgo(1)])
+
+      const returning = await renderShared()
+      expect(helpBox()).toBeNull()
+      await user.click(helpToggle() as HTMLElement)
+      expect(helpBox()).toBeInTheDocument()
+      returning.unmount()
+
+      const daily = await renderPuzzle()
+      expect(helpBox()).toBeNull()
+      await user.click(helpToggle() as HTMLElement)
+      expect(helpBox()).toBeInTheDocument()
+      daily.unmount()
+
+      // ...and a lapsed player gets it on a shared link too.
+      mockStore.getAll.mockResolvedValue([solvedDaysAgo(40)])
+      await renderShared()
+      expect(helpBox()).toBeInTheDocument()
+    })
+
+    it('has the same puzzle region and the same controls in both modes (R4, AC3)', async () => {
+      /** Everything the puzzle region is made of, as the page renders it. */
+      const shape = () => ({
+        cards: screen
+          .getAllByRole('heading', { level: 2 })
+          .map((h) => h.textContent),
+        roots: within(rootGroup()).getAllByRole('button').map(chipLabel),
+        modes: within(flavourGroup())
+          .getAllByRole('button')
+          .map((b) => b.textContent),
+        check: control().textContent,
+        checkName: control().getAttribute('aria-label'),
+        play: screen.getByRole('button', { name: 'Play the loop' }).textContent,
+        transports: screen.getAllByRole('progressbar').length,
+        dots: dotStates(),
+        caption: screen.getByText(CAPTION).textContent,
+        simple: screen.getByRole('switch', { name: /simple mode/i }).getAttribute(
+          'aria-checked',
+        ),
+      })
+
+      const daily = await renderPuzzle()
+      const dailyShape = shape()
+      daily.unmount()
+
+      await renderShared()
+      expect(shape()).toEqual(dailyShape)
+    })
+
+    it('leaves the day at / exactly as it was behind the way back (R6, AC4)', async () => {
+      const wrong = wrongFlavour()
+      const today: DailyResult = {
+        date: TODAY(),
+        answer: { root: 'C', flavour: 'Aeolian' },
+        attempts: [miss('C', wrong, true), miss('G', wrong, false)],
+        solved: false,
+      }
+      mockStore.get.mockResolvedValue(today)
+      mockStore.getAll.mockResolvedValue([
+        today,
+        solvedDaysAgo(1),
+        solvedDaysAgo(2),
+      ])
+
+      // The day as it stands before the shared link is opened.
+      const before = await renderPuzzle()
+      const dayBefore = { dots: dotStates(), streak: streakLine() }
+      expect(dayBefore.dots).toEqual(['spent', 'spent', 'unspent'])
+      before.unmount()
+
+      // A whole shared groove, played out.
+      const user = userEvent.setup()
+      const shared = await renderShared()
+      expect(wayBack()).toHaveAttribute('href', '/')
+      await guess(user, 'C', 'Aeolian')
+      expect(mockStore.save).not.toHaveBeenCalled()
+      shared.unmount()
+
+      // Following the way back: the same two spent attempts, the same streak.
+      await renderPuzzle()
+      expect({ dots: dotStates(), streak: streakLine() }).toEqual(dayBefore)
+    })
+
+    // --- Step A5: today's own groove, shared, is still shared ---------------
+
+    /**
+     * The feature has no special case for today's own groove, and this is what
+     * proves its absence — still, after the addendum that redirects a shared
+     * link to today's groove away to `/`.
+     *
+     * That redirect is the *route's*: `src/app/groove/[uuid]/SharedGroove.tsx`
+     * decides where to send the player, because the daily pick is the viewer's
+     * calendar day and only the browser knows it. Handed today's groove and told
+     * it is shared, the puzzle still frames it as shared and still records
+     * nothing — which is exactly the property that lets the decision live in one
+     * place instead of two. See that route's own test for the redirect.
+     */
+    it('frames today’s own groove as shared, and still records nothing (R13, R14)', async () => {
+      const todays = selectGrooveForDate(new Date(), GROOVES)
+      const answer = answerOf(todays)
+      const user = userEvent.setup()
+
+      await renderPuzzle(<GroovePuzzle groove={todays} mode="shared" />)
+
+      await user.click(
+        within(rootGroup()).getByRole('button', { name: answer.root }),
+      )
+      await user.click(
+        within(flavourGroup()).getByRole('button', { name: answer.flavour }),
+      )
+      await user.click(control())
+
+      // Played through to a solve...
+      expect(
+        screen.getByRole('heading', {
+          name: `${answer.root} ${answer.flavour}`,
+        }),
+      ).toBeInTheDocument()
+      // ...and still a shared groove in every visible respect.
+      expect(notice()).toBeInTheDocument()
+      expect(cardMeta().textContent).toBe(
+        `${todays.bpm} bpm · ${answer.root} ${answer.flavour} · shared groove`,
+      )
+      expect(wayBack()).toHaveAttribute('href', '/')
+      expect(mockStore.save).not.toHaveBeenCalled()
+    })
+
+    // --- Step A6: a finished shared groove points at today's ---------------
+
+    /** The invitation, by the link that is its whole point. */
+    const invitation = () =>
+      screen.queryByRole('link', { name: /play today/i })
+    /** The line it sits in, which is what "worded the same way" is about. */
+    const invitationLine = () => invitation()?.closest('p')?.textContent ?? null
+
+    it('shows no invitation while the shared groove is still in play (R5a, AC15)', async () => {
+      const user = userEvent.setup()
+      await renderShared()
+
+      expect(invitation()).toBeNull()
+      await play(user)
+      await guess(user, 'G', wrongFlavour())
+      await guess(user, 'D', wrongFlavour())
+
+      // Two misses in: still only the way back that was always there.
+      expect(invitation()).toBeNull()
+      expect(screen.getAllByRole('link')).toHaveLength(1)
+      expect(wayBack()).toHaveAttribute('href', '/')
+    })
+
+    it('invites the player to today once the shared groove is solved (R5a, AC5, AC14)', async () => {
+      const user = userEvent.setup()
+      await renderShared()
+
+      await guess(user, 'C', 'Aeolian')
+
+      const invite = invitation() as HTMLElement
+      expect(invite).toBeInTheDocument()
+      expect(invite).toHaveAttribute('href', '/')
+
+      // Below the answer, not folded into it: the panel is the day's payoff and
+      // knows nothing about shared grooves.
+      const panel = solutionPanel()
+      expect(
+        panel.compareDocumentPosition(invite) &
+          Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy()
+      expect(panel).not.toContainElement(invite)
+
+      // Two links now, and both still point at `/` — there is no third
+      // destination anywhere on the page.
+      const links = screen.getAllByRole('link')
+      expect(links).toHaveLength(2)
+      for (const link of links) expect(link).toHaveAttribute('href', '/')
+    })
+
+    it('shows the same invitation, worded the same way, when it is given up on (R5b, AC14)', async () => {
+      const user = userEvent.setup()
+      const wrong = wrongFlavour()
+
+      // Ending one: solved.
+      const solvedRun = await renderShared()
+      await guess(user, 'C', 'Aeolian')
+      const whenSolved = invitationLine()
+      expect(whenSolved).not.toBeNull()
+      solvedRun.unmount()
+
+      // Ending two: given up on.
+      await renderShared()
+      await guess(user, 'C', wrong)
+      await guess(user, 'G', wrong)
+      await guess(user, 'G', otherWrongFlavour())
+      await user.click(giveUp() as HTMLElement)
+      await user.click(giveUp() as HTMLElement)
+
+      expect(solutionPanel()).toBeInTheDocument()
+      expect(invitation()).toHaveAttribute('href', '/')
+      expect(invitationLine()).toBe(whenSolved)
+    })
+
+    it('keeps the invitation for the rest of the session (R5b)', async () => {
+      const user = userEvent.setup()
+      await renderShared()
+
+      await guess(user, 'C', 'Aeolian')
+      expect(invitation()).toBeInTheDocument()
+
+      // Nothing a played-out page still offers takes it away again.
+      await play(user)
+      await user.click(screen.getByRole('switch', { name: /simple mode/i }))
+      expect(invitation()).toBeInTheDocument()
+    })
+
+    it('never appears on the daily page, in either ending (R5c, AC16)', async () => {
+      const user = userEvent.setup()
+      const wrong = wrongFlavour()
+
+      const solvedRun = await renderPuzzle()
+      await guess(user, 'C', 'Aeolian')
+      expect(solutionPanel()).toBeInTheDocument()
+      expect(invitation()).toBeNull()
+      expect(screen.queryAllByRole('link')).toEqual([])
+      solvedRun.unmount()
+
+      mockStore.get.mockResolvedValue(null)
+
+      await renderPuzzle()
+      await guess(user, 'C', wrong)
+      await guess(user, 'G', wrong)
+      await guess(user, 'G', otherWrongFlavour())
+      await user.click(giveUp() as HTMLElement)
+      await user.click(giveUp() as HTMLElement)
+
+      expect(solutionPanel()).toBeInTheDocument()
+      expect(invitation()).toBeNull()
+      expect(screen.queryAllByRole('link')).toEqual([])
+    })
   })
 })

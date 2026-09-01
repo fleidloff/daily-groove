@@ -200,3 +200,14 @@ changed, and the count of architectural questions still open.
 
 Then, for the feature as a whole: whether it is now 🛠 Ready to implement in
 `specs/features.md`, or what is still blocking that.
+
+**Then the next step:**
+
+- **Every epic specced and no questions open** → point at
+  `/implement-feature <feature>`. Don't run it.
+- **Otherwise** → name what is missing: an epic with no spec, or an
+  architectural question still to tick. `/implement-feature` dispatches parallel
+  agents, so it is the most expensive place in the chain to discover that the
+  requirements were still moving.
+
+`docs/skills.md` has the full chain.

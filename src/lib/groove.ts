@@ -38,6 +38,17 @@ export type Flavour = string
 
 export type Groove = {
   id: string
+  /**
+   * The groove's permanent identity: a canonical lowercase v4 uuid, minted once
+   * into `scripts/grooves/catalogue.json` and copied outward by the manifest
+   * generator, which never mints one of its own.
+   *
+   * It is the only identifier a share link carries, and it is carried whole —
+   * there is no short form and no second shareable id. `id` stays the catalogue
+   * key and the mp3 filename; this survives a renumbering, a rename or a
+   * re-render of the audio, because links already in the wild point at it.
+   */
+  uuid: string
   audioSrc: string // URL under /grooves, e.g. "/grooves/groove-01.mp3"
   name: string // display name shown on the groove card, e.g. "Sunroom Shuffle"
   bpm: number // display only; does not drive playback or the progress bar

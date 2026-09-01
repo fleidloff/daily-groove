@@ -23,6 +23,15 @@ import {
   type LockPaths,
 } from './lock.ts'
 
+/**
+ * One canonical v4 uuid per fixture groove, derived from its position so the
+ * fixture stays deterministic. The guard reads the catalogue's uuids, so a
+ * fixture catalogue without them is not a catalogue the guard would pass.
+ */
+function fixtureUuid(i: number): string {
+  return `a0000000-0000-4000-8000-${String(i + 1).padStart(12, '0')}`
+}
+
 /** Bytes that stand in for an mp3 — the lock never looks inside one. */
 function audioBytes(id: string, n = 2048): Buffer {
   const buf = Buffer.alloc(n)
@@ -51,7 +60,7 @@ function fixture(ids: string[] = ['groove-01', 'groove-02']): Fixture {
   writeFileSync(
     cataloguePath,
     `${JSON.stringify(
-      ids.map((id, i) => ({ id, template: 'straight-funk', seed: i + 1 })),
+      ids.map((id, i) => ({ id, uuid: fixtureUuid(i), template: 'straight-funk', seed: i + 1 })),
       null,
       2,
     )}\n`,
@@ -552,7 +561,20 @@ describe('Step B3 — the guard needs no audio toolchain (R13, AC11)', () => {
     'templates',
     'theory',
   ]
-  const ALLOWED = new Set(['node:fs', 'node:crypto', 'node:path', './types.ts', './lock.ts'])
+  // `uuid.ts` and `catalogue.ts` are on this list deliberately, not by
+  // oversight: the guard now checks the catalogue's uuids, so it has to read the
+  // catalogue and recognise a uuid. Neither module renders anything — `uuid.ts`
+  // imports only `node:crypto`, `catalogue.ts` only `node:fs` and `node:url` —
+  // so the no-audio-toolchain guarantee below is untouched (F12 E1 Step A7).
+  const ALLOWED = new Set([
+    'node:fs',
+    'node:crypto',
+    'node:path',
+    './types.ts',
+    './lock.ts',
+    './uuid.ts',
+    './catalogue.ts',
+  ])
 
   function importsOf(file: string): string[] {
     const source = readFileSync(join(import.meta.dirname, file), 'utf8')
@@ -584,6 +606,115 @@ describe('Step B3 — the guard needs no audio toolchain (R13, AC11)', () => {
     // The proof that matters: nothing in the verify path decodes or renders.
     const f = fixture()
     expect(verifyLock(f.lock, f.paths)).toEqual([])
+  })
+})
+
+/**
+ * Feature-12, Epic 1, Step A7 — R3, R8, R9, R10, AC3, AC4.
+ *
+ * The uuid is what a share link carries, and it lives in the catalogue, which is
+ * hand-editable. So the guard that already proves the committed artifacts match
+ * their input also proves the input's uuids are usable: one per groove, well
+ * formed, and held by exactly one groove. Every failure names the groove, because
+ * "a uuid is wrong somewhere in thirty entries" is not a fixable report.
+ */
+describe("verifyLock — the catalogue's uuids", () => {
+  type Spec = { id: string; uuid?: string; template: string; seed: number }
+
+  /** The fixture with `specs` as its catalogue, and a lock that matches it. */
+  function withCatalogue(specs: readonly Spec[]) {
+    const f = fixture(specs.map((s) => s.id))
+    writeFileSync(f.cataloguePath, `${JSON.stringify(specs, null, 2)}\n`)
+    // Re-locked against the catalogue just written, so the only thing left for
+    // the guard to complain about is the uuids themselves.
+    return { paths: f.paths, lock: buildLock(f.paths, specs.map((s) => s.id)) }
+  }
+
+  const A = '9f1c2e40-7b3a-4c15-9d8e-2a6b41f0c7de'
+  const B = 'c0105415-48cb-43cb-a54d-996fcdb40d94'
+
+  it('passes a catalogue whose uuids are all present, well formed and unique', () => {
+    const f = withCatalogue([
+      { id: 'groove-01', uuid: A, template: 'straight-funk', seed: 1 },
+      { id: 'groove-02', uuid: B, template: 'shuffle', seed: 2 },
+    ])
+    expect(verifyLock(f.lock, f.paths)).toEqual([])
+  })
+
+  it('fails and names both grooves when two share a uuid (AC3)', () => {
+    const f = withCatalogue([
+      { id: 'groove-01', uuid: A, template: 'straight-funk', seed: 1 },
+      { id: 'groove-02', uuid: A, template: 'shuffle', seed: 2 },
+    ])
+
+    const failures = verifyLock(f.lock, f.paths)
+
+    expect(failures.map((x) => x.check)).toEqual(['uuid-duplicate'])
+    expect(failures[0].detail).toContain('groove-01')
+    expect(failures[0].detail).toContain('groove-02')
+  })
+
+  it('fails and names the groove whose uuid is missing (AC4)', () => {
+    const f = withCatalogue([
+      { id: 'groove-01', uuid: A, template: 'straight-funk', seed: 1 },
+      { id: 'groove-02', template: 'shuffle', seed: 2 },
+    ])
+
+    const failures = verifyLock(f.lock, f.paths)
+
+    expect(failures.map((x) => x.check)).toEqual(['uuid-missing'])
+    expect(failures[0].detail).toContain('groove-02')
+    expect(failures[0].detail).not.toContain('groove-01')
+  })
+
+  it('fails and names the groove whose uuid is malformed (AC4)', () => {
+    const f = withCatalogue([
+      { id: 'groove-01', uuid: A, template: 'straight-funk', seed: 1 },
+      { id: 'groove-02', uuid: A.toUpperCase(), template: 'shuffle', seed: 2 },
+    ])
+
+    const failures = verifyLock(f.lock, f.paths)
+
+    expect(failures.map((x) => x.check)).toEqual(['uuid-malformed'])
+    expect(failures[0].detail).toContain('groove-02')
+  })
+
+  it('reports a uuid fault alongside the artifact faults, not instead of them', () => {
+    // The two checks are independent: a stale manifest does not excuse a broken
+    // uuid, and neither hides the other.
+    const f = withCatalogue([
+      { id: 'groove-01', uuid: A, template: 'straight-funk', seed: 1 },
+      { id: 'groove-02', uuid: A, template: 'shuffle', seed: 2 },
+    ])
+    appendFileSync(f.paths.manifestPath, '\n')
+
+    const checks = verifyLock(f.lock, f.paths).map((x) => x.check)
+
+    expect(checks).toContain('manifest-stale')
+    expect(checks).toContain('uuid-duplicate')
+  })
+
+  it('returns a failure rather than throwing when the catalogue will not parse', () => {
+    // The guard used to never open the catalogue, only hash it. It must not start
+    // throwing where it used to report: a corrupt catalogue is caught by its
+    // hash, and the uuid checks simply have nothing to say about it.
+    const f = fixture()
+    writeFileSync(f.cataloguePath, 'not json at all')
+
+    const failures = verifyLock(f.lock, f.paths)
+
+    expect(failures.map((x) => x.check)).toContain('catalogue-stale')
+    expect(failures.every((x) => !x.check.startsWith('uuid-'))).toBe(true)
+  })
+
+  it('says nothing about uuids when the catalogue is missing entirely', () => {
+    const f = fixture()
+    rmSync(f.cataloguePath)
+
+    const checks = verifyLock(f.lock, f.paths).map((x) => x.check)
+
+    expect(checks).toContain('missing')
+    expect(checks.filter((c) => c.startsWith('uuid-'))).toEqual([])
   })
 })
 

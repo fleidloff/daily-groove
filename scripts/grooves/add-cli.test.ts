@@ -31,8 +31,8 @@ function audioFingerprint(dir: string): string {
 }
 
 const SPECS: GrooveSpec[] = [
-  { id: 'groove-01', template: 'straight-funk', seed: 1 },
-  { id: 'groove-02', template: 'straight-funk', seed: 2 },
+  { id: 'groove-01', uuid: 'c0105415-48cb-43cb-a54d-996fcdb40d94', template: 'straight-funk', seed: 1 },
+  { id: 'groove-02', uuid: '34d62aba-a264-469c-836b-be57fcc69c0b', template: 'straight-funk', seed: 2 },
 ]
 
 const PASS = () => null

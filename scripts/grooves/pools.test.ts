@@ -11,6 +11,7 @@ import { buildPools } from './pools.ts'
 const ENTRIES: Groove[] = [
   {
     id: 'groove-01',
+    uuid: '9c59273c-b08e-4376-a7eb-ad96435d0d6c',
     audioSrc: '/grooves/groove-01.mp3',
     name: 'Rusted Shuffle',
     bpm: 105,
@@ -24,6 +25,7 @@ const ENTRIES: Groove[] = [
   },
   {
     id: 'groove-02',
+    uuid: '42bfbb2c-cd51-4938-b8d3-326f3bf6628a',
     audioSrc: '/grooves/groove-02.mp3',
     name: 'Dusty Ravine',
     bpm: 96,
@@ -37,6 +39,7 @@ const ENTRIES: Groove[] = [
   },
   {
     id: 'groove-03',
+    uuid: '98b45b78-4146-403a-bae0-c0b147bbedbb',
     audioSrc: '/grooves/groove-03.mp3',
     name: 'Feathered Pocket',
     bpm: 103,

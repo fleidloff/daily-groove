@@ -3,7 +3,7 @@ import { readCatalogue } from './catalogue.ts'
 import { buildEvents } from './events.ts'
 import { allTemplates, templateById } from './templates/index.ts'
 import { isValidHarmony } from './theory/validity.ts'
-import type { Flavour } from './types.ts'
+import type { Flavour, GrooveSpec } from './types.ts'
 
 const specs = readCatalogue()
 const built = specs.map((spec) => ({ spec, ...buildEvents(spec, templateById(spec.template)) }))
@@ -157,7 +157,15 @@ describe('the committed catalogue', () => {
 
     const survivors = specs.filter((s) => numberOf(s.id) <= 16)
     expect(survivors).toHaveLength(16 - RETIRED.length)
-    expect(survivors).toEqual(original.filter((s) => !RETIRED.includes(s.id)))
+    // Compared on what `selectSeeds` decides — the id, the feel and the seed.
+    // The uuid is deliberately not part of it: it is minted into the catalogue
+    // afterwards, by `grooves:uuid` or `grooves:add`, and `selectSeeds` returns
+    // an empty one precisely because it must stay deterministic (F12 E1 R7).
+    // Its own uniqueness is asserted in uuid.test.ts.
+    const identity = (s: GrooveSpec) => ({ id: s.id, template: s.template, seed: s.seed })
+    expect(survivors.map(identity)).toEqual(
+      original.filter((s) => !RETIRED.includes(s.id)).map(identity),
+    )
   })
 
   // Every mint is appended after the ones before it, never interleaved, so the

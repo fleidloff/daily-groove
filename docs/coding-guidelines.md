@@ -159,7 +159,7 @@ slice inherits it with no config edit.
 being the single inbound reference the route uses today.
 
 **Put a `lib/` module in the concern folder that matches what it computes.**
-`lib/` holds business logic only, split five ways:
+`lib/` holds business logic only, split six ways:
 
 | Folder | Holds today | Motivated by |
 | :-- | :-- | :-- |
@@ -168,11 +168,16 @@ being the single inbound reference the route uses today.
 | `persistence/` | `storage`, `streak`, `lapsed` | `lib/persistence/storage.ts` — the one seam onto stored results; nothing else touches `localStorage` |
 | `presentation/` | `feedback`, `archive` | `lib/presentation/feedback.ts` — turning state into what the UI says, without rendering anything |
 | `audio/` | `audio`, `transport` | `lib/audio/transport.ts` — the browser audio element and who is currently sounding |
+| `share/` | `url`, `share` | `lib/share/share.ts` — handing a link to the world outside the page: which of the share sheet, the clipboard or the screen gets it |
 
-A module that does not fit one of the five is a signal, not an exception: it is
-either two modules, or it belongs in `state/` or `data/`.
+A module that does not fit one of the six is a signal, not an exception: it is
+either two modules, or it belongs in `state/` or `data/`. `share/` is what that
+signal looks like when it turns out to be a genuine sixth concern: feature-12's
+`shareUrlOf` renders nothing, so it is not `presentation/`; it stores nothing, so
+it is not `persistence/`; and it decides nothing about the game, so it is not
+`puzzle/`.
 
-*human-checked* — motivated by the twelve modules under
+*human-checked* — motivated by the fourteen modules under
 `src/features/daily-groove/lib/`; the folder set is asserted by
 `src/features/daily-groove/structure.test.ts`.
 

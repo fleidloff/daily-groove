@@ -24,6 +24,15 @@ type Fixture = {
   lockPath: string
 }
 
+/**
+ * One canonical v4 uuid per fixture groove, derived from its position so the
+ * fixture stays deterministic. The guard checks the catalogue's uuids, so a
+ * fixture catalogue without them is not one an intact tree would hold.
+ */
+function fixtureUuid(i: number): string {
+  return `a0000000-0000-4000-8000-${String(i + 1).padStart(12, '0')}`
+}
+
 /** An intact tree plus a lock that describes it. */
 function fixture(ids: string[] = ['groove-01', 'groove-02']): Fixture {
   const dir = mkdtempSync(join(tmpdir(), 'grooves-verify-'))
@@ -34,7 +43,11 @@ function fixture(ids: string[] = ['groove-01', 'groove-02']): Fixture {
   const cataloguePath = join(dir, 'catalogue.json')
   writeFileSync(
     cataloguePath,
-    `${JSON.stringify(ids.map((id, i) => ({ id, template: 'straight-funk', seed: i + 1 })), null, 2)}\n`,
+    `${JSON.stringify(
+      ids.map((id, i) => ({ id, uuid: fixtureUuid(i), template: 'straight-funk', seed: i + 1 })),
+      null,
+      2,
+    )}\n`,
   )
 
   const manifestPath = join(dir, 'grooves.generated.ts')
@@ -140,6 +153,29 @@ describe('verify-cli main — Step B4', () => {
     expect(output).toContain('groove-02')
     expect(output).toContain('checksum')
   })
+
+  // Feature-12, Epic 1, Step A7 — R8, R9, R10, AC3, AC4. Each of the three uuid
+  // faults, through the real command, reported by the name of the groove that
+  // holds it: "a uuid is wrong somewhere in thirty entries" is not fixable.
+  for (const [what, mangle] of [
+    ['missing', (specs: { id: string; uuid?: string }[]) => delete specs[1].uuid],
+    ['duplicated', (specs: { id: string; uuid?: string }[]) => (specs[1].uuid = specs[0].uuid)],
+    ['malformed', (specs: { id: string; uuid?: string }[]) => (specs[1].uuid = 'not-a-uuid')],
+  ] as const) {
+    it(`exits non-zero naming the groove whose uuid is ${what}`, async () => {
+      const f = fixture()
+      const specs = JSON.parse(readFileSync(f.cataloguePath, 'utf8')) as { id: string; uuid?: string }[]
+      mangle(specs)
+      writeFileSync(f.cataloguePath, `${JSON.stringify(specs, null, 2)}\n`)
+
+      const r = run(f)
+
+      await expect(r.code).resolves.not.toBe(0)
+      const output = r.lines.join('\n')
+      expect(output).toContain('groove-02')
+      expect(output).toContain('uuid')
+    })
+  }
 
   it('exits non-zero naming the manifest when it is stale (AC8)', async () => {
     const f = fixture()

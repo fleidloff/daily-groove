@@ -106,8 +106,11 @@ pieces this epic builds: a stable id per groove, and a route that opens one.
 - **R18** — Playing a shared groove writes nothing to the saved results. No
   record is created or amended under today's date, or under any date.
 - **R19** — The streak is neither advanced nor broken by a shared play.
-- **R20** — R18 and R19 hold even when the shared uuid is today's groove. A
-  shared link is practice; today's puzzle is still waiting at `/`.
+- **R20** — ~~R18 and R19 hold even when the shared uuid is today's groove. A
+  shared link is practice; today's puzzle is still waiting at `/`.~~
+  **Superseded by the addendum below:** a shared link to today's own groove no
+  longer opens a shared session at all — it redirects to `/`. R18 and R19 still
+  hold for every other shared groove.
 - **R21** — A shared groove opens fresh every visit. Reloading `/groove/<uuid>`
   gives a clean puzzle with no attempts, because nothing was stored to restore.
 - **R22** — Everything else about the puzzle behaves as it does on the daily one:
@@ -156,9 +159,11 @@ flowchart TD
 - **AC9** (R18, R19) — Given a saved day and a streak, when a shared groove is
   played through to solved or revealed, then the saved results and the streak are
   byte-identical to what they were before.
-- **AC10** (R20) — Given today's groove's own uuid, when it is opened at
+- **AC10** (R20) — ~~Given today's groove's own uuid, when it is opened at
   `/groove/<uuid>` and played, then still nothing is written and `/` still offers
-  today's puzzle unplayed.
+  today's puzzle unplayed.~~ **Superseded:** given today's groove's own uuid,
+  when it is opened at `/groove/<uuid>`, then the player is redirected to `/` and
+  no shared session is opened at all. See the addendum.
 - **AC11** (R21) — Given a shared groove played to two attempts, when the page is
   reloaded, then the puzzle is clean with no attempts.
 - **AC12** (R15, R17) — Given the route's source, when the boundary test runs,
@@ -212,3 +217,37 @@ Answer: **A) The link dies, and Epic 3's not-found page handles it** — no groo
 has ever been removed, and the alternatives buy permanence by either freezing the
 catalogue or carrying retired audio forever.
 Applied to: R14a, Out of scope
+
+## Addendum — 2026-09-01
+
+Requested after implementation, and it reverses a decision this PRD and Epic 3
+both settled: **a shared link whose uuid is today's own groove redirects to `/`
+instead of opening as a shared groove.**
+
+- **R24** — When the uuid a shared link carries is the groove `/` is serving on
+  the viewer's own calendar day, `/groove/<uuid>` sends the player to `/` rather
+  than rendering a shared puzzle. No session is opened, nothing is fetched and
+  nothing sounds on the way through.
+- **R25** — The comparison is made against the *viewer's* day, not the server's.
+  A shared page is rendered on the server and the redirect is decided after
+  hydration, because the daily pick has always been the viewer's calendar day and
+  a server-side answer would redirect a player whose midnight has not arrived, or
+  fail to redirect one whose has.
+- **R26** — It is a replacement, not a push: the shared URL was never a place the
+  player should end up, so going Back must not return them to it.
+- **R27** — Every other shared link is unaffected. R18–R22 and Epic 3's framing
+  all stand for any groove that is not today's.
+
+**Why.** The superseded behaviour handed the player a page that offered nothing:
+the same groove, played as practice, recording nothing — so anyone who solved it
+had spent the day's puzzle on a copy that never counted. Epic 3's own problem
+statement names that failure ("a player who never returns to `/` has quietly lost
+the day"); framing was the mitigation, and a redirect removes the need for one.
+
+**AC24** — Given today's groove's own uuid, when `/groove/<uuid>` is opened, then
+the player lands on `/`, no shared framing is painted on the way, and the day's
+record is untouched.
+Evidence: `src/app/groove/[uuid]/SharedGroove.test.tsx` — "redirects to the daily
+puzzle rather than playing it as practice", "mounts no puzzle on the way out",
+"says why the player is being moved"; `src/features/daily-groove/lib/puzzle/isTodaysGroove.test.ts`
+— four cases on the predicate behind it.

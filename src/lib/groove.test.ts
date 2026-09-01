@@ -15,6 +15,7 @@ describe('src/lib/groove', () => {
     // renamed, or retyped. The runtime expectations keep the object honest.
     const groove = {
       id: 'groove-01',
+      uuid: '7c3f1b0a-5d84-4e29-9b61-0c2af8d3e517',
       audioSrc: '/grooves/groove-01.mp3',
       name: 'Velvet Pocket',
       bpm: 98,
@@ -39,6 +40,7 @@ describe('src/lib/groove', () => {
       'progression',
       'root',
       'scale',
+      'uuid',
     ])
   })
 
@@ -50,6 +52,10 @@ describe('src/lib/groove', () => {
     // @ts-expect-error headDelaySeconds is missing.
     const incomplete: Groove = {
       id: 'groove-01',
+      // Present, so the directive below still fails for the head delay alone —
+      // a fixture missing two required fields would pass this test while
+      // proving nothing about either.
+      uuid: '7c3f1b0a-5d84-4e29-9b61-0c2af8d3e517',
       audioSrc: '/grooves/groove-01.mp3',
       name: 'Velvet Pocket',
       bpm: 98,

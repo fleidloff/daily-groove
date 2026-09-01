@@ -2,8 +2,13 @@
 
 Every feature goes through the same five steps, in this order. Each one reads
 what the previous one wrote, so skipping ahead doesn't work: `/roadmap` refuses
-to run without a briefing, `/writespec` without a PRD, `/implement-feature`
-without a tech spec.
+to run without a briefing, `/brainstorm` without a roadmap, `/writespec` without
+a PRD, `/implement-feature` without a tech spec.
+
+**Step 3 is the one that gets skipped, and it is the one that cannot be.** A
+roadmap names the epics; only the PRD carries the requirements and the
+acceptance criteria, and `/writespec` reads `prd/*.md` and nothing else. Going
+from step 2 to step 4 means specifying against requirements nobody wrote down.
 
 ```
 /create-feature  →  /roadmap  →  /brainstorm  →  /writespec  →  /implement-feature

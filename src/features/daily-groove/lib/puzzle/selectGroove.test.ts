@@ -3,9 +3,9 @@ import type { Groove } from '../../types'
 import { selectGrooveForDate, isoDate, dayIndexOf, parseIsoDate } from './selectGroove'
 
 const grooves: Groove[] = [
-  { id: 'a', audioSrc: '/grooves/a.mp3', name: 'Test Groove', bpm: 90, root: 'C', flavour: 'Minor', bars: 4, scale: 'C minor', chord: 'Cm', progression: 'Cm–F–G', headDelaySeconds: 0.025057 },
-  { id: 'b', audioSrc: '/grooves/b.mp3', name: 'Test Groove', bpm: 90, root: 'A', flavour: 'Dorian', bars: 4, scale: 'A dorian', chord: 'Am7', progression: 'Am–D–G', headDelaySeconds: 0.025057 },
-  { id: 'c', audioSrc: '/grooves/c.mp3', name: 'Test Groove', bpm: 90, root: 'E', flavour: 'Phrygian', bars: 4, scale: 'E phrygian', chord: 'Em', progression: 'Em–Am–B7', headDelaySeconds: 0.025057 },
+  { id: 'a', uuid: '4eaa88e8-267d-49d0-a2d9-b6d2db848d3e', audioSrc: '/grooves/a.mp3', name: 'Test Groove', bpm: 90, root: 'C', flavour: 'Minor', bars: 4, scale: 'C minor', chord: 'Cm', progression: 'Cm–F–G', headDelaySeconds: 0.025057 },
+  { id: 'b', uuid: '189022bc-852b-4228-b6f8-6bef9117f166', audioSrc: '/grooves/b.mp3', name: 'Test Groove', bpm: 90, root: 'A', flavour: 'Dorian', bars: 4, scale: 'A dorian', chord: 'Am7', progression: 'Am–D–G', headDelaySeconds: 0.025057 },
+  { id: 'c', uuid: 'a5de9f44-30d7-46bb-914d-830a31b7133e', audioSrc: '/grooves/c.mp3', name: 'Test Groove', bpm: 90, root: 'E', flavour: 'Phrygian', bars: 4, scale: 'E phrygian', chord: 'Em', progression: 'Em–Am–B7', headDelaySeconds: 0.025057 },
 ]
 
 describe('isoDate', () => {
@@ -67,8 +67,18 @@ describe('selectGrooveForDate', () => {
  * Two set sizes are swept because a groove id is picked modulo the set size:
  * agreement modulo 16 does not imply agreement modulo 3, so both are pinned.
  */
+/**
+ * A canonical uuid per fixture, from a counter rather than a real mint: the
+ * pick reads only `id`, so what matters here is that the field is present and
+ * well-formed, not which value it holds.
+ */
+let fixtureUuids = 0
+const nextFixtureUuid = () =>
+  `00000000-0000-4000-8000-${String((fixtureUuids += 1)).padStart(12, '0')}`
+
 const sweepGroove = (id: string): Groove => ({
   id,
+  uuid: nextFixtureUuid(),
   audioSrc: `/grooves/${id}.mp3`,
   name: 'n',
   bpm: 90,

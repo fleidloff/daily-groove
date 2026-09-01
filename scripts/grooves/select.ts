@@ -116,6 +116,11 @@ export function selectSeeds(
 
       const candidate: GrooveSpec = {
         id: idFor(nextNumber + 1),
+        // Deliberately empty. Minting a uuid belongs to `addGrooves`, at the
+        // moment it accepts a candidate: this function is deterministic — the
+        // same arguments must give the same specs, and `select.test.ts` asserts
+        // it — so a fresh uuid in here would end that (F12 E1 R7).
+        uuid: '',
         template: template.id,
         seed: candidateSeed,
       }

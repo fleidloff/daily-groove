@@ -12,9 +12,10 @@ describe('the generated groove catalogue', () => {
     expect(GROOVES.length).toBeGreaterThan(0)
   })
 
-  it('gives every entry all eleven fields, correctly typed', () => {
+  it('gives every entry all thirteen fields, correctly typed', () => {
     for (const g of GROOVES) {
       expect(typeof g.id).toBe('string')
+      expect(typeof g.uuid).toBe('string')
       expect(typeof g.audioSrc).toBe('string')
       expect(typeof g.name).toBe('string')
       expect(typeof g.bpm).toBe('number')
@@ -25,6 +26,37 @@ describe('the generated groove catalogue', () => {
       expect(typeof g.flavour).toBe('string')
       expect(typeof g.bars).toBe('number')
       expect(typeof g.headDelaySeconds).toBe('number')
+    }
+  })
+
+  /**
+   * Feature-12, Epic 1 — R1, R1a, R2, R3, AC1, AC14.
+   *
+   * The uuid is the only identifier a share link carries, so a manifest that
+   * lost it, lower-cased it differently, or repeated one is a manifest whose
+   * links point at the wrong groove or at nothing. It is asserted *here*, on
+   * the committed file, and not only through the two consumers that happen to
+   * iterate `GROOVES` — `grooveByUuid` and `grooveHref` — because dropping
+   * `'uuid'` from `FIELDS` in `scripts/grooves/manifest.ts` must fail the test
+   * that owns the manifest, not just the tests that read it.
+   */
+  it('gives every entry a canonical v4 uuid, and no two the same', () => {
+    // Canonical: lowercase, hyphenated, 36 characters, version nibble 4 and a
+    // variant nibble of 8/9/a/b. The same shape `scripts/grooves/uuid.ts`
+    // enforces on the catalogue this file is generated from.
+    const CANONICAL =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/
+
+    for (const g of GROOVES) {
+      expect(g.uuid, g.id).toMatch(CANONICAL)
+    }
+
+    expect(new Set(GROOVES.map((g) => g.uuid)).size).toBe(GROOVES.length)
+    // And it is a second identifier, never a restatement of the first: a uuid
+    // derived from the catalogue position would not survive a renumbering,
+    // which is the whole reason it exists.
+    for (const g of GROOVES) {
+      expect(g.uuid, g.id).not.toContain(g.id)
     }
   })
 

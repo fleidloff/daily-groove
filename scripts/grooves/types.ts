@@ -114,9 +114,18 @@ export type FeelTemplate = {
   density: { minPerBar: number; maxPerBar: number }
 }
 
-/** A groove is fully identified by these three values. */
+/**
+ * A groove is fully identified by `template` and `seed`; `id` names it and
+ * `uuid` is its permanent identity.
+ *
+ * `uuid` is INPUT, not output: it is minted into catalogue.json once and copied
+ * outward from there. Minting inside the renderer would make two runs of
+ * `npm run grooves` disagree, and the determinism the lock depends on would go
+ * with it (F12 E1 R2, R5).
+ */
 export type GrooveSpec = {
   id: string
+  uuid: string
   template: string
   seed: number
 }

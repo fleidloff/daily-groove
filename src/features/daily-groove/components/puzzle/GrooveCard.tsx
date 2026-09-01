@@ -3,25 +3,18 @@ import { Card } from '@/components/surfaces/Card'
 import { Heading } from '@/components/typography/Heading'
 import { Text } from '@/components/typography/Text'
 import { Stack } from '@/components/layout/Stack'
-import { dateLine } from '../../lib/presentation/date'
-import type { Answer, Groove } from '../../types'
+import type { Groove } from '../../types'
 
 type GrooveCardProps = {
   groove: Groove
   /**
-   * The day being shown, repeated from the page header beside the tempo.
-   * Passed in rather than read from the clock so the route owns "today" — the
-   * same day that selects the groove — and so this card is testable without
-   * fake timers, matching `GrooveHeader`.
+   * The finished meta line beside the name, e.g. "96 bpm · Sunday, 30 August".
+   *
+   * Composed by the view and handed over whole, rather than assembled here from
+   * a tempo and a date: the same card heads two pages, and what differs between
+   * them is this string, not the card's logic. See `lib/presentation/date.ts`.
    */
-  date: Date
-  /**
-   * The day's answer, once the day is over — solved or given up — and `null`
-   * until then. It joins the meta line beside the tempo, so the card the player
-   * is still playing along to says what they are playing over. Null before the
-   * day ends: the root and the mode are the puzzle.
-   */
-  answer?: Answer | null
+  meta: string
   /** The transport panel and its controls, rendered below the header region. */
   children?: ReactNode
 }
@@ -35,18 +28,14 @@ type GrooveCardProps = {
  * canvas' meta line ("No. 214 · 4 bars · loops forever") is still deliberately
  * absent: only the tempo is backed by data worth showing.
  *
- * Once the day is over the answer joins that line, beside the tempo. The payoff
- * panel names it too, but the panel is below both cards and out of view while
- * you are playing along; the two facts a player jamming over the loop needs —
- * how fast, and in what — belong on the card that is playing.
+ * Once the day is over the answer joins that line — the payoff panel names it
+ * too, but the panel is below both cards and out of view while you are playing
+ * along, and the two facts a player jamming over the loop needs are how fast
+ * and in what. The card does not put it there: `metaLine` composes the whole
+ * string, so this component branches on nothing at all and the two pages that
+ * render it differ in data rather than in logic (F12 E3 R4).
  */
-export function GrooveCard({ groove, date, answer, children }: GrooveCardProps) {
-  const meta = [
-    `${groove.bpm} bpm`,
-    ...(answer ? [`${answer.root} ${answer.flavour}`] : []),
-    dateLine(date),
-  ].join(' · ')
-
+export function GrooveCard({ groove, meta, children }: GrooveCardProps) {
   return (
     <Card>
       <Stack gap="lg">

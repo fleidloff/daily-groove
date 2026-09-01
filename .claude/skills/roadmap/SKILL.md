@@ -192,3 +192,14 @@ under so the document stands on its own, and let the answers refine it.
 Tell the user the path you wrote, the epic names in wave order, whether you
 added or updated the `specs/features.md` row, and the count of open questions —
 pointing them at the bottom of the file to answer.
+
+**Then point at `/brainstorm <feature>` as the next step, and don't run it.**
+
+Not `/writespec`. A roadmap names the epics and says what each makes visible; it
+carries no requirements and no acceptance criteria, and `/writespec` reads
+`prd/*.md` and nothing else. Skipping the PRD cycle means specifying against
+requirements nobody wrote down. `docs/skills.md` has the full chain.
+
+If questions are still open, say that answering them first is the cheaper order
+— `/brainstorm` inherits the roadmap's shape, so a shape decided later is a
+round of PRDs rewritten.

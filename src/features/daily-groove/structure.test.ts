@@ -60,12 +60,24 @@ describe('lib holds no loose modules', () => {
     expect(loose).toEqual([])
   })
 
-  it('contains exactly the five concern folders', () => {
+  // Six since feature-12: `share/` holds the URL a groove lives at and the
+  // share/clipboard/manual decision behind the control that offers it. Neither
+  // is presentation (nothing is rendered), neither is persistence, and neither
+  // is the rules of the game — so per the guidelines' own instruction, a module
+  // that fits none of the folders is a new concern rather than an exception.
+  it('contains exactly the six concern folders', () => {
     const dirs = entries()
       .filter((entry) => entry.isDirectory())
       .map((entry) => entry.name)
       .sort()
-    expect(dirs).toEqual(['audio', 'persistence', 'presentation', 'puzzle', 'theory'])
+    expect(dirs).toEqual([
+      'audio',
+      'persistence',
+      'presentation',
+      'puzzle',
+      'share',
+      'theory',
+    ])
   })
 })
 
@@ -112,7 +124,7 @@ describe('daily-groove feature structure', () => {
 // renders them, with `GroovePuzzle` above the regions it composes.
 describe('feature components sit in screen regions', () => {
   const REGIONS: Record<string, string[]> = {
-    header: ['GrooveHeader', 'HelpToggle', 'StreakBadge'],
+    header: ['GrooveHeader', 'HelpToggle', 'ShareGroove', 'StreakBadge'],
     intro: ['HowToPlay'],
     puzzle: [
       'GrooveCard',
@@ -125,6 +137,12 @@ describe('feature components sit in screen regions', () => {
       'SolvedPanel',
       'LeadSheet',
       'ScaleStaff',
+      // Feature-12: the two pieces of copy that frame a shared groove — one
+      // above the card saying what the page is, one below the answer sending
+      // the player to today's. Both render in the puzzle region; neither is on
+      // the daily page.
+      'SharedGrooveNotice',
+      'PlayTodayLink',
     ],
   }
 

@@ -23,7 +23,14 @@ import { pitchesOf, scaleName } from './theory/scales.ts'
 import { offScalePitches } from './theory/pitches.ts'
 
 const template = templateById('straight-funk')
-const spec: GrooveSpec = { id: 'g1', template: 'straight-funk', seed: 1 }
+/**
+ * `buildEvents` derives everything from `template` and `seed` and never reads a
+ * uuid, so one canonical value stands in for every spec in this file. A groove's
+ * real uuid is minted into catalogue.json — see uuid.test.ts.
+ */
+const UUID = '2368f779-9931-44ec-9c62-3146bf20736f'
+
+const spec: GrooveSpec = { id: 'g1', uuid: UUID, template: 'straight-funk', seed: 1 }
 
 const PITCHED = new Set(['bass', 'comp'])
 
@@ -306,8 +313,8 @@ describe('buildEvents — determinism', () => {
   it('derives the music from { template, seed }, not from the id', () => {
     // R2: a groove is identified by its template and seed. Two specs that share
     // both must be the same groove, whatever they are called.
-    const a = buildEvents({ id: 'groove-01', template: 'straight-funk', seed: 7 }, template)
-    const b = buildEvents({ id: 'anything-else', template: 'straight-funk', seed: 7 }, template)
+    const a = buildEvents({ id: 'groove-01', uuid: UUID, template: 'straight-funk', seed: 7 }, template)
+    const b = buildEvents({ id: 'anything-else', uuid: UUID, template: 'straight-funk', seed: 7 }, template)
     expect(a).toEqual(b)
   })
 
@@ -330,7 +337,7 @@ describe('buildEvents — determinism', () => {
         Array.from(
           { length: 200 },
           (_, i) =>
-            buildEvents({ id: 'g', template: feel.id, seed: i + 1 }, feel).music.flavour,
+            buildEvents({ id: 'g', uuid: UUID, template: feel.id, seed: i + 1 }, feel).music.flavour,
         ),
       )
       expect([...flavours].sort(), feel.id).toEqual([...feel.flavours].sort())
@@ -411,7 +418,7 @@ describe('buildEvents — the words match the notes', () => {
   it('chooses a flavour the template offers', () => {
     for (const feel of allTemplates()) {
       for (let seed = 1; seed <= 40; seed++) {
-        const { music } = buildEvents({ id: 'g', template: feel.id, seed }, feel)
+        const { music } = buildEvents({ id: 'g', uuid: UUID, template: feel.id, seed }, feel)
         expect(feel.flavours, `${feel.id}:${seed}`).toContain(music.flavour)
       }
     }
@@ -553,7 +560,7 @@ describe('buildEvents — every template renders', () => {
       it('renders a non-empty groove in its own flavours and tempo range', () => {
         for (const seed of seeds) {
           const { events, music } = buildEvents(
-            { id: `groove-${seed}`, template: feel.id, seed },
+            { id: `groove-${seed}`, uuid: UUID, template: feel.id, seed },
             feel,
           )
           expect(events.length, `${feel.id}:${seed}`).toBeGreaterThan(0)
@@ -566,7 +573,7 @@ describe('buildEvents — every template renders', () => {
 
       it('plays every voice it declares, and no other', () => {
         for (const seed of seeds) {
-          const { events } = buildEvents({ id: 'g', template: feel.id, seed }, feel)
+          const { events } = buildEvents({ id: 'g', uuid: UUID, template: feel.id, seed }, feel)
           const played = new Set(events.map((e) => e.voice))
           for (const voice of feel.voices) expect(played, `${feel.id}:${seed}`).toContain(voice)
           for (const voice of played) expect(feel.voices, `${feel.id}:${seed}`).toContain(voice)
@@ -575,7 +582,7 @@ describe('buildEvents — every template renders', () => {
 
       it('keeps every event inside the loop, and fills it to the last bar', () => {
         for (const seed of seeds) {
-          const { events, music } = buildEvents({ id: 'g', template: feel.id, seed }, feel)
+          const { events, music } = buildEvents({ id: 'g', uuid: UUID, template: feel.id, seed }, feel)
           const loopSec = (60 / music.bpm) * 4 * music.loopBars
           const barSec = (60 / music.bpm) * 4
           const end = Math.max(...events.map((e) => e.timeSec + e.durationSec))
@@ -590,7 +597,7 @@ describe('buildEvents — every template renders', () => {
 
       it('keeps every onset on its own grid, inside every bar of the loop', () => {
         for (const seed of seeds) {
-          const { events, music } = buildEvents({ id: 'g', template: feel.id, seed }, feel)
+          const { events, music } = buildEvents({ id: 'g', uuid: UUID, template: feel.id, seed }, feel)
           const step = ((60 / music.bpm) * 4) / feel.subdivision
           const bars = new Set<number>()
           for (const event of events) {
@@ -611,7 +618,7 @@ describe('buildEvents — every template renders', () => {
 
       it('keeps pitched notes inside the sample pack’s sampled range', () => {
         for (const seed of seeds) {
-          const { events } = buildEvents({ id: 'g', template: feel.id, seed }, feel)
+          const { events } = buildEvents({ id: 'g', uuid: UUID, template: feel.id, seed }, feel)
           for (const event of events) {
             if (event.voice === 'bass') {
               expect(event.midi, feel.id).toBeGreaterThanOrEqual(24)
@@ -632,7 +639,7 @@ describe('buildEvents — every template renders', () => {
       it('plays the harmony its metadata names', () => {
         for (const seed of seeds) {
           const { events, music, harmony } = buildEvents(
-            { id: 'g', template: feel.id, seed },
+            { id: 'g', uuid: UUID, template: feel.id, seed },
             feel,
           )
           const chords = music.progression.split('–')
@@ -673,8 +680,8 @@ describe('buildEvents — every template renders', () => {
       })
 
       it('is deterministic in { template, seed }', () => {
-        const a = buildEvents({ id: 'one', template: feel.id, seed: 3 }, feel)
-        const b = buildEvents({ id: 'another', template: feel.id, seed: 3 }, feel)
+        const a = buildEvents({ id: 'one', uuid: UUID, template: feel.id, seed: 3 }, feel)
+        const b = buildEvents({ id: 'another', uuid: UUID, template: feel.id, seed: 3 }, feel)
         expect(a).toEqual(b)
       })
     })
@@ -696,7 +703,7 @@ describe('buildEvents — per-template placement', () => {
   // on beat one would otherwise read as a backbeat that had moved.
   function stepsOf(voice: string, feelId: string, seed: number) {
     const feel = templateById(feelId)
-    const { events, music } = buildEvents({ id: 'g', template: feelId, seed }, feel)
+    const { events, music } = buildEvents({ id: 'g', uuid: UUID, template: feelId, seed }, feel)
     const step = ((60 / music.bpm) * 4) / feel.subdivision
     const phrased = phraseBars(feel)
     return events
@@ -728,7 +735,7 @@ describe('buildEvents — per-template placement', () => {
     // pairs of steps together; stacking them would double that voice's level.
     for (const feel of allTemplates()) {
       for (let seed = 1; seed <= 8; seed++) {
-        const { events, music } = buildEvents({ id: 'g', template: feel.id, seed }, feel)
+        const { events, music } = buildEvents({ id: 'g', uuid: UUID, template: feel.id, seed }, feel)
         const step = ((60 / music.bpm) * 4) / feel.subdivision
         const seen = new Set<string>()
         for (const event of events) {
@@ -800,7 +807,7 @@ describe('buildEvents — a groove is several passes of one figure — R3, R5, A
     describe(feel.id, () => {
       it('spans its template’s declared pass count times four bars — AC2', () => {
         for (let seed = 1; seed <= 6; seed++) {
-          const { events, music } = buildEvents({ id: 'g', template: feel.id, seed }, feel)
+          const { events, music } = buildEvents({ id: 'g', uuid: UUID, template: feel.id, seed }, feel)
           expect(music.bars, feel.id).toBe(4)
           expect(music.loopBars, feel.id).toBe(4 * feel.passes)
 
@@ -840,7 +847,7 @@ describe('buildEvents — a groove is several passes of one figure — R3, R5, A
         const isPitched = (key: string) => PITCHED.has(key.split('@')[0])
 
         for (let seed = 1; seed <= 6; seed++) {
-          const { events, music } = buildEvents({ id: 'g', template: feel.id, seed }, feel)
+          const { events, music } = buildEvents({ id: 'g', uuid: UUID, template: feel.id, seed }, feel)
           const steps = stepsOfLoop(events, music.bpm, feel.subdivision)
           const phrased = phraseBars(feel)
 
@@ -875,7 +882,7 @@ describe('buildEvents — a groove is several passes of one figure — R3, R5, A
 
       it('fills between the backbeats differently from bar to bar', () => {
         for (let seed = 1; seed <= 6; seed++) {
-          const { events, music } = buildEvents({ id: 'g', template: feel.id, seed }, feel)
+          const { events, music } = buildEvents({ id: 'g', uuid: UUID, template: feel.id, seed }, feel)
           const steps = stepsOfLoop(events, music.bpm, feel.subdivision)
 
           const byBar = new Map<number, string[]>()
@@ -899,7 +906,7 @@ describe('buildEvents — a groove is several passes of one figure — R3, R5, A
       it('repeats the harmony every four bars, so bar 5 carries bar 1’s chord — R5, AC5', () => {
         for (let seed = 1; seed <= 6; seed++) {
           const { events, music, harmony } = buildEvents(
-            { id: 'g', template: feel.id, seed },
+            { id: 'g', uuid: UUID, template: feel.id, seed },
             feel,
           )
           const steps = stepsOfLoop(events, music.bpm, feel.subdivision)
@@ -952,7 +959,7 @@ describe('buildEvents — every pass is a different take — R4, AC4', () => {
    */
   function takesOf(feelId: string, seed: number) {
     const feel = templateById(feelId)
-    const { events, music } = buildEvents({ id: 'g', template: feelId, seed }, feel)
+    const { events, music } = buildEvents({ id: 'g', uuid: UUID, template: feelId, seed }, feel)
     const step = ((60 / music.bpm) * 4) / feel.subdivision
     const stepsPerPass = feel.subdivision * 4
 
@@ -1008,8 +1015,8 @@ describe('buildEvents — every pass is a different take — R4, AC4', () => {
     // R4 is a different performance every pass, not a random one: the same spec
     // must still render the same audio (AC4 of Epic 2, unchanged).
     for (const feel of allTemplates()) {
-      const a = buildEvents({ id: 'one', template: feel.id, seed: 5 }, feel)
-      const b = buildEvents({ id: 'another', template: feel.id, seed: 5 }, feel)
+      const a = buildEvents({ id: 'one', uuid: UUID, template: feel.id, seed: 5 }, feel)
+      const b = buildEvents({ id: 'another', uuid: UUID, template: feel.id, seed: 5 }, feel)
       expect(a.events, feel.id).toEqual(b.events)
     }
   })
@@ -1017,10 +1024,10 @@ describe('buildEvents — every pass is a different take — R4, AC4', () => {
   it('keeps every pass’s deviations inside the template’s declared bounds', () => {
     for (const feel of allTemplates()) {
       const flat = buildEvents(
-        { id: 'g', template: feel.id, seed: 3 },
+        { id: 'g', uuid: UUID, template: feel.id, seed: 3 },
         { ...feel, humanize: { timingMs: 0, velocity: 0, lean: {}, driftDepth: 0 } },
       )
-      const loose = buildEvents({ id: 'g', template: feel.id, seed: 3 }, feel)
+      const loose = buildEvents({ id: 'g', uuid: UUID, template: feel.id, seed: 3 }, feel)
       const bound = feel.humanize.timingMs / 1000
       expect(flat.events, feel.id).toHaveLength(loose.events.length)
 
@@ -1054,7 +1061,7 @@ describe('buildEvents — ghosts and accents — R10, R11, R12', () => {
 
   /** Every event with the sixteenth-grid step it reads as, and its bar. */
   function placed(feel = dry(), seed = 1) {
-    const { events, music } = buildEvents({ id: 'g', template: feel.id, seed }, feel)
+    const { events, music } = buildEvents({ id: 'g', uuid: UUID, template: feel.id, seed }, feel)
     const stepSec = ((60 / music.bpm) * 4) / feel.subdivision
     return events.map((event) => {
       const grid = Math.round(event.timeSec / stepSec)
@@ -1221,7 +1228,7 @@ describe('buildEvents — hands and fingers — R3, R4, R5, R6, R7, R8, R8a', ()
 
   /** Every event with the bar and the grid step it reads as. */
   function played(feel = still(), seed = 1) {
-    const { events, music, harmony } = buildEvents({ id: 'g', template: feel.id, seed }, feel)
+    const { events, music, harmony } = buildEvents({ id: 'g', uuid: UUID, template: feel.id, seed }, feel)
     const stepSec = ((60 / music.bpm) * 4) / feel.subdivision
     return {
       music,
@@ -1278,7 +1285,7 @@ describe('buildEvents — hands and fingers — R3, R4, R5, R6, R7, R8, R8a', ()
     let improved = false
     for (const feel of allTemplates()) {
       for (let seed = 1; seed <= 12; seed += 1) {
-        const { music, harmony } = buildEvents({ id: 'g', template: feel.id, seed }, feel)
+        const { music, harmony } = buildEvents({ id: 'g', uuid: UUID, template: feel.id, seed }, feel)
         const chords = harmony.progressionMidi
         let previous = voiceLead(null, chords[0])
         for (let bar = 1; bar < music.bars; bar += 1) {
@@ -1475,7 +1482,7 @@ describe('buildEvents — hands and fingers — R3, R4, R5, R6, R7, R8, R8a', ()
   it('keeps the approach note inside the loop — R8a, AC9a', () => {
     for (const feel of allTemplates()) {
       for (let seed = 1; seed <= 6; seed += 1) {
-        const { events, music } = buildEvents({ id: 'g', template: feel.id, seed }, feel)
+        const { events, music } = buildEvents({ id: 'g', uuid: UUID, template: feel.id, seed }, feel)
         const loopSec = (60 / music.bpm) * 4 * music.loopBars
         for (const event of events) {
           expect(event.timeSec, `${feel.id}:${seed}`).toBeLessThan(loopSec)
@@ -1490,7 +1497,7 @@ describe('buildEvents — hands and fingers — R3, R4, R5, R6, R7, R8, R8a', ()
   it('plays no pitch its scale forbids but the one the approach note buys — R9, AC10', () => {
     for (const feel of allTemplates()) {
       for (let seed = 1; seed <= 12; seed += 1) {
-        const { events, music, harmony } = buildEvents({ id: 'g', template: feel.id, seed }, feel)
+        const { events, music, harmony } = buildEvents({ id: 'g', uuid: UUID, template: feel.id, seed }, feel)
         expect(offScalePitches(events, music, harmony), `${feel.id}:${seed}`).toEqual([])
       }
     }
@@ -1526,7 +1533,7 @@ describe('buildEvents — the last pass ends with a fill — R5, R6, R7, R8, R9,
    * tests are about.
    */
   function drumBars(feel: FeelTemplate, seed = 1): string[][] {
-    const { events, music } = buildEvents({ id: 'g', template: feel.id, seed }, feel)
+    const { events, music } = buildEvents({ id: 'g', uuid: UUID, template: feel.id, seed }, feel)
     const step = ((60 / music.bpm) * 4) / feel.subdivision
     const bars: string[][] = Array.from({ length: music.loopBars }, () => [])
     for (const event of events) {
@@ -1539,7 +1546,7 @@ describe('buildEvents — the last pass ends with a fill — R5, R6, R7, R8, R9,
 
   /** The pitched figure of every bar: the bass and the comp, with their notes. */
   function pitchedBars(feel: FeelTemplate, seed = 1): string[][] {
-    const { events, music } = buildEvents({ id: 'g', template: feel.id, seed }, feel)
+    const { events, music } = buildEvents({ id: 'g', uuid: UUID, template: feel.id, seed }, feel)
     const step = ((60 / music.bpm) * 4) / feel.subdivision
     const bars: string[][] = Array.from({ length: music.loopBars }, () => [])
     for (const event of events) {
@@ -1757,7 +1764,7 @@ describe('buildEvents — the last pass ends with a fill — R5, R6, R7, R8, R9,
     it('keeps every fill event inside the loop', () => {
       for (const feel of allTemplates()) {
         for (let seed = 1; seed <= 8; seed += 1) {
-          const { events, music } = buildEvents({ id: 'g', template: feel.id, seed }, feel)
+          const { events, music } = buildEvents({ id: 'g', uuid: UUID, template: feel.id, seed }, feel)
           const loopSec = (60 / music.bpm) * 4 * music.loopBars
           for (const event of events) {
             expect(event.timeSec, `${feel.id}:${seed} ${event.voice}`).toBeLessThan(loopSec)
@@ -1773,7 +1780,7 @@ describe('buildEvents — the last pass ends with a fill — R5, R6, R7, R8, R9,
     it('has no crash to write there — the vocabulary holds none', () => {
       for (const voice of BACKING_VOICES) expect(voice).not.toMatch(/crash|cymbal|ride/)
       for (const feel of allTemplates()) {
-        const { events } = buildEvents({ id: 'g', template: feel.id, seed: 1 }, feel)
+        const { events } = buildEvents({ id: 'g', uuid: UUID, template: feel.id, seed: 1 }, feel)
         for (const event of events) expect(event.voice).not.toMatch(/crash|cymbal|ride/)
       }
       const phrases = [DEFAULT_FILL, ...Object.values(FILLS).flatMap((e) => [e.fill, e.variation])]
@@ -1818,7 +1825,7 @@ describe('the feels Epic 6 added — R1, AC1', () => {
         const pack = await loadPack(fileURLToPath(new URL('./samples', import.meta.url)))
 
         for (const seed of [1, 2, 3]) {
-          const spec: GrooveSpec = { id: `${id}-${seed}`, template: id, seed }
+          const spec: GrooveSpec = { id: `${id}-${seed}`, uuid: UUID, template: id, seed }
           const { events, music, harmony } = buildEvents(spec, feel)
           expect(events.length, `${id}:${seed} renders nothing`).toBeGreaterThan(0)
 
@@ -1849,7 +1856,7 @@ describe('every template’s density band admits its own grooves', () => {
       let lowest = Infinity
       let highest = -Infinity
       for (let seed = 1; seed <= 120; seed += 1) {
-        const { events, music } = buildEvents({ id: 'g', template: feel.id, seed }, feel)
+        const { events, music } = buildEvents({ id: 'g', uuid: UUID, template: feel.id, seed }, feel)
         const perBar = events.length / music.loopBars
         lowest = Math.min(lowest, perBar)
         highest = Math.max(highest, perBar)

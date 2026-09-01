@@ -237,6 +237,67 @@ describe('useProgress', () => {
     expect(result.current.streak).toBe(2)
   })
 
+  // --- Feature 12, Epic 1: a store that persists nothing feeds nothing ------
+
+  /**
+   * The mirror image of "a solve advances the streak already on screen".
+   *
+   * `recordAttempt` merges the day into `all` *before* the write, so a failing
+   * store never costs the player their guess. A shared groove is played through
+   * a store whose `save` keeps nothing by design, and merging there would make
+   * the panel read "streak now N+1" for a play that left no trace — the streak
+   * would fall back on the next reload (F12 E1 R19, AC9).
+   */
+  it('a solve through a non-persisting store leaves the streak alone (F12 E1 R19, AC9)', async () => {
+    const store = makeStore({
+      getAll: vi.fn(async () => [yesterdayResult]),
+      persists: false,
+    })
+    const { result } = renderHook(() => useProgress(TODAY, store))
+    await waitFor(() => expect(result.current.loaded).toBe(true))
+
+    expect(result.current.streak).toBe(1)
+
+    const winner = attempt({ flavour: 'Minor', correct: true, flavourMatched: true })
+    await act(async () => {
+      await result.current.recordAttempt({
+        answer: ANSWER,
+        grooveId: GROOVE_ID,
+        attempts: [winner],
+        solved: true,
+      })
+    })
+
+    // The number the header shows is byte-identical to what it was before.
+    expect(result.current.streak).toBe(1)
+    // And the day itself is still unplayed as far as this hook is concerned.
+    expect(result.current.todayResult).toBeNull()
+  })
+
+  it('still hands the record to save, so the seam stays the one that decides (F12 E1 R19)', async () => {
+    const save = vi.fn<(result: DailyResult) => Promise<void>>(async () => {})
+    const store = makeStore({ save, persists: false })
+    const { result } = renderHook(() => useProgress(TODAY, store))
+    await waitFor(() => expect(result.current.loaded).toBe(true))
+
+    await act(async () => {
+      await result.current.recordAttempt({
+        answer: ANSWER,
+        grooveId: GROOVE_ID,
+        attempts: [attempt({ flavour: 'Dorian', correct: false })],
+        solved: false,
+      })
+    })
+
+    // `useProgress` does not decide whether to write — it only declines to hold
+    // what it is told will not be kept. The read-only store's own `save` is what
+    // drops the record.
+    expect(save).toHaveBeenCalledTimes(1)
+    expect(save).toHaveBeenCalledWith(
+      expect.objectContaining({ date: TODAY, solved: false }),
+    )
+  })
+
   // --- Epic 5: the record remembers the groove it played --------------------
 
   it('writes the day with the id of the groove it played (E5 R7, AC7)', async () => {

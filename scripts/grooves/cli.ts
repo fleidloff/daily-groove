@@ -52,6 +52,9 @@ export function toGroove(
 ): Groove {
   return {
     id: spec.id,
+    // Copied, never minted. The uuid is catalogue input, so a render carries it
+    // outward unchanged and two runs agree on it (F12 E1 R2, R5).
+    uuid: spec.uuid,
     audioSrc: `/grooves/${spec.id}.mp3`,
     name: nameFor(spec.id),
     bpm: music.bpm,

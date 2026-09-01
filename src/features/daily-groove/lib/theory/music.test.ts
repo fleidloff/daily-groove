@@ -278,10 +278,20 @@ describe('loopSecondsOf', () => {
  * source tree, which no import can check, so they read `src/` from disk.
  */
 describe('the rotation is the generated catalogue (Epic 4)', () => {
+  /**
+   * A canonical uuid per fixture, from a counter rather than a real mint: the
+   * pools read the flavour, so what matters is that the field is present and
+   * well-formed, not which value it holds.
+   */
+  let fixtureUuids = 0
+  const nextFixtureUuid = () =>
+    `00000000-0000-4000-8000-${String((fixtureUuids += 1)).padStart(12, '0')}`
+
   /** A groove built from nothing, so the pool cases cannot lean on real data. */
   function fake(id: string, flavour: string): Groove {
     return {
       id,
+      uuid: nextFixtureUuid(),
       audioSrc: `/grooves/${id}.mp3`,
       name: `Fake ${id}`,
       bpm: 100,

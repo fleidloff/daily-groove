@@ -9,6 +9,7 @@ import { displayFlavour } from './cli.ts'
 
 const ENTRY: Groove = {
   id: 'groove-01',
+  uuid: '4c048e58-88a1-4425-b01b-e74cefc324d1',
   audioSrc: '/grooves/groove-01.mp3',
   name: 'Velvet Pocket',
   bpm: 98,
@@ -24,6 +25,7 @@ const ENTRY: Groove = {
 
 const SECOND: Groove = {
   id: 'groove-02',
+  uuid: '1461b138-472c-4bf1-91ca-b40e7c888d7f',
   audioSrc: '/grooves/groove-02.mp3',
   name: 'Dusty Lantern',
   bpm: 104,
@@ -104,13 +106,27 @@ describe('renderManifest', () => {
     expect(source).toContain('export const GROOVES: Groove[] = [')
   })
 
-  // AC7: every entry carries all twelve fields, with the right values.
-  it('writes all twelve fields of every entry', () => {
+  // AC7: every entry carries all thirteen fields, with the right values.
+  it('writes every field of every entry', () => {
     const grooves = evaluate(renderManifest([ENTRY, SECOND]))
     expect(grooves).toEqual([ENTRY, SECOND])
     for (const groove of grooves) {
       expect(Object.keys(groove).sort()).toEqual(Object.keys(ENTRY).sort())
     }
+  })
+
+  // Feature-12, Epic 1, Step A5 — R1, R4, AC1. The uuid is the only identifier a
+  // share link carries, so a manifest that dropped it would leave every link in
+  // the wild pointing at nothing. It is written directly after `id`, which is
+  // what makes the catalogue and the manifest read the same way round.
+  it("writes each entry's uuid, directly after its id", () => {
+    const source = renderManifest([ENTRY, SECOND])
+    expect(source).toMatch(/^ {4}uuid: '4c048e58-88a1-4425-b01b-e74cefc324d1',$/m)
+    for (const entry of [ENTRY, SECOND]) {
+      expect(source).toContain(`    id: '${entry.id}',\n    uuid: '${entry.uuid}',`)
+    }
+    // ...and it survives the round trip, not just the text.
+    expect(evaluate(source).map((g) => g.uuid)).toEqual([ENTRY.uuid, SECOND.uuid])
   })
 
   // Epic 2, Step E3: the measured head delay is rendered like any other field,

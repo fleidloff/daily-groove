@@ -158,3 +158,12 @@ Per epic: the file written or updated, the answers folded in and where they
 landed, anything an answer contradicted and how you resolved it, and the count
 of questions now open — or that the PRD is settled. Mention the
 `specs/features.md` row only if you changed it.
+
+**Then the next step, which depends on whether anything is still open:**
+
+- **Every PRD settled** → point at `/writespec <feature>`. Don't run it.
+- **Questions still open** → point back here: the user answers in the documents
+  and runs `/brainstorm` again. `/writespec` against an unsettled PRD produces
+  steps that get thrown away, and it will refuse for that reason.
+
+`docs/skills.md` has the full chain.

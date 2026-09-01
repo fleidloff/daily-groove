@@ -11,16 +11,24 @@ const { mockStore } = vi.hoisted(() => ({
     save: vi.fn(),
   },
 }))
-vi.mock('../lib/persistence/storage', () => ({
+// Only the module singleton is stood in for: `createReadOnlyStore` stays the
+// real decorator, because the shared session under test is the real one.
+vi.mock('../lib/persistence/storage', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../lib/persistence/storage')>()),
   createLocalStore: () => mockStore,
 }))
 
 import { usePuzzleSession } from './usePuzzleSession'
+import {
+  createReadOnlyStore,
+  type ResultStore,
+} from '../lib/persistence/storage'
 import { flavourOptions } from '../lib/theory/music'
 import { isoDate } from '../lib/puzzle/selectGroove'
 
 const GROOVE: Groove = {
   id: 'groove-01',
+  uuid: '18e13a23-e06f-4d5a-8f11-915cd59a5509',
   audioSrc: '/grooves/groove-01.mp3',
   name: 'Test Groove',
   bpm: 90,
@@ -631,5 +639,134 @@ describe('usePuzzleSession', () => {
     // reach it, and the attempt keeps what the player actually pressed.
     expect(saved.answer).toEqual({ root: 'C', flavour: 'Dorian' })
     expect(saved.attempts.at(-1)?.flavour).toBe('Minor')
+  })
+
+  // --- Feature 12, Epic 1: the session that records nothing ----------------
+
+  /**
+   * A session can be handed its own `ResultStore`, which is how a shared groove
+   * is played through one that drops its writes (F12 E1 R18, R19). The store
+   * below is a *different* object from the module singleton, so a session that
+   * quietly ignored the injection would be caught by the singleton's spies.
+   */
+  function injectable() {
+    const inner = {
+      get: vi.fn().mockResolvedValue(null),
+      getAll: vi.fn().mockResolvedValue([]),
+      save: vi.fn().mockResolvedValue(undefined),
+    }
+    return { inner, store: createReadOnlyStore(inner as ResultStore) }
+  }
+
+  /** Render the session against an injected store, and wait for hydration. */
+  async function renderInjected(store: ResultStore) {
+    const rendered = renderHook(() =>
+      usePuzzleSession(GROOVE, DAY, false, store),
+    )
+    await waitFor(() => expect(rendered.result.current.hydrated).toBe(true))
+    return rendered
+  }
+
+  it('reads the day through the injected store, not the singleton (R18)', async () => {
+    const { inner, store } = injectable()
+
+    const { result } = await renderInjected(store)
+
+    // The records the streak is derived from come from the injected store...
+    expect(inner.getAll).toHaveBeenCalledTimes(1)
+    // ...while the day's own record is never asked for: a shared groove has
+    // nothing to restore, whatever the inner store holds for today (R21, AC11).
+    expect(inner.get).not.toHaveBeenCalled()
+    // The module singleton was never consulted either.
+    expect(mockStore.get).not.toHaveBeenCalled()
+    expect(mockStore.getAll).not.toHaveBeenCalled()
+    expect(result.current.attempts).toEqual([])
+  })
+
+  it('records nothing on a checked guess through a read-only store (R18, AC9)', async () => {
+    const { inner, store } = injectable()
+    const { result } = await renderInjected(store)
+
+    await guess(result, 'G', wrongFlavour())
+
+    // The guess landed in the session...
+    expect(result.current.attempts).toHaveLength(1)
+    expect(result.current.solved).toBe(false)
+    // ...and nowhere else.
+    expect(inner.save).not.toHaveBeenCalled()
+    expect(mockStore.save).not.toHaveBeenCalled()
+  })
+
+  it('records nothing on a solve or a reveal either (R18, AC9)', async () => {
+    const { inner, store } = injectable()
+    const { result } = await renderInjected(store)
+
+    await guess(result, 'C', 'Minor')
+    expect(result.current.solved).toBe(true)
+
+    const second = injectable()
+    const { result: given } = await renderInjected(second.store)
+    await act(async () => {
+      given.current.reveal()
+    })
+    expect(given.current.revealed).toBe(true)
+
+    expect(inner.save).not.toHaveBeenCalled()
+    expect(second.inner.save).not.toHaveBeenCalled()
+    expect(mockStore.save).not.toHaveBeenCalled()
+  })
+
+  it('still reports the streak the injected store\u2019s records imply (R19)', async () => {
+    const { inner, store } = injectable()
+    const solvedYesterday: DailyResult = {
+      date: YESTERDAY(),
+      answer: { root: 'C', flavour: 'Minor' },
+      attempts: [SOLVING],
+      solved: true,
+      grooveId: 'groove-01',
+    }
+    inner.getAll.mockResolvedValue([solvedYesterday])
+
+    const { result } = await renderInjected(store)
+
+    expect(result.current.streak).toBe(1)
+
+    // A miss neither advances the run nor breaks it: the day it would have
+    // written is never written, so yesterday is still the anchor.
+    await guess(result, 'G', wrongFlavour())
+    expect(result.current.streak).toBe(1)
+    expect(inner.save).not.toHaveBeenCalled()
+  })
+
+  it('leaves the streak where it was once the shared play is over (R19, AC9)', async () => {
+    const { inner, store } = injectable()
+    const solvedYesterday: DailyResult = {
+      date: YESTERDAY(),
+      answer: { root: 'C', flavour: 'Minor' },
+      attempts: [SOLVING],
+      solved: true,
+      grooveId: 'groove-01',
+    }
+    inner.getAll.mockResolvedValue([solvedYesterday])
+
+    const first = await renderInjected(store)
+    await guess(first.result, 'C', 'Minor')
+    expect(first.result.current.solved).toBe(true)
+    expect(inner.save).not.toHaveBeenCalled()
+    first.unmount()
+
+    // The next session reads the same records back: the solve moved nothing.
+    const { result } = await renderInjected(store)
+    expect(result.current.streak).toBe(1)
+    expect(result.current.attempts).toEqual([])
+  })
+
+  it('falls back to the module singleton when no store is given (R23)', async () => {
+    const { result } = await renderSession()
+
+    await guess(result, 'G', wrongFlavour())
+
+    expect(mockStore.save).toHaveBeenCalledTimes(1)
+    expect(result.current.attempts).toHaveLength(1)
   })
 })

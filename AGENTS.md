@@ -10,10 +10,16 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 # Project guidelines
 
-Read both documents before writing code.
+Read all three before writing code.
 
 Architecture — feature slices, the design system, and keeping every feature removable:
 @docs/architecture.md
 
 Testing — what must be tested, and where the tests live:
 @docs/testing.md
+
+How a feature gets built — the five skills and the one order they run in
+(`/create-feature` → `/roadmap` → `/brainstorm` → `/writespec` →
+`/implement-feature`), what each reads and writes, and why answering a
+document's questions before moving on is the cheaper order:
+@docs/skills.md

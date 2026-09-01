@@ -5,16 +5,20 @@ import { dirname, join } from 'node:path'
 /**
  * The build guard's evidence.
  *
- * This module deliberately imports nothing but `fs`, `crypto` and `path`. The
- * guard runs on a machine with no ffmpeg and no sample pack (R13): it compares
- * committed artifacts against recorded checksums and never renders anything.
- * Adding an import from voices/mix/encode/pack/decode/pcmio/events/cli here
- * breaks that guarantee — and lock.test.ts asserts it by reading this source.
+ * This module imports nothing that renders. The guard runs on a machine with no
+ * ffmpeg and no sample pack (R13): it compares committed artifacts against
+ * recorded checksums and reads the catalogue's uuids, and it never renders
+ * anything. Adding an import from voices/mix/encode/pack/decode/pcmio/events/cli
+ * here breaks that guarantee — and lock.test.ts asserts it by reading this
+ * source, against an explicit allowlist that `catalogue.ts` and `uuid.ts` are on
+ * because neither of them renders either.
  */
 
 /** A named reason something did not pass. Shared shape with the quality gate. */
 export type { GateFailure } from './types.ts'
-import type { GateFailure } from './types.ts'
+import type { GateFailure, GrooveSpec } from './types.ts'
+import { readCatalogue } from './catalogue.ts'
+import { uuidFailures } from './uuid.ts'
 
 export type LockEntry = { id: string; sha256: string; bytes: number }
 
@@ -266,6 +270,24 @@ function checkEntries(
 }
 
 /**
+ * The catalogue's specs, or `null` when it cannot be read or parsed.
+ *
+ * The guard used only to hash the catalogue, never to open it, so opening it now
+ * must not turn a reported failure into a thrown one: a catalogue that is missing
+ * is already `missing`, and one that will not parse is already `catalogue-stale`
+ * — its bytes cannot match the hash recorded when it was rendered from. Either
+ * way the uuid checks have nothing to say, and say nothing (F12 E1 Step A7).
+ */
+function catalogueOrNull(path: string): GrooveSpec[] | null {
+  try {
+    const specs = readCatalogue(path)
+    return Array.isArray(specs) ? specs : null
+  } catch {
+    return null
+  }
+}
+
+/**
  * Compare the committed artifacts against the lock. Returns one failure per
  * problem, each naming the file — an empty array means the tree is intact.
  */
@@ -298,6 +320,14 @@ export function verifyLock(lock: Lock, paths: LockPaths): GateFailure[] {
     'the catalogue',
   )
   if (catalogue) failures.push(catalogue)
+
+  // The catalogue's own content, not just its hash. A hash proves the manifest
+  // was rendered from this catalogue; it cannot say whether the catalogue is
+  // usable. A uuid is what a share link carries, so a groove without one, or two
+  // grooves with the same one, is a fault in the input — and this is the only
+  // place that would catch it before a link went out (R8, R9, R10).
+  const specs = catalogueOrNull(paths.cataloguePath)
+  if (specs !== null) failures.push(...uuidFailures(specs))
 
   if (paths.notesManifestPath !== undefined && lock.notesManifestSha256 !== undefined) {
     const notesManifest = checkArtifact(

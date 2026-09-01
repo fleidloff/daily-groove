@@ -31,6 +31,7 @@ import type {
   Pcm,
   SamplePack,
 } from './types.ts'
+import { mintUuid } from './uuid.ts'
 import { renderVoices } from './voices.ts'
 
 /**
@@ -75,6 +76,13 @@ export type AddOptions = {
   templates?: readonly FeelTemplate[]
   /** Injected by tests; defaults to the real quality gate. */
   gate?: GateFn
+  /**
+   * Injected by tests; defaults to `uuid.ts`'s `mintUuid`. A groove's uuid is
+   * minted here, where the groove comes into existence, rather than by a later
+   * pass over the catalogue — `selectSeeds` is deterministic and must stay so,
+   * which is why the mint cannot live inside it (F12 E1 R7).
+   */
+  mintUuid?: () => string
   log?: (message: string) => void
 }
 
@@ -113,6 +121,7 @@ export async function addGrooves(n: number, opts: AddOptions = {}): Promise<Groo
   const templates = opts.templates ?? allTemplates()
   const log = opts.log ?? ((message: string) => console.log(message))
   const gate: GateFn = opts.gate ?? gateCandidate
+  const mint = opts.mintUuid ?? mintUuid
   const maxAttempts = opts.maxAttempts ?? n * DEFAULT_ATTEMPTS_PER_GROOVE
   const startSeed = opts.startSeed ?? seedFromClock((opts.now ?? Date.now)())
 
@@ -182,7 +191,10 @@ export async function addGrooves(n: number, opts: AddOptions = {}): Promise<Groo
       continue
     }
 
-    minted.push({ spec: candidate, pcm })
+    // The uuid is stamped on here, at the moment the candidate is accepted: a
+    // groove that exists is a groove that can be linked to, and nothing between
+    // this point and the catalogue write mints one of its own (F12 E1 R7, AC6).
+    minted.push({ spec: { ...candidate, uuid: mint() }, pcm })
   }
 
   await writeBatch(minted, existing, templates, {

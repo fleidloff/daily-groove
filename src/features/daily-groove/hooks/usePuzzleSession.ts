@@ -15,6 +15,7 @@ import {
 import { answerOf } from '../lib/theory/music'
 import { isoDate } from '../lib/puzzle/selectGroove'
 import { useProgress } from './useProgress'
+import type { ResultStore } from '../lib/persistence/storage'
 
 export type UsePuzzleSession = {
   selectedRoot: Root | null
@@ -68,15 +69,25 @@ export type UsePuzzleSession = {
  * part of the day: the groove, the answer and the attempts are the same in
  * either mode, which is why it reaches the store as a comparison rather than as
  * state (F7 E5 R5, R8).
+ *
+ * `resultStore` is the persistence the day is played against. It is named apart
+ * from the Zustand `store` above, which is the day's own state and never
+ * persistence. Omitted, the day uses
+ * the module singleton and behaves exactly as it always has; handed a store, it
+ * uses that one and nothing else. It is one parameter rather than a `shared`
+ * flag on purpose: a shared groove is played through a `ResultStore` whose write
+ * path is gone (`createReadOnlyStore`), so this hook has no idea a shared mode
+ * exists and no write site here has to remember to check for one (F12 E1 R18).
  */
 export function usePuzzleSession(
   groove: Groove,
   today: Date,
   simple = false,
+  resultStore?: ResultStore,
 ): UsePuzzleSession {
   const todayIso = isoDate(today)
   const { streak, todayResult, loaded, recordAttempt, newOrLapsed } =
-    useProgress(todayIso)
+    useProgress(todayIso, resultStore)
 
   // The answer is the groove's own `root` and `flavour` fields — the values
   // the generator wrote next to the audio, not a parse of its `scale` string.
