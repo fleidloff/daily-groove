@@ -164,7 +164,25 @@ describe('feature components sit in screen regions', () => {
       .map((entry) => entry.name)
       .sort()
     expect(files).toEqual(['GroovePuzzle.tsx'])
-    expect(existsSync(join(COMPONENTS, 'GroovePuzzle.test.tsx'))).toBe(true)
+    // Feature-14 Epic 2, Step C1 — R7, AC7a/AC8: the root component is still
+    // tested, and that is still the rule this assertion stands for. Only the
+    // files that satisfy it changed: `GroovePuzzle.test.tsx` held 119 composed
+    // cases in one place, and they now sit in five files named for the screen
+    // region each one exercises. Five rather than four because `puzzle/` holds
+    // 12 of the feature's 17 region components, so one file for it would have
+    // carried more than half the cases — it splits into the guessing surface
+    // and the sounding of the groove. The old file must be gone, or the same
+    // cases would be counted twice.
+    const composedTests = [
+      'GroovePuzzle.page.test.tsx',
+      'GroovePuzzle.guessing.test.tsx',
+      'GroovePuzzle.sounding.test.tsx',
+      'GroovePuzzle.intro.test.tsx',
+      'GroovePuzzle.header.test.tsx',
+    ]
+    const absent = composedTests.filter((name) => !existsSync(join(COMPONENTS, name)))
+    expect(absent).toEqual([])
+    expect(existsSync(join(COMPONENTS, 'GroovePuzzle.test.tsx'))).toBe(false)
   })
 
   // The declared list is only half the rule. Iterating `REGIONS` proves every

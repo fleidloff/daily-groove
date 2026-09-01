@@ -77,6 +77,7 @@ is whether `'generator'` joins them.
 
 - **Goal** — `tiersFor` exists and is tested; the three projects and three
   scripts exist; the `testTimeout` override is gone.
+- **Role** — `implementer`
 - **Owns** — `scripts/tiers.ts`, `scripts/tiers.test.ts`, `vitest.config.ts`,
   `package.json`
 - **Depends on** — nothing
@@ -89,6 +90,7 @@ is whether `'generator'` joins them.
 - **Goal** — `/verify-epic` establishes scope from the tech spec's
   file-ownership lists, calls `tiersFor`, runs what it returns, and reports a
   non-selected tier as **not run** with the reason.
+- **Role** — `implementer`
 - **Owns** — `.claude/skills/verify-epic/SKILL.md`,
   `.claude/skills/verify-epic/references/qa-report-template.md`
 - **Depends on** — the `tiersFor` contract only
@@ -101,6 +103,7 @@ is whether `'generator'` joins them.
 
 - **Goal** — the wave gate applies the same selection over the wave's units, and
   the run ends with one combined pass after the last epic's QA gate.
+- **Role** — `implementer`
 - **Owns** — `.claude/skills/implement-feature/SKILL.md`,
   `.claude/skills/implement-feature/references/report-template.md`
 - **Depends on** — the `tiersFor` contract and the script names only

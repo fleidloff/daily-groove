@@ -48,8 +48,16 @@ carries an uncommitted `testTimeout: 30_000` because three render cases blew the
 
 ## Requirements
 
-- **R1** — `npm test` runs the app tier alone: every `*.{test,spec}.{ts,tsx}`
-  under `src/`. It completes in under 20 seconds on a developer machine.
+- **R1** — `npm test` runs the fast tiers: every `*.{test,spec}.{ts,tsx}` under
+  `src/`, plus the repo tooling's own tests at the root of `scripts/`. It
+  completes in under 20 seconds on a developer machine.
+
+  *Amended during implementation.* This first read "the app tier alone: every
+  `*.{test,spec}.{ts,tsx}` under `src/`", written before the tier rule was
+  extracted into a tested module. That module's tests live at `scripts/` root
+  and belong on the default gate — they are milliseconds, and a tier rule nobody
+  runs is worse than none. The implementation is three vitest *projects* serving
+  two *tiers* of cost; "tier" here means cost, not project.
 - **R2** — A separate named script runs the generator tier alone: every
   `*.{test,spec}.ts` under `scripts/`.
 - **R3** — A third named script runs both tiers in one command.
@@ -84,8 +92,22 @@ carries an uncommitted `testTimeout: 30_000` because three render cases blew the
   report's Checks table.
 - **R9** — `/implement-feature`'s wave gate (§8) applies the same tier selection,
   scoped to the units in the wave that just ran.
-- **R10** — The `testTimeout: 30_000` override is removed from
-  `vitest.config.ts`. Both tiers pass at vitest's default timeout.
+- **R10** — ~~The `testTimeout: 30_000` override is removed from
+  `vitest.config.ts`. Both tiers pass at vitest's default timeout.~~
+  **Withdrawn during implementation: the premise was false.** R10 assumed the
+  override papered over contention *between the app and generator projects*, so
+  that separating the tiers would make it unnecessary. Measurement disproves it —
+  with the app project not running at all, **25 of the generator's 811 cases
+  exceed 2.5s**, half the default, the worst at 13.3s, and six full runs across a
+  day produced three `Test timed out in 5000ms` failures. Worker count is not the
+  lever: unbounded, 6, 3 and 2 workers all time out, and 2 is worse than 4.
+  **R10 is replaced by R10a.**
+- **R10a** — The generator project keeps a `testTimeout`, and carries the
+  explanation the original lacked: what was measured, why the tier is uniformly
+  expensive, and that the honest way to remove it is a cheaper render rather
+  than a bigger number. No other project may carry one — a timeout on `app` or
+  `tooling` would mean a fast tier had grown something slow enough to need it,
+  which is the drift this epic exists to prevent.
 - **R11** — `prebuild`'s `grooves:verify` step is unchanged. It is what keeps the
   committed audio artifacts guarded once the render tests leave the default gate.
 - **R12** — Running a tier with no matching files is not an error. A tier that
@@ -117,8 +139,9 @@ it is a re-release."
 
 ## Acceptance criteria
 
-- **AC1** (R1) — Given a clean tree, when `npm test` is run, then only tests
-  under `src/` execute and the command finishes in under 20 seconds.
+- **AC1** (R1) — Given a clean tree, when `npm test` is run, then the `app` and
+  `tooling` projects execute, the `generator` project does not, and the command
+  finishes in under 20 seconds.
 - **AC2** (R2) — Given a clean tree, when the generator script is run, then only
   tests under `scripts/` execute, and they pass.
 - **AC3** (R3) — Given a clean tree, when the combined script is run, then the
@@ -151,9 +174,12 @@ it is a re-release."
   run** with the reason, and no acceptance criterion is graded on it.
 - **AC10** (R9) — Given a wave whose units all own files under `src/features/`,
   when the wave gate runs, then the generator tier does not run.
-- **AC11** (R10) — Given `vitest.config.ts` with no `testTimeout` override, when
-  each tier is run three times consecutively, then all three runs pass. Three
-  runs, because a contention flake does not reproduce on one.
+- **AC11** (R10a) — Given `vitest.config.ts`, when the project blocks are read,
+  then exactly one — `generator` — sets `testTimeout`, and its setting carries
+  the measurements justifying it. Asserted by `scripts/tiers.test.ts` —
+  "confines any timeout override to the slow tier".
+- **AC11a** (R10a) — Given the tiers, when each is run three times
+  consecutively, then all three runs pass.
 - **AC12** (R11) — Given a build, when `npm run build` runs, then
   `grooves:verify` runs first and the build fails if it fails.
 - **AC13** (R12) — Given a tier selection that matches no test files, when that

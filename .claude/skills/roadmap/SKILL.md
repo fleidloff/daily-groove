@@ -35,6 +35,17 @@ and is worthless, which is worse than no roadmap. Ask them to fill it in.
 - Nothing has been answered → say it already exists, summarize it, and ask
   whether to regenerate from scratch or refine it.
 
+**Read `docs/persona.md`.** It names the one player the app is built for, and
+at this stage it does more work than anywhere else in the chain: epic boundaries
+and ordering are decisions about *what reaches the player first*, and that is a
+question about them rather than about the code. An epic ordered by what is
+easiest to build is a roadmap optimised for the person writing it.
+
+Its **Not the persona** section is a scoping tool. An epic that only serves the
+trained musician, the absolute beginner or the theory student is not
+automatically wrong — but it is a different bet from the rest of the feature,
+and saying so is what stops it drifting to the front of the plan unexamined.
+
 **Read the project's conventions** if they exist — `AGENTS.md`, `CLAUDE.md`,
 `docs/architecture.md`, `docs/testing.md`. Epics should land as the repo
 expects them to (feature slices, colocated tests, whatever the project says),
@@ -45,8 +56,12 @@ so the roadmap doesn't quietly contradict the codebase's own rules.
 An epic is a slice of the feature that a team could pick up, finish, and prove
 works — without the rest of the roadmap existing yet.
 
-**Every epic ships something a person can see.** This is the constraint that
-matters most. "Set up the database", "build the API layer", "add auth
+**Every epic ships something the persona can see.** This is the constraint that
+matters most, and "the persona" is the sharp half of it: `docs/persona.md` names
+who is looking. *Visible when done* written as "the settings are persisted" is
+about the system; written as "Sam can flip to simple mode and it is still there
+tomorrow" it is about the player, and only the second can be judged by anyone
+but its author. "Set up the database", "build the API layer", "add auth
 scaffolding" are not epics — they're tasks hiding inside one. Infrastructure
 never gets its own epic; it rides along inside the first epic that needs it,
 and that epic is still named and judged by what becomes visible.
@@ -76,11 +91,16 @@ and let the other depend on it. Don't hoist it into a shared prerequisite epic
 
 **Then check your work.** Read back the epic list and test each one:
 
-1. Can I describe what's visibly different when this is done? If the answer is
-   about internals, restructure it — merge it into the epic that makes it
-   visible, or turn it inside out so the user-facing part leads.
+1. Can I describe what's visibly different when this is done, in a sentence
+   about the persona rather than about the system? If the answer is about
+   internals, restructure it — merge it into the epic that makes it visible, or
+   turn it inside out so the user-facing part leads.
 2. Could someone validate this without the later epics existing?
 3. Is this blocked for a real reason, or just because I listed it second?
+4. Would the persona notice the epics in this order? Ordering by what is
+   cheapest to build is the default a roadmap exists to argue with — and where
+   an epic genuinely serves someone `docs/persona.md` rules out, say so rather
+   than letting it sit unlabelled among the others.
 
 Restructuring at this point is normal, not a sign of a bad first pass.
 
@@ -179,6 +199,39 @@ and update the roadmap.
 - [ ] C) Never editable once saved
 - [ ] D) Editable, with a visible edit history
 ```
+
+**Ground the recommendation, and name what in.** Work down this order and say
+which rung you landed on, so the user can argue with the evidence rather than
+with your taste:
+
+1. **The briefing** — what the user actually asked for.
+2. **`docs/persona.md`** — what serves the player. Quote the line you are
+   leaning on ("one thing per day, not a curriculum", "being asked what they
+   don't yet know") rather than gesturing at the persona in general.
+3. **The engineering reason** — when both are genuinely silent. Say that they
+   are; it is honest and still useful.
+
+The example above lands on rung 3, and says so by giving a build reason and no
+other. That is fine when it is true — and misleading when the persona had
+something to say and you did not look.
+
+**Shape the options around the persona, not only the recommendation.** A
+roadmap's questions decide what the player meets first, so the option set is
+where that gets framed. At least one option should follow from what the persona
+wants; where the fork has one, at least one from what loses them.
+
+> Wrong: A) build the generator first · B) build the UI first · C) both behind a
+> flag · D) spike it
+> Right: A) the groove plays on day one, guessing comes second *(recommended —
+> "the groove plays first"; a page that cannot make a sound is not a thin slice
+> of this app, it is a different app)* · B) the guessing flow first, against a
+> placeholder tone · C) both, if the two can be validated apart
+
+**Don't manufacture persona reasoning where there is none.** Plenty of roadmap
+questions — a licence bar, a file format, which library supplies a sample — have
+no bearing on the player at all, and dressing them in persona language teaches
+the user to skim the part that matters. Say "no persona bearing; the reason is
+engineering" and give it.
 
 Up to four options, each a real and distinct choice — not three straw men
 around the one you want. Mark your recommendation and say in one clause why.

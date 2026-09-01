@@ -30,7 +30,7 @@ document's questions before moving on is the cheaper order:
 `scripts/grooves/`: the twelve scales and the three rules a new one must satisfy,
 how a chord is derived from a scale, the six feels and every parameter they
 declare, the rhythm pools and fixed placements, bass and comp voicing, what turns
-a grid into a performance, the quality gate's six thresholds, and the four things
+a grid into a performance, the quality gate's seven thresholds, and the four things
 that must never change because altering them re-renders the catalogue and
 reassigns every past puzzle.
 
@@ -38,3 +38,24 @@ Read it when you touch `scripts/grooves/`, and not otherwise — it is a referen
 for musical decisions, not a rule every change has to clear. It is linked rather
 than `@`-imported for that reason: the three documents above load into every
 session, and this one should load only when it is the subject.
+
+## The skills may dispatch their own agents
+
+Four of the five skills in [docs/skills.md](docs/skills.md) are built around
+agents rather than around one assistant doing the work in sequence:
+`/writespec` hands each PRD to an `architect`, `/implement-feature` fans out a
+worker per unit and runs `/verify-epic`'s `verifier` at the end of every epic,
+and `.claude/agents/` defines the five roles they draw from — `architect`,
+`implementer`, `test-writer`, `verifier`, `musician`. A tech spec's tracks
+declare a role each for exactly that reason.
+
+**Running those skills is standing permission to dispatch the agents they
+name.** Don't stop to ask. The parallelism is the design: the epics of a feature
+own disjoint files so they can be built at once, and a session that runs them
+one at a time is slower for no gain in safety — every agent's output still
+arrives as a spec or a diff to review before anything is merged.
+
+This is permission for the skills' own agents, not a general licence: spawning a
+swarm for a question that one search would answer is still worse than searching.
+And it says nothing about `/loop`, workflows or deep research — those stay
+opt-in per request.

@@ -255,7 +255,7 @@ catalogue is a *balance* question, not a master-trim one.
 
 ## The quality gate
 
-`gate.ts`. A minted candidate enters the catalogue only if all six checks pass.
+`gate.ts`. A minted candidate enters the catalogue only if all seven checks pass.
 Every failure names the check *and* the value measured.
 
 | Check | Rule |
@@ -277,8 +277,8 @@ wrong gain — not a mastering tolerance.
 ## What the gate cannot do
 
 **Nothing here can hear.** The gate measures loudness, peak, silence, seams,
-off-scale pitches and density. None of those is whether a groove is any good, and
-a groove can pass all six and be dull, cluttered, or simply not a groove.
+harmony, off-scale pitches and density. None of those is whether a groove is any good, and
+a groove can pass all seven and be dull, cluttered, or simply not a groove.
 
 The tuning knobs that decide this — swing, `timingMs`, `velocity`, `lean`,
 `driftDepth`, and the per-voice gains — **are turned by a listening sign-off**, by

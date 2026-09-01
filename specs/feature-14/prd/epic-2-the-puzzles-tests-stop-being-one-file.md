@@ -57,9 +57,18 @@ grouping to split along. That block is the actual work of this epic.
 
 ## Requirements
 
-- **R1** — `GroovePuzzle.test.tsx`'s 119 cases are distributed across **four**
-  test files: one per screen region — header, intro, puzzle — plus one for the
-  page itself. **`GroovePuzzle.test.tsx` does not survive**: every case moves.
+- **R1** — `GroovePuzzle.test.tsx`'s 119 cases are distributed across **five**
+  test files: one for `intro`, one for `header`, **two for `puzzle`** — the
+  guessing surface and the sounding page — plus one for the page itself.
+  **`GroovePuzzle.test.tsx` does not survive**: every case moves.
+- **R1a** — `puzzle/` takes two files because the region cannot be one. Twelve of
+  the feature's seventeen region components live there against four in `header/`
+  and one in `intro/`, so a strict region split puts 65 of 119 cases in one file
+  — over AC1's ceiling, and still the file every feature would touch. The seam
+  is real rather than arithmetic: the guessing surface (chips, dots, feedback,
+  the nudge, the way out, the solved panel, simple mode) against the sounding
+  page (transport, progress track, error and retry, head delay, reference notes,
+  the chord row).
 - **R2** — No case is deleted, merged, weakened or skipped. The case count across
   the new files equals 119, and every assertion is the one it was before.
 - **R3** — Every relocated case keeps its subject. Per `docs/testing.md`, moving
@@ -86,7 +95,7 @@ grouping to split along. That block is the actual work of this epic.
   removed features stay removed. None is a `puzzle/` fact, and forcing them into
   a region would leave the next contributor with nowhere obvious to add the next
   one.
-- **R6b** — All four files render the composed feature through its public
+- **R6b** — All five files render the composed feature through its public
   surface. They are not tests of a region component in isolation — those already
   exist beside each component (`GrooveHeader.test.tsx`, `GuessCard.test.tsx` and
   the rest) and are untouched by this epic. The distinction has to be legible
@@ -94,7 +103,7 @@ grouping to split along. That block is the actual work of this epic.
 - **R7** — `src/features/daily-groove/structure.test.ts` is updated to match.
   Because `GroovePuzzle.test.tsx` is gone, its
   `expect(existsSync(join(COMPONENTS, 'GroovePuzzle.test.tsx'))).toBe(true)`
-  assertion is **rewritten** to require the four files instead — not deleted. The
+  assertion is **rewritten** to require the five files instead — not deleted. The
   rule it stands for, that the root component is tested, still holds; only the
   files that satisfy it change. Its sibling assertion, that `components/` holds
   exactly `['GroovePuzzle.tsx']` as non-test files, already excludes test files
@@ -123,9 +132,11 @@ to change that line; a split that keeps it as one of the new files does not.
 
 ## Acceptance criteria
 
-- **AC1** (R1) — Given the split, when the feature's component tests are listed,
-  then `GroovePuzzle`'s cases sit in four files and no single file holds more
-  than half of them.
+- **AC1** (R1, R1a) — Given the split, when the feature's component tests are
+  listed, then `GroovePuzzle`'s cases sit in five files and no single file holds
+  more than 40 of them. The ceiling tightens from 59 because five files make it
+  reachable without special pleading; 59 was half of 119 and, at four files, a
+  bound that could only be met by arguing cases across the region line.
 - **AC2** (R2) — Given the split, when cases are counted across all files
   produced from `GroovePuzzle.test.tsx`, then the total is 119.
 - **AC3** (R2) — Given the split, when the app tier runs, then every one of those
@@ -142,14 +153,14 @@ to change that line; a split that keeps it as one of the new files does not.
   then each sits in the file for the region it exercises, and the rule is written
   down where a future contributor will find it.
 - **AC7a** (R1) — Given the split, when `components/` is listed, then
-  `GroovePuzzle.test.tsx` does not exist and the four new files do.
+  `GroovePuzzle.test.tsx` does not exist and the five new files do.
 - **AC7b** (R6a) — Given a case about the composition rather than a region — the
   page hydrating before it paints, say — when the files are read, then it is in
   the page file and not in a region file.
-- **AC7c** (R6b) — Given the four files and the existing per-component tests,
+- **AC7c** (R6b) — Given the five files and the existing per-component tests,
   when both are listed, then which kind a file is can be told from its name.
 - **AC8** (R7) — Given the split, when `structure.test.ts` runs, then it passes,
-  and its rewritten assertion requires all four files rather than
+  and its rewritten assertion requires all five files rather than
   `GroovePuzzle.test.tsx`.
 - **AC8a** (R3a) — Given a case whose setup was re-expressed, when it is compared
   against the original, then it proves the same thing, and the report names it.

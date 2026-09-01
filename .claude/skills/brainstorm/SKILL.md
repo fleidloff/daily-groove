@@ -27,6 +27,17 @@ point the user at `/roadmap <feature>`. Read `briefing.md` too: it carries the
 intent behind the roadmap's shorthand, and it's what grounds your
 recommendations later.
 
+**Read `docs/persona.md`.** It names the one player every feature is built for,
+and it is the tie-breaker for most of what a PRD has to decide: what a
+requirement should say when the briefing is silent, and which option to
+recommend when several would work. A PRD written without it tends to optimise
+for whoever is holding the keyboard rather than whoever is holding the phone.
+
+Its **Not the persona** section earns its keep here too. An option that only
+makes sense for the trained musician, the absolute beginner or the theory
+student is one you should name as such — that is a reason to rank it last, not a
+reason to leave it out.
+
 Read the project's conventions (`AGENTS.md`, `docs/architecture.md`,
 `docs/testing.md`) so acceptance criteria match how this repo validates work.
 
@@ -61,11 +72,37 @@ Each question gets **up to four options, tickable, exactly one recommended**:
 - [ ] D) Editable, with a visible edit history
 ```
 
-**Ground the recommendation in the briefing or the roadmap, and say which.** A
-recommendation with no evidence behind it is just your preference wearing a
-label, and the user can't tell the difference without rereading both documents.
-Where briefing and roadmap are genuinely silent, say so and give the
-engineering reason instead — that's honest and still useful.
+**Ground the recommendation, and say in what.** A recommendation with no
+evidence behind it is just your preference wearing a label, and the user can't
+tell the difference without rereading every document. Work down this order and
+name whichever rung you land on:
+
+1. **The briefing** — what the user actually asked for.
+2. **The roadmap** — the shape already agreed, and what neighbouring epics need.
+3. **`docs/persona.md`** — what serves Sam. Quote the line you are leaning on
+   ("a win in two minutes, on the phone", "being asked what they don't yet
+   know") rather than gesturing at the persona in general, so the user can
+   disagree with the specific claim.
+4. **The engineering reason** — when all three are genuinely silent. Say that
+   they are; it is honest and still useful.
+
+**Shape the options around the persona, not only the recommendation.** The
+options are where a fork is actually framed, so at least one should follow from
+what Sam wants and, where the fork has one, at least one from what loses them.
+A question whose four options are four implementation preferences has already
+decided the thing that mattered — it has turned a product question into a
+technical one before the user got to see it.
+
+> Wrong: A) modal · B) inline panel · C) new route · D) tooltip
+> Right: A) answer stays on the card, no navigation *(recommended — "a win in
+> two minutes, on the phone"; a route change costs the session)* · B) a panel
+> below the card · C) its own page, for the player who wants to study it
+
+**Don't manufacture persona reasoning where there is none.** Plenty of questions
+— a loudness measure, a file format, where a constant lives — have no bearing on
+Sam whatever, and dressing them in persona language teaches the user to skim the
+part that matters. Say "no persona bearing; the reason is engineering" and give
+it.
 
 Four real options, not three straw men around the one you want. The user will
 write their own when none fit.
@@ -87,6 +124,14 @@ name in the roadmap. Follow
 Write the whole document even at low confidence — state the assumption you
 proceeded under, and let the questions refine it. A concrete draft is far easier
 to answer questions against than an empty one.
+
+**Write the requirements for Sam, not for a general user.** "The player can see
+their progress" is a requirement about nobody; "the streak is visible without
+scrolling, because the session is twenty minutes before dinner on a phone" is a
+requirement you can check. Where a requirement exists because of something in
+`docs/persona.md`, let the reason show in the wording — a reader six weeks out
+should be able to tell a persona-driven rule from an arbitrary one, because only
+one of the two is safe to change.
 
 ## 6. The reconcile cycle
 

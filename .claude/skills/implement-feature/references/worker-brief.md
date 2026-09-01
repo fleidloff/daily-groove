@@ -1,8 +1,9 @@
 # Worker brief
 
 The prompt given to each agent, in subagent or teams mode alike. Workers do not
-inherit the lead's conversation — everything they need must be in here. A vague
-brief produces a worker that reads half the repo to orient itself, then guesses.
+inherit the lead's conversation, so everything per-unit must be in here — and
+only that: the agent definitions under `.claude/agents/` carry the conventions,
+per role, so the brief no longer ships a reading list.
 
 Fill every placeholder. Never write "see the spec" without the path.
 
@@ -10,10 +11,9 @@ Fill every placeholder. Never write "see the spec" without the path.
 
 You are implementing one unit of work in an existing repository.
 
-**Read first, in this order:**
+**Read first:**
 - Spec: `specs/<feature>/tech-spec/<epic>.md` — your unit is **<Track X: name>**
 - Requirements and acceptance criteria: `specs/<feature>/prd/<epic>.md`
-- Conventions you must follow: `AGENTS.md`, `docs/architecture.md`, `docs/testing.md`
 
 **Your unit covers:** <requirement and AC ids, e.g. R1–R4, AC1, AC3>
 
@@ -31,18 +31,10 @@ other units are building against them:
 
 **Test command — your scope only:** `<npm test -- <path to your files>>`
 
-**Your loop:**
-
-1. **Analyze** — read the spec steps for your unit and the ACs they map to.
-   Note anything ambiguous; you'll report it rather than inventing a product
-   decision.
-2. **Write the tests first** — from the spec, colocated per the testing doc.
-   Run them and confirm they fail, for the reason you expect. A test that
-   passes before the implementation exists is testing nothing, and this is the
-   cheapest moment to catch it.
-3. **Implement** — the minimum that makes them pass, following the spec's steps.
-4. **Verify** — run your own tests. Only yours.
-5. **Fix and repeat** until they pass.
+**Your loop:** read the spec steps for your unit and the ACs they map to → write
+the tests first and run them to confirm they fail for the reason you expect →
+implement the minimum that makes them pass → run your own tests, only yours →
+fix and repeat. Report anything ambiguous rather than inventing a decision.
 
 **Do not touch git.** No `git add`, no `git commit`, no branch or stash — leave
 everything you change in the working tree. The person running this reviews the

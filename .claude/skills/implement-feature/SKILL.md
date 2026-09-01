@@ -48,8 +48,9 @@ For each epic in `specs/<feature>/prd/`:
 - **A PRD with open questions is not ready to build.** Report it and skip that
   epic unless the user overrides.
 
-Read `roadmap.md` for cross-epic dependencies, plus `AGENTS.md` and `docs/` so
-workers place and test files the way this repo expects.
+Read `roadmap.md` for cross-epic dependencies, plus `AGENTS.md` and `docs/` for
+the work the lead does itself — the contracts in §4 and the fixes in §9. Workers
+no longer need you to pass this on: their agent definitions carry it (§5).
 
 ## 3. Preflight before dispatching anything
 
@@ -79,6 +80,13 @@ either merge them into one unit or put them in different waves. If overlap is
 unavoidable, merge the units — a worktree split would need commits to merge back
 (§0), so it is the user's call, not yours.
 
+**A generator unit is still one unit.** The two-turn shape in §5 changes neither
+the unit count nor the wave schedule: an epic with G generator units and N others
+has N + G units and the waves it would have had anyway. What it changes is that
+such a unit occupies two turns, because the musician's output is the
+implementer's input and the two cannot run concurrently. Wave *width* is
+unaffected — the other units in the wave run alongside both turns.
+
 **Contracts go first.** If a tech spec has a `Contracts` section, write those
 types and signatures in the lead, before dispatch. Every worker then builds
 against a real file instead of a description. This one step removes most of the
@@ -98,6 +106,48 @@ concurrently. Give each the brief in
 subagents alike start with no knowledge of this conversation, so the brief must
 name every file to read, the files it owns, the test command, and its
 definition of done.
+
+### Dispatch by the role the spec declares
+
+**Read each unit's role from its tech-spec track and dispatch that agent type.**
+The track carries a **Role** field, decided by the architect where the reasoning
+was — do not infer the role from the files the unit owns. The five are
+`test-writer`, `implementer`, `architect`, `verifier` and `musician`, and each
+definition under `.claude/agents/` already carries the conventions its kind of
+work needs. That is why the brief is per-unit only and no longer ships a reading
+list of `AGENTS.md` and `docs/`.
+
+**When the field is absent**, the spec predates it — every spec written before
+today is in that state. Fall back to `implementer`, except for a track owning
+files under `scripts/grooves/`, which falls back to the musician-then-implementer
+pair below; file ownership then does the work the field would have done, in the
+one case where guessing wrong costs most. This is a fallback for old specs, not a
+second dispatch mechanism: a spec `/writespec` produces today always declares a
+role, and the report says when the lead had to fall back.
+
+### A generator unit takes two turns
+
+A unit owning files under `scripts/grooves/` is the one exception to one agent
+per unit:
+
+1. **The musician runs first.** It decides the parameters and states the
+   reasoning behind them, and it writes no file under `scripts/grooves/`.
+2. **The lead passes that reasoning to an implementer**, which makes the change.
+
+It stays **one unit**, with one set of acceptance criteria and **one status
+file** — written by the implementer, and carrying the musician's reasoning as
+well as its own work. It is one unit and not two because waves are ordered by
+file ownership and the musician owns no files: two units would let the wave gate
+schedule the implementer before the reasoning it depends on exists.
+
+### A listening sign-off does not stall the run
+
+Nothing here can hear. A unit whose change needs an ear — a feel template's
+swing or humanize values, say — **completes** and reports the change as
+*awaiting a human listening sign-off* rather than as verified. Its acceptance
+criterion is graded **partly**, which is exactly §9's step 3: implemented but
+untested. The run does not wait for a person, and nothing claims to have been
+heard.
 
 **Every worker writes a status file** to
 `specs/<feature>/.implement/<unit>.md` before finishing, in the format the brief
@@ -145,8 +195,15 @@ Workers prove their own unit and stop there, so the lead checks that the units
 still fit together. Keep this gate fast; it runs after every wave:
 
 - **Type check.** Catches almost all cross-unit breakage from parallel edits —
-  a changed signature, a contract drifted — in seconds.
-- **The unit tests of the units that just ran**, together in one pass.
+  a changed signature, a contract drifted — in seconds. It runs every wave,
+  whatever the tiers say.
+- **The unit tests of the units that just ran**, together in one pass, in the
+  tiers that wave actually needs. Take the union of the files owned by the units
+  in the wave that just ran, pass it to `tiersFor` in `scripts/tiers.ts`, and run
+  exactly the tiers it returns — `npm test` for `app` and `tooling`,
+  `npm run test:gen` for `generator`. That module is the authority on which tiers
+  a file scope requires; don't restate its condition here, and don't widen or
+  narrow its answer by hand.
 - Nothing else. No integration tier, no e2e, no full-repo suite. Those belong to
   the QA gate, and running them per wave means paying for the slowest tier once
   per wave to learn what one run at the end tells you.
@@ -169,7 +226,10 @@ Then fix until it comes back clean:
    scoped to the failing files, and go back to 1.
 3. **Pass with gaps** → the suite is green but ACs are uncovered. Write the
    missing tests, then go back to 1. An untested AC is not implemented; nothing
-   will tell you when it breaks.
+   will tell you when it breaks. The one exception is an AC **awaiting a human
+   listening sign-off** (§5): there is no test to write, because nothing here can
+   hear. Leave it **partly**, say what is waiting on an ear, and move on — the
+   run does not stall for a person.
 4. **Pass** → the epic is done. Move to the next epic.
 
 Two rules for the fix loop, because this is where an agent under pressure to
@@ -184,6 +244,24 @@ finish starts cheating:
 Verification stays in `/verify-epic` and repair stays here, deliberately: a
 verifier that can also fix is a verifier that can talk itself into a green
 report.
+
+## 9a. The feature gate — one combined pass
+
+Once the last epic in the run has passed `/verify-epic` clean, run
+`npm run test:all` once, in the lead.
+
+Per-epic tier selection is what makes every gate above cheap, and it is also why
+no moment in the run has executed every tier together: each epic ran the tiers
+its own file scope required, and each wave gate ran less again. This is the one
+place that guarantee comes back — one combined run per feature, not per epic.
+
+Run narrowed to one epic (`/implement-feature feature-8 epic-2`)? Run the
+combined pass only if that epic was the last outstanding one in the feature. With
+epics still unbuilt there is nothing to close, and a combined run over half a
+feature proves nothing the epic's own QA gate did not.
+
+A failure here is a feature-level failure, not the last epic's: carry the result
+into §10 and the report (§11).
 
 ## 10. Keep the status column true
 
@@ -217,11 +295,14 @@ was started, and the row should keep saying so.
 Move the row using the verified results — never the sense that the run went
 well.
 
-- **Every epic in the feature passed `/verify-epic` clean, and every AC is
-  marked Done** → set the status to ✅ Done.
+- **Every epic in the feature passed `/verify-epic` clean, every AC is marked
+  Done, and §9a's combined pass came back green** → set the status to ✅ Done.
 - **Some epics done, others not started or not clean** → 🔨 In progress.
 - **A single AC is Partly or Not done** → the feature is not Done. Leave it
   🔨 In progress and say so in the report.
+- **Every epic passed individually but §9a's combined pass failed** → the feature
+  is not Done. Leave it 🔨 In progress, and say in the report that the epics were
+  clean apart and the combined run was not, naming what failed.
 - **The run was abandoned, blocked or held** → say which in the report, and
   leave the row at whatever the truth is. An abandoned run still owes the column
   an accurate value.

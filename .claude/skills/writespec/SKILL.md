@@ -12,6 +12,19 @@ order, with as much of the work running in parallel as the dependencies allow.
 The PRD says what and why. This says how, in what order, and how you know each
 step worked.
 
+## 0. The architect writes it
+
+The `architect` agent produces the spec. It arrives knowing this repo's
+dependency graph, its placement floor and the decomposition method, so the
+reasoning happens where those rules are already resident rather than after a
+reading list.
+
+**The output shape is unchanged.** Same template
+([references/tech-spec-template.md](references/tech-spec-template.md)), same
+destination — `specs/<feature>/tech-spec/<same-basename-as-the-PRD>.md` — and the
+same sections in the same order as the specs already there. Who does the work
+changes; what lands on disk does not.
+
 ## 1. Resolve the target
 
 - `/writespec feature-3` → every PRD in `specs/feature-3/prd/`.
@@ -68,6 +81,19 @@ implements behind it, and they meet at integration.
 is a merge conflict, not parallelism, so list the files each track owns and keep
 them from overlapping. A natural split follows the architecture: data/logic in
 `lib/`, UI components, the route that composes them.
+
+**Every track declares a role.** One of exactly five — `test-writer`,
+`implementer`, `architect`, `verifier`, `musician` — chosen by what the track's
+work *is*, not by who is free: a track whose product is tests takes the
+test-writer, one that writes code behind a frozen contract the implementer, one
+that decides shape or decomposition the architect, one that checks and grades
+the verifier. **A track owning files under `scripts/grooves/` takes the
+musician** — those are musical decisions, and no other role is equipped to make
+them. `/implement-feature` reads this field to decide which agent to dispatch, so
+a track without one leaves the lead guessing. Worth knowing when sizing such a
+track: a musician track becomes two dispatches at implementation time — the
+musician decides, an implementer edits — but that is `/implement-feature`'s
+concern, not this skill's, and it changes neither the track count nor the waves.
 
 **State real dependencies only.** Ask what a track needs to *start* versus to
 *finish*. Most "dependencies" are on a contract, and the contract already

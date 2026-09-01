@@ -2,7 +2,7 @@
  * The quality gate: a rendered candidate is accepted, or rejected with a named
  * reason.
  *
- * Three of these six checks already existed as assertions in Epics 2 and 3.
+ * Three of these seven checks already existed as assertions in Epics 2 and 3.
  * This module lifts them out of the test suite and into the pipeline, so they
  * run on every groove ever minted rather than only on the ones someone wrote a
  * test for. A minted groove enters the catalogue only if `gateCandidate`

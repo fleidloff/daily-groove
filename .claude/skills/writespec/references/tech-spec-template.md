@@ -50,6 +50,9 @@ export type Entry = {
 
 - **Goal** — what exists when this track is done.
 - **Owns** — `src/features/<feature>/lib/**` (no other track writes here)
+- **Role** — `implementer` (one of `test-writer`, `implementer`, `architect`,
+  `verifier`, `musician` — a track owning `scripts/grooves/**` takes the
+  musician)
 - **Depends on** — the `Entry` contract only
 - **Parallel with** — Track B
 - **Done when** — its own tests pass, without B or C existing.

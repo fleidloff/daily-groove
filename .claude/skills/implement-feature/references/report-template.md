@@ -10,8 +10,9 @@ Run: <date> · Mode: subagents | teams · Units: <n> across <m> waves
 
 ## Result
 
-One paragraph: what got built, what didn't, and whether the suite is green.
-Lead with the bad news if there is any.
+One paragraph: what got built, what didn't, and whether the suite is green —
+including the result of §9a's combined `npm run test:all` pass, or why it was not
+run. Lead with the bad news if there is any.
 
 ## Acceptance criteria
 

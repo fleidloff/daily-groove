@@ -40,8 +40,8 @@ const STEPS = [
  * Linked out, which needed feature-12's link rule narrowing to say what it
  * always meant: the page offers exactly one way to *navigate the app*, and on a
  * shared groove that one is the way back to today. A credit pointing off-site is
- * not navigation, and `GroovePuzzle.test.tsx` now distinguishes the two rather
- * than counting anchors.
+ * not navigation, and `GroovePuzzle.page.test.tsx` now distinguishes the two
+ * rather than counting anchors.
  */
 const DRUM_CREDIT = 'Drum samples provided by DrumGizmo.org'
 const DRUM_CREDIT_URL = 'https://drumgizmo.org'

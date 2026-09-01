@@ -103,6 +103,7 @@ export function checkCitations(
 ### Track A — The two guards
 
 - **Goal** — `agent-floor.ts` and `citations.ts` exist and are tested.
+- **Role** — `implementer`
 - **Owns** — `scripts/agent-floor.ts`, `scripts/agent-floor.test.ts`,
   `scripts/citations.ts`, `scripts/citations.test.ts`
 - **Depends on** — Epic 1's `tooling` project, for these tests to run on the
@@ -115,6 +116,7 @@ export function checkCitations(
 ### Track B — The five definitions
 
 - **Goal** — five agent definitions, each carrying the floor plus its role.
+- **Role** — `architect`
 - **Owns** — `.claude/agents/**`
 - **Depends on** — `FLOOR_RULES` as a contract. Track B writes against the list;
   Track A enforces it.
@@ -124,6 +126,7 @@ export function checkCitations(
 ### Track C — `/implement-feature`
 
 - **Goal** — dispatch by role, the generator two-turn unit, and a rewritten brief.
+- **Role** — `implementer`
 - **Owns** — `.claude/skills/implement-feature/SKILL.md`,
   `.claude/skills/implement-feature/references/worker-brief.md`
 - **Depends on** — Track B's definitions existing, and the role names
@@ -134,6 +137,7 @@ export function checkCitations(
 ### Track D — `/writespec`
 
 - **Goal** — the architect runs it, and every track it emits declares a role.
+- **Role** — `implementer`
 - **Owns** — `.claude/skills/writespec/SKILL.md`
 - **Depends on** — the role names only
 - **Parallel with** — Track C, Track E
@@ -144,6 +148,7 @@ export function checkCitations(
 
 - **Goal** — the verifier grades, and the citation check runs before the lead
   relays.
+- **Role** — `implementer`
 - **Owns** — `.claude/skills/verify-epic/SKILL.md`,
   `.claude/skills/verify-epic/references/qa-report-template.md`
 - **Depends on** — the `checkCitations` contract only

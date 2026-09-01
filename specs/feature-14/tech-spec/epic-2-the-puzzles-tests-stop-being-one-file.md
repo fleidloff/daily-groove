@@ -13,14 +13,14 @@ green and committed to nothing, but it is the step that proves the helper is
 faithful: if the helper is wrong, 119 cases say so immediately, while they are
 still in one place and the diff is small.
 
-Only then do the four destination files get carved out, one at a time, each
+Only then do the five destination files get carved out, one at a time, each
 taking its cases from a still-green file. The case count is asserted at every
 step, so a case cannot be lost between two of them.
 
 **One constraint shapes the helper design:** `vi.mock` is hoisted per test file
 and cannot be called from a helper — `renderFeature.tsx`'s own docstring already
 says so. So the mock *factory* is shared and the `vi.mock` *call* is repeated in
-each of the four files. Four identical five-line blocks is the cost; there is no
+each of the five files. Five identical blocks is the cost; there is no
 version of this where the call itself moves.
 
 ## Architecture
@@ -33,23 +33,41 @@ src/features/daily-groove/
 │   └── puzzleHarness.tsx            NEW — the extracted preamble
 └── components/
     ├── GroovePuzzle.tsx             UNCHANGED — not split, by decision
-    ├── GroovePuzzle.page.test.tsx   NEW — ~30 composition cases
-    ├── GroovePuzzle.puzzle.test.tsx NEW — ~51 cases
-    ├── GroovePuzzle.intro.test.tsx  NEW — 30 cases
-    ├── GroovePuzzle.header.test.tsx NEW — ~10 cases
-    └── GroovePuzzle.test.tsx        DELETED
+    ├── GroovePuzzle.page.test.tsx     NEW — ~31 composition cases
+    ├── GroovePuzzle.guessing.test.tsx NEW — ~36 the guessing surface
+    ├── GroovePuzzle.sounding.test.tsx NEW — ~29 transport, notes, the chord row
+    ├── GroovePuzzle.intro.test.tsx    NEW — 14 cases
+    ├── GroovePuzzle.header.test.tsx   NEW — 9 cases
+    └── GroovePuzzle.test.tsx          DELETED
 ```
 
-All four render the composed feature through `GroovePuzzle`. They are not tests
+All five render the composed feature through `GroovePuzzle`. They are not tests
 of a region component in isolation — `header/GrooveHeader.test.tsx`,
 `puzzle/GuessCard.test.tsx` and the rest already are that, and this epic does not
 touch them. The `GroovePuzzle.` prefix is what makes the two kinds tellable
 apart at a glance, which is R6b.
 
-The four files sit at the `components/` root rather than inside the region
+The five files sit at the `components/` root rather than inside the region
 folders for the same reason: a `header/` file that renders the whole page would
 stand beside `GrooveHeader.test.tsx`, which renders one component, and the
 distinction would be lost within a feature or two.
+
+**`puzzle/` is two files, not one.** Twelve of the seventeen region components
+live under `components/puzzle/`, against four in `header/` and one in `intro/`,
+so grouping strictly by region puts 65 of 119 cases in a single file — over the
+ceiling, and still the file every feature would touch, which is the problem this
+epic exists to solve. The subdivision follows a real subject boundary: the
+guessing surface (chips, dots, feedback, the nudge, the way out, the solved
+panel, simple mode) against the sounding page (transport, progress track, error
+and retry, head delay, reference notes, the chord row).
+
+**The case counts in this spec's original tables were wrong.** They came from a
+span-based count that attributed nested cases to the wrong `describe`. Measured
+by brace depth: the flat root block is **70** cases, not 55, and
+`how to play (F8 E3)` is **13**, not 30. The 17 the original count missed — the
+reference-note voice, the caption cases, the glyph-across-a-reload case and the
+chord-row cases — are all sounding-page work, and they are the whole of the
+51 → 65 gap.
 
 ## Contracts
 
@@ -99,23 +117,49 @@ export function dotStates(): (string | null)[]
 export function chipLabel(chip: Element): string
 export function chipAdornment(chip: Element): string | null
 export function guess(user: UserEvent, root: string, flavour: string): Promise<void>
+
+/** Clock helpers. Added by Track A beyond the original contract — see below. */
+export function loopFraction(fraction: number): void
+export function advance(seconds: number): void
+export function play(user: UserEvent): Promise<void>
 ```
 
-**The one thing the harness cannot provide.** Each of the four files opens with
+`loopFraction`, `advance` and `play` are three exports Track A added beyond the
+frozen list. They read the harness's internal `fake`/`frame` state and are used
+10, 10 and 14 times across the case bodies; exporting them is what kept Step A4's
+diff pure deletion-and-import. A file with clock-reading cases still declares its
+own `let fake: FakeContext` and destructures it from `installPuzzleAudio()` in
+`beforeEach`.
+
+**The one thing the harness cannot provide.** Each of the five files opens with
 its own copy of:
 
 ```ts
-const { mockStore } = vi.hoisted(() => ({ mockStore: createMockStore() }))
+const { mockStore } = await vi.hoisted(async () => {
+  const { createMockStore } = await import('../testing/puzzleHarness')
+  return { mockStore: createMockStore() }
+})
 vi.mock('../lib/persistence/storage', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../lib/persistence/storage')>()),
   createLocalStore: () => mockStore,
 }))
 ```
 
-`vi.hoisted` and `vi.mock` are lifted to the top of the file that calls them, so
-neither survives being wrapped in a helper. `createReadOnlyStore` stays real in
-all four, as it is today — the shared-groove session depends on the real
-decorator.
+**The async form is required, not stylistic.** `vi.hoisted` is lifted *above*
+the import statements, so the synchronous form
+`vi.hoisted(() => ({ mockStore: createMockStore() }))` throws
+`Cannot access '__vi_import_2__' before initialization` — the imported binding is
+still in its temporal dead zone. Found by Track A; the working form is also
+recorded in the harness's own docblock.
+
+**`renderPuzzle` imports `GroovePuzzle` lazily, and must keep doing so.** Same
+cause: the harness is evaluated before the caller's `vi.mock` registers, so a
+static import reaches `useProgress`'s module-scope `createLocalStore()` and hands
+every test the real store — that state failed 18 of the 119. Keep the harness's
+static import graph clear of `lib/persistence/storage`.
+
+`createReadOnlyStore` stays real in all five, as it is today — the shared-groove
+session depends on the real decorator. Only `createLocalStore` is replaced.
 
 ## Tracks
 
@@ -123,6 +167,7 @@ decorator.
 
 - **Goal** — `puzzleHarness.tsx` exists, and `GroovePuzzle.test.tsx` uses it with
   all 119 cases still passing in place.
+- **Role** — `test-writer`
 - **Owns** — `src/features/daily-groove/testing/puzzleHarness.tsx`, and
   `components/GroovePuzzle.test.tsx` until Track B takes it
 - **Depends on** — nothing
@@ -132,24 +177,26 @@ decorator.
 
 ### Track B — The carve-out
 
-- **Goal** — the four files exist with the cases distributed by region, and
+- **Goal** — the five files exist with the cases distributed by region, and
   `GroovePuzzle.test.tsx` is deleted.
-- **Owns** — all four new `components/GroovePuzzle.*.test.tsx`, and
+- **Role** — `test-writer`
+- **Owns** — all five new `components/GroovePuzzle.*.test.tsx`, and
   `components/GroovePuzzle.test.tsx` (to delete it)
 - **Depends on** — Track A's harness, in full
-- **Parallel with** — nothing. One track owns all four files because a case moved
+- **Parallel with** — nothing. One track owns all five files because a case moved
   by two agents is a case duplicated or lost, and the count assertion is the
   epic's whole safety net.
-- **Done when** — 119 across four files, `GroovePuzzle.test.tsx` gone.
+- **Done when** — 119 across five files, `GroovePuzzle.test.tsx` gone.
 
 ### Track C — The structural rule
 
 - **Goal** — `structure.test.ts` requires the new shape, and the grouping rule is
   written where a contributor will find it.
+- **Role** — `test-writer`
 - **Owns** — `src/features/daily-groove/structure.test.ts`
 - **Depends on** — Track B's filenames only, which the Architecture section fixes
 - **Parallel with** — Track B
-- **Done when** — its rewritten assertion passes against the four files.
+- **Done when** — its rewritten assertion passes against the five files.
 
 > **This epic is deliberately not very parallel.** Its subject is one file, and
 > the thing that makes it safe — 119 cases counted at every step — is exactly
@@ -222,12 +269,12 @@ Covers: R2, R3, R5, AC2, AC3, AC6
   its diff is all deletion and import.
 
 > This is the step that de-risks the epic. If the harness is unfaithful, 119
-> cases fail now — in one file, against a small diff — rather than four files
+> cases fail now — in one file, against a small diff — rather than five files
 > later against a large one.
 
 ### Track B — The carve-out
 
-Each step moves one group. After every one: run the four files together and
+Each step moves one group. After every one: run the five files together and
 assert the total is still 119.
 
 #### Step B1 — The intro file
@@ -283,7 +330,7 @@ Covers: R1, R6a, R7, AC1, AC2, AC7a, AC7b
   one used to pick the groove, `describe('through the composed page')`, and the
   three assertions that removed features stay removed. Then delete
   `GroovePuzzle.test.tsx`.
-- **Green when** — four files, **119 cases**, `GroovePuzzle.test.tsx` absent, and
+- **Green when** — five files, **119 cases**, `GroovePuzzle.test.tsx` absent, and
   `npx vitest run src/features/daily-groove` green.
 - **Refactor** — none.
 
@@ -293,20 +340,20 @@ Covers: R6, AC7
 
 - **Implement** — a docblock at the top of `GroovePuzzle.page.test.tsx` stating
   the rule: *a case goes in the file for the region it exercises; a case about
-  the composition rather than a region goes here*. Name the four files and give
+  the composition rather than a region goes here*. Name the five files and give
   the one-line test for choosing between them.
 - **Green when** — the rule is where someone adding case 120 will read it.
 - **Refactor** — none.
 
 ### Track C — The structural rule
 
-#### Step C1 — The structure test requires the four files
+#### Step C1 — The structure test requires the five files
 
 Covers: R7, R8, AC7a, AC8, AC11
 
 - **Test first** — in `structure.test.ts`, replace
   `expect(existsSync(join(COMPONENTS, 'GroovePuzzle.test.tsx'))).toBe(true)`
-  with an assertion that the four `GroovePuzzle.<name>.test.tsx` files all exist
+  with an assertion that the five `GroovePuzzle.<name>.test.tsx` files all exist
   and that `GroovePuzzle.test.tsx` does not. Run it before Track B finishes:
   fails, the new files do not exist yet — which is the point.
 - **Implement** — nothing here; Track B makes it pass.
@@ -322,7 +369,7 @@ Covers: R7, R8, AC7a, AC8, AC11
 
 Covers: R2, AC2, AC3
 
-- `npx vitest run src/features/daily-groove/components` reports 119 from the four
+- `npx vitest run src/features/daily-groove/components` reports 119 from the five
   files. No `.skip`, no `.todo`: grep for both and expect none.
 
 #### Step I2 — The boundaries hold
@@ -331,7 +378,7 @@ Covers: R4, R8, R10, AC5, AC9, AC11
 
 - `structure.test.ts`, `route-boundary.test.ts`, `src/components/structure.test.ts`
   and `scripts/grooves/boundary.test.ts` all pass.
-- Grep the four files for `vi.mock`: the only path mocked is
+- Grep the five files for `vi.mock`: the only path mocked is
   `../lib/persistence/storage`.
 - Delete `src/features/daily-groove/` on a scratch branch and confirm
   `npm run build` fails only on the route's import — the removability standard.
@@ -350,7 +397,7 @@ Covers: R2, R3, AC12
 Covers: R9, AC10
 
 - Time the app tier before Track A and after Track B. After must be no greater.
-  Expect an improvement: one 10.2s file becomes four that run in parallel across
+  Expect an improvement: one 10.2s file becomes five that run in parallel across
   worker threads.
 
 ## Requirement coverage
@@ -425,3 +472,24 @@ The epic's safety net is a case count that must hold across every move, and two
 agents moving cases concurrently cannot both hold it. This epic buys parallelism
 for later features rather than for itself.
 Changed: Execution waves — B and C in wave 2, B undivided.
+
+### Cycle 2 — 2026-09-01, during implementation
+
+**`puzzle/` becomes two files; the split is five, not four.**
+Track B stopped at Step B3 as instructed, reporting that a strict region
+classification put 65 of 119 cases in the puzzle file — over AC1's ceiling of 59.
+Two causes, both verified in the lead:
+1. This spec's case counts were wrong. A span-based count attributed nested cases
+   to the wrong `describe`; by brace depth the flat root block is **70**, not 55,
+   and `how to play` is **13**, not 30. The 17 unaccounted cases are all sounding-
+   page work.
+2. The region rule cannot balance this feature. **Twelve of seventeen region
+   components live in `puzzle/`**, four in `header/`, one in `intro/`.
+
+The alternative Track B offered — widening "composition" to move seven cases to
+the page file, landing puzzle at 58 against a ceiling of 59 — was declined. Track
+B was straight that those seven were "picked knowing seven were needed", which is
+choosing cases to satisfy a threshold rather than because they belong there.
+Changed: R1 and R1a, AC1 (ceiling 59 → 40, now reachable without special
+pleading), AC7a, AC7c, AC8, R6b, R7; the Architecture tree and file names; Track
+B and Track C's Done-when; Steps B3, B4, B5, C1, I1, I2, I4.
