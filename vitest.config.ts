@@ -30,6 +30,12 @@ export default defineConfig({
           environment: 'node',
           globals: true,
           include: ['scripts/**/*.{test,spec}.ts'],
+          // Rendering a groove decodes the sample pack and mixes several
+          // seconds of audio, which runs past vitest's 5 s default once the
+          // app project is competing for the same cores: three render cases
+          // failed at 5005-5045 ms under full-suite load while passing in
+          // isolation. The work is inherently slow, not hung.
+          testTimeout: 30_000,
         },
       },
     ],

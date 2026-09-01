@@ -1,13 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import { readCatalogue } from './catalogue.ts'
+import { rmsDbfs } from './level.ts'
 import { buildEvents } from './events.ts'
-import { mixTracks, PEAK_CEILING, SEAM_THRESHOLD } from './mix.ts'
-import { templateById } from './templates/index.ts'
+import { mixTracks, PEAK_CEILING, SEAM_THRESHOLD, truePeak } from './mix.ts'
+import { allTemplates, templateById } from './templates/index.ts'
 import { placeholderPack } from './testing/placeholderPack.ts'
 import { loadPack } from './pack.ts'
 import { fileURLToPath } from 'node:url'
 import { renderVoices } from './voices.ts'
-import { gateCandidate } from './gate.ts'
+import { gateCandidate, LOUDNESS_CEILING_DB, LOUDNESS_FLOOR_DB } from './gate.ts'
 import { offScalePitches } from './theory/pitches.ts'
 import { pitchesOf } from './theory/scales.ts'
 import type { FeelTemplate, MusicMeta, NoteEvent, Pcm } from './types.ts'
@@ -83,8 +84,16 @@ const SILENT = pcmOf(() => 0)
 /** A ramp from 0 to 0.5: audible, unclipped, and its ends do not meet. */
 const DISCONTINUOUS = pcmOf((i, n) => (0.5 * i) / n)
 
-/** Ten whole cycles across the buffer, so the last sample sits next to the first. */
-const CLEAN_LOOP = pcmOf((i, n) => 0.5 * Math.sin((2 * Math.PI * 10 * i) / n))
+/**
+ * Ten whole cycles across the buffer, so the last sample sits next to the first.
+ *
+ * The amplitude is 0.084 rather than 0.5 because the gate now checks integrated
+ * loudness too: a sine at 0.5 measures -9 dBFS, five times louder than any real
+ * groove, and would fail a check this fixture exists to have nothing to do with.
+ * At 0.084 it sits mid-band. Its shape - whole cycles, ends meeting - is the
+ * property every test using it actually asserts, and that is unchanged.
+ */
+const CLEAN_LOOP = pcmOf((i, n) => 0.084 * Math.sin((2 * Math.PI * 10 * i) / n))
 
 /** More events than the template's ceiling allows over the whole rendered loop. */
 function tooManyEvents(): NoteEvent[] {
@@ -493,6 +502,109 @@ describe('the pitch check — R9, R10, AC10, AC11', () => {
       // And through the gate itself, on a buffer that passes the audio checks.
       const failure = gateCandidate({ pcm: GOOD.pcm, events, music, harmony, template })
       expect(failure?.check, `${spec.id}: ${failure?.detail ?? ''}`).not.toBe('pitch')
+    }
+  })
+})
+
+describe('the loudness check', () => {
+  /**
+   * A real render, scaled to a chosen RMS.
+   *
+   * Built from `GOOD.pcm` rather than from synthesised noise on purpose: every
+   * other property the gate checks - it wraps at the seam, it is not silent, its
+   * events match its density - stays exactly as true as it was, so level is the
+   * only variable and a failure can only mean the loudness check fired.
+   */
+  function quieterBy(db: number): Pcm {
+    const scale = 10 ** (-db / 20)
+    return {
+      sampleRate: GOOD.pcm.sampleRate,
+      left: GOOD.pcm.left.map((v) => v * scale),
+      right: GOOD.pcm.right.map((v) => v * scale),
+    }
+  }
+
+  /**
+   * The same groove squashed: louder in RMS, still under the peak ceiling.
+   *
+   * It has to be built by saturation rather than by turning it up, and that is
+   * the whole argument for this check in one fixture. Every groove leaves the
+   * mix normalised to `PEAK_CEILING`, so scaling one up only clips it — the only
+   * way to raise its integrated level is to change its crest factor. Which is
+   * exactly the mis-mix peak cannot see and this check can.
+   */
+  function squashed(): Pcm {
+    const drive = 12
+    const shape = (v: number) => Math.tanh(v * drive)
+    const left = GOOD.pcm.left.map(shape)
+    const right = GOOD.pcm.right.map(shape)
+    let peak = 0
+    for (let i = 0; i < left.length; i += 1) {
+      peak = Math.max(peak, Math.abs(left[i]), Math.abs(right[i]))
+    }
+    // Normalised against the stored peak, but the gate measures *true* peak with
+    // 4x oversampling, which reads higher on a saturated signal — hence the
+    // margin rather than sitting just under the ceiling.
+    const scale = (PEAK_CEILING * 0.7) / peak
+    return {
+      sampleRate: GOOD.pcm.sampleRate,
+      left: left.map((v) => v * scale),
+      right: right.map((v) => v * scale),
+    }
+  }
+
+  it('fails a groove that is too quiet, naming the measure and the band', () => {
+    const failure = gateCandidate({ ...GOOD, pcm: quieterBy(12) })
+    expect(failure?.check).toBe('loudness')
+    expect(failure?.detail).toMatch(/dBFS RMS/)
+    expect(failure?.detail).toContain(String(LOUDNESS_FLOOR_DB))
+  })
+
+  it('fails a groove that is too loud while still under the peak ceiling', () => {
+    // The case peak cannot catch. Every groove is normalised to PEAK_CEILING, so
+    // peak is the one quantity already equal across the catalogue; a mix far too
+    // dense passes checkPeak and still sounds wrong beside its neighbours.
+    const pcm = squashed()
+    expect(truePeak(pcm)).toBeLessThan(PEAK_CEILING)
+    expect(rmsDbfs(pcm)).toBeGreaterThan(LOUDNESS_CEILING_DB)
+    expect(gateCandidate({ ...GOOD, pcm })?.check).toBe('loudness')
+  })
+
+  it('passes a groove inside the band', () => {
+    // The committed render itself, unmodified: it is what the band is for.
+    expect(rmsDbfs(GOOD.pcm)).toBeGreaterThan(LOUDNESS_FLOOR_DB)
+    expect(rmsDbfs(GOOD.pcm)).toBeLessThan(LOUDNESS_CEILING_DB)
+    expect(gateCandidate(GOOD)).toBeNull()
+  })
+
+  it('reports the worse fault when a groove both clips and sits off-level', () => {
+    const pcm = squashed()
+    pcm.left[10] = 1.4
+    pcm.right[10] = 1.4
+    expect(gateCandidate({ ...GOOD, pcm })?.check).toBe('peak')
+  })
+
+  it('accepts every feel as committed', () => {
+    // The band is a guard against a gross mis-level, not a mastering tolerance:
+    // the six feels span about five decibels and closing that needs an ear.
+    for (const template of allTemplates()) {
+      const spec = readCatalogue().find((g) => g.template === template.id)!
+      const { events, music } = buildEvents(spec, template)
+      const tracks = renderVoices(events, realPack, SAMPLE_RATE, {
+        id: spec.id,
+        bars: music.loopBars,
+        bpm: music.bpm,
+        passes: music.loopBars / music.bars,
+        overhangBars: OVERHANG_BARS,
+      })
+      const pcm = mixTracks(tracks, template, { loopBars: music.loopBars, bpm: music.bpm })
+      const level = rmsDbfs(pcm)
+      expect(level, `${template.id} measured ${level.toFixed(1)} dBFS`).toBeGreaterThan(
+        LOUDNESS_FLOOR_DB,
+      )
+      expect(level, `${template.id} measured ${level.toFixed(1)} dBFS`).toBeLessThan(
+        LOUDNESS_CEILING_DB,
+      )
     }
   })
 })

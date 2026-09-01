@@ -3,6 +3,39 @@
 PRD: [../prd/epic-3-the-ride-and-the-bongo-get-parts.md](../prd/epic-3-the-ride-and-the-bongo-get-parts.md) ·
 Roadmap: [../roadmap.md](../roadmap.md)
 
+> **Final — the ride is removed, 2026-09-01.** Built, listened to, and rejected:
+> MuldjordKit is a rock kit and its ride reads that way. What was wanted is a
+> *swing jazz* ride — a lighter, washier ping — which is a different cymbal from a
+> library chosen for it, not a tuning of this one. Everything about the ride is
+> gone from the code, the pack and the templates; `hatClosed` keeps the time on
+> all six feels, exactly as before. The idea is recorded as a candidate in
+> `specs/features.md` rather than left half-built here.
+>
+> The rest of this epic — the bongo on `bright-straight` — stands.
+
+> **Reconciled again — the ride IS built.** It was withdrawn only because VCSL
+> had no ride cymbal; MuldjordKit ships two and the user restored it. Track A is
+> built on three feels (`half-time`, `shuffle`, `swung-sixteenth`), with the
+> departures listed in the PRD's "Departures from the plan, as built". The
+> paragraph below is superseded and kept for the record.
+>
+> ~~**Reconciled against what was built — 2026-09-01.** **The ride half of this
+> spec is not built.**~~ VCSL has no ride cymbal and the ride was dropped from the
+> feature rather than re-scoped. Track A, Steps A2-A7, R1-R6 and AC1-AC6 are
+> withdrawn; `hatClosed` keeps the time on every feel exactly as before, and
+> there is no punctuation pool, no derived timekeeper and no exclusivity rule.
+>
+> **The bongo half is built** — Track B and Track C, on `bright-straight`.
+>
+> One thing the spec got right and it mattered: the draw-order hazard. `rhythmRng`
+> is drawn **nine** more times after the comp pattern, so the bongo draws from its
+> own `BONGO_LABEL` stream rather than taking a `pick` in that sequence — which
+> would have re-rolled the rhythm of all thirty grooves. Step A1's fixture idea
+> became a direct regression test instead: the five feels without a bongo are
+> asserted to contain none.
+>
+> MuldjordKit ships two ride cymbals, so reviving the withdrawn half is cheap.
+
 ## Approach
 
 Both voices are new arrivals in the same file, so the parallelism here is inside

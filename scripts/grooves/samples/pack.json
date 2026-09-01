@@ -5,163 +5,285 @@
     "kick": {
       "layers": [
         {
-          "maxVelocity": 0.45,
+          "maxVelocity": 0.3465,
           "files": [
-            "kick/Cajon_hit1_mp_rr1.flac",
-            "kick/Cajon_hit1_mp_rr2.flac"
-          ]
+            "kick/Muldjord_kick_v44_10-KdrumL.flac",
+            "kick/Muldjord_kick_v44_12-KdrumL.flac",
+            "kick/Muldjord_kick_v44_13-KdrumL.flac"
+          ],
+          "nominalVelocity": 0.5976
         },
         {
-          "maxVelocity": 0.8,
+          "maxVelocity": 0.6299,
           "files": [
-            "kick/Cajon_hit1_f_rr1.flac",
-            "kick/Cajon_hit1_f_rr2.flac"
-          ]
+            "kick/Muldjord_kick_v80_16-KdrumL.flac",
+            "kick/Muldjord_kick_v80_17-KdrumL.flac",
+            "kick/Muldjord_kick_v80_19-KdrumL.flac"
+          ],
+          "nominalVelocity": 0.7857
         },
         {
-          "maxVelocity": 1.0,
+          "maxVelocity": 0.7717,
           "files": [
-            "kick/Cajon_hit1_fff_rr1.flac",
-            "kick/Cajon_hit1_fff_rr2.flac"
-          ]
+            "kick/Muldjord_kick_v98_17-KdrumL.flac",
+            "kick/Muldjord_kick_v98_19-KdrumL.flac",
+            "kick/Muldjord_kick_v98_20-KdrumL.flac"
+          ],
+          "nominalVelocity": 0.8282
+        },
+        {
+          "maxVelocity": 1,
+          "files": [
+            "kick/Muldjord_kick_v127_21-KdrumL.flac",
+            "kick/Muldjord_kick_v127_23-KdrumL.flac",
+            "kick/Muldjord_kick_v127_24-KdrumL.flac"
+          ],
+          "nominalVelocity": 0.8859
         }
       ]
     },
     "snare": {
       "layers": [
         {
-          "maxVelocity": 0.4,
+          "maxVelocity": 0.3465,
           "files": [
-            "snare/Snare2_HitNS_v2_rr1_Mid.flac",
-            "snare/Snare2_HitNS_v2_rr2_Mid.flac"
-          ]
+            "snare/Muldjord_snare_v44_25-Snare.flac",
+            "snare/Muldjord_snare_v44_30-Snare.flac",
+            "snare/Muldjord_snare_v44_33-Snare.flac"
+          ],
+          "nominalVelocity": 0.3785
         },
         {
-          "maxVelocity": 0.65,
+          "maxVelocity": 0.6299,
           "files": [
-            "snare/Snare2_HitNS_v4_rr1_Mid.flac",
-            "snare/Snare2_HitNS_v4_rr2_Mid.flac"
-          ]
+            "snare/Muldjord_snare_v80_39-Snare.flac",
+            "snare/Muldjord_snare_v80_42-Snare.flac",
+            "snare/Muldjord_snare_v80_45-Snare.flac"
+          ],
+          "nominalVelocity": 0.6657
         },
         {
-          "maxVelocity": 0.85,
+          "maxVelocity": 0.7717,
           "files": [
-            "snare/Snare2_HitNS_v5_rr1_Mid.flac",
-            "snare/Snare2_HitNS_v5_rr2_Mid.flac"
-          ]
+            "snare/Muldjord_snare_v98_42-Snare.flac",
+            "snare/Muldjord_snare_v98_45-Snare.flac",
+            "snare/Muldjord_snare_v98_48-Snare.flac"
+          ],
+          "nominalVelocity": 0.6674
         },
         {
-          "maxVelocity": 1.0,
+          "maxVelocity": 1,
           "files": [
-            "snare/Snare2_HitNS_v6_rr1_Mid.flac",
-            "snare/Snare2_HitNS_v6_rr2_Mid.flac"
-          ]
+            "snare/Muldjord_snare_v127_51-Snare.flac",
+            "snare/Muldjord_snare_v127_53-Snare.flac",
+            "snare/Muldjord_snare_v127_55-Snare.flac"
+          ],
+          "nominalVelocity": 0.8859
         }
       ]
     },
     "hatClosed": {
       "layers": [
         {
-          "maxVelocity": 0.35,
+          "maxVelocity": 0.3465,
           "files": [
-            "hatClosed/HiHat_HitC_v1_rr1_Mid.flac",
-            "hatClosed/HiHat_HitC_v1_rr2_Mid.flac"
-          ]
+            "hatClosed/Muldjord_hatClosed_v44_10-HihatClosed.flac",
+            "hatClosed/Muldjord_hatClosed_v44_12-HihatClosed.flac",
+            "hatClosed/Muldjord_hatClosed_v44_14-HihatClosed.flac"
+          ],
+          "nominalVelocity": 0.2283
         },
         {
-          "maxVelocity": 0.6,
+          "maxVelocity": 0.5591,
           "files": [
-            "hatClosed/HiHat_HitC_v2_rr1_Mid.flac",
-            "hatClosed/HiHat_HitC_v2_rr2_Mid.flac"
-          ]
+            "hatClosed/Muldjord_hatClosed_v71_16-HihatClosed.flac",
+            "hatClosed/Muldjord_hatClosed_v71_18-HihatClosed.flac",
+            "hatClosed/Muldjord_hatClosed_v71_20-HihatClosed.flac"
+          ],
+          "nominalVelocity": 0.3658
         },
         {
-          "maxVelocity": 0.8,
+          "maxVelocity": 0.7717,
           "files": [
-            "hatClosed/HiHat_HitC_v3_rr1_Mid.flac",
-            "hatClosed/HiHat_HitC_v3_rr2_Mid.flac"
-          ]
+            "hatClosed/Muldjord_hatClosed_v98_20-HihatClosed.flac",
+            "hatClosed/Muldjord_hatClosed_v98_22-HihatClosed.flac",
+            "hatClosed/Muldjord_hatClosed_v98_24-HihatClosed.flac"
+          ],
+          "nominalVelocity": 0.6056
         },
         {
-          "maxVelocity": 1.0,
+          "maxVelocity": 1,
           "files": [
-            "hatClosed/HiHat_HitC_v4_rr1_Mid.flac",
-            "hatClosed/HiHat_HitC_v4_rr2_Mid.flac"
-          ]
+            "hatClosed/Muldjord_hatClosed_v127_26-HihatClosed.flac",
+            "hatClosed/Muldjord_hatClosed_v127_27-HihatClosed.flac",
+            "hatClosed/Muldjord_hatClosed_v127_28-HihatClosed.flac"
+          ],
+          "nominalVelocity": 0.8859
         }
       ]
     },
     "hatOpen": {
       "layers": [
         {
-          "maxVelocity": 1.0,
+          "maxVelocity": 0.4173,
           "files": [
-            "hatOpen/HiHat_HitO_rr1_Mid.flac",
-            "hatOpen/HiHat_HitO_rr2_Mid.flac",
-            "hatOpen/HiHat_HitLoose_rr1_Mid.flac",
-            "hatOpen/HiHat_HitLoose_rr2_Mid.flac"
-          ]
+            "hatOpen/Muldjord_hatOpen_v53_12-HihatOpen.flac",
+            "hatOpen/Muldjord_hatOpen_v53_14-HihatOpen.flac",
+            "hatOpen/Muldjord_hatOpen_v53_16-HihatOpen.flac"
+          ],
+          "nominalVelocity": 0.5375
+        },
+        {
+          "maxVelocity": 0.7717,
+          "files": [
+            "hatOpen/Muldjord_hatOpen_v98_20-HihatOpen.flac",
+            "hatOpen/Muldjord_hatOpen_v98_22-HihatOpen.flac",
+            "hatOpen/Muldjord_hatOpen_v98_24-HihatOpen.flac"
+          ],
+          "nominalVelocity": 0.8525
+        },
+        {
+          "maxVelocity": 1,
+          "files": [
+            "hatOpen/Muldjord_hatOpen_v127_26-HihatOpen.flac",
+            "hatOpen/Muldjord_hatOpen_v127_28-HihatOpen.flac",
+            "hatOpen/Muldjord_hatOpen_v127_29-HihatOpen.flac"
+          ],
+          "nominalVelocity": 0.8859
         }
       ]
     },
     "rim": {
       "layers": [
         {
-          "maxVelocity": 1.0,
+          "maxVelocity": 0.5827,
           "files": [
-            "rim/Snare2_stick_v1_rr1_Mid.flac",
-            "rim/Snare2_stick_v1_rr2_Mid.flac"
-          ]
+            "rim/Muldjord_rim_v74_6-SnareRest.flac",
+            "rim/Muldjord_rim_v74_7-SnareRest.flac",
+            "rim/Muldjord_rim_v74_8-SnareRest.flac"
+          ],
+          "nominalVelocity": 0.6247
+        },
+        {
+          "maxVelocity": 1,
+          "files": [
+            "rim/Muldjord_rim_v127_10-SnareRest.flac",
+            "rim/Muldjord_rim_v127_11-SnareRest.flac",
+            "rim/Muldjord_rim_v127_12-SnareRest.flac"
+          ],
+          "nominalVelocity": 0.7913
         }
       ]
     },
     "tomHigh": {
       "layers": [
         {
-          "maxVelocity": 0.72,
+          "maxVelocity": 0.4803,
           "files": [
-            "tomHigh/TomH_HitS_v2_rr1_Mid.flac",
-            "tomHigh/TomH_HitS_v2_rr2_Mid.flac"
-          ]
+            "tomHigh/Muldjord_tomHigh_v61_5-Tom2.flac",
+            "tomHigh/Muldjord_tomHigh_v61_6-Tom2.flac"
+          ],
+          "nominalVelocity": 0.6686
         },
         {
-          "maxVelocity": 0.88,
+          "maxVelocity": 0.7874,
           "files": [
-            "tomHigh/TomH_HitS_v3_rr1_Mid.flac",
-            "tomHigh/TomH_HitS_v3_rr2_Mid.flac"
-          ]
+            "tomHigh/Muldjord_tomHigh_v100_8-Tom2.flac",
+            "tomHigh/Muldjord_tomHigh_v100_9-Tom2.flac"
+          ],
+          "nominalVelocity": 0.8533
         },
         {
-          "maxVelocity": 1.0,
+          "maxVelocity": 1,
           "files": [
-            "tomHigh/TomH_HitS_v4_rr1_Mid.flac",
-            "tomHigh/TomH_HitS_v4_rr2_Mid.flac"
-          ]
+            "tomHigh/Muldjord_tomHigh_v127_10-Tom2.flac",
+            "tomHigh/Muldjord_tomHigh_v127_11-Tom2.flac"
+          ],
+          "nominalVelocity": 0.8937
         }
       ]
     },
     "tomLow": {
       "layers": [
         {
-          "maxVelocity": 0.72,
+          "maxVelocity": 0.4882,
           "files": [
-            "tomLow/TomL_HitS_v2_rr1_Mid.flac",
-            "tomLow/TomL_HitS_v2_rr2_Mid.flac"
-          ]
+            "tomLow/Muldjord_tomLow_v62_11-Tom4.flac",
+            "tomLow/Muldjord_tomLow_v62_12-Tom4.flac"
+          ],
+          "nominalVelocity": 0.627
         },
         {
-          "maxVelocity": 0.88,
+          "maxVelocity": 0.7717,
           "files": [
-            "tomLow/TomL_HitS_v3_rr1_Mid.flac",
-            "tomLow/TomL_HitS_v3_rr2_Mid.flac"
-          ]
+            "tomLow/Muldjord_tomLow_v98_14-Tom4.flac",
+            "tomLow/Muldjord_tomLow_v98_15-Tom4.flac"
+          ],
+          "nominalVelocity": 0.9022
         },
         {
-          "maxVelocity": 1.0,
+          "maxVelocity": 1,
           "files": [
-            "tomLow/TomL_HitS_v4_rr1_Mid.flac",
-            "tomLow/TomL_HitS_v4_rr2_Mid.flac"
-          ]
+            "tomLow/Muldjord_tomLow_v127_17-Tom4.flac",
+            "tomLow/Muldjord_tomLow_v127_18-Tom4.flac"
+          ],
+          "nominalVelocity": 0.8859
+        }
+      ]
+    },
+    "bongoHigh": {
+      "layers": [
+        {
+          "maxVelocity": 0.45,
+          "files": [
+            "bongoHigh/BongoH_Hit1_v1_rr1_Mid.flac",
+            "bongoHigh/BongoH_Hit1_v1_rr2_Mid.flac"
+          ],
+          "nominalVelocity": 0.0799
+        },
+        {
+          "maxVelocity": 0.8,
+          "files": [
+            "bongoHigh/BongoH_Hit1_v2_rr1_Mid.flac",
+            "bongoHigh/BongoH_Hit1_v2_rr2_Mid.flac"
+          ],
+          "nominalVelocity": 0.277
+        },
+        {
+          "maxVelocity": 1,
+          "files": [
+            "bongoHigh/BongoH_Hit1_v3_rr1_Mid.flac",
+            "bongoHigh/BongoH_Hit1_v3_rr2_Mid.flac"
+          ],
+          "nominalVelocity": 0.9
+        }
+      ]
+    },
+    "bongoLow": {
+      "layers": [
+        {
+          "maxVelocity": 0.45,
+          "files": [
+            "bongoLow/BongoL_Hit1_v1_rr1_Mid.flac",
+            "bongoLow/BongoL_Hit1_v1_rr2_Mid.flac"
+          ],
+          "nominalVelocity": 0.0934
+        },
+        {
+          "maxVelocity": 0.8,
+          "files": [
+            "bongoLow/BongoL_Hit1_v2_rr1_Mid.flac",
+            "bongoLow/BongoL_Hit1_v2_rr2_Mid.flac"
+          ],
+          "nominalVelocity": 0.2108
+        },
+        {
+          "maxVelocity": 1,
+          "files": [
+            "bongoLow/BongoL_Hit1_v3_rr1_Mid.flac",
+            "bongoLow/BongoL_Hit1_v3_rr2_Mid.flac"
+          ],
+          "nominalVelocity": 0.9
         }
       ]
     },
@@ -179,7 +301,7 @@
               ]
             },
             {
-              "maxVelocity": 1.0,
+              "maxVelocity": 1,
               "files": [
                 "bass/BKCtbss_Pizz_E0_v3_rr1.flac",
                 "bass/BKCtbss_Pizz_E0_v3_rr2.flac"
@@ -199,7 +321,7 @@
               ]
             },
             {
-              "maxVelocity": 1.0,
+              "maxVelocity": 1,
               "files": [
                 "bass/BKCtbss_Pizz_G0_v3_rr1.flac",
                 "bass/BKCtbss_Pizz_G0_v3_rr2.flac"
@@ -219,7 +341,7 @@
               ]
             },
             {
-              "maxVelocity": 1.0,
+              "maxVelocity": 1,
               "files": [
                 "bass/BKCtbss_Pizz_A#0_v3_rr1.flac",
                 "bass/BKCtbss_Pizz_A#0_v3_rr2.flac"
@@ -239,7 +361,7 @@
               ]
             },
             {
-              "maxVelocity": 1.0,
+              "maxVelocity": 1,
               "files": [
                 "bass/BKCtbss_Pizz_C1_v3_rr1.flac",
                 "bass/BKCtbss_Pizz_C1_v3_rr2.flac"
@@ -259,7 +381,7 @@
               ]
             },
             {
-              "maxVelocity": 1.0,
+              "maxVelocity": 1,
               "files": [
                 "bass/BKCtbss_Pizz_E1_v3_rr1.flac",
                 "bass/BKCtbss_Pizz_E1_v3_rr2.flac"
@@ -272,7 +394,7 @@
           "measuredHz": 92.28,
           "layers": [
             {
-              "maxVelocity": 1.0,
+              "maxVelocity": 1,
               "files": [
                 "bass/BKCtbss_Pizz_F#1_v1_rr1.flac",
                 "bass/BKCtbss_Pizz_F#1_v1_rr2.flac"
@@ -285,7 +407,7 @@
           "measuredHz": 112.07,
           "layers": [
             {
-              "maxVelocity": 1.0,
+              "maxVelocity": 1,
               "files": [
                 "bass/BKCtbss_Pizz_A1_v1_rr1.flac",
                 "bass/BKCtbss_Pizz_A1_v1_rr2.flac"
@@ -298,7 +420,7 @@
           "measuredHz": 139.07,
           "layers": [
             {
-              "maxVelocity": 1.0,
+              "maxVelocity": 1,
               "files": [
                 "bass/BKCtbss_Pizz_C#2_v1_rr1.flac",
                 "bass/BKCtbss_Pizz_C#2_v1_rr2.flac"
@@ -327,7 +449,7 @@
               ]
             },
             {
-              "maxVelocity": 1.0,
+              "maxVelocity": 1,
               "files": [
                 "comp/Player_dyn3_rr1_012.flac"
               ]
@@ -351,7 +473,7 @@
               ]
             },
             {
-              "maxVelocity": 1.0,
+              "maxVelocity": 1,
               "files": [
                 "comp/Player_dyn3_rr1_014.flac"
               ]
@@ -375,7 +497,7 @@
               ]
             },
             {
-              "maxVelocity": 1.0,
+              "maxVelocity": 1,
               "files": [
                 "comp/Player_dyn3_rr1_016.flac"
               ]
@@ -399,7 +521,7 @@
               ]
             },
             {
-              "maxVelocity": 1.0,
+              "maxVelocity": 1,
               "files": [
                 "comp/Player_dyn3_rr1_018.flac"
               ]
@@ -423,7 +545,7 @@
               ]
             },
             {
-              "maxVelocity": 1.0,
+              "maxVelocity": 1,
               "files": [
                 "comp/Player_dyn3_rr1_020.flac"
               ]
@@ -447,7 +569,7 @@
               ]
             },
             {
-              "maxVelocity": 1.0,
+              "maxVelocity": 1,
               "files": [
                 "comp/Player_dyn3_rr1_022.flac"
               ]
@@ -471,7 +593,7 @@
               ]
             },
             {
-              "maxVelocity": 1.0,
+              "maxVelocity": 1,
               "files": [
                 "comp/Player_dyn3_rr1_024.flac"
               ]
@@ -495,7 +617,7 @@
               ]
             },
             {
-              "maxVelocity": 1.0,
+              "maxVelocity": 1,
               "files": [
                 "comp/Player_dyn3_rr1_026.flac"
               ]
@@ -519,7 +641,7 @@
               ]
             },
             {
-              "maxVelocity": 1.0,
+              "maxVelocity": 1,
               "files": [
                 "comp/Player_dyn3_rr1_028.flac"
               ]
@@ -543,7 +665,7 @@
               ]
             },
             {
-              "maxVelocity": 1.0,
+              "maxVelocity": 1,
               "files": [
                 "comp/Player_dyn3_rr1_030.flac"
               ]
@@ -567,7 +689,7 @@
               ]
             },
             {
-              "maxVelocity": 1.0,
+              "maxVelocity": 1,
               "files": [
                 "comp/Player_dyn3_rr1_032.flac"
               ]

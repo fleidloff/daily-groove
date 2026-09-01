@@ -23,7 +23,7 @@ export const brightStraight: FeelTemplate = {
   subdivision: 8,
   swing: 0.06,
   flavours: ['lydian', 'ionian'],
-  voices: ['kick', 'snare', 'hatClosed', 'hatOpen', 'rim', 'tomHigh', 'tomLow', 'bass', 'comp'],
+  voices: ['kick', 'snare', 'hatClosed', 'hatOpen', 'rim', 'tomHigh', 'tomLow', 'bass', 'comp', 'bongoHigh', 'bongoLow'],
   // The lightest lean of the four: at 116-132 bpm a large one reads as a
   // stumble rather than a feel.
   humanize: {
@@ -34,18 +34,34 @@ export const brightStraight: FeelTemplate = {
   },
   // Everything a few dB down from the funk kit, and the comp brought up: a
   // light band playing at volume rather than a heavy one playing quietly.
+  // Corrected for the MuldjordKit drums. The delta is per voice and identical
+  // across all six templates, because the thing that changed is the pack's
+  // recorded levels, not this feel's intent: MuldjordKit's snare and hats sit
+  // at different levels from VCSL's, and every template inherits that equally.
+  // Re-deriving each template independently would have quietly rewritten five
+  // balances that were already right relative to each other.
   gain: {
-    tomHigh: -13,
-    tomLow: -12,
-    kick: -9,
+    // The bongo sits under the kit, not in it: a colour the ear finds after the
+    // groove, which is what "some bongo where it makes sense" asks for. This is
+    // the only feel that carries it — a hand drum on all six would distinguish
+    // none of them.
+    bongoHigh: -16,
+    bongoLow: -15,
+    tomHigh: -15,
+    tomLow: -14,
+    kick: -12,
     snare: -10,
-    hatClosed: -13,
-    hatOpen: -14,
-    rim: -6,
+    hatClosed: -11,
+    hatOpen: -17,
+    rim: -8,
     bass: -3,
     comp: -5,
   },
   pan: {
+    // Off to the right of the kit, opposite the hats, so the pair reads as a
+    // second player rather than as part of the snare.
+    bongoHigh: 0.3,
+    bongoLow: 0.18,
     tomHigh: 0.24,
     tomLow: -0.28,
     kick: 0,

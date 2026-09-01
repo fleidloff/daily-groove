@@ -54,28 +54,39 @@ bongos; the cajon was a choice, and the two missing voices were never sourced.
 
 ### Where the kit comes from
 
-- **R0** — The drum kit stays in VCSL. The cajon is replaced by VCSL's own bass
-  drum, and the ride and the bongos come from VCSL too. The snare, hi-hats, rim
-  and two toms already in the pack are VCSL's and stay as they are.
+- **R0** — The drum kit is **MuldjordKit (FreePats edition)** — kick, snare,
+  both hi-hats, two toms and the rim. *(Superseded R0: the kit was to stay in
+  VCSL. VCSL turned out to be an orchestral library with no kick, no ride and a
+  3.3-second concert bass drum; see the roadmap's implementation findings.)* The
+  bongos come from VCSL, which does have purpose-recorded ones.
 - **R0a** — One library for the whole kit is the point, not a convenience. A kit
   assembled from two sources is a kit recorded in two rooms, and the levelling
   pass would be spending its effort reconciling ambiences instead of setting a
   balance.
-- **R0b** — No library leaves the pack. VCSL keeps the drums and VSCO 2 CE keeps
-  the bass and the comp, so both licence texts stay committed.
-- **R0c** — The existing snare, hat, rim and tom files are not re-prepared. They
-  are already correct and re-encoding them would churn the artifacts for nothing.
-  What changes for them is their `gain` and `pan` in the template, and their
-  layer declarations where R7 requires more.
+- **R0b** — Three libraries, three licence texts committed: MuldjordKit for the
+  drums, VCSL for the bongos, VSCO 2 CE for the bass and the comp.
+- **R0c** — *Superseded.* Every drum voice is re-sourced, so nothing is carried
+  over. What the rule was protecting — not churning files that are already
+  correct — now applies to the bongos, the bass and the comp, which are
+  untouched.
 
 ### The licence bar
 
-- **R1** — Every sample added to the pack is CC0. The pack's guarantee is that
-  redistributing it from a public repo carries no attribution obligation and
-  nothing to track, and this epic does not weaken it.
-- **R1a** — CC-BY and CC-BY-SA libraries are not candidates, however good they
-  sound. The licence is the first filter applied when shortlisting, not a check
-  run after choosing.
+- **R1** — Every sample in the pack carries a licence that permits
+  redistribution: CC0 for the bongos, the bass and the comp; **CC-BY 4.0** for
+  the drums. *(Superseded R1: CC0 only. No CC0 acoustic kit of the needed quality
+  exists — DrumGizmo's four kits and Freepats' "Acoustic Drum Kit" are all
+  CC-BY 4.0 — which is the finding the roadmap asked for rather than a quiet
+  widening.)*
+- **R1a** — Every non-CC0 sample records the attribution its licence obliges:
+  *"Drum samples provided by DrumGizmo.org"*. This is asserted per row in
+  `samples/pack.test.ts`, so a sample cannot enter the pack without it.
+- **R1b** — The obligation follows the *output*, not only the source. A rendered
+  groove is a derivative work of the samples it is built from, so the credit has
+  to be visible to someone using the app. The generator side is done;
+  **the app-visible credit is outstanding** and belongs to no epic's scope, since
+  this epic puts `src/` out of scope and Epic 5 asserts `src/` changes in exactly
+  one file.
 - **R2** — `provenance.json` records every file added: its path in the pack, the
   source library, the file's path inside that library, the library's URL, its
   licence, and what was done to it. The existing rows keep their shape.
@@ -87,21 +98,19 @@ bongos; the cajon was a choice, and the two missing voices were never sourced.
 
 ### The voices
 
-- **R4** — The pack declares ten percussive voices: `kick`, `snare`,
-  `hatClosed`, `hatOpen`, `rim`, `tomHigh`, `tomLow`, `ride`, `bongoHigh`,
-  `bongoLow`.
+- **R4** — The pack declares **nine** percussive voices: `kick`, `snare`,
+  `hatClosed`, `hatOpen`, `rim`, `tomHigh`, `tomLow`, `bongoHigh`, `bongoLow`.
+  *(Superseded: ten, including `ride`. The ride is dropped from the feature.)*
 - **R4a** — `kick` is a bass drum struck with a beater. Not a cajon, not a hand
   drum, not a low tom standing in for one.
 - **R4b** — `bongoHigh` and `bongoLow` are two drums, declared as two voices. A
   bongo played as a single voice is a hand drum; the interplay between the high
   and the low is what makes it a bongo.
-- **R4c** — `ride` is a timekeeping ride: the bow of the cymbal, struck with the
-  stick tip. It is sourced to carry a pulse, because that is what it is for — the
-  kit's one way of stating time is a closed hi-hat, and the ride is being added
-  to give it a second. Not the bell, not a crash-ride wash.
-- **R4d** — `ride` and `bongoHigh`/`bongoLow` are stocked and declared here and
-  belong to no pattern pool yet. A groove rendered in this epic contains no ride
-  and no bongo events.
+- **R4c** — *Withdrawn.* The ride is not part of the feature. MuldjordKit ships
+  two of them, so restoring it is a small, separate decision.
+- **R4d** — `bongoHigh`/`bongoLow` are stocked and declared here and belong to no
+  pattern pool in this epic. A groove rendered in Epic 1 contains no bongo
+  events; Epic 3 gives them a part.
 - **R5** — `VoiceName` in `scripts/grooves/types.ts` and the `voices` keys of
   `pack.json` reach their final shape in this epic and do not change again
   within the feature. Epics 2 and 3 build against them in parallel.
@@ -132,13 +141,14 @@ bongos; the cajon was a choice, and the two missing voices were never sourced.
   level — and fewer than three layers means those three levels are one recording
   played at three volumes.
 - **R7b** — Every other percussive voice declares at least two velocity layers.
-- **R7c** — Two voices already in the pack fall below that floor and are brought
-  up to it: `hatOpen` declares one layer, and `rim` declares one. Each gains at
-  least a second layer from VCSL's own dynamic groups for that instrument.
-- **R7d** — Where VCSL genuinely holds only one dynamic group for a voice, that
-  is recorded as a named limitation in `samples/README.md` with the group it has.
-  A second layer invented by copying the first, or by scaling it, is a layer that
-  claims a dynamic the library never recorded.
+- **R7c** — `hatOpen` and `rim` each declared a single velocity layer under VCSL
+  and now clear the floor: MuldjordKit records the open hat across fourteen
+  dynamic groups and this stroke of the snare across eleven, so both carry real
+  layers rather than one recording played at several volumes.
+- **R7d** — No layer is invented by copying or scaling another. A layer that
+  claims a dynamic the library never recorded is the erasure the un-normalised
+  pack exists to avoid. *(No voice needed the limitation clause: MuldjordKit had
+  the groups.)*
 - **R8** — Every voice declares at least two round-robin alternates in total, so
   consecutive hits are not the same recording.
 - **R8a** — Where the source library provides fewer alternates than that for a

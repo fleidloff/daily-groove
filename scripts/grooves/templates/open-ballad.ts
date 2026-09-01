@@ -55,16 +55,22 @@ export const openBallad: FeelTemplate = {
   },
   // The comp above the snare, which no other template does. The harmony is the
   // question being asked; the kit is the context it is asked in.
+  // Corrected for the MuldjordKit drums. The delta is per voice and identical
+  // across all six templates, because the thing that changed is the pack's
+  // recorded levels, not this feel's intent: MuldjordKit's snare and hats sit
+  // at different levels from VCSL's, and every template inherits that equally.
+  // Re-deriving each template independently would have quietly rewritten five
+  // balances that were already right relative to each other.
   gain: {
     // Toms only sound in the fill, and on a ballad a fill is a turn of phrase
     // rather than an event. They sit under the snare, where a soft mallet-free
     // roll belongs, instead of over it as they do on the faster feels.
-    tomHigh: -13,
-    tomLow: -12,
-    kick: -6,
+    tomHigh: -15,
+    tomLow: -14,
+    kick: -9,
     snare: -10,
-    hatClosed: -17,
-    hatOpen: -18,
+    hatClosed: -15,
+    hatOpen: -21,
     bass: -1,
     comp: -4,
   },

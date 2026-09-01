@@ -61,14 +61,12 @@ them*. That is a per-template call and it belongs with the template files.
 
 ### The new voices, per feel
 
-- **R5** — Four feels list `ride`: `half-time` and `open-ballad`, the two
-  slowest, where a ride's wash has room and a busy hat would crowd the harmony;
-  and `shuffle` and `swung-sixteenth`, the two swung feels, where a ride is the
-  idiomatic timekeeper. `straight-funk` and `bright-straight` do not.
-- **R5a** — The bongo goes on one or both of `straight-funk` and
-  `bright-straight`, chosen by ear. R5 accounts for the other four, and the
-  bongo never lands on a feel that has the ride: the two voices are what tell
-  these feels apart, and a feel carrying both tells them apart in no way.
+- **R5** — *Withdrawn with the ride.* No feel lists `ride`; the voice is not in
+  the pack.
+- **R5a** — The bongo goes on **`bright-straight`** and no other feel. One feel
+  of six is what makes it a signature: a hand drum on all six would distinguish
+  none of them, and `bright-straight` is the brightest, most open feel of the
+  set — the one with room for a second pair of hands.
 - **R5b** — Neither voice is on all six. A voice present in every feel
   distinguishes none of them, which is the opposite of why they were added.
 - **R5c** — `bongoHigh` and `bongoLow` are listed together or not at all. One
@@ -76,13 +74,8 @@ them*. That is a per-template call and it belongs with the template files.
 - **R5d** — Every feel has at least one of the two, or neither, but no feel has
   both. With R5 and R5a settled, `straight-funk` and `bright-straight` are the
   bongo's only candidates and the ride's only non-candidates.
-- **R6** — A feel that lists `ride` is a feel where the ride has the
-  timekeeping, and its closed hat plays punctuation instead. The exclusivity is
-  enforced in Epic 3, derived from the voice list, so this epic declares the
-  voices and does not have to arrange for the rule to hold.
-- **R6a** — All four ride feels still list `hatClosed`. The hat is demoted, not
-  removed: it keeps its off-beat accents, and `hatOpen` keeps its own accents and
-  its choke. A ride feel whose hat entries were deleted would lose both.
+- **R6** — *Withdrawn with the ride.* Every feel keeps `hatClosed` as its
+  timekeeper, unchanged, and there is no hand-off to arrange.
 
 ### Levelling across the set
 
@@ -142,12 +135,9 @@ produced.
   `hatClosed` of the six templates.
 - **AC3** (R4) — Given each of the six templates, when its `voices` list is
   compared with its `gain` and `pan` keys, then the three agree exactly.
-- **AC4** (R5) — Given the six templates, when `ride` is read from their
-  `voices` lists, then it is present in exactly `half-time`, `open-ballad`,
-  `shuffle` and `swung-sixteenth`.
+- **AC4** (R5) — *Withdrawn with the ride.*
 - **AC4a** (R5a, R5d) — Given the six templates, when the bongo pair is read,
-  then it appears only in `straight-funk` or `bright-straight`, in at least one
-  of them, and no template lists both the ride and the bongo.
+  then it appears in `bright-straight` and in no other feel.
 - **AC5** (R5c) — Given each template, when its `voices` list is read, then it
   contains both `bongoHigh` and `bongoLow` or neither.
 - **AC6** (R7, R8, R8a) — Given one groove rendered per template, when the RMS
@@ -160,10 +150,7 @@ produced.
   mint.
 - **AC8** (R10) — Given that failure, when it is read, then it names the check,
   the measured RMS and the band it missed.
-- **AC9** (R6, R6a) — Given each of the four templates that lists `ride`, when
-  its `voices` list is read, then `hatClosed` is present too, and the rendered
-  groove satisfies Epic 3's exclusivity rule without the template declaring
-  anything about it.
+- **AC9** (R6) — *Withdrawn with the ride.*
 - **AC10** (R11) — Given the shared pattern pools, when a groove is rendered for
   each of the six feels, then every one passes `gateCandidate` including its own
   `density` band.

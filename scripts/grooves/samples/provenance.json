@@ -1,311 +1,7 @@
 {
   "pack": "vcsl-funk",
-  "licence": "CC0 1.0 Universal",
+  "licence": "CC0 1.0 Universal (VCSL, VSCO 2 CE) and CC-BY-4.0 (MuldjordKit)",
   "samples": [
-    {
-      "file": "kick/Cajon_hit1_mp_rr1.flac",
-      "source": "Versilian Community Sample Library (VCSL)",
-      "sourceFile": "Idiophones/Struck Idiophones/Cajon/Cajon_hit1_mp_rr1.wav",
-      "url": "https://github.com/sgossner/VCSL",
-      "licence": "CC0",
-      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
-    },
-    {
-      "file": "kick/Cajon_hit1_mp_rr2.flac",
-      "source": "Versilian Community Sample Library (VCSL)",
-      "sourceFile": "Idiophones/Struck Idiophones/Cajon/Cajon_hit1_mp_rr2.wav",
-      "url": "https://github.com/sgossner/VCSL",
-      "licence": "CC0",
-      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
-    },
-    {
-      "file": "kick/Cajon_hit1_f_rr1.flac",
-      "source": "Versilian Community Sample Library (VCSL)",
-      "sourceFile": "Idiophones/Struck Idiophones/Cajon/Cajon_hit1_f_rr1.wav",
-      "url": "https://github.com/sgossner/VCSL",
-      "licence": "CC0",
-      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
-    },
-    {
-      "file": "kick/Cajon_hit1_f_rr2.flac",
-      "source": "Versilian Community Sample Library (VCSL)",
-      "sourceFile": "Idiophones/Struck Idiophones/Cajon/Cajon_hit1_f_rr2.wav",
-      "url": "https://github.com/sgossner/VCSL",
-      "licence": "CC0",
-      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
-    },
-    {
-      "file": "kick/Cajon_hit1_fff_rr1.flac",
-      "source": "Versilian Community Sample Library (VCSL)",
-      "sourceFile": "Idiophones/Struck Idiophones/Cajon/Cajon_hit1_fff_rr1.wav",
-      "url": "https://github.com/sgossner/VCSL",
-      "licence": "CC0",
-      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
-    },
-    {
-      "file": "kick/Cajon_hit1_fff_rr2.flac",
-      "source": "Versilian Community Sample Library (VCSL)",
-      "sourceFile": "Idiophones/Struck Idiophones/Cajon/Cajon_hit1_fff_rr2.wav",
-      "url": "https://github.com/sgossner/VCSL",
-      "licence": "CC0",
-      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
-    },
-    {
-      "file": "snare/Snare2_HitNS_v2_rr1_Mid.flac",
-      "source": "Versilian Community Sample Library (VCSL)",
-      "sourceFile": "Membranophones/Struck Membranophones/Snare Drum, Modern 1/Snare2_HitNS_v2_rr1_Mid.wav",
-      "url": "https://github.com/sgossner/VCSL",
-      "licence": "CC0",
-      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
-    },
-    {
-      "file": "snare/Snare2_HitNS_v2_rr2_Mid.flac",
-      "source": "Versilian Community Sample Library (VCSL)",
-      "sourceFile": "Membranophones/Struck Membranophones/Snare Drum, Modern 1/Snare2_HitNS_v2_rr2_Mid.wav",
-      "url": "https://github.com/sgossner/VCSL",
-      "licence": "CC0",
-      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
-    },
-    {
-      "file": "snare/Snare2_HitNS_v4_rr1_Mid.flac",
-      "source": "Versilian Community Sample Library (VCSL)",
-      "sourceFile": "Membranophones/Struck Membranophones/Snare Drum, Modern 1/Snare2_HitNS_v4_rr1_Mid.wav",
-      "url": "https://github.com/sgossner/VCSL",
-      "licence": "CC0",
-      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
-    },
-    {
-      "file": "snare/Snare2_HitNS_v4_rr2_Mid.flac",
-      "source": "Versilian Community Sample Library (VCSL)",
-      "sourceFile": "Membranophones/Struck Membranophones/Snare Drum, Modern 1/Snare2_HitNS_v4_rr2_Mid.wav",
-      "url": "https://github.com/sgossner/VCSL",
-      "licence": "CC0",
-      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
-    },
-    {
-      "file": "snare/Snare2_HitNS_v5_rr1_Mid.flac",
-      "source": "Versilian Community Sample Library (VCSL)",
-      "sourceFile": "Membranophones/Struck Membranophones/Snare Drum, Modern 1/Snare2_HitNS_v5_rr1_Mid.wav",
-      "url": "https://github.com/sgossner/VCSL",
-      "licence": "CC0",
-      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
-    },
-    {
-      "file": "snare/Snare2_HitNS_v5_rr2_Mid.flac",
-      "source": "Versilian Community Sample Library (VCSL)",
-      "sourceFile": "Membranophones/Struck Membranophones/Snare Drum, Modern 1/Snare2_HitNS_v5_rr2_Mid.wav",
-      "url": "https://github.com/sgossner/VCSL",
-      "licence": "CC0",
-      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
-    },
-    {
-      "file": "snare/Snare2_HitNS_v6_rr1_Mid.flac",
-      "source": "Versilian Community Sample Library (VCSL)",
-      "sourceFile": "Membranophones/Struck Membranophones/Snare Drum, Modern 1/Snare2_HitNS_v6_rr1_Mid.wav",
-      "url": "https://github.com/sgossner/VCSL",
-      "licence": "CC0",
-      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
-    },
-    {
-      "file": "snare/Snare2_HitNS_v6_rr2_Mid.flac",
-      "source": "Versilian Community Sample Library (VCSL)",
-      "sourceFile": "Membranophones/Struck Membranophones/Snare Drum, Modern 1/Snare2_HitNS_v6_rr2_Mid.wav",
-      "url": "https://github.com/sgossner/VCSL",
-      "licence": "CC0",
-      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
-    },
-    {
-      "file": "hatClosed/HiHat_HitC_v1_rr1_Mid.flac",
-      "source": "Versilian Community Sample Library (VCSL)",
-      "sourceFile": "Idiophones/Struck Idiophones/Hi-Hat Cymbal/HiHat_HitC_v1_rr1_Mid.wav",
-      "url": "https://github.com/sgossner/VCSL",
-      "licence": "CC0",
-      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
-    },
-    {
-      "file": "hatClosed/HiHat_HitC_v1_rr2_Mid.flac",
-      "source": "Versilian Community Sample Library (VCSL)",
-      "sourceFile": "Idiophones/Struck Idiophones/Hi-Hat Cymbal/HiHat_HitC_v1_rr2_Mid.wav",
-      "url": "https://github.com/sgossner/VCSL",
-      "licence": "CC0",
-      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
-    },
-    {
-      "file": "hatClosed/HiHat_HitC_v2_rr1_Mid.flac",
-      "source": "Versilian Community Sample Library (VCSL)",
-      "sourceFile": "Idiophones/Struck Idiophones/Hi-Hat Cymbal/HiHat_HitC_v2_rr1_Mid.wav",
-      "url": "https://github.com/sgossner/VCSL",
-      "licence": "CC0",
-      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
-    },
-    {
-      "file": "hatClosed/HiHat_HitC_v2_rr2_Mid.flac",
-      "source": "Versilian Community Sample Library (VCSL)",
-      "sourceFile": "Idiophones/Struck Idiophones/Hi-Hat Cymbal/HiHat_HitC_v2_rr2_Mid.wav",
-      "url": "https://github.com/sgossner/VCSL",
-      "licence": "CC0",
-      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
-    },
-    {
-      "file": "hatClosed/HiHat_HitC_v3_rr1_Mid.flac",
-      "source": "Versilian Community Sample Library (VCSL)",
-      "sourceFile": "Idiophones/Struck Idiophones/Hi-Hat Cymbal/HiHat_HitC_v3_rr1_Mid.wav",
-      "url": "https://github.com/sgossner/VCSL",
-      "licence": "CC0",
-      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
-    },
-    {
-      "file": "hatClosed/HiHat_HitC_v3_rr2_Mid.flac",
-      "source": "Versilian Community Sample Library (VCSL)",
-      "sourceFile": "Idiophones/Struck Idiophones/Hi-Hat Cymbal/HiHat_HitC_v3_rr2_Mid.wav",
-      "url": "https://github.com/sgossner/VCSL",
-      "licence": "CC0",
-      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
-    },
-    {
-      "file": "hatClosed/HiHat_HitC_v4_rr1_Mid.flac",
-      "source": "Versilian Community Sample Library (VCSL)",
-      "sourceFile": "Idiophones/Struck Idiophones/Hi-Hat Cymbal/HiHat_HitC_v4_rr1_Mid.wav",
-      "url": "https://github.com/sgossner/VCSL",
-      "licence": "CC0",
-      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
-    },
-    {
-      "file": "hatClosed/HiHat_HitC_v4_rr2_Mid.flac",
-      "source": "Versilian Community Sample Library (VCSL)",
-      "sourceFile": "Idiophones/Struck Idiophones/Hi-Hat Cymbal/HiHat_HitC_v4_rr2_Mid.wav",
-      "url": "https://github.com/sgossner/VCSL",
-      "licence": "CC0",
-      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
-    },
-    {
-      "file": "hatOpen/HiHat_HitLoose_rr1_Mid.flac",
-      "source": "Versilian Community Sample Library (VCSL)",
-      "sourceFile": "Idiophones/Struck Idiophones/Hi-Hat Cymbal/HiHat_HitLoose_rr1_Mid.wav",
-      "url": "https://github.com/sgossner/VCSL",
-      "licence": "CC0",
-      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
-    },
-    {
-      "file": "hatOpen/HiHat_HitLoose_rr2_Mid.flac",
-      "source": "Versilian Community Sample Library (VCSL)",
-      "sourceFile": "Idiophones/Struck Idiophones/Hi-Hat Cymbal/HiHat_HitLoose_rr2_Mid.wav",
-      "url": "https://github.com/sgossner/VCSL",
-      "licence": "CC0",
-      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
-    },
-    {
-      "file": "hatOpen/HiHat_HitO_rr1_Mid.flac",
-      "source": "Versilian Community Sample Library (VCSL)",
-      "sourceFile": "Idiophones/Struck Idiophones/Hi-Hat Cymbal/HiHat_HitO_rr1_Mid.wav",
-      "url": "https://github.com/sgossner/VCSL",
-      "licence": "CC0",
-      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
-    },
-    {
-      "file": "hatOpen/HiHat_HitO_rr2_Mid.flac",
-      "source": "Versilian Community Sample Library (VCSL)",
-      "sourceFile": "Idiophones/Struck Idiophones/Hi-Hat Cymbal/HiHat_HitO_rr2_Mid.wav",
-      "url": "https://github.com/sgossner/VCSL",
-      "licence": "CC0",
-      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
-    },
-    {
-      "file": "tomHigh/TomH_HitS_v2_rr1_Mid.flac",
-      "source": "Versilian Community Sample Library (VCSL)",
-      "sourceFile": "Membranophones/Struck Membranophones/Tom 1/Stick/TomH_HitS_v2_rr1_Mid.wav",
-      "url": "https://github.com/sgossner/VCSL",
-      "licence": "CC0",
-      "modifications": "faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a tom lands with the snare it is written beside)"
-    },
-    {
-      "file": "tomHigh/TomH_HitS_v2_rr2_Mid.flac",
-      "source": "Versilian Community Sample Library (VCSL)",
-      "sourceFile": "Membranophones/Struck Membranophones/Tom 1/Stick/TomH_HitS_v2_rr2_Mid.wav",
-      "url": "https://github.com/sgossner/VCSL",
-      "licence": "CC0",
-      "modifications": "faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a tom lands with the snare it is written beside)"
-    },
-    {
-      "file": "tomHigh/TomH_HitS_v3_rr1_Mid.flac",
-      "source": "Versilian Community Sample Library (VCSL)",
-      "sourceFile": "Membranophones/Struck Membranophones/Tom 1/Stick/TomH_HitS_v3_rr1_Mid.wav",
-      "url": "https://github.com/sgossner/VCSL",
-      "licence": "CC0",
-      "modifications": "faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a tom lands with the snare it is written beside)"
-    },
-    {
-      "file": "tomHigh/TomH_HitS_v3_rr2_Mid.flac",
-      "source": "Versilian Community Sample Library (VCSL)",
-      "sourceFile": "Membranophones/Struck Membranophones/Tom 1/Stick/TomH_HitS_v3_rr2_Mid.wav",
-      "url": "https://github.com/sgossner/VCSL",
-      "licence": "CC0",
-      "modifications": "faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a tom lands with the snare it is written beside)"
-    },
-    {
-      "file": "tomHigh/TomH_HitS_v4_rr1_Mid.flac",
-      "source": "Versilian Community Sample Library (VCSL)",
-      "sourceFile": "Membranophones/Struck Membranophones/Tom 1/Stick/TomH_HitS_v4_rr1_Mid.wav",
-      "url": "https://github.com/sgossner/VCSL",
-      "licence": "CC0",
-      "modifications": "faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a tom lands with the snare it is written beside)"
-    },
-    {
-      "file": "tomHigh/TomH_HitS_v4_rr2_Mid.flac",
-      "source": "Versilian Community Sample Library (VCSL)",
-      "sourceFile": "Membranophones/Struck Membranophones/Tom 1/Stick/TomH_HitS_v4_rr2_Mid.wav",
-      "url": "https://github.com/sgossner/VCSL",
-      "licence": "CC0",
-      "modifications": "faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a tom lands with the snare it is written beside)"
-    },
-    {
-      "file": "tomLow/TomL_HitS_v2_rr1_Mid.flac",
-      "source": "Versilian Community Sample Library (VCSL)",
-      "sourceFile": "Membranophones/Struck Membranophones/Tom 2/Stick/TomL_HitS_v2_rr1_Mid.wav",
-      "url": "https://github.com/sgossner/VCSL",
-      "licence": "CC0",
-      "modifications": "faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a tom lands with the snare it is written beside)"
-    },
-    {
-      "file": "tomLow/TomL_HitS_v2_rr2_Mid.flac",
-      "source": "Versilian Community Sample Library (VCSL)",
-      "sourceFile": "Membranophones/Struck Membranophones/Tom 2/Stick/TomL_HitS_v2_rr2_Mid.wav",
-      "url": "https://github.com/sgossner/VCSL",
-      "licence": "CC0",
-      "modifications": "faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a tom lands with the snare it is written beside)"
-    },
-    {
-      "file": "tomLow/TomL_HitS_v3_rr1_Mid.flac",
-      "source": "Versilian Community Sample Library (VCSL)",
-      "sourceFile": "Membranophones/Struck Membranophones/Tom 2/Stick/TomL_HitS_v3_rr1_Mid.wav",
-      "url": "https://github.com/sgossner/VCSL",
-      "licence": "CC0",
-      "modifications": "faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a tom lands with the snare it is written beside)"
-    },
-    {
-      "file": "tomLow/TomL_HitS_v3_rr2_Mid.flac",
-      "source": "Versilian Community Sample Library (VCSL)",
-      "sourceFile": "Membranophones/Struck Membranophones/Tom 2/Stick/TomL_HitS_v3_rr2_Mid.wav",
-      "url": "https://github.com/sgossner/VCSL",
-      "licence": "CC0",
-      "modifications": "faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a tom lands with the snare it is written beside)"
-    },
-    {
-      "file": "tomLow/TomL_HitS_v4_rr1_Mid.flac",
-      "source": "Versilian Community Sample Library (VCSL)",
-      "sourceFile": "Membranophones/Struck Membranophones/Tom 2/Stick/TomL_HitS_v4_rr1_Mid.wav",
-      "url": "https://github.com/sgossner/VCSL",
-      "licence": "CC0",
-      "modifications": "faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a tom lands with the snare it is written beside)"
-    },
-    {
-      "file": "tomLow/TomL_HitS_v4_rr2_Mid.flac",
-      "source": "Versilian Community Sample Library (VCSL)",
-      "sourceFile": "Membranophones/Struck Membranophones/Tom 2/Stick/TomL_HitS_v4_rr2_Mid.wav",
-      "url": "https://github.com/sgossner/VCSL",
-      "licence": "CC0",
-      "modifications": "faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a tom lands with the snare it is written beside)"
-    },
     {
       "file": "bass/BKCtbss_Pizz_E0_v1_rr1.flac",
       "source": "VSCO 2 Community Edition (VSCO-2-CE), Solo Contrabass, pizzicato",
@@ -513,22 +209,6 @@
       "url": "https://github.com/sgossner/VSCO-2-CE",
       "licence": "CC0",
       "modifications": "capped at 2 s, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a bass note lands with the kick it is written beside; not normalised: the v1/v3 level difference is the dynamic information the renderer reads)"
-    },
-    {
-      "file": "rim/Snare2_stick_v1_rr1_Mid.flac",
-      "source": "Versilian Community Sample Library (VCSL)",
-      "sourceFile": "Membranophones/Struck Membranophones/Snare Drum, Modern 1/Snare2_stick_v1_rr1_Mid.wav",
-      "url": "https://github.com/sgossner/VCSL",
-      "licence": "CC0",
-      "modifications": "capped at 0.8 s, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so the cross-stick lands with the voices it is written beside; not normalised: the two takes keep their recorded levels)"
-    },
-    {
-      "file": "rim/Snare2_stick_v1_rr2_Mid.flac",
-      "source": "Versilian Community Sample Library (VCSL)",
-      "sourceFile": "Membranophones/Struck Membranophones/Snare Drum, Modern 1/Snare2_stick_v1_rr2_Mid.wav",
-      "url": "https://github.com/sgossner/VCSL",
-      "licence": "CC0",
-      "modifications": "capped at 0.8 s, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so the cross-stick lands with the voices it is written beside; not normalised: the two takes keep their recorded levels)"
     },
     {
       "file": "comp/Player_dyn1_rr1_012.flac",
@@ -793,6 +473,766 @@
       "url": "https://github.com/sgossner/VSCO-2-CE",
       "licence": "CC0",
       "modifications": "capped at 2.5 s, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a comp chord lands with the kick it is written beside; not normalised: the dyn1/dyn2/dyn3 level difference is the dynamic information the renderer reads)"
+    },
+    {
+      "file": "bongoHigh/BongoH_Hit1_v1_rr1_Mid.flac",
+      "source": "Versilian Community Sample Library (VCSL)",
+      "sourceFile": "Membranophones/Struck Membranophones/Bongos/BongoH_Hit1_v1_rr1_Mid.wav",
+      "url": "https://github.com/sgossner/VCSL",
+      "licence": "CC0",
+      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+    },
+    {
+      "file": "bongoHigh/BongoH_Hit1_v1_rr2_Mid.flac",
+      "source": "Versilian Community Sample Library (VCSL)",
+      "sourceFile": "Membranophones/Struck Membranophones/Bongos/BongoH_Hit1_v1_rr2_Mid.wav",
+      "url": "https://github.com/sgossner/VCSL",
+      "licence": "CC0",
+      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+    },
+    {
+      "file": "bongoHigh/BongoH_Hit1_v2_rr1_Mid.flac",
+      "source": "Versilian Community Sample Library (VCSL)",
+      "sourceFile": "Membranophones/Struck Membranophones/Bongos/BongoH_Hit1_v2_rr1_Mid.wav",
+      "url": "https://github.com/sgossner/VCSL",
+      "licence": "CC0",
+      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+    },
+    {
+      "file": "bongoHigh/BongoH_Hit1_v2_rr2_Mid.flac",
+      "source": "Versilian Community Sample Library (VCSL)",
+      "sourceFile": "Membranophones/Struck Membranophones/Bongos/BongoH_Hit1_v2_rr2_Mid.wav",
+      "url": "https://github.com/sgossner/VCSL",
+      "licence": "CC0",
+      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+    },
+    {
+      "file": "bongoHigh/BongoH_Hit1_v3_rr1_Mid.flac",
+      "source": "Versilian Community Sample Library (VCSL)",
+      "sourceFile": "Membranophones/Struck Membranophones/Bongos/BongoH_Hit1_v3_rr1_Mid.wav",
+      "url": "https://github.com/sgossner/VCSL",
+      "licence": "CC0",
+      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+    },
+    {
+      "file": "bongoHigh/BongoH_Hit1_v3_rr2_Mid.flac",
+      "source": "Versilian Community Sample Library (VCSL)",
+      "sourceFile": "Membranophones/Struck Membranophones/Bongos/BongoH_Hit1_v3_rr2_Mid.wav",
+      "url": "https://github.com/sgossner/VCSL",
+      "licence": "CC0",
+      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+    },
+    {
+      "file": "bongoLow/BongoL_Hit1_v1_rr1_Mid.flac",
+      "source": "Versilian Community Sample Library (VCSL)",
+      "sourceFile": "Membranophones/Struck Membranophones/Bongos/BongoL_Hit1_v1_rr1_Mid.wav",
+      "url": "https://github.com/sgossner/VCSL",
+      "licence": "CC0",
+      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+    },
+    {
+      "file": "bongoLow/BongoL_Hit1_v1_rr2_Mid.flac",
+      "source": "Versilian Community Sample Library (VCSL)",
+      "sourceFile": "Membranophones/Struck Membranophones/Bongos/BongoL_Hit1_v1_rr2_Mid.wav",
+      "url": "https://github.com/sgossner/VCSL",
+      "licence": "CC0",
+      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+    },
+    {
+      "file": "bongoLow/BongoL_Hit1_v2_rr1_Mid.flac",
+      "source": "Versilian Community Sample Library (VCSL)",
+      "sourceFile": "Membranophones/Struck Membranophones/Bongos/BongoL_Hit1_v2_rr1_Mid.wav",
+      "url": "https://github.com/sgossner/VCSL",
+      "licence": "CC0",
+      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+    },
+    {
+      "file": "bongoLow/BongoL_Hit1_v2_rr2_Mid.flac",
+      "source": "Versilian Community Sample Library (VCSL)",
+      "sourceFile": "Membranophones/Struck Membranophones/Bongos/BongoL_Hit1_v2_rr2_Mid.wav",
+      "url": "https://github.com/sgossner/VCSL",
+      "licence": "CC0",
+      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+    },
+    {
+      "file": "bongoLow/BongoL_Hit1_v3_rr1_Mid.flac",
+      "source": "Versilian Community Sample Library (VCSL)",
+      "sourceFile": "Membranophones/Struck Membranophones/Bongos/BongoL_Hit1_v3_rr1_Mid.wav",
+      "url": "https://github.com/sgossner/VCSL",
+      "licence": "CC0",
+      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+    },
+    {
+      "file": "bongoLow/BongoL_Hit1_v3_rr2_Mid.flac",
+      "source": "Versilian Community Sample Library (VCSL)",
+      "sourceFile": "Membranophones/Struck Membranophones/Bongos/BongoL_Hit1_v3_rr2_Mid.wav",
+      "url": "https://github.com/sgossner/VCSL",
+      "licence": "CC0",
+      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+    },
+    {
+      "file": "kick/Muldjord_kick_v44_10-KdrumL.flac",
+      "source": "MuldjordKit (FreePats edition), by Lars Muldjord",
+      "sourceFile": "samples/KdrumL/10-KdrumL.flac",
+      "url": "https://freepats.zenvoid.org/Percussion/acoustic-drum-kit.html",
+      "licence": "CC-BY-4.0",
+      "attribution": "Drum samples provided by DrumGizmo.org",
+      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+    },
+    {
+      "file": "kick/Muldjord_kick_v44_12-KdrumL.flac",
+      "source": "MuldjordKit (FreePats edition), by Lars Muldjord",
+      "sourceFile": "samples/KdrumL/12-KdrumL.flac",
+      "url": "https://freepats.zenvoid.org/Percussion/acoustic-drum-kit.html",
+      "licence": "CC-BY-4.0",
+      "attribution": "Drum samples provided by DrumGizmo.org",
+      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+    },
+    {
+      "file": "kick/Muldjord_kick_v44_13-KdrumL.flac",
+      "source": "MuldjordKit (FreePats edition), by Lars Muldjord",
+      "sourceFile": "samples/KdrumL/13-KdrumL.flac",
+      "url": "https://freepats.zenvoid.org/Percussion/acoustic-drum-kit.html",
+      "licence": "CC-BY-4.0",
+      "attribution": "Drum samples provided by DrumGizmo.org",
+      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+    },
+    {
+      "file": "kick/Muldjord_kick_v80_16-KdrumL.flac",
+      "source": "MuldjordKit (FreePats edition), by Lars Muldjord",
+      "sourceFile": "samples/KdrumL/16-KdrumL.flac",
+      "url": "https://freepats.zenvoid.org/Percussion/acoustic-drum-kit.html",
+      "licence": "CC-BY-4.0",
+      "attribution": "Drum samples provided by DrumGizmo.org",
+      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+    },
+    {
+      "file": "kick/Muldjord_kick_v80_17-KdrumL.flac",
+      "source": "MuldjordKit (FreePats edition), by Lars Muldjord",
+      "sourceFile": "samples/KdrumL/17-KdrumL.flac",
+      "url": "https://freepats.zenvoid.org/Percussion/acoustic-drum-kit.html",
+      "licence": "CC-BY-4.0",
+      "attribution": "Drum samples provided by DrumGizmo.org",
+      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+    },
+    {
+      "file": "kick/Muldjord_kick_v80_19-KdrumL.flac",
+      "source": "MuldjordKit (FreePats edition), by Lars Muldjord",
+      "sourceFile": "samples/KdrumL/19-KdrumL.flac",
+      "url": "https://freepats.zenvoid.org/Percussion/acoustic-drum-kit.html",
+      "licence": "CC-BY-4.0",
+      "attribution": "Drum samples provided by DrumGizmo.org",
+      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+    },
+    {
+      "file": "kick/Muldjord_kick_v98_17-KdrumL.flac",
+      "source": "MuldjordKit (FreePats edition), by Lars Muldjord",
+      "sourceFile": "samples/KdrumL/17-KdrumL.flac",
+      "url": "https://freepats.zenvoid.org/Percussion/acoustic-drum-kit.html",
+      "licence": "CC-BY-4.0",
+      "attribution": "Drum samples provided by DrumGizmo.org",
+      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+    },
+    {
+      "file": "kick/Muldjord_kick_v98_19-KdrumL.flac",
+      "source": "MuldjordKit (FreePats edition), by Lars Muldjord",
+      "sourceFile": "samples/KdrumL/19-KdrumL.flac",
+      "url": "https://freepats.zenvoid.org/Percussion/acoustic-drum-kit.html",
+      "licence": "CC-BY-4.0",
+      "attribution": "Drum samples provided by DrumGizmo.org",
+      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+    },
+    {
+      "file": "kick/Muldjord_kick_v98_20-KdrumL.flac",
+      "source": "MuldjordKit (FreePats edition), by Lars Muldjord",
+      "sourceFile": "samples/KdrumL/20-KdrumL.flac",
+      "url": "https://freepats.zenvoid.org/Percussion/acoustic-drum-kit.html",
+      "licence": "CC-BY-4.0",
+      "attribution": "Drum samples provided by DrumGizmo.org",
+      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+    },
+    {
+      "file": "kick/Muldjord_kick_v127_21-KdrumL.flac",
+      "source": "MuldjordKit (FreePats edition), by Lars Muldjord",
+      "sourceFile": "samples/KdrumL/21-KdrumL.flac",
+      "url": "https://freepats.zenvoid.org/Percussion/acoustic-drum-kit.html",
+      "licence": "CC-BY-4.0",
+      "attribution": "Drum samples provided by DrumGizmo.org",
+      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+    },
+    {
+      "file": "kick/Muldjord_kick_v127_23-KdrumL.flac",
+      "source": "MuldjordKit (FreePats edition), by Lars Muldjord",
+      "sourceFile": "samples/KdrumL/23-KdrumL.flac",
+      "url": "https://freepats.zenvoid.org/Percussion/acoustic-drum-kit.html",
+      "licence": "CC-BY-4.0",
+      "attribution": "Drum samples provided by DrumGizmo.org",
+      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+    },
+    {
+      "file": "kick/Muldjord_kick_v127_24-KdrumL.flac",
+      "source": "MuldjordKit (FreePats edition), by Lars Muldjord",
+      "sourceFile": "samples/KdrumL/24-KdrumL.flac",
+      "url": "https://freepats.zenvoid.org/Percussion/acoustic-drum-kit.html",
+      "licence": "CC-BY-4.0",
+      "attribution": "Drum samples provided by DrumGizmo.org",
+      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+    },
+    {
+      "file": "snare/Muldjord_snare_v44_25-Snare.flac",
+      "source": "MuldjordKit (FreePats edition), by Lars Muldjord",
+      "sourceFile": "samples/Snare1/25-Snare.flac",
+      "url": "https://freepats.zenvoid.org/Percussion/acoustic-drum-kit.html",
+      "licence": "CC-BY-4.0",
+      "attribution": "Drum samples provided by DrumGizmo.org",
+      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+    },
+    {
+      "file": "snare/Muldjord_snare_v44_30-Snare.flac",
+      "source": "MuldjordKit (FreePats edition), by Lars Muldjord",
+      "sourceFile": "samples/Snare1/30-Snare.flac",
+      "url": "https://freepats.zenvoid.org/Percussion/acoustic-drum-kit.html",
+      "licence": "CC-BY-4.0",
+      "attribution": "Drum samples provided by DrumGizmo.org",
+      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+    },
+    {
+      "file": "snare/Muldjord_snare_v44_33-Snare.flac",
+      "source": "MuldjordKit (FreePats edition), by Lars Muldjord",
+      "sourceFile": "samples/Snare1/33-Snare.flac",
+      "url": "https://freepats.zenvoid.org/Percussion/acoustic-drum-kit.html",
+      "licence": "CC-BY-4.0",
+      "attribution": "Drum samples provided by DrumGizmo.org",
+      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+    },
+    {
+      "file": "snare/Muldjord_snare_v80_39-Snare.flac",
+      "source": "MuldjordKit (FreePats edition), by Lars Muldjord",
+      "sourceFile": "samples/Snare1/39-Snare.flac",
+      "url": "https://freepats.zenvoid.org/Percussion/acoustic-drum-kit.html",
+      "licence": "CC-BY-4.0",
+      "attribution": "Drum samples provided by DrumGizmo.org",
+      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+    },
+    {
+      "file": "snare/Muldjord_snare_v80_42-Snare.flac",
+      "source": "MuldjordKit (FreePats edition), by Lars Muldjord",
+      "sourceFile": "samples/Snare1/42-Snare.flac",
+      "url": "https://freepats.zenvoid.org/Percussion/acoustic-drum-kit.html",
+      "licence": "CC-BY-4.0",
+      "attribution": "Drum samples provided by DrumGizmo.org",
+      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+    },
+    {
+      "file": "snare/Muldjord_snare_v80_45-Snare.flac",
+      "source": "MuldjordKit (FreePats edition), by Lars Muldjord",
+      "sourceFile": "samples/Snare1/45-Snare.flac",
+      "url": "https://freepats.zenvoid.org/Percussion/acoustic-drum-kit.html",
+      "licence": "CC-BY-4.0",
+      "attribution": "Drum samples provided by DrumGizmo.org",
+      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+    },
+    {
+      "file": "snare/Muldjord_snare_v98_42-Snare.flac",
+      "source": "MuldjordKit (FreePats edition), by Lars Muldjord",
+      "sourceFile": "samples/Snare1/42-Snare.flac",
+      "url": "https://freepats.zenvoid.org/Percussion/acoustic-drum-kit.html",
+      "licence": "CC-BY-4.0",
+      "attribution": "Drum samples provided by DrumGizmo.org",
+      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+    },
+    {
+      "file": "snare/Muldjord_snare_v98_45-Snare.flac",
+      "source": "MuldjordKit (FreePats edition), by Lars Muldjord",
+      "sourceFile": "samples/Snare1/45-Snare.flac",
+      "url": "https://freepats.zenvoid.org/Percussion/acoustic-drum-kit.html",
+      "licence": "CC-BY-4.0",
+      "attribution": "Drum samples provided by DrumGizmo.org",
+      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+    },
+    {
+      "file": "snare/Muldjord_snare_v98_48-Snare.flac",
+      "source": "MuldjordKit (FreePats edition), by Lars Muldjord",
+      "sourceFile": "samples/Snare1/48-Snare.flac",
+      "url": "https://freepats.zenvoid.org/Percussion/acoustic-drum-kit.html",
+      "licence": "CC-BY-4.0",
+      "attribution": "Drum samples provided by DrumGizmo.org",
+      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+    },
+    {
+      "file": "snare/Muldjord_snare_v127_51-Snare.flac",
+      "source": "MuldjordKit (FreePats edition), by Lars Muldjord",
+      "sourceFile": "samples/Snare1/51-Snare.flac",
+      "url": "https://freepats.zenvoid.org/Percussion/acoustic-drum-kit.html",
+      "licence": "CC-BY-4.0",
+      "attribution": "Drum samples provided by DrumGizmo.org",
+      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+    },
+    {
+      "file": "snare/Muldjord_snare_v127_53-Snare.flac",
+      "source": "MuldjordKit (FreePats edition), by Lars Muldjord",
+      "sourceFile": "samples/Snare1/53-Snare.flac",
+      "url": "https://freepats.zenvoid.org/Percussion/acoustic-drum-kit.html",
+      "licence": "CC-BY-4.0",
+      "attribution": "Drum samples provided by DrumGizmo.org",
+      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+    },
+    {
+      "file": "snare/Muldjord_snare_v127_55-Snare.flac",
+      "source": "MuldjordKit (FreePats edition), by Lars Muldjord",
+      "sourceFile": "samples/Snare1/55-Snare.flac",
+      "url": "https://freepats.zenvoid.org/Percussion/acoustic-drum-kit.html",
+      "licence": "CC-BY-4.0",
+      "attribution": "Drum samples provided by DrumGizmo.org",
+      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+    },
+    {
+      "file": "hatClosed/Muldjord_hatClosed_v44_10-HihatClosed.flac",
+      "source": "MuldjordKit (FreePats edition), by Lars Muldjord",
+      "sourceFile": "samples/HihatClosed/10-HihatClosed.flac",
+      "url": "https://freepats.zenvoid.org/Percussion/acoustic-drum-kit.html",
+      "licence": "CC-BY-4.0",
+      "attribution": "Drum samples provided by DrumGizmo.org",
+      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+    },
+    {
+      "file": "hatClosed/Muldjord_hatClosed_v44_12-HihatClosed.flac",
+      "source": "MuldjordKit (FreePats edition), by Lars Muldjord",
+      "sourceFile": "samples/HihatClosed/12-HihatClosed.flac",
+      "url": "https://freepats.zenvoid.org/Percussion/acoustic-drum-kit.html",
+      "licence": "CC-BY-4.0",
+      "attribution": "Drum samples provided by DrumGizmo.org",
+      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+    },
+    {
+      "file": "hatClosed/Muldjord_hatClosed_v44_14-HihatClosed.flac",
+      "source": "MuldjordKit (FreePats edition), by Lars Muldjord",
+      "sourceFile": "samples/HihatClosed/14-HihatClosed.flac",
+      "url": "https://freepats.zenvoid.org/Percussion/acoustic-drum-kit.html",
+      "licence": "CC-BY-4.0",
+      "attribution": "Drum samples provided by DrumGizmo.org",
+      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+    },
+    {
+      "file": "hatClosed/Muldjord_hatClosed_v71_16-HihatClosed.flac",
+      "source": "MuldjordKit (FreePats edition), by Lars Muldjord",
+      "sourceFile": "samples/HihatClosed/16-HihatClosed.flac",
+      "url": "https://freepats.zenvoid.org/Percussion/acoustic-drum-kit.html",
+      "licence": "CC-BY-4.0",
+      "attribution": "Drum samples provided by DrumGizmo.org",
+      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+    },
+    {
+      "file": "hatClosed/Muldjord_hatClosed_v71_18-HihatClosed.flac",
+      "source": "MuldjordKit (FreePats edition), by Lars Muldjord",
+      "sourceFile": "samples/HihatClosed/18-HihatClosed.flac",
+      "url": "https://freepats.zenvoid.org/Percussion/acoustic-drum-kit.html",
+      "licence": "CC-BY-4.0",
+      "attribution": "Drum samples provided by DrumGizmo.org",
+      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+    },
+    {
+      "file": "hatClosed/Muldjord_hatClosed_v71_20-HihatClosed.flac",
+      "source": "MuldjordKit (FreePats edition), by Lars Muldjord",
+      "sourceFile": "samples/HihatClosed/20-HihatClosed.flac",
+      "url": "https://freepats.zenvoid.org/Percussion/acoustic-drum-kit.html",
+      "licence": "CC-BY-4.0",
+      "attribution": "Drum samples provided by DrumGizmo.org",
+      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+    },
+    {
+      "file": "hatClosed/Muldjord_hatClosed_v98_20-HihatClosed.flac",
+      "source": "MuldjordKit (FreePats edition), by Lars Muldjord",
+      "sourceFile": "samples/HihatClosed/20-HihatClosed.flac",
+      "url": "https://freepats.zenvoid.org/Percussion/acoustic-drum-kit.html",
+      "licence": "CC-BY-4.0",
+      "attribution": "Drum samples provided by DrumGizmo.org",
+      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+    },
+    {
+      "file": "hatClosed/Muldjord_hatClosed_v98_22-HihatClosed.flac",
+      "source": "MuldjordKit (FreePats edition), by Lars Muldjord",
+      "sourceFile": "samples/HihatClosed/22-HihatClosed.flac",
+      "url": "https://freepats.zenvoid.org/Percussion/acoustic-drum-kit.html",
+      "licence": "CC-BY-4.0",
+      "attribution": "Drum samples provided by DrumGizmo.org",
+      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+    },
+    {
+      "file": "hatClosed/Muldjord_hatClosed_v98_24-HihatClosed.flac",
+      "source": "MuldjordKit (FreePats edition), by Lars Muldjord",
+      "sourceFile": "samples/HihatClosed/24-HihatClosed.flac",
+      "url": "https://freepats.zenvoid.org/Percussion/acoustic-drum-kit.html",
+      "licence": "CC-BY-4.0",
+      "attribution": "Drum samples provided by DrumGizmo.org",
+      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+    },
+    {
+      "file": "hatClosed/Muldjord_hatClosed_v127_26-HihatClosed.flac",
+      "source": "MuldjordKit (FreePats edition), by Lars Muldjord",
+      "sourceFile": "samples/HihatClosed/26-HihatClosed.flac",
+      "url": "https://freepats.zenvoid.org/Percussion/acoustic-drum-kit.html",
+      "licence": "CC-BY-4.0",
+      "attribution": "Drum samples provided by DrumGizmo.org",
+      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+    },
+    {
+      "file": "hatClosed/Muldjord_hatClosed_v127_27-HihatClosed.flac",
+      "source": "MuldjordKit (FreePats edition), by Lars Muldjord",
+      "sourceFile": "samples/HihatClosed/27-HihatClosed.flac",
+      "url": "https://freepats.zenvoid.org/Percussion/acoustic-drum-kit.html",
+      "licence": "CC-BY-4.0",
+      "attribution": "Drum samples provided by DrumGizmo.org",
+      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+    },
+    {
+      "file": "hatClosed/Muldjord_hatClosed_v127_28-HihatClosed.flac",
+      "source": "MuldjordKit (FreePats edition), by Lars Muldjord",
+      "sourceFile": "samples/HihatClosed/28-HihatClosed.flac",
+      "url": "https://freepats.zenvoid.org/Percussion/acoustic-drum-kit.html",
+      "licence": "CC-BY-4.0",
+      "attribution": "Drum samples provided by DrumGizmo.org",
+      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+    },
+    {
+      "file": "hatOpen/Muldjord_hatOpen_v53_12-HihatOpen.flac",
+      "source": "MuldjordKit (FreePats edition), by Lars Muldjord",
+      "sourceFile": "samples/HihatOpen/12-HihatOpen.flac",
+      "url": "https://freepats.zenvoid.org/Percussion/acoustic-drum-kit.html",
+      "licence": "CC-BY-4.0",
+      "attribution": "Drum samples provided by DrumGizmo.org",
+      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+    },
+    {
+      "file": "hatOpen/Muldjord_hatOpen_v53_14-HihatOpen.flac",
+      "source": "MuldjordKit (FreePats edition), by Lars Muldjord",
+      "sourceFile": "samples/HihatOpen/14-HihatOpen.flac",
+      "url": "https://freepats.zenvoid.org/Percussion/acoustic-drum-kit.html",
+      "licence": "CC-BY-4.0",
+      "attribution": "Drum samples provided by DrumGizmo.org",
+      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+    },
+    {
+      "file": "hatOpen/Muldjord_hatOpen_v53_16-HihatOpen.flac",
+      "source": "MuldjordKit (FreePats edition), by Lars Muldjord",
+      "sourceFile": "samples/HihatOpen/16-HihatOpen.flac",
+      "url": "https://freepats.zenvoid.org/Percussion/acoustic-drum-kit.html",
+      "licence": "CC-BY-4.0",
+      "attribution": "Drum samples provided by DrumGizmo.org",
+      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+    },
+    {
+      "file": "hatOpen/Muldjord_hatOpen_v98_20-HihatOpen.flac",
+      "source": "MuldjordKit (FreePats edition), by Lars Muldjord",
+      "sourceFile": "samples/HihatOpen/20-HihatOpen.flac",
+      "url": "https://freepats.zenvoid.org/Percussion/acoustic-drum-kit.html",
+      "licence": "CC-BY-4.0",
+      "attribution": "Drum samples provided by DrumGizmo.org",
+      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+    },
+    {
+      "file": "hatOpen/Muldjord_hatOpen_v98_22-HihatOpen.flac",
+      "source": "MuldjordKit (FreePats edition), by Lars Muldjord",
+      "sourceFile": "samples/HihatOpen/22-HihatOpen.flac",
+      "url": "https://freepats.zenvoid.org/Percussion/acoustic-drum-kit.html",
+      "licence": "CC-BY-4.0",
+      "attribution": "Drum samples provided by DrumGizmo.org",
+      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+    },
+    {
+      "file": "hatOpen/Muldjord_hatOpen_v98_24-HihatOpen.flac",
+      "source": "MuldjordKit (FreePats edition), by Lars Muldjord",
+      "sourceFile": "samples/HihatOpen/24-HihatOpen.flac",
+      "url": "https://freepats.zenvoid.org/Percussion/acoustic-drum-kit.html",
+      "licence": "CC-BY-4.0",
+      "attribution": "Drum samples provided by DrumGizmo.org",
+      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+    },
+    {
+      "file": "hatOpen/Muldjord_hatOpen_v127_26-HihatOpen.flac",
+      "source": "MuldjordKit (FreePats edition), by Lars Muldjord",
+      "sourceFile": "samples/HihatOpen/26-HihatOpen.flac",
+      "url": "https://freepats.zenvoid.org/Percussion/acoustic-drum-kit.html",
+      "licence": "CC-BY-4.0",
+      "attribution": "Drum samples provided by DrumGizmo.org",
+      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+    },
+    {
+      "file": "hatOpen/Muldjord_hatOpen_v127_28-HihatOpen.flac",
+      "source": "MuldjordKit (FreePats edition), by Lars Muldjord",
+      "sourceFile": "samples/HihatOpen/28-HihatOpen.flac",
+      "url": "https://freepats.zenvoid.org/Percussion/acoustic-drum-kit.html",
+      "licence": "CC-BY-4.0",
+      "attribution": "Drum samples provided by DrumGizmo.org",
+      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+    },
+    {
+      "file": "hatOpen/Muldjord_hatOpen_v127_29-HihatOpen.flac",
+      "source": "MuldjordKit (FreePats edition), by Lars Muldjord",
+      "sourceFile": "samples/HihatOpen/29-HihatOpen.flac",
+      "url": "https://freepats.zenvoid.org/Percussion/acoustic-drum-kit.html",
+      "licence": "CC-BY-4.0",
+      "attribution": "Drum samples provided by DrumGizmo.org",
+      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+    },
+    {
+      "file": "tomHigh/Muldjord_tomHigh_v61_5-Tom2.flac",
+      "source": "MuldjordKit (FreePats edition), by Lars Muldjord",
+      "sourceFile": "samples/Tom2/5-Tom2.flac",
+      "url": "https://freepats.zenvoid.org/Percussion/acoustic-drum-kit.html",
+      "licence": "CC-BY-4.0",
+      "attribution": "Drum samples provided by DrumGizmo.org",
+      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+    },
+    {
+      "file": "tomHigh/Muldjord_tomHigh_v61_6-Tom2.flac",
+      "source": "MuldjordKit (FreePats edition), by Lars Muldjord",
+      "sourceFile": "samples/Tom2/6-Tom2.flac",
+      "url": "https://freepats.zenvoid.org/Percussion/acoustic-drum-kit.html",
+      "licence": "CC-BY-4.0",
+      "attribution": "Drum samples provided by DrumGizmo.org",
+      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+    },
+    {
+      "file": "tomHigh/Muldjord_tomHigh_v100_8-Tom2.flac",
+      "source": "MuldjordKit (FreePats edition), by Lars Muldjord",
+      "sourceFile": "samples/Tom2/8-Tom2.flac",
+      "url": "https://freepats.zenvoid.org/Percussion/acoustic-drum-kit.html",
+      "licence": "CC-BY-4.0",
+      "attribution": "Drum samples provided by DrumGizmo.org",
+      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+    },
+    {
+      "file": "tomHigh/Muldjord_tomHigh_v100_9-Tom2.flac",
+      "source": "MuldjordKit (FreePats edition), by Lars Muldjord",
+      "sourceFile": "samples/Tom2/9-Tom2.flac",
+      "url": "https://freepats.zenvoid.org/Percussion/acoustic-drum-kit.html",
+      "licence": "CC-BY-4.0",
+      "attribution": "Drum samples provided by DrumGizmo.org",
+      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+    },
+    {
+      "file": "tomHigh/Muldjord_tomHigh_v127_10-Tom2.flac",
+      "source": "MuldjordKit (FreePats edition), by Lars Muldjord",
+      "sourceFile": "samples/Tom2/10-Tom2.flac",
+      "url": "https://freepats.zenvoid.org/Percussion/acoustic-drum-kit.html",
+      "licence": "CC-BY-4.0",
+      "attribution": "Drum samples provided by DrumGizmo.org",
+      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+    },
+    {
+      "file": "tomHigh/Muldjord_tomHigh_v127_11-Tom2.flac",
+      "source": "MuldjordKit (FreePats edition), by Lars Muldjord",
+      "sourceFile": "samples/Tom2/11-Tom2.flac",
+      "url": "https://freepats.zenvoid.org/Percussion/acoustic-drum-kit.html",
+      "licence": "CC-BY-4.0",
+      "attribution": "Drum samples provided by DrumGizmo.org",
+      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+    },
+    {
+      "file": "tomLow/Muldjord_tomLow_v62_11-Tom4.flac",
+      "source": "MuldjordKit (FreePats edition), by Lars Muldjord",
+      "sourceFile": "samples/Tom4/11-Tom4.flac",
+      "url": "https://freepats.zenvoid.org/Percussion/acoustic-drum-kit.html",
+      "licence": "CC-BY-4.0",
+      "attribution": "Drum samples provided by DrumGizmo.org",
+      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+    },
+    {
+      "file": "tomLow/Muldjord_tomLow_v62_12-Tom4.flac",
+      "source": "MuldjordKit (FreePats edition), by Lars Muldjord",
+      "sourceFile": "samples/Tom4/12-Tom4.flac",
+      "url": "https://freepats.zenvoid.org/Percussion/acoustic-drum-kit.html",
+      "licence": "CC-BY-4.0",
+      "attribution": "Drum samples provided by DrumGizmo.org",
+      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+    },
+    {
+      "file": "tomLow/Muldjord_tomLow_v98_14-Tom4.flac",
+      "source": "MuldjordKit (FreePats edition), by Lars Muldjord",
+      "sourceFile": "samples/Tom4/14-Tom4.flac",
+      "url": "https://freepats.zenvoid.org/Percussion/acoustic-drum-kit.html",
+      "licence": "CC-BY-4.0",
+      "attribution": "Drum samples provided by DrumGizmo.org",
+      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+    },
+    {
+      "file": "tomLow/Muldjord_tomLow_v98_15-Tom4.flac",
+      "source": "MuldjordKit (FreePats edition), by Lars Muldjord",
+      "sourceFile": "samples/Tom4/15-Tom4.flac",
+      "url": "https://freepats.zenvoid.org/Percussion/acoustic-drum-kit.html",
+      "licence": "CC-BY-4.0",
+      "attribution": "Drum samples provided by DrumGizmo.org",
+      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+    },
+    {
+      "file": "tomLow/Muldjord_tomLow_v127_17-Tom4.flac",
+      "source": "MuldjordKit (FreePats edition), by Lars Muldjord",
+      "sourceFile": "samples/Tom4/17-Tom4.flac",
+      "url": "https://freepats.zenvoid.org/Percussion/acoustic-drum-kit.html",
+      "licence": "CC-BY-4.0",
+      "attribution": "Drum samples provided by DrumGizmo.org",
+      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+    },
+    {
+      "file": "tomLow/Muldjord_tomLow_v127_18-Tom4.flac",
+      "source": "MuldjordKit (FreePats edition), by Lars Muldjord",
+      "sourceFile": "samples/Tom4/18-Tom4.flac",
+      "url": "https://freepats.zenvoid.org/Percussion/acoustic-drum-kit.html",
+      "licence": "CC-BY-4.0",
+      "attribution": "Drum samples provided by DrumGizmo.org",
+      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+    },
+    {
+      "file": "rim/Muldjord_rim_v74_6-SnareRest.flac",
+      "source": "MuldjordKit (FreePats edition), by Lars Muldjord",
+      "sourceFile": "samples/SnareRest1/6-SnareRest.flac",
+      "url": "https://freepats.zenvoid.org/Percussion/acoustic-drum-kit.html",
+      "licence": "CC-BY-4.0",
+      "attribution": "Drum samples provided by DrumGizmo.org",
+      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+    },
+    {
+      "file": "rim/Muldjord_rim_v74_7-SnareRest.flac",
+      "source": "MuldjordKit (FreePats edition), by Lars Muldjord",
+      "sourceFile": "samples/SnareRest1/7-SnareRest.flac",
+      "url": "https://freepats.zenvoid.org/Percussion/acoustic-drum-kit.html",
+      "licence": "CC-BY-4.0",
+      "attribution": "Drum samples provided by DrumGizmo.org",
+      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+    },
+    {
+      "file": "rim/Muldjord_rim_v74_8-SnareRest.flac",
+      "source": "MuldjordKit (FreePats edition), by Lars Muldjord",
+      "sourceFile": "samples/SnareRest1/8-SnareRest.flac",
+      "url": "https://freepats.zenvoid.org/Percussion/acoustic-drum-kit.html",
+      "licence": "CC-BY-4.0",
+      "attribution": "Drum samples provided by DrumGizmo.org",
+      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+    },
+    {
+      "file": "rim/Muldjord_rim_v127_10-SnareRest.flac",
+      "source": "MuldjordKit (FreePats edition), by Lars Muldjord",
+      "sourceFile": "samples/SnareRest1/10-SnareRest.flac",
+      "url": "https://freepats.zenvoid.org/Percussion/acoustic-drum-kit.html",
+      "licence": "CC-BY-4.0",
+      "attribution": "Drum samples provided by DrumGizmo.org",
+      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+    },
+    {
+      "file": "rim/Muldjord_rim_v127_11-SnareRest.flac",
+      "source": "MuldjordKit (FreePats edition), by Lars Muldjord",
+      "sourceFile": "samples/SnareRest1/11-SnareRest.flac",
+      "url": "https://freepats.zenvoid.org/Percussion/acoustic-drum-kit.html",
+      "licence": "CC-BY-4.0",
+      "attribution": "Drum samples provided by DrumGizmo.org",
+      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+    },
+    {
+      "file": "rim/Muldjord_rim_v127_12-SnareRest.flac",
+      "source": "MuldjordKit (FreePats edition), by Lars Muldjord",
+      "sourceFile": "samples/SnareRest1/12-SnareRest.flac",
+      "url": "https://freepats.zenvoid.org/Percussion/acoustic-drum-kit.html",
+      "licence": "CC-BY-4.0",
+      "attribution": "Drum samples provided by DrumGizmo.org",
+      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+    },
+    {
+      "file": "bongoHigh/BongoH_Hit1_v1_rr1_Mid.flac",
+      "source": "Versilian Community Sample Library (VCSL)",
+      "sourceFile": "Membranophones/Struck Membranophones/Bongos/BongoH_Hit1_v1_rr1_Mid.wav",
+      "url": "https://github.com/sgossner/VCSL",
+      "licence": "CC0",
+      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+    },
+    {
+      "file": "bongoHigh/BongoH_Hit1_v1_rr2_Mid.flac",
+      "source": "Versilian Community Sample Library (VCSL)",
+      "sourceFile": "Membranophones/Struck Membranophones/Bongos/BongoH_Hit1_v1_rr2_Mid.wav",
+      "url": "https://github.com/sgossner/VCSL",
+      "licence": "CC0",
+      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+    },
+    {
+      "file": "bongoHigh/BongoH_Hit1_v2_rr1_Mid.flac",
+      "source": "Versilian Community Sample Library (VCSL)",
+      "sourceFile": "Membranophones/Struck Membranophones/Bongos/BongoH_Hit1_v2_rr1_Mid.wav",
+      "url": "https://github.com/sgossner/VCSL",
+      "licence": "CC0",
+      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+    },
+    {
+      "file": "bongoHigh/BongoH_Hit1_v2_rr2_Mid.flac",
+      "source": "Versilian Community Sample Library (VCSL)",
+      "sourceFile": "Membranophones/Struck Membranophones/Bongos/BongoH_Hit1_v2_rr2_Mid.wav",
+      "url": "https://github.com/sgossner/VCSL",
+      "licence": "CC0",
+      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+    },
+    {
+      "file": "bongoHigh/BongoH_Hit1_v3_rr1_Mid.flac",
+      "source": "Versilian Community Sample Library (VCSL)",
+      "sourceFile": "Membranophones/Struck Membranophones/Bongos/BongoH_Hit1_v3_rr1_Mid.wav",
+      "url": "https://github.com/sgossner/VCSL",
+      "licence": "CC0",
+      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+    },
+    {
+      "file": "bongoHigh/BongoH_Hit1_v3_rr2_Mid.flac",
+      "source": "Versilian Community Sample Library (VCSL)",
+      "sourceFile": "Membranophones/Struck Membranophones/Bongos/BongoH_Hit1_v3_rr2_Mid.wav",
+      "url": "https://github.com/sgossner/VCSL",
+      "licence": "CC0",
+      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+    },
+    {
+      "file": "bongoLow/BongoL_Hit1_v1_rr1_Mid.flac",
+      "source": "Versilian Community Sample Library (VCSL)",
+      "sourceFile": "Membranophones/Struck Membranophones/Bongos/BongoL_Hit1_v1_rr1_Mid.wav",
+      "url": "https://github.com/sgossner/VCSL",
+      "licence": "CC0",
+      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+    },
+    {
+      "file": "bongoLow/BongoL_Hit1_v1_rr2_Mid.flac",
+      "source": "Versilian Community Sample Library (VCSL)",
+      "sourceFile": "Membranophones/Struck Membranophones/Bongos/BongoL_Hit1_v1_rr2_Mid.wav",
+      "url": "https://github.com/sgossner/VCSL",
+      "licence": "CC0",
+      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+    },
+    {
+      "file": "bongoLow/BongoL_Hit1_v2_rr1_Mid.flac",
+      "source": "Versilian Community Sample Library (VCSL)",
+      "sourceFile": "Membranophones/Struck Membranophones/Bongos/BongoL_Hit1_v2_rr1_Mid.wav",
+      "url": "https://github.com/sgossner/VCSL",
+      "licence": "CC0",
+      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+    },
+    {
+      "file": "bongoLow/BongoL_Hit1_v2_rr2_Mid.flac",
+      "source": "Versilian Community Sample Library (VCSL)",
+      "sourceFile": "Membranophones/Struck Membranophones/Bongos/BongoL_Hit1_v2_rr2_Mid.wav",
+      "url": "https://github.com/sgossner/VCSL",
+      "licence": "CC0",
+      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+    },
+    {
+      "file": "bongoLow/BongoL_Hit1_v3_rr1_Mid.flac",
+      "source": "Versilian Community Sample Library (VCSL)",
+      "sourceFile": "Membranophones/Struck Membranophones/Bongos/BongoL_Hit1_v3_rr1_Mid.wav",
+      "url": "https://github.com/sgossner/VCSL",
+      "licence": "CC0",
+      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+    },
+    {
+      "file": "bongoLow/BongoL_Hit1_v3_rr2_Mid.flac",
+      "source": "Versilian Community Sample Library (VCSL)",
+      "sourceFile": "Membranophones/Struck Membranophones/Bongos/BongoL_Hit1_v3_rr2_Mid.wav",
+      "url": "https://github.com/sgossner/VCSL",
+      "licence": "CC0",
+      "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
     }
-  ]
+  ],
+  "attribution": "Drum samples provided by DrumGizmo.org"
 }

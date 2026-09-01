@@ -1,0 +1,305 @@
+{
+  "note": "Written from the pre-feature-13 manifest. Feature-13 changes what a groove is played on, not what it is; this is the evidence.",
+  "grooves": {
+    "groove-01": {
+      "bpm": "105",
+      "bars": "4",
+      "loopBars": "16",
+      "root": "C",
+      "flavour": "Mixolydian",
+      "scale": "C mixolydian",
+      "chord": "C7",
+      "progression": "C7\u2013Em7\u266d5\u2013B\u266dmaj7\u2013Fmaj7"
+    },
+    "groove-02": {
+      "bpm": "96",
+      "bars": "4",
+      "loopBars": "16",
+      "root": "E",
+      "flavour": "Dorian",
+      "scale": "E dorian",
+      "chord": "Em7",
+      "progression": "Em7\u2013Bm7\u2013C\u266fm7\u266d5"
+    },
+    "groove-03": {
+      "bpm": "103",
+      "bars": "4",
+      "loopBars": "16",
+      "root": "E\u266d",
+      "flavour": "Dorian",
+      "scale": "E\u266d dorian",
+      "chord": "E\u266dm7",
+      "progression": "E\u266dm7\u2013A\u266d7\u2013Fm7"
+    },
+    "groove-04": {
+      "bpm": "103",
+      "bars": "4",
+      "loopBars": "16",
+      "root": "E",
+      "flavour": "Mixolydian",
+      "scale": "E mixolydian",
+      "chord": "E7",
+      "progression": "E7\u2013Amaj7\u2013Bm7\u2013Amaj7"
+    },
+    "groove-07": {
+      "bpm": "91",
+      "bars": "4",
+      "loopBars": "16",
+      "root": "G",
+      "flavour": "Aeolian",
+      "scale": "G aeolian",
+      "chord": "Gm7",
+      "progression": "Gm7\u2013B\u266dmaj7\u2013Cm7"
+    },
+    "groove-08": {
+      "bpm": "91",
+      "bars": "4",
+      "loopBars": "16",
+      "root": "F\u266f",
+      "flavour": "Aeolian",
+      "scale": "F\u266f aeolian",
+      "chord": "F\u266fm7",
+      "progression": "F\u266fm7\u2013Amaj7\u2013A\u266dm7\u266d5"
+    },
+    "groove-09": {
+      "bpm": "126",
+      "bars": "4",
+      "loopBars": "16",
+      "root": "C\u266f",
+      "flavour": "Lydian",
+      "scale": "C\u266f lydian",
+      "chord": "C\u266fmaj7",
+      "progression": "C\u266fmaj7\u2013E\u266d7\u2013Fm7\u2013B\u266dm7"
+    },
+    "groove-10": {
+      "bpm": "121",
+      "bars": "4",
+      "loopBars": "16",
+      "root": "F",
+      "flavour": "Lydian",
+      "scale": "F lydian",
+      "chord": "Fmaj7",
+      "progression": "Fmaj7\u2013Am7\u2013G7\u2013Dm7"
+    },
+    "groove-11": {
+      "bpm": "120",
+      "bars": "4",
+      "loopBars": "16",
+      "root": "B",
+      "flavour": "Ionian",
+      "scale": "B ionian",
+      "chord": "Bmaj7",
+      "progression": "Bmaj7\u2013Emaj7\u2013C\u266fm7"
+    },
+    "groove-12": {
+      "bpm": "130",
+      "bars": "4",
+      "loopBars": "16",
+      "root": "A",
+      "flavour": "Ionian",
+      "scale": "A ionian",
+      "chord": "Amaj7",
+      "progression": "Amaj7\u2013A\u266dm7\u266d5\u2013F\u266fm7"
+    },
+    "groove-13": {
+      "bpm": "79",
+      "bars": "4",
+      "loopBars": "8",
+      "root": "A\u266d",
+      "flavour": "Phrygian",
+      "scale": "A\u266d phrygian",
+      "chord": "A\u266dm7",
+      "progression": "A\u266dm7\u2013Amaj7\u2013F\u266fm7\u2013Amaj7"
+    },
+    "groove-14": {
+      "bpm": "72",
+      "bars": "4",
+      "loopBars": "8",
+      "root": "D",
+      "flavour": "Phrygian",
+      "scale": "D phrygian",
+      "chord": "Dm7",
+      "progression": "Dm7\u2013Gm7\u2013E\u266dmaj7"
+    },
+    "groove-17": {
+      "bpm": "126",
+      "bars": "4",
+      "loopBars": "16",
+      "root": "D",
+      "flavour": "Lydian",
+      "scale": "D lydian",
+      "chord": "Dmaj7",
+      "progression": "Dmaj7\u2013Bm7\u2013E7"
+    },
+    "groove-18": {
+      "bpm": "96",
+      "bars": "4",
+      "loopBars": "16",
+      "root": "D",
+      "flavour": "Mixolydian",
+      "scale": "D mixolydian",
+      "chord": "D7",
+      "progression": "D7\u2013Bm7\u2013F\u266fm7\u266d5"
+    },
+    "groove-19": {
+      "bpm": "79",
+      "bars": "4",
+      "loopBars": "16",
+      "root": "C\u266f",
+      "flavour": "Aeolian",
+      "scale": "C\u266f aeolian",
+      "chord": "C\u266fm7",
+      "progression": "C\u266fm7\u2013A\u266dm7\u2013B7"
+    },
+    "groove-20": {
+      "bpm": "70",
+      "bars": "4",
+      "loopBars": "8",
+      "root": "E",
+      "flavour": "Phrygian",
+      "scale": "E phrygian",
+      "chord": "Em7",
+      "progression": "Em7\u2013Am7\u2013Fmaj7\u2013Dm7"
+    },
+    "groove-21": {
+      "bpm": "126",
+      "bars": "4",
+      "loopBars": "16",
+      "root": "C",
+      "flavour": "Ionian",
+      "scale": "C ionian",
+      "chord": "Cmaj7",
+      "progression": "Cmaj7\u2013Bm7\u266d5\u2013Dm7\u2013Bm7\u266d5"
+    },
+    "groove-22": {
+      "bpm": "106",
+      "bars": "4",
+      "loopBars": "16",
+      "root": "A",
+      "flavour": "Dorian",
+      "scale": "A dorian",
+      "chord": "Am7",
+      "progression": "Am7\u2013Cmaj7\u2013D7"
+    },
+    "groove-28": {
+      "bpm": "108",
+      "bars": "4",
+      "loopBars": "16",
+      "root": "A",
+      "flavour": "Harmonic major",
+      "scale": "A harmonic major",
+      "chord": "Amaj7",
+      "progression": "Amaj7\u2013A\u266ddim7\u2013Fdim7"
+    },
+    "groove-34": {
+      "bpm": "108",
+      "bars": "4",
+      "loopBars": "16",
+      "root": "B",
+      "flavour": "Phrygian dominant",
+      "scale": "B phrygian dominant",
+      "chord": "B7",
+      "progression": "B7\u2013EmMaj7\u2013Am7"
+    },
+    "groove-38": {
+      "bpm": "78",
+      "bars": "4",
+      "loopBars": "8",
+      "root": "E",
+      "flavour": "Harmonic minor",
+      "scale": "E harmonic minor",
+      "chord": "EmMaj7",
+      "progression": "EmMaj7\u2013B7\u2013Gmaj7\u266f5"
+    },
+    "groove-40": {
+      "bpm": "110",
+      "bars": "4",
+      "loopBars": "16",
+      "root": "E\u266d",
+      "flavour": "Phrygian dominant",
+      "scale": "E\u266d phrygian dominant",
+      "chord": "E\u266d7",
+      "progression": "E\u266d7\u2013Bmaj7\u266f5\u2013C\u266fm7\u2013Gdim7"
+    },
+    "groove-42": {
+      "bpm": "84",
+      "bars": "4",
+      "loopBars": "16",
+      "root": "E\u266d",
+      "flavour": "Blues",
+      "scale": "E\u266d blues",
+      "chord": "E\u266d7",
+      "progression": "E\u266d7\u2013B\u266d7\u2013A\u266d7\u2013B\u266d7"
+    },
+    "groove-44": {
+      "bpm": "81",
+      "bars": "4",
+      "loopBars": "16",
+      "root": "F\u266f",
+      "flavour": "Blues",
+      "scale": "F\u266f blues",
+      "chord": "F\u266f7",
+      "progression": "F\u266f7\u2013C\u266f7\u2013B7\u2013C\u266f7"
+    },
+    "groove-46": {
+      "bpm": "74",
+      "bars": "4",
+      "loopBars": "8",
+      "root": "F\u266f",
+      "flavour": "Harmonic minor",
+      "scale": "F\u266f harmonic minor",
+      "chord": "F\u266fmMaj7",
+      "progression": "F\u266fmMaj7\u2013A\u266dm7\u266d5\u2013Fdim7"
+    },
+    "groove-48": {
+      "bpm": "114",
+      "bars": "4",
+      "loopBars": "16",
+      "root": "E",
+      "flavour": "Harmonic major",
+      "scale": "E harmonic major",
+      "chord": "Emaj7",
+      "progression": "Emaj7\u2013AmMaj7\u2013Cdim7\u2013F\u266fm7\u266d5"
+    },
+    "groove-49": {
+      "bpm": "71",
+      "bars": "4",
+      "loopBars": "8",
+      "root": "G",
+      "flavour": "Melodic minor",
+      "scale": "G melodic minor",
+      "chord": "GmMaj7",
+      "progression": "GmMaj7\u2013Em7\u266d5\u2013C7"
+    },
+    "groove-50": {
+      "bpm": "114",
+      "bars": "4",
+      "loopBars": "16",
+      "root": "C\u266f",
+      "flavour": "Phrygian dominant",
+      "scale": "C\u266f phrygian dominant",
+      "chord": "C\u266f7",
+      "progression": "C\u266f7\u2013Amaj7\u266f5\u2013A\u266dm7\u266d5\u2013Dmaj7"
+    },
+    "groove-51": {
+      "bpm": "67",
+      "bars": "4",
+      "loopBars": "8",
+      "root": "C\u266f",
+      "flavour": "Lydian dominant",
+      "scale": "C\u266f lydian dominant",
+      "chord": "C\u266f7",
+      "progression": "C\u266f7\u2013Fm7\u266d5\u2013Bmaj7\u266f5"
+    },
+    "groove-52": {
+      "bpm": "86",
+      "bars": "4",
+      "loopBars": "16",
+      "root": "F",
+      "flavour": "Blues",
+      "scale": "F blues",
+      "chord": "F7",
+      "progression": "F7\u2013C7\u2013B\u266d7\u2013C7"
+    }
+  }
+}

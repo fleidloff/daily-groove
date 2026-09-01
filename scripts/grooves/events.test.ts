@@ -16,6 +16,7 @@ import {
   voiceLead,
 } from './events.ts'
 import { intBetween, pick, rngFor } from './rng.ts'
+import { readCatalogue } from './catalogue.ts'
 import { ROOTS } from './theory/notes.ts'
 import { allTemplates, templateById } from './templates/index.ts'
 import { buildHarmony, pitchClassesOf } from './theory/harmony.ts'
@@ -1113,7 +1114,7 @@ describe('buildEvents — ghosts and accents — R10, R11, R12', () => {
     expect(varied, 'hats of one metric class carry more than one velocity').toBe(true)
   })
 
-  it('leaves kick, snare, bass and comp reading from metric position — R12, AC11', () => {
+  it('leaves kick, snare and bass reading from metric position — R12, AC11', () => {
     for (const feel of allTemplates()) {
       const events = placed(dry(feel))
       for (const voice of ['kick', 'snare', 'bass'] as const) {
@@ -1131,30 +1132,42 @@ describe('buildEvents — ghosts and accents — R10, R11, R12', () => {
         }
       }
 
-      // The comp reads from metric position too, plus the one thing the hats'
-      // cycle is not: where a note sits in the voicing, so the top voice sings
-      // over the ones under it (R5, AC6). What must not vary is the shape — a
-      // chord struck on a given metric class is shaped the same way in every
-      // bar it falls in. A level says which voice of the chord this is, never
-      // how far along a cycle the bar is.
+      // The comp is no longer one of them, and this is where that shows.
+      //
+      // Feature-9's R12 read "kick, snare, bass and comp keep reading their
+      // accent from metric position alone", and this case asserted the strict
+      // form of it: a chord struck on a given metric class was shaped the same
+      // way in every bar it fell in. Feature-13's Epic 4 supersedes exactly
+      // that clause — the comp now carries `COMP_ACCENTS` — and the reason R12
+      // gave for the exemption survives it: what the backbeat has to stay
+      // loudest against is the hats and the snare, not the piano.
+      //
+      // What is asserted here instead is the half of the old claim that the
+      // curve does not touch: the chord's SHAPE is still the voice drop and
+      // nothing else, so a chord is never played flat and its top voice always
+      // sings over the ones under it (R5, AC6). How hard the whole chord is
+      // struck belongs to the curve, and the suite at the foot of this file
+      // holds it to varying.
       const struck = new Map<string, number[]>()
       for (const event of events) {
         if (event.voice !== 'comp') continue
         const key = `${event.bar}:${event.sixteenth}`
         struck.set(key, [...(struck.get(key) ?? []), event.velocity])
       }
-      const shapes = new Map<number, Set<string>>()
+      expect(struck.size, `${feel.id} never comps`).toBeGreaterThan(0)
       for (const [key, velocities] of struck) {
-        const step = Number(key.split(':')[1])
-        if (!shapes.has(step)) shapes.set(step, new Set())
-        shapes.get(step)!.add([...velocities].sort((a, b) => a - b).join(','))
-      }
-      expect(shapes.size, `${feel.id} never comps`).toBeGreaterThan(0)
-      for (const [step, shape] of shapes) {
-        expect(shape.size, `${feel.id} comp@${step}`).toBe(1)
-        const voices = [...shape][0].split(',')
-        expect(voices.length, `${feel.id} comp@${step}`).toBeGreaterThan(1)
-        expect(new Set(voices).size, `${feel.id} comp@${step} is flat`).toBe(voices.length)
+        const shape = [...velocities].sort((a, b) => a - b)
+        expect(shape.length, `${feel.id} comp@${key}`).toBeGreaterThan(1)
+        expect(new Set(shape).size, `${feel.id} comp@${key} is flat`).toBe(shape.length)
+        // Normalised on the top voice, the shape is `1 - COMP_VOICE_DROP × below`
+        // wherever the chord falls: the drop says which voice of the chord this
+        // is, and never how far along the cycle the pass is.
+        const top = shape[shape.length - 1]
+        const relative = shape.map((velocity) => velocity / top)
+        const expected = shape.map((_, i) => 1 - 0.12 * (shape.length - 1 - i))
+        for (let i = 0; i < relative.length; i += 1) {
+          expect(relative[i], `${feel.id} comp@${key} voice ${i + 1}`).toBeCloseTo(expected[i], 9)
+        }
       }
 
       // And the backbeat still lands above what surrounds it: in every bar the
@@ -1870,3 +1883,504 @@ describe('every template’s density band admits its own grooves', () => {
     })
   }
 })
+
+// Feature-13, Epic 4 — R1–R8, AC1–AC8, AC14. The comp stops being perfect.
+//
+// `velocityFor` is a pure function of metric position, so before this every
+// comp chord at a given step class was struck at one velocity forever: 0.72 on
+// a downbeat in bar 1 of pass 1 and 0.72 on a downbeat in bar 4 of pass 4,
+// give or take the template's ±9 % of noise. Noise around a constant is still,
+// to the ear, a constant. The hats were given `HAT_ACCENTS` for exactly this
+// reason in feature-9 and the comp — the voice carrying the harmony the player
+// is trying to name — was left out of that fix; `COMP_ACCENTS` is it.
+describe('buildEvents — the comp stops being perfect — R1, R2, R3, R4, R5, R6, R7, R8', () => {
+  /**
+   * The same feel with its slop turned off, so a velocity is exactly the one
+   * the event builder wrote — which is what AC2 asks for: the variation these
+   * cases read has to be the curve and not the template's ±9 % of noise.
+   *
+   * The swing stays on. The curve is indexed by a hit's position in the comp
+   * sequence rather than by its onset, so it has to survive a chord that has
+   * been pushed off the grid, and turning the swing off would hide that.
+   */
+  const dry = (feel: FeelTemplate = template): FeelTemplate => ({
+    ...feel,
+    humanize: { timingMs: 0, velocity: 0, lean: {}, driftDepth: 0 },
+  })
+
+  type Chord = {
+    bar: number
+    pass: number
+    sixteenth: number
+    /** The chord's notes, lowest first, with the velocity each was struck at. */
+    notes: { midi: number; timeSec: number; velocity: number }[]
+  }
+
+  /**
+   * The comp's chords, one entry per strike rather than per note.
+   *
+   * How hard a chord is struck is a property of the strike; `COMP_VOICE_DROP`
+   * is what separates the notes inside it. Reading the two apart is what makes
+   * the assertions below mean something — see `topOf`.
+   */
+  function compChords(feel: FeelTemplate = dry(), seed = 1): Chord[] {
+    const { events, music } = buildEvents({ id: 'g', uuid: UUID, template: feel.id, seed }, feel)
+    const stepSec = ((60 / music.bpm) * 4) / feel.subdivision
+    const groups = new Map<string, Chord>()
+
+    for (const event of events) {
+      if (event.voice !== 'comp') continue
+      const grid = Math.round(event.timeSec / stepSec)
+      const bar = Math.floor(grid / feel.subdivision)
+      const step = grid % feel.subdivision
+      const key = `${bar}:${step}`
+      const chord =
+        groups.get(key) ??
+        ({
+          bar,
+          pass: Math.floor(bar / 4),
+          // Read in sixteenths, so an eighth-note template's downbeats are
+          // read as downbeats rather than as off-sixteenths.
+          sixteenth: (step * 16) / feel.subdivision,
+          notes: [],
+        } satisfies Chord)
+      chord.notes.push({ midi: event.midi as number, timeSec: event.timeSec, velocity: event.velocity })
+      groups.set(key, chord)
+    }
+
+    for (const chord of groups.values()) chord.notes.sort((a, b) => a.midi - b.midi)
+    return [...groups.values()].sort((a, b) => a.bar - b.bar || a.sixteenth - b.sixteenth)
+  }
+
+  /**
+   * How hard a chord was struck, read off its top voice.
+   *
+   * The top voice and not the whole chord, because the notes *within* one chord
+   * already differ by `COMP_VOICE_DROP`: grouping raw comp events by step class
+   * would find several velocities in every group and go green while the defect
+   * stood. What was flat is the strike, and the top voice — the one the drop
+   * leaves untouched — is where it reads.
+   */
+  const topOf = (chord: Chord) => chord.notes[chord.notes.length - 1].velocity
+
+  /** Which of the three metric levels a sixteenth reads as. */
+  const classOf = (sixteenth: number) => sixteenth % 4
+
+  // --- Steps A1 and A2: the curve varies the comp within a bar -----------
+
+  it('strikes two chords of one step class differently — R1, R2, AC1, AC2', () => {
+    for (const feel of allTemplates()) {
+      for (let seed = 1; seed <= 6; seed += 1) {
+        const byClass = new Map<number, Set<number>>()
+        for (const chord of compChords(dry(feel), seed)) {
+          const key = classOf(chord.sixteenth)
+          if (!byClass.has(key)) byClass.set(key, new Set())
+          byClass.get(key)!.add(topOf(chord))
+        }
+
+        expect(byClass.size, `${feel.id}:${seed} never comps`).toBeGreaterThan(0)
+        for (const [step, struck] of byClass) {
+          expect(
+            struck.size,
+            `${feel.id}:${seed} strikes every comp chord at sixteenth ≡${step} the same way`,
+          ).toBeGreaterThan(1)
+        }
+      }
+    }
+  })
+
+  it('keeps the metric accent underneath the curve — R5, AC5', () => {
+    // Aggregated across the feels and a spread of seeds, because a single
+    // groove's comp pattern need not carry both a downbeat and an
+    // off-sixteenth: [2, 10] carries neither.
+    const mean = { 0: [0, 0], 1: [0, 0] } as Record<0 | 1, [number, number]>
+    for (const feel of allTemplates()) {
+      for (let seed = 1; seed <= 12; seed += 1) {
+        for (const chord of compChords(dry(feel), seed)) {
+          const bucket = chord.sixteenth % 4 === 0 ? 0 : chord.sixteenth % 2 === 1 ? 1 : null
+          if (bucket === null) continue
+          mean[bucket][0] += topOf(chord)
+          mean[bucket][1] += 1
+        }
+      }
+    }
+
+    expect(mean[0][1], 'no comp chord ever lands on a downbeat').toBeGreaterThan(0)
+    expect(mean[1][1], 'no comp chord ever lands on an off-sixteenth').toBeGreaterThan(0)
+    expect(
+      mean[0][0] / mean[0][1],
+      'the curve has replaced the metric accent rather than modulating it',
+    ).toBeGreaterThan(mean[1][0] / mean[1][1])
+  })
+
+  // --- Step A3: successive passes read the phrase differently ------------
+
+  it('reads the phrase from a different point in every pass — R4, R4a, AC4', () => {
+    for (const feel of allTemplates()) {
+      for (let seed = 1; seed <= 6; seed += 1) {
+        const chords = compChords(dry(feel), seed)
+        const takes = Array.from({ length: feel.passes }, () => [] as number[])
+        for (const chord of chords) takes[chord.pass].push(topOf(chord))
+
+        expect(takes[0].length, `${feel.id}:${seed} plays no comp in pass 1`).toBeGreaterThan(0)
+        // Adjacent passes are what an ear compares, and AC4 names pass 0
+        // against pass 1. Asserting every adjacent pair is the stronger claim
+        // and the cycle's length is chosen against the comp's hits per bar so
+        // that it holds — a cycle that divided the hit count would repeat in
+        // lockstep with the bar.
+        for (let pass = 1; pass < feel.passes; pass += 1) {
+          expect(
+            takes[pass].join(','),
+            `${feel.id}:${seed} plays pass ${pass + 1} exactly as it played pass ${pass}`,
+          ).not.toBe(takes[pass - 1].join(','))
+        }
+      }
+    }
+  })
+
+  // --- Step A4: the same seed renders the same velocities ----------------
+
+  it('renders the same velocities for the same template and seed — R3, AC3', () => {
+    for (const feel of allTemplates()) {
+      const velocities = (id: string) =>
+        buildEvents({ id, uuid: UUID, template: feel.id, seed: 5 }, feel)
+          .events.filter((event) => event.voice === 'comp')
+          .map((event) => event.velocity)
+
+      // A groove's identity is { template, seed }; its name is not part of it.
+      expect(velocities('again'), feel.id).toEqual(velocities('once'))
+    }
+  })
+
+  it('draws the rotation from the pass index, not from a generator — R4a, AC3', () => {
+    // The one way A3 could have been written that R3 forbids. A second seeded
+    // stream would still be deterministic, but `Math.random` is the reach that
+    // is easy to make and impossible to see in a velocity.
+    const original = Math.random
+    Math.random = () => {
+      throw new Error('buildEvents must not call Math.random')
+    }
+    try {
+      for (const feel of allTemplates()) {
+        expect(() =>
+          buildEvents({ id: 'g', uuid: UUID, template: feel.id, seed: 3 }, feel),
+        ).not.toThrow()
+      }
+    } finally {
+      Math.random = original
+    }
+  })
+
+  // --- Step A5: only the velocity moved ----------------------------------
+
+  /**
+   * Where the comp's notes fell before this epic: `timeSec/midi/durationSec`
+   * for every comp event of three catalogue grooves, one per line of four,
+   * captured from the pre-epic generator and committed.
+   *
+   * The curve belongs between the metric accent and the voice drop. Applied
+   * anywhere earlier it would reach the voicing; applied to the roll it would
+   * move an onset. This is what says it did neither — a fixture rather than a
+   * property, because "the harmony is untouched" is a claim about the code that
+   * used to be here, and only the old numbers can carry it.
+   */
+  const PRE_EPIC_COMP: Record<string, string> = {
+    // groove-01 — straight-funk, seed 1: 96 comp events
+    'groove-01': `
+      0.285552/64/0.571429 0.286533/67/0.571429 0.294199/70/0.571429 1.582443/64/0.571429
+      1.588972/67/0.571429 1.597130/70/0.571429 2.571989/62/0.571429 2.576707/67/0.571429
+      2.584438/70/0.571429 3.864413/62/0.571429 3.870854/67/0.571429 3.877295/70/0.571429
+      4.848683/62/0.571429 4.861803/65/0.571429 4.870749/69/0.571429 6.149957/62/0.571429
+      6.154649/65/0.571429 6.160537/69/0.571429 7.132169/64/0.571429 7.135677/69/0.571429
+      7.141287/72/0.571429 8.432420/64/0.571429 8.441472/69/0.571429 8.455354/72/0.571429
+      9.427778/64/0.571429 9.439054/67/0.571429 9.441806/70/0.571429 10.738620/64/0.571429
+      10.745413/67/0.571429 10.754196/70/0.571429 11.727640/62/0.571429 11.731584/67/0.571429
+      11.734532/70/0.571429 13.013102/62/0.571429 13.027325/67/0.571429 13.030179/70/0.571429
+      13.996767/62/0.571429 14.004748/65/0.571429 14.012691/69/0.571429 15.290332/62/0.571429
+      15.299103/65/0.571429 15.305148/69/0.571429 16.281017/64/0.571429 16.293239/69/0.571429
+      16.298546/72/0.571429 17.582964/64/0.571429 17.591935/69/0.571429 17.595311/72/0.571429
+      18.578041/64/0.571429 18.578928/67/0.571429 18.582756/70/0.571429 19.876307/64/0.571429
+      19.883188/67/0.571429 19.887746/70/0.571429 20.864387/62/0.571429 20.868356/67/0.571429
+      20.875838/70/0.571429 22.162194/62/0.571429 22.168506/67/0.571429 22.175352/70/0.571429
+      23.145851/62/0.571429 23.153261/65/0.571429 23.154924/69/0.571429 24.435445/62/0.571429
+      24.444057/65/0.571429 24.452367/69/0.571429 25.423041/64/0.571429 25.432560/69/0.571429
+      25.441063/72/0.571429 26.731155/64/0.571429 26.737156/69/0.571429 26.742265/72/0.571429
+      27.717879/64/0.571429 27.724485/67/0.571429 27.735654/70/0.571429 29.026403/64/0.571429
+      29.033197/67/0.571429 29.041293/70/0.571429 30.016127/62/0.571429 30.022553/67/0.571429
+      30.026286/70/0.571429 31.304887/62/0.571429 31.309488/67/0.571429 31.315496/70/0.571429
+      32.282015/62/0.571429 32.290534/65/0.571429 32.297205/69/0.571429 33.578451/65/0.571429
+      33.579412/62/0.571429 33.587897/69/0.571429 34.560506/64/0.571429 34.564034/69/0.571429
+      34.570933/72/0.571429 35.857904/64/0.571429 35.867043/69/0.571429 35.874373/72/0.571429
+    `,
+    // groove-13 — half-time, seed 11: 72 comp events
+    'groove-13': `
+      0.384345/66/0.759494 0.385894/75/0.759494 0.388263/71/0.759494 1.146819/66/0.759494
+      1.149309/75/0.759494 1.154350/71/0.759494 1.907121/66/0.759494 1.909208/71/0.759494
+      1.919955/75/0.759494 3.427186/68/0.759494 3.435567/73/0.759494 3.436062/64/0.759494
+      4.193042/64/0.759494 4.194258/68/0.759494 4.202796/73/0.759494 4.956091/64/0.759494
+      4.956977/68/0.759494 4.961363/73/0.759494 6.466356/64/0.759494 6.466732/69/0.759494
+      6.470614/73/0.759494 7.218001/64/0.759494 7.224097/69/0.759494 7.226081/73/0.759494
+      7.970871/64/0.759494 7.980302/69/0.759494 7.983273/73/0.759494 9.492969/64/0.759494
+      9.497327/68/0.759494 9.500611/73/0.759494 10.250154/68/0.759494 10.256560/64/0.759494
+      10.259078/73/0.759494 11.013776/68/0.759494 11.014182/64/0.759494 11.014512/73/0.759494
+      12.537271/71/0.759494 12.539263/66/0.759494 12.548154/75/0.759494 13.304834/71/0.759494
+      13.308253/66/0.759494 13.315976/75/0.759494 14.067153/66/0.759494 14.071964/75/0.759494
+      14.075983/71/0.759494 15.583700/64/0.759494 15.593965/68/0.759494 15.599279/73/0.759494
+      16.351719/64/0.759494 16.353995/68/0.759494 16.357000/73/0.759494 17.107990/64/0.759494
+      17.109683/73/0.759494 17.110626/68/0.759494 18.606926/73/0.759494 18.609309/64/0.759494
+      18.610682/69/0.759494 19.362522/64/0.759494 19.368339/69/0.759494 19.378850/73/0.759494
+      20.121384/64/0.759494 20.125616/69/0.759494 20.126401/73/0.759494 21.636553/64/0.759494
+      21.638992/68/0.759494 21.644882/73/0.759494 22.390063/73/0.759494 22.390148/64/0.759494
+      22.393117/68/0.759494 23.149834/68/0.759494 23.152783/64/0.759494 23.152803/73/0.759494
+    `,
+    // groove-49 — open-ballad, seed 1472946167: 48 comp events
+    'groove-49': `
+      0.003880/66/0.845070 0.007331/70/0.845070 0.008404/74/0.845070 2.126713/66/0.845070
+      2.135768/70/0.845070 2.141621/74/0.845070 3.392851/67/0.845070 3.399547/74/0.845070
+      3.399888/70/0.845070 5.500364/67/0.845070 5.506182/70/0.845070 5.510812/74/0.845070
+      6.760266/64/0.845070 6.767001/67/0.845070 6.777090/70/0.845070 8.862789/67/0.845070
+      8.863034/64/0.845070 8.869027/70/0.845070 10.123048/66/0.845070 10.128947/70/0.845070
+      10.130344/74/0.845070 12.240189/66/0.845070 12.253010/70/0.845070 12.266568/74/0.845070
+      13.521261/66/0.845070 13.527598/70/0.845070 13.532574/74/0.845070 15.649916/66/0.845070
+      15.652669/70/0.845070 15.661202/74/0.845070 16.922091/67/0.845070 16.924296/74/0.845070
+      16.927008/70/0.845070 19.016919/67/0.845070 19.027932/70/0.845070 19.035665/74/0.845070
+      20.281065/64/0.845070 20.292303/67/0.845070 20.298421/70/0.845070 22.395210/64/0.845070
+      22.397102/67/0.845070 22.407573/70/0.845070 23.653605/66/0.845070 23.661604/70/0.845070
+      23.668175/74/0.845070 25.780410/66/0.845070 25.786141/74/0.845070 25.786661/70/0.845070
+    `,
+  }
+
+  it('moves the velocity and nothing else — R6, AC6', () => {
+    const catalogue = readCatalogue()
+    for (const [id, committed] of Object.entries(PRE_EPIC_COMP)) {
+      const spec = catalogue.find((candidate) => candidate.id === id)
+      expect(spec, `${id} has left the catalogue`).toBeDefined()
+      const { events } = buildEvents(spec!, templateById(spec!.template))
+      const rendered = events
+        .filter((event) => event.voice === 'comp')
+        .map(
+          (event) =>
+            `${event.timeSec.toFixed(6)}/${event.midi}/${event.durationSec.toFixed(6)}`,
+        )
+
+      expect(rendered.join(' '), id).toBe(committed.trim().split(/\s+/).join(' '))
+    }
+  })
+
+  it('still rolls the chord and lets the top voice sing — R8, AC8', () => {
+    for (const feel of allTemplates()) {
+      for (const chord of compChords(dry(feel))) {
+        const where = `${feel.id} bar ${chord.bar + 1} @${chord.sixteenth}`
+        expect(chord.notes.length, where).toBeGreaterThan(1)
+
+        for (let i = 1; i < chord.notes.length; i += 1) {
+          // Each voice below the top is struck softer than the one above it,
+          // and arrives a hair after it: the drop and the roll, both still
+          // applied on top of whatever the curve asked for.
+          expect(chord.notes[i].velocity, `${where} buries voice ${i + 1}`).toBeGreaterThan(
+            chord.notes[i - 1].velocity,
+          )
+          expect(chord.notes[i].timeSec, `${where} stamps the chord`).toBeGreaterThan(
+            chord.notes[i - 1].timeSec,
+          )
+        }
+      }
+    }
+  })
+
+  /**
+   * What each groove's words were before this epic: `root|flavour|scale|chord|
+   * progression`, captured from the pre-epic generator for all thirty.
+   *
+   * The comp's velocity is drawn from no generator, so nothing here should be
+   * able to move — which is exactly why it is worth pinning. A draw slipped
+   * into `musicRng` re-keys the whole catalogue silently, and eighteen
+   * committed answers are derived from that stream in that order.
+   */
+  const PRE_EPIC_MUSIC: Record<string, string> = {
+    'groove-01': 'C|mixolydian|C mixolydian|C7|C7–Em7♭5–B♭maj7–Fmaj7',
+    'groove-02': 'E|dorian|E dorian|Em7|Em7–Bm7–C♯m7♭5',
+    'groove-03': 'E♭|dorian|E♭ dorian|E♭m7|E♭m7–A♭7–Fm7',
+    'groove-04': 'E|mixolydian|E mixolydian|E7|E7–Amaj7–Bm7–Amaj7',
+    'groove-07': 'G|aeolian|G aeolian|Gm7|Gm7–B♭maj7–Cm7',
+    'groove-08': 'F♯|aeolian|F♯ aeolian|F♯m7|F♯m7–Amaj7–A♭m7♭5',
+    'groove-09': 'C♯|lydian|C♯ lydian|C♯maj7|C♯maj7–E♭7–Fm7–B♭m7',
+    'groove-10': 'F|lydian|F lydian|Fmaj7|Fmaj7–Am7–G7–Dm7',
+    'groove-11': 'B|ionian|B ionian|Bmaj7|Bmaj7–Emaj7–C♯m7',
+    'groove-12': 'A|ionian|A ionian|Amaj7|Amaj7–A♭m7♭5–F♯m7',
+    'groove-13': 'A♭|phrygian|A♭ phrygian|A♭m7|A♭m7–Amaj7–F♯m7–Amaj7',
+    'groove-14': 'D|phrygian|D phrygian|Dm7|Dm7–Gm7–E♭maj7',
+    'groove-17': 'D|lydian|D lydian|Dmaj7|Dmaj7–Bm7–E7',
+    'groove-18': 'D|mixolydian|D mixolydian|D7|D7–Bm7–F♯m7♭5',
+    'groove-19': 'C♯|aeolian|C♯ aeolian|C♯m7|C♯m7–A♭m7–B7',
+    'groove-20': 'E|phrygian|E phrygian|Em7|Em7–Am7–Fmaj7–Dm7',
+    'groove-21': 'C|ionian|C ionian|Cmaj7|Cmaj7–Bm7♭5–Dm7–Bm7♭5',
+    'groove-22': 'A|dorian|A dorian|Am7|Am7–Cmaj7–D7',
+    'groove-28': 'A|harmonic-major|A harmonic major|Amaj7|Amaj7–A♭dim7–Fdim7',
+    'groove-34': 'B|phrygian-dominant|B phrygian dominant|B7|B7–EmMaj7–Am7',
+    'groove-38': 'E|harmonic-minor|E harmonic minor|EmMaj7|EmMaj7–B7–Gmaj7♯5',
+    'groove-40': 'E♭|phrygian-dominant|E♭ phrygian dominant|E♭7|E♭7–Bmaj7♯5–C♯m7–Gdim7',
+    'groove-42': 'E♭|blues|E♭ blues|E♭7|E♭7–B♭7–A♭7–B♭7',
+    'groove-44': 'F♯|blues|F♯ blues|F♯7|F♯7–C♯7–B7–C♯7',
+    'groove-46': 'F♯|harmonic-minor|F♯ harmonic minor|F♯mMaj7|F♯mMaj7–A♭m7♭5–Fdim7',
+    'groove-48': 'E|harmonic-major|E harmonic major|Emaj7|Emaj7–AmMaj7–Cdim7–F♯m7♭5',
+    'groove-49': 'G|melodic-minor|G melodic minor|GmMaj7|GmMaj7–Em7♭5–C7',
+    'groove-50': 'C♯|phrygian-dominant|C♯ phrygian dominant|C♯7|C♯7–Amaj7♯5–A♭m7♭5–Dmaj7',
+    'groove-51': 'C♯|lydian-dominant|C♯ lydian dominant|C♯7|C♯7–Fm7♭5–Bmaj7♯5',
+    'groove-52': 'F|blues|F blues|F7|F7–C7–B♭7–C7',
+  }
+
+  it('names the same music for every groove in the catalogue — R6, AC14', () => {
+    const catalogue = readCatalogue()
+    expect(catalogue.map((spec) => spec.id).sort()).toEqual(Object.keys(PRE_EPIC_MUSIC).sort())
+
+    for (const spec of catalogue) {
+      const { music } = buildEvents(spec, templateById(spec.template))
+      const words = [music.root, music.flavour, music.scale, music.chord, music.progression]
+      expect(words.join('|'), spec.id).toBe(PRE_EPIC_MUSIC[spec.id])
+    }
+  })
+
+  // --- Step A6: the comp did not get louder ------------------------------
+
+  /**
+   * The mean comp velocity each feel rendered before this epic, at seed 1 and
+   * with the shipped template — slop included, because the mix is balanced
+   * against what actually ships.
+   *
+   * R7 is the constraint that makes `COMP_ACCENTS` a curve rather than a
+   * re-level: the easy way to write a cycle is with 1 as its maximum and
+   * everything else below, which quietly turns the comp down in every template
+   * and leaves the six `gain` tables describing a balance that no longer
+   * exists. `COMP_ACCENTS` averages exactly 1, and it averages 1 over the
+   * windows the comp's own hit counts read from it as well — see the constant's
+   * doc comment.
+   */
+  const PRE_EPIC_MEAN_VELOCITY: Record<string, number> = {
+    'straight-funk': 0.498027,
+    shuffle: 0.546318,
+    'bright-straight': 0.589771,
+    'half-time': 0.544377,
+    'open-ballad': 0.546818,
+    'swung-sixteenth': 0.545409,
+  }
+
+  /** The declared tolerance of AC7. Two per cent is inaudible; ten is a re-level. */
+  const MEAN_TOLERANCE = 0.02
+
+  it('varies the comp around its centre rather than raising it — R7, AC7', () => {
+    for (const feel of allTemplates()) {
+      const before = PRE_EPIC_MEAN_VELOCITY[feel.id]
+      expect(before, `${feel.id} has no pre-epic mean committed`).toBeDefined()
+
+      const comp = buildEvents(
+        { id: 'g', uuid: UUID, template: feel.id, seed: 1 },
+        feel,
+      ).events.filter((event) => event.voice === 'comp')
+      expect(comp.length, `${feel.id} never comps`).toBeGreaterThan(0)
+      const after = comp.reduce((sum, event) => sum + event.velocity, 0) / comp.length
+
+      expect(
+        Math.abs(after / before - 1),
+        `${feel.id} comps at ${after.toFixed(4)} where it used to comp at ${before}`,
+      ).toBeLessThan(MEAN_TOLERANCE)
+    }
+  })
+})
+
+/**
+ * Feature-13 — the bongo gets a part.
+ *
+ * The pack gained two bongo voices; these are the assertions that they are a
+ * *part* rather than a declaration nothing plays, and that adding them cost the
+ * five feels that do not carry one exactly nothing.
+ */
+describe('the bongo — feature-13', () => {
+  const BONGO_FEEL = 'bright-straight'
+
+  function eventsFor(templateId: string) {
+    const spec = readCatalogue().find((g) => g.template === templateId)!
+    const template = templateById(templateId)
+    return { ...buildEvents(spec, template), template, spec }
+  }
+
+  it('sounds on the one feel that carries it, on both drums', () => {
+    const { events } = eventsFor(BONGO_FEEL)
+    const high = events.filter((e) => e.voice === 'bongoHigh')
+    const low = events.filter((e) => e.voice === 'bongoLow')
+    expect(high.length, 'no high bongo').toBeGreaterThan(0)
+    expect(low.length, 'no low bongo').toBeGreaterThan(0)
+    // One drum struck repeatedly is a hand drum; the interplay is the bongo.
+    const total = high.length + low.length
+    expect(high.length / total).toBeLessThan(0.8)
+    expect(low.length / total).toBeLessThan(0.8)
+  })
+
+  it('costs the feels that do not carry it exactly nothing', () => {
+    // Its own generator stream is what makes this true — a pick inserted into
+    // the rhythm stream would have re-rolled all thirty grooves.
+    for (const template of allTemplates()) {
+      if (template.id === BONGO_FEEL) continue
+      const { events } = eventsFor(template.id)
+      expect(
+        events.some((e) => e.voice === 'bongoHigh' || e.voice === 'bongoLow'),
+        `${template.id} grew a bongo it never asked for`,
+      ).toBe(false)
+    }
+  })
+
+  it('is a colour rather than a pulse', () => {
+    const { events, template } = eventsFor(BONGO_FEEL)
+    const bongo = events.filter((e) => e.voice === 'bongoHigh' || e.voice === 'bongoLow')
+    const bars = new Set(bongo.map((e) => Math.floor(e.timeSec / (240 / template.tempoRange[0] / 4))))
+    // Sparse: nothing like a hit on every subdivision of every bar.
+    expect(bongo.length / Math.max(bars.size, 1)).toBeLessThan(template.subdivision / 2)
+
+    // And off the strong positions, where the kit is already speaking.
+    const stepSec = 60 / 100 / 4
+    const onStrong = bongo.filter((e) => Math.round(e.timeSec / stepSec) % 4 === 0).length
+    expect(onStrong).toBeLessThan(bongo.length - onStrong)
+  })
+
+  it('never marks every subdivision of a bar', () => {
+    // Asserted on the render rather than on the pool, so the pool stays private
+    // and the claim is about what a listener actually gets.
+    const { events, template, music } = eventsFor(BONGO_FEEL)
+    const secPerBar = (60 / music.bpm) * 4
+    const perBar = new Map<number, number>()
+    for (const e of events) {
+      if (!e.voice.startsWith('bongo')) continue
+      const bar = Math.floor(e.timeSec / secPerBar)
+      perBar.set(bar, (perBar.get(bar) ?? 0) + 1)
+    }
+    expect(perBar.size, 'the bongo plays no bar').toBeGreaterThan(0)
+    for (const [bar, count] of perBar) {
+      expect(count, `bar ${bar} is dense enough to be a pulse`).toBeLessThan(template.subdivision)
+    }
+  })
+
+  it('is not struck flat', () => {
+    const template = { ...templateById(BONGO_FEEL) }
+    template.humanize = { ...template.humanize, velocity: 0 }
+    const spec = readCatalogue().find((g) => g.template === BONGO_FEEL)!
+    const events = buildEvents(spec, template).events.filter(
+      (e) => e.voice === 'bongoHigh' || e.voice === 'bongoLow',
+    )
+    // With humanize off, any variation left is the accent cycle's doing.
+    expect(new Set(events.map((e) => e.velocity)).size).toBeGreaterThan(1)
+  })
+
+  it('renders the same figure for the same seed', () => {
+    const a = eventsFor(BONGO_FEEL).events.filter((e) => e.voice.startsWith('bongo'))
+    const b = eventsFor(BONGO_FEEL).events.filter((e) => e.voice.startsWith('bongo'))
+    expect(a.map((e) => [e.timeSec, e.velocity])).toEqual(b.map((e) => [e.timeSec, e.velocity]))
+  })
+
+  it('is struck softer than the snare, because a hand is not a stick', () => {
+    const { events } = eventsFor(BONGO_FEEL)
+    const loudest = (prefix: string) =>
+      Math.max(...events.filter((e) => e.voice.startsWith(prefix)).map((e) => e.velocity))
+    expect(loudest('bongo')).toBeLessThan(loudest('snare'))
+  })
+})
+

@@ -1,13 +1,20 @@
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
+import { buildEvents } from './events.ts'
 import { loadPack } from './pack.ts'
+import { readCatalogue } from './catalogue.ts'
+import { templateById } from './templates/index.ts'
 import { placeholderPack } from './testing/placeholderPack.ts'
 import type { NoteEvent, PackDeclaration, Pcm, SamplePack, VoiceName } from './types.ts'
 import { renderVoices } from './voices.ts'
 
 const SAMPLE_RATE = 44100
 
-/** Events are written by hand: this track never depends on the music stage. */
+/**
+ * Events are written by hand, so the cases that use them never depend on the
+ * music stage. The one suite that does is at the foot of this file, and says
+ * why.
+ */
 const events: NoteEvent[] = [
   { voice: 'kick', timeSec: 0, durationSec: 0.5, velocity: 1 },
   { voice: 'bass', timeSec: 0.5, durationSec: 0.5, velocity: 1, midi: 40 },
@@ -739,5 +746,260 @@ describe('a closed hat chokes an open one', () => {
     ])
 
     expect(rms(track.pcm, 0.45, 0.6)).toBeGreaterThan(0)
+  })
+})
+
+/**
+ * Feature-13, Epic 4, Track B — R9, R10, R11, R11a, R11b, R11c, AC9, AC10,
+ * AC13, AC13a, AC13b.
+ *
+ * The comp was given a velocity curve, and the pack it plays through declares
+ * eleven sampled notes with three velocity layers and a single alternate each.
+ * That is a ceiling, and the epic's whole second half is establishing where it
+ * sits: a curve that spends its range inside one layer buys nothing, and one
+ * that reaches past what a layer can be scaled to is asking the pack for a
+ * dynamic it does not hold.
+ *
+ * These are the only cases in this file that read the music stage. Everything
+ * above writes its events by hand, and rightly — but "can three layers express
+ * this curve" is a question about the two stages together, and hand-built
+ * velocities would only be a guess at what `events.ts` actually writes.
+ */
+describe('the comp’s three layers against its curve', () => {
+  const samplesDir = fileURLToPath(new URL('./samples', import.meta.url))
+
+  /**
+   * Only which layer `pack.get` hands back matters here, so no file is ever
+   * decoded: a stub decoder stands in for ffmpeg, exactly as the pitched-
+   * register case above does.
+   */
+  const stubDecoder = async (): Promise<Pcm> => ({
+    sampleRate: SAMPLE_RATE,
+    left: new Float32Array(64).fill(0.5),
+    right: new Float32Array(64).fill(0.5),
+  })
+
+  /** The comp's declared velocity bands, read off the committed pack. */
+  function compBands(declaration: PackDeclaration): number[] {
+    const notes = declaration.voices.comp?.notes ?? []
+    expect(notes.length, 'the comp declares no sampled notes').toBeGreaterThan(0)
+    const bands = notes.map((note) => note.layers.map((layer) => layer.maxVelocity).join(','))
+    // One set of bands for the whole voice, or "which layer" would mean a
+    // different thing at different pitches and nothing below would be readable.
+    expect(new Set(bands).size, 'the comp’s notes declare different bands').toBe(1)
+    return notes[0].layers.map((layer) => layer.maxVelocity)
+  }
+
+  /**
+   * The velocity a layer's samples stand for: the midpoint of the band it
+   * covers, which is what `pack.ts` falls back to when none is declared. It is
+   * the number `gainFor` scales relative to.
+   */
+  const nominalsOf = (bands: number[]) =>
+    bands.map((ceiling, i) => ((i > 0 ? bands[i - 1] : 0) + ceiling) / 2)
+
+  /** Every comp event the catalogue renders, with the groove it came from. */
+  function catalogueComp() {
+    return readCatalogue().map((spec) => {
+      const feel = templateById(spec.template)
+      const { events, music } = buildEvents(spec, feel)
+      return {
+        id: spec.id,
+        template: spec.template,
+        music,
+        feel,
+        events,
+        comp: events.filter((event) => event.voice === 'comp'),
+      }
+    })
+  }
+
+  // Step B1 — R9, AC10
+  it('spreads the curve across more than one velocity layer', async () => {
+    const real = await loadPack(samplesDir, stubDecoder)
+    const bands = compBands(real.describe())
+    const nominals = nominalsOf(bands)
+    const layerOf = new Map(nominals.map((nominal, i) => [nominal, i]))
+
+    const served: number[] = []
+    const watched: SamplePack = {
+      ...real,
+      get(voice: VoiceName, opts) {
+        const sample = real.get(voice, opts)
+        if (voice === 'comp' && sample) served.push(layerOf.get(sample.nominalVelocity) ?? -1)
+        return sample
+      },
+    }
+
+    for (const groove of catalogueComp()) {
+      renderVoices(groove.events, watched, SAMPLE_RATE, {
+        id: groove.id,
+        bars: groove.music.loopBars,
+        bpm: groove.music.bpm,
+        passes: groove.music.loopBars / groove.music.bars,
+      })
+    }
+
+    expect(served.length, 'the catalogue rendered no comp events').toBeGreaterThan(0)
+    const counts = bands.map((_, layer) => served.filter((chosen) => chosen === layer).length)
+    const shares = counts.map((count) => count / served.length)
+
+    // R9 asks for the distribution to be REPORTED, not only asserted: a curve
+    // that fails this needs to know which way it missed.
+    console.log(
+      `comp layer distribution over ${served.length} hits: ` +
+        counts
+          .map((count, i) => `≤${bands[i]} ${count} (${(100 * shares[i]).toFixed(1)}%)`)
+          .join('  '),
+    )
+
+    expect(counts.filter((count) => count > 0).length, 'the curve sits inside one layer').toBeGreaterThan(1)
+    expect(Math.max(...shares), 'one layer takes almost every comp hit').toBeLessThanOrEqual(0.9)
+  })
+
+  /**
+   * The gain ceiling `voices.ts` clamps at, measured rather than restated.
+   *
+   * `MAX_LAYER_GAIN` is private to that module and this epic may not touch it,
+   * so the number is read off the renderer instead: one hit at full velocity
+   * against a layer that stands for a hit at 0.05 asks for twenty times what it
+   * was recorded at, and the level that comes back is whatever the clamp
+   * allows. Writing the constant out again here would let the two drift apart
+   * with nothing to notice.
+   */
+  function measuredClamp(): number {
+    const flat: Pcm = {
+      sampleRate: SAMPLE_RATE,
+      left: new Float32Array(64).fill(1),
+      right: new Float32Array(64).fill(1),
+    }
+    const [track] = renderVoices(
+      [{ voice: 'comp', timeSec: 0, durationSec: 0.001, velocity: 1, midi: 60 }],
+      {
+        id: 'clamp',
+        describe: () => ({ id: 'clamp', sampleRate: SAMPLE_RATE, voices: {} }),
+        get: () => ({ pcm: flat, nominalVelocity: 0.05 }),
+      },
+      SAMPLE_RATE,
+    )
+    return peak(track.pcm.left)
+  }
+
+  // Step B2 — R10, R11, R11b, AC9, AC13a
+  it('carries the shades between layers on the gain, and stays under the clamp', async () => {
+    const bands = compBands((await loadPack(samplesDir, stubDecoder)).describe())
+    const nominals = nominalsOf(bands)
+    const clamp = measuredClamp()
+    expect(clamp, 'the renderer applies no ceiling at all').toBeGreaterThan(1)
+
+    const gains = new Set<number>()
+    let highest = { gain: 0, velocity: 0, where: '' }
+
+    for (const groove of catalogueComp()) {
+      // The same arithmetic `pack.ts` does — the first layer whose ceiling
+      // covers the hit, scaled relative to what that layer stands for.
+      for (const event of groove.comp) {
+        const layer = bands.findIndex((ceiling) => event.velocity <= ceiling)
+        const nominal = nominals[layer < 0 ? nominals.length - 1 : layer]
+        const gain = event.velocity / nominal
+        gains.add(Number(gain.toFixed(9)))
+        if (gain > highest.gain) {
+          highest = { gain, velocity: event.velocity, where: groove.id }
+        }
+      }
+    }
+
+    // R10, AC9. The clamp is where a dynamic stops being a dynamic and starts
+    // being distortion; a curve tuned until it hits it has been tuned too far.
+    expect(
+      highest.gain,
+      `${highest.where} asks its layer for ${highest.gain.toFixed(4)}× at velocity ` +
+        `${highest.velocity.toFixed(4)}`,
+    ).toBeLessThan(clamp)
+
+    // R11, AC13a. Three layers, three levels — if the gain were doing nothing,
+    // that is all the catalogue would hold. It holds thousands, which is the
+    // shades the layers cannot express being carried by `gainFor` instead.
+    expect(gains.size, 'the comp plays at three levels, one per layer').toBeGreaterThan(3)
+  })
+
+  // Step B3 — R11c, AC13b
+  it('puts no step at a layer boundary, however wide the curve reaches', async () => {
+    const real = await loadPack(samplesDir, stubDecoder)
+    const bands = compBands(real.describe())
+    const nominals = nominalsOf(bands)
+
+    /**
+     * A pack whose recordings sit at exactly the level their layer stands for,
+     * as a real one does. `placeholderPack` cannot stand in: its synthesized
+     * levels are compressed rather than proportional to the band, so no scaling
+     * rule makes its layers meet.
+     */
+    const served: number[] = []
+    const recorded: SamplePack = {
+      id: 'recorded-comp',
+      describe: () => ({ id: 'recorded-comp', sampleRate: SAMPLE_RATE, voices: {} }),
+      get(_voice, opts) {
+        const found = bands.findIndex((ceiling) => opts.velocity <= ceiling)
+        const at = found < 0 ? bands.length - 1 : found
+        served.push(at)
+        return {
+          pcm: {
+            sampleRate: SAMPLE_RATE,
+            left: new Float32Array(64).fill(nominals[at]),
+            right: new Float32Array(64).fill(nominals[at]),
+          },
+          nominalVelocity: nominals[at],
+        }
+      },
+    }
+
+    const levelAt = (velocity: number) =>
+      peak(
+        renderVoices(
+          [{ voice: 'comp', timeSec: 0, durationSec: 0.001, velocity, midi: 60 }],
+          recorded,
+          SAMPLE_RATE,
+        )[0].pcm.left,
+      )
+
+    // A hair, and no more: wide enough that the two land in different layers,
+    // narrow enough that a player could not hear the difference in velocity.
+    const HAIR = 1e-6
+
+    for (const boundary of bands.slice(0, -1)) {
+      served.length = 0
+      const under = levelAt(boundary)
+      const over = levelAt(boundary + HAIR)
+
+      // The sweep has to cross, or it proves nothing.
+      expect(new Set(served).size, `velocity ${boundary} never changes layer`).toBe(2)
+      expect(
+        Math.abs(over / under - 1),
+        `a step at the ${boundary} boundary: ${under.toFixed(6)} then ${over.toFixed(6)}`,
+      ).toBeLessThan(0.01)
+    }
+  })
+
+  // Step B4 — R11a, AC13
+  it('asks the committed pack for nothing it does not already declare', async () => {
+    const declaration = (await loadPack(samplesDir, stubDecoder)).describe()
+    const notes = declaration.voices.comp?.notes ?? []
+
+    // The shape the curve was tuned against, read off the pack rather than
+    // restated: eleven sampled notes, three velocity layers, one alternate per
+    // layer. AC13 itself — that no file under `samples/` and no line of
+    // `pack.json` changed in this epic — is a claim about the diff and is
+    // checked as one in review. A committed hash here would only collide with
+    // Epic 1, which legitimately owns that file in its own wave.
+    expect(notes.length, 'the comp’s sampled notes changed under this epic').toBe(11)
+    for (const note of notes) {
+      expect(note.layers.map((layer) => layer.maxVelocity), `comp MIDI ${note.midi}`).toEqual([
+        0.45, 0.8, 1,
+      ])
+      for (const layer of note.layers) {
+        expect(layer.files.length, `comp MIDI ${note.midi}`).toBe(1)
+      }
+    }
   })
 })

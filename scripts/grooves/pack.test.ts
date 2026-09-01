@@ -285,7 +285,7 @@ describe('the committed pack’s percussion', () => {
   }, 120_000)
 
   // AC2 — the toms are the same library, and the same drum family, as the snare.
-  it('records a VCSL provenance entry for every tom file, naming the snare’s source', () => {
+  it('records a provenance entry for every tom file, naming the snare’s source', () => {
     const recorded = new Map(committedProvenance.samples.map((s) => [s.file, s]))
     const snare = recorded.get(filesOf('snare')[0])!
     expect(snare, 'the snare has no provenance entry to compare against').toBeDefined()
@@ -295,24 +295,33 @@ describe('the committed pack’s percussion', () => {
         const entry = recorded.get(file)
         expect(entry, `${file} is in the pack but not in provenance.json`).toBeDefined()
         expect(entry!.source, `${file} names a different library than the snare`).toBe(snare.source)
-        expect(entry!.licence).toBe('CC0')
-        // Same VCSL section as the snare: struck membranophones, not a synth
-        // and not a hand percussion sample standing in for a tom.
-        expect(entry!.sourceFile).toMatch(/^Membranophones\/Struck Membranophones\/Tom [12]\//)
+        expect(entry!.licence).toBe('CC-BY-4.0')
+        // Same kit as the snare - one drummer, one session, one room - rather
+        // than a hand percussion sample standing in for a tom.
+        expect(entry!.sourceFile).toMatch(/^samples\/Tom\d\//)
       }
     }
   })
 
+  /**
+   * Still two drums and not one pitched twice — the reason `VoiceName` declares
+   * a high and a low tom and no invented middle. MuldjordKit has four, so the
+   * two chosen are a rack tom and the floor tom: the widest real interval the
+   * kit holds.
+   */
   it('takes the high tom and the low tom from different drums', () => {
     const upstream = (voice: VoiceName) =>
       new Set(
         filesOf(voice).map(
           (file) =>
-            committedProvenance.samples.find((s) => s.file === file)!.sourceFile.split('/')[2],
+            committedProvenance.samples.find((s) => s.file === file)!.sourceFile.split('/')[1],
         ),
       )
-    expect([...upstream('tomHigh')]).toEqual(['Tom 1'])
-    expect([...upstream('tomLow')]).toEqual(['Tom 2'])
+    const high = [...upstream('tomHigh')]
+    const low = [...upstream('tomLow')]
+    expect(high.length, 'tomHigh mixes drums').toBe(1)
+    expect(low.length, 'tomLow mixes drums').toBe(1)
+    expect(high[0], 'the two toms are the same drum').not.toBe(low[0])
   })
 })
 
@@ -612,48 +621,53 @@ describe('the committed pack’s comp', () => {
 })
 
 describe('the committed pack’s rim', () => {
-  it('is the cross-stick of the snare already in the pack, and no woodblock survives', () => {
+  it('is a quieter stroke of the snare already in the pack, and no woodblock survives', () => {
     const files = filesOf('rim')
     expect(files.length, 'rim declares no files').toBeGreaterThan(0)
     for (const file of files) {
-      expect(file, `${file} is not a cross-stick sample`).toMatch(/^rim\/Snare2_stick_/)
+      expect(file, `${file} is not a snare-derived sample`).toMatch(/^rim\/Muldjord_rim_/)
     }
     expect(readdirSync(join(SAMPLES, 'rim')).sort()).toEqual(
       files.map((file) => file.slice('rim/'.length)).sort(),
     )
   })
 
+  /**
+   * The rim and the snare now come off the same drum in the same session, which
+   * the VCSL cross-stick never did: it was a different snare in a different
+   * room, and the coherence this test asserts was aspirational. It is now
+   * literal - both are MuldjordKit's one snare.
+   */
   it('comes off the same drum as the snare, so the kit coheres by source', () => {
     const recorded = new Map(committedProvenance.samples.map((s) => [s.file, s]))
-    const drumOf = (file: string) => {
+    const sourceOf = (file: string) => {
       const entry = recorded.get(file)
       expect(entry, `${file} is in the pack but not in provenance.json`).toBeDefined()
-      expect(entry!.licence).toBe('CC0')
-      return entry!.sourceFile.split('/').slice(0, 3).join('/')
+      expect(entry!.licence).toBe('CC-BY-4.0')
+      return entry!.source
     }
-    const snare = drumOf(filesOf('snare')[0])
-    expect(snare).toBe('Membranophones/Struck Membranophones/Snare Drum, Modern 1')
+    const snare = sourceOf(filesOf('snare')[0])
+    expect(snare).toContain('MuldjordKit')
     for (const file of filesOf('rim')) {
-      expect(drumOf(file), `${file} is not the snare's own drum`).toBe(snare)
+      expect(sourceOf(file), `${file} is not from the snare's own kit`).toBe(snare)
     }
   })
 
   /**
-   * VCSL recorded `Snare2_stick` at one velocity only — `v1`, two round-robin
-   * alternates. Splitting those two into a soft and a hard layer would declare
-   * a dynamic the recording does not carry, which is the erasure the
-   * un-normalised pack exists to avoid. So the rim is round-robined instead,
-   * exactly as `hatOpen` is.
+   * The old rim declared a single velocity layer, because VCSL recorded its
+   * cross-stick at one dynamic only and splitting it would have declared a
+   * dynamic the recording did not carry. MuldjordKit records this stroke across
+   * eleven dynamic groups, so the rim now carries real layers - and every layer
+   * still round-robins, so a repeat never replays one file.
    */
-  it('round-robins the one velocity the source holds, so a repeat never replays one file', () => {
+  it('declares real velocity layers, each round-robined so a repeat never replays one file', () => {
     const layers = layersOf('rim')
-    expect(layers.length, 'rim declares no layers').toBe(1)
-    expect(layers[0].maxVelocity, 'rim’s single layer does not reach full velocity').toBe(1)
-    expect(
-      layers[0].files.length,
-      'rim has one velocity layer and too few alternates',
-    ).toBeGreaterThanOrEqual(2)
-    expect(new Set(layers[0].files).size).toBe(layers[0].files.length)
+    expect(layers.length, 'rim declares too few layers').toBeGreaterThanOrEqual(2)
+    expect(layers[layers.length - 1].maxVelocity, 'rim’s top layer misses full velocity').toBe(1)
+    for (const layer of layers) {
+      expect(layer.files.length, 'a rim layer has too few alternates').toBeGreaterThanOrEqual(2)
+      expect(new Set(layer.files).size).toBe(layer.files.length)
+    }
   })
 
   /**
@@ -667,7 +681,7 @@ describe('the committed pack’s rim', () => {
       .split('\n')
       .filter((line) => line.startsWith('| `'))
       .join('\n')
-    expect(table).toMatch(/^\| `rim` \| .*cross-stick/m)
+    expect(table).toMatch(/^\| `rim` \| MuldjordKit snare, quiet stroke/m)
     expect(table).toMatch(/^\| `comp` \| .*Upright Piano/m)
     expect(table, 'the table still offers a woodblock').not.toMatch(/Woodblock/i)
     expect(table, 'the table still offers a Clavisynth').not.toMatch(/Clavisynth/i)

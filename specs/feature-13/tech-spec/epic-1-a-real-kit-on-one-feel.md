@@ -3,6 +3,26 @@
 PRD: [../prd/epic-1-a-real-kit-on-one-feel.md](../prd/epic-1-a-real-kit-on-one-feel.md) ·
 Roadmap: [../roadmap.md](../roadmap.md)
 
+> **Reconciled against what was built — 2026-09-01.** Three premises in this
+> spec did not survive contact with the libraries:
+>
+> - **The kit is not VCSL's.** VCSL is an orchestral library — a 3.3-second
+>   concert bass drum, a concert snare, and **no ride cymbal at all**. The kit is
+>   **MuldjordKit (FreePats edition)**: 14 velocity bands x 4-5 round-robins on
+>   kick, snare and both hats. Wherever this spec says VCSL for a drum voice,
+>   read MuldjordKit. The bongos *are* VCSL's.
+> - **The licence bar is CC-BY 4.0, not CC0.** No CC0 acoustic kit of the needed
+>   quality exists. This carries an attribution obligation that follows the
+>   rendered grooves — see the PRD's R1a and R1b.
+> - **The ride is dropped.** Nine percussive voices, not ten. Steps A3 and D2's
+>   ride clauses, R4c and R6d, and AC3a are withdrawn.
+>
+> Also: the levelling method landed differently and better than Step C5
+> described. Every layer declares a *measured* `nominalVelocity` — the top
+> layer's midpoint scaled by the ratio of measured peaks — rather than only the
+> layers that disagree with their midpoint. It moved the worst-case layer gain
+> from 1.89 to 1.40 against a clamp of 2.
+
 ## Approach
 
 Four tracks, split so that the slow, judgement-heavy work — sourcing files and

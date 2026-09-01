@@ -32,6 +32,41 @@ its bpm, its root, its flavour, its chord and its progression. The manifest's
 harmonic fields are asserted byte-identical against the current ones; only the
 audio changes.
 
+
+## Implementation findings — 2026-09-01
+
+Three of this roadmap's settled decisions did not survive contact with the
+libraries, and were re-decided during implementation. Recorded here because the
+epics below still read as they were planned.
+
+- **The kit is not VCSL's.** VCSL is an orchestral library: its bass drums are
+  concert bass drums that decay for over three seconds, its snare is a concert
+  snare, and it has **no ride cymbal at all**. The cajon was not a whim — it was
+  the closest thing VCSL had to a kick. The kit is now
+  **MuldjordKit (FreePats edition)**, a close-miked Tama Superstar, 14 velocity
+  bands x 4-5 round-robins on kick, snare and both hats.
+- **The licence bar widened from CC0 to CC-BY.** No CC0 acoustic drum kit of the
+  needed quality surfaced: DrumGizmo's four kits and Freepats' "Acoustic Drum
+  Kit" (which *is* MuldjordKit) are all CC-BY 4.0. This is the outcome the
+  Assumptions section below anticipated and asked to be reported rather than
+  quietly widened. It carries an obligation CC0 did not — see below.
+- **The ride is not in the feature.** It entered via this roadmap's Q2 and the
+  briefing never asked for it. Dropped when VCSL turned out to have none,
+  restored on MuldjordKit's, then removed for good after listening: MuldjordKit
+  is a rock kit and its ride reads that way, where a *swing jazz* ride was
+  wanted. That is a different cymbal from a library chosen for it, so it is
+  recorded as a candidate feature rather than left half-built. `hatClosed` keeps
+  the time on all six feels. Epic 3's bongo half stands.
+
+**New obligation.** CC-BY 4.0 requires attribution in the medium, and
+MuldjordKit names the text: *"Drum samples provided by DrumGizmo.org"*. A
+rendered groove is a derivative work of the samples, so the obligation follows
+the committed MP3s and the app that plays them. `provenance.json`,
+`samples/README.md` and `LICENSE-MuldjordKit.txt` carry it on the generator side;
+**a user-visible credit in the app is outstanding** and is not in any epic's
+scope, since Epic 1 puts `src/` out of scope and Epic 5 asserts `src/` changes in
+exactly one file.
+
 ## Epics
 
 ### Epic 1 — A real kit, on one feel

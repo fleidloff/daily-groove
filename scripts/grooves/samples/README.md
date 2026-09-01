@@ -6,13 +6,39 @@ bundle.
 
 ## Source and licence
 
-The pack draws on two libraries, both released under **CC0 1.0 Universal** — public
-domain, no attribution required, redistribution permitted:
+The pack draws on three libraries. Two are **CC0 1.0 Universal** — public domain,
+no attribution required. The drums are **CC-BY 4.0**, which carries an obligation
+the other two do not:
 
-| Library | Voices | Licence text |
-| :-- | :-- | :-- |
-| [Versilian Community Sample Library (VCSL)](https://github.com/sgossner/VCSL) | `kick`, `snare`, `hatClosed`, `hatOpen`, `rim`, `tomHigh`, `tomLow` | `LICENSE.txt` |
-| [VSCO 2 Community Edition](https://github.com/sgossner/VSCO-2-CE) | `bass`, `comp` | `LICENSE-VSCO-2-CE.txt` |
+| Library | Voices | Licence | Licence text |
+| :-- | :-- | :-- | :-- |
+| [MuldjordKit (FreePats edition)](https://freepats.zenvoid.org/Percussion/acoustic-drum-kit.html), by Lars Muldjord | `kick`, `snare`, `hatClosed`, `hatOpen`, `rim`, `tomHigh`, `tomLow` | CC-BY 4.0 | `LICENSE-MuldjordKit.txt` |
+| [Versilian Community Sample Library (VCSL)](https://github.com/sgossner/VCSL) | `bongoHigh`, `bongoLow` | CC0 | `LICENSE.txt` |
+| [VSCO 2 Community Edition](https://github.com/sgossner/VSCO-2-CE) | `bass`, `comp` | CC0 | `LICENSE-VSCO-2-CE.txt` |
+
+## ⚠ The drums carry an attribution obligation
+
+MuldjordKit is CC-BY 4.0, and its terms name the text:
+
+> Drum samples provided by DrumGizmo.org
+
+This is not satisfied by `provenance.json` alone. A rendered groove is a
+derivative work of the samples it is built from, so the obligation follows the
+committed MP3s and anything the app does with them — which means the credit has
+to be visible to a person using the app, not only to someone reading this repo.
+`samples/pack.test.ts` asserts that every non-CC0 row carries the attribution
+text, so a sample cannot enter the pack without it.
+
+Why VCSL no longer supplies the kit: it is an *orchestral* library. Its bass
+drums are concert bass drums that decay for over three seconds, its snare is a
+concert snare, and it has no ride cymbal at all. The cajon that stood in for a
+kick until feature-13 was not a whim — it was the closest thing VCSL had.
+
+**The pack has no ride, and that is a decision rather than an oversight.**
+MuldjordKit ships two; one was prepared, heard and removed. It is a rock kit and
+its ride reads as one, where the swung feels want a jazz ride — a lighter, washier
+ping. That is a different cymbal from a library chosen for it, so the kit keeps
+one timekeeper, the closed hat, until such a cymbal is sourced.
 
 `provenance.json` records, for every file, which library it came from, its path inside
 that library, its licence and what was done to it.
@@ -21,9 +47,8 @@ Files were capped in length, faded out, downmixed to mono and re-encoded as 44.1
 16-bit FLAC. They were deliberately **not** normalized: the level differences between
 velocity layers are the data, and normalizing would erase them.
 
-One invocation does all of it. This is the one the toms were prepared with, and it is
-the shape to copy for a new voice group, so it lands in the same room and at the same
-level as the voices already here:
+One invocation does all of it. This is the shape to copy for a new voice group, so
+it lands in the same room and at the same level as the voices already here:
 
 ```sh
 ffmpeg -i in.wav \
@@ -48,13 +73,15 @@ lands with the kick it is written beside rather than ahead of it.
 
 | Voice | Instrument | Layers × round-robins |
 | :-- | :-- | :-- |
-| `kick` | Cajon, bass tone (`hit1`) | 3 × 2 |
-| `snare` | Snare Drum, Modern 1 (`HitNS`) | 4 × 2 |
-| `hatClosed` | Hi-Hat Cymbal (`HitC`) | 4 × 2 |
-| `hatOpen` | Hi-Hat Cymbal (`HitO`, `HitLoose`) | 1 × 4 |
-| `rim` | Snare Drum, Modern 1, cross-stick (`stick`) | 1 × 2 |
-| `tomHigh` | Tom 1, stick (`HitS`) | 3 × 2 |
-| `tomLow` | Tom 2, stick (`HitS`) | 3 × 2 |
+| `kick` | MuldjordKit kick drum (`KdrumL`) | 4 × 3 |
+| `snare` | MuldjordKit snare (`Snare1`) | 4 × 3 |
+| `hatClosed` | MuldjordKit hi-hat, closed | 4 × 3 |
+| `hatOpen` | MuldjordKit hi-hat, open | 3 × 3 |
+| `rim` | MuldjordKit snare, quiet stroke (`SnareRest1`) | 2 × 3 |
+| `tomHigh` | MuldjordKit rack tom (`Tom2`) | 3 × 2 |
+| `tomLow` | MuldjordKit floor tom (`Tom4`) | 3 × 2 |
+| `bongoHigh` | VCSL Bongos, high (`BongoH_Hit1`) | 3 × 2 |
+| `bongoLow` | VCSL Bongos, low (`BongoL_Hit1`) | 3 × 2 |
 | `bass` | Solo Contrabass, pizzicato (VSCO 2 CE) | 8 notes; 5 × 2 layers × 2, 3 × 1 layer × 2 |
 | `comp` | Upright Piano (VSCO 2 CE) | 11 notes × 3 |
 
@@ -162,3 +189,91 @@ reads an octave high. The measurement fits the whole harmonic series instead.
 Measured against equal temperament the instrument is a little out, note to note:
 between −30 and +32 cents, which is a real player on a real fingerboard rather than a
 tuning error. `pack.test.ts` allows half a semitone.
+
+## Levelling
+
+Levelling this pack is two independent jobs, and confusing them is the mistake
+that costs the most. A voice's loudness in the finished mix is the product of:
+
+1. **What the layer was recorded at.** The layers are deliberately not
+   normalised, so the layer chosen for a velocity already carries the loudness of
+   a hit at that velocity. `gainFor` in `voices.ts` scales *relative* to
+   `nominalVelocity`, which is why a mis-declared nominal is heard as a step at a
+   band boundary rather than as a voice being slightly wrong.
+2. **Where the voice sits in the mix.** The template's `gain`, in dBFS, applied
+   once per voice by `mixTracks`.
+
+A pack error corrected in a template's gain becomes five more corrections in the
+other five templates. So fix (1) in the pack, and only then set (2).
+
+### How the nominals were derived
+
+`level.ts` measures RMS in dBFS; `voiceLevels(tracks)` reports it per voice. Both
+are pure and take PCM the renderer has already produced, so a measurement is
+reproducible: same inputs, same numbers.
+
+Every layer declares `nominalVelocity` explicitly rather than defaulting to its
+band midpoint. The figure is the top layer's midpoint scaled by the ratio of this
+layer's measured peak to the top layer's — a layer recorded at half the peak
+represents half the velocity. Defaulting to the midpoint assumes each recording
+sits in the middle of whatever band it was assigned to, which is not true of a
+kit sampled across fourteen dynamic groups and then reduced to three or four
+layers: MuldjordKit's bands are evenly spaced in MIDI velocity, and its recorded
+levels are not evenly spaced in amplitude.
+
+The correction is worth real decibels. Before it, `rim` at its own strong
+velocity asked its layer for 1.89× the level it was recorded at, against a
+`MAX_LAYER_GAIN` ceiling of 2 — one small change away from clipping into the
+clamp. After it, every voice in the kit sits between 0.67× and 1.40×.
+
+### The bands as committed
+
+| Voice | maxVelocity | nominalVelocity | alternates |
+| :-- | --: | --: | --: |
+| `kick` | 0.3465 | 0.5976 | 3 |
+| `kick` | 0.6299 | 0.7857 | 3 |
+| `kick` | 0.7717 | 0.8282 | 3 |
+| `kick` | 1 | 0.8859 | 3 |
+| `snare` | 0.3465 | 0.3785 | 3 |
+| `snare` | 0.6299 | 0.6657 | 3 |
+| `snare` | 0.7717 | 0.6674 | 3 |
+| `snare` | 1 | 0.8859 | 3 |
+| `hatClosed` | 0.3465 | 0.2283 | 3 |
+| `hatClosed` | 0.5591 | 0.3658 | 3 |
+| `hatClosed` | 0.7717 | 0.6056 | 3 |
+| `hatClosed` | 1 | 0.8859 | 3 |
+| `hatOpen` | 0.4173 | 0.5375 | 3 |
+| `hatOpen` | 0.7717 | 0.8525 | 3 |
+| `hatOpen` | 1 | 0.8859 | 3 |
+| `rim` | 0.5827 | 0.6247 | 3 |
+| `rim` | 1 | 0.7913 | 3 |
+| `tomHigh` | 0.4803 | 0.6686 | 2 |
+| `tomHigh` | 0.7874 | 0.8533 | 2 |
+| `tomHigh` | 1 | 0.8937 | 2 |
+| `tomLow` | 0.4882 | 0.627 | 2 |
+| `tomLow` | 0.7717 | 0.9022 | 2 |
+| `tomLow` | 1 | 0.8859 | 2 |
+| `bongoHigh` | 0.45 | 0.0799 | 2 |
+| `bongoHigh` | 0.8 | 0.277 | 2 |
+| `bongoHigh` | 1 | 0.9 | 2 |
+| `bongoLow` | 0.45 | 0.0934 | 2 |
+| `bongoLow` | 0.8 | 0.2108 | 2 |
+| `bongoLow` | 1 | 0.9 | 2 |
+
+### Length caps
+
+The cap holds each voice's useful decay and no more; the fade is the last 80 ms
+of it.
+
+| Voice | Cap |
+| :-- | --: |
+| `kick` | 0.90 s |
+| `snare` | 1.00 s |
+| `hatClosed` | 0.45 s |
+| `hatOpen` | 1.00 s |
+| `rim` | 0.80 s |
+| `tomHigh` | 1.20 s |
+| `tomLow` | 1.50 s |
+| `bongoHigh`, `bongoLow` | 0.80 s |
+| `bass` | 2.00 s |
+| `comp` | 2.50 s |

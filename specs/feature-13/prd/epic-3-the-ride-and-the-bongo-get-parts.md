@@ -1,5 +1,31 @@
 # PRD — Epic 3: The ride and the bongo get parts
 
+> **Final — the ride is removed, 2026-09-01.** Built, listened to, and rejected:
+> MuldjordKit is a rock kit and its ride reads that way. What was wanted is a
+> *swing jazz* ride — a lighter, washier ping — which is a different cymbal from a
+> library chosen for it, not a tuning of this one. Everything about the ride is
+> gone from the code, the pack and the templates; `hatClosed` keeps the time on
+> all six feels, exactly as before. The idea is recorded as a candidate in
+> `specs/features.md` rather than left half-built here.
+>
+> The rest of this epic — the bongo on `bright-straight` — stands.
+
+> **Update — the ride is built after all.** It was withdrawn when the kit was
+> going to be VCSL's, which has no ride cymbal; MuldjordKit ships two, so the
+> user restored it. R1-R6, R2a-R2e and AC1-AC6 are **built**, with three
+> departures from the plan recorded at the foot of this note.
+>
+> ~~**The ride half of this epic is withdrawn.**~~ VCSL has no ride cymbal, and the
+> ride was dropped from feature-13 rather than re-scoped — it entered through the
+> roadmap's Q2 and the briefing never asked for it. Everything below about the
+> ride, the timekeeping hand-off and the hat's demotion to a punctuation pool is
+> **not built**: R1-R6, R2a-R2e, AC1-AC6 and AC2a-AC2b are withdrawn, and
+> `hatClosed` keeps the time on every feel exactly as it did.
+>
+> The **bongo half is built** — R7-R16 and their criteria, on `bright-straight`.
+> MuldjordKit does ship two rides, so restoring the ride half is a small,
+> separate decision rather than a dead end.
+
 Feature: [briefing.md](../briefing.md) · [roadmap.md](../roadmap.md)
 
 ## Summary
@@ -255,3 +281,27 @@ Answer: **A) Derived in `events.ts` from the template's `voices` list.** No
 `timekeeper` field: derivation is the only option under which a template cannot
 be authored into breaking the exclusivity rule.
 Applied to: R2b, R2e, AC2a, Behaviour details
+
+## Departures from the plan, as built — 2026-09-01
+
+- **Three feels, not four.** `half-time`, `shuffle` and `swung-sixteenth` ride.
+  `open-ballad` was excluded by its own `density` band: at 62-74 bpm on an eighth
+  grid, a cymbal on top of the kit pushed it past `maxPerBar`, and the band was
+  right to refuse. It is also the one feel whose stated job is to state a tempo
+  and then get out of the harmony's way, so a ride was the wrong addition twice
+  over. Epic 2's R5 named four; the fourth is dropped rather than the band
+  widened.
+- **The hat's punctuation is derived, not drawn from a pool.** R2a described a
+  reduced pattern pool. A pool cannot work: it is authored on the sixteenth grid
+  and `gridSteps` folds it onto the template's own, so an off-sixteenth becomes
+  an on-eighth on `shuffle` and lands squarely on a ride stroke — and a pool
+  filtered against the ride comes back *empty* on some seeds, silencing the hat
+  altogether. `hatPunctuation()` instead takes the off-beats the ride left free
+  and keeps at most three. That is the only version of R2 that holds on every
+  subdivision, which is what R2b asked for.
+- **The ride is a 0.85 s ping, not its full wash.** The source samples run 13-21
+  seconds. At a 1.4 s cap the ring surviving past the loop point failed the gate's
+  seam check on `groove-42` — 0.0206 against a 0.02 threshold, and only in the
+  right channel, because the ride was panned +0.28. Shortened to 0.85 s with a
+  0.45 s fade, narrowed to +0.15 and dropped 2-3 dB, the worst seam across all
+  thirty grooves is 0.0154.

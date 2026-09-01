@@ -4,6 +4,7 @@ import { Card } from '@/components/surfaces/Card'
 import { Heading } from '@/components/typography/Heading'
 import { Row } from '@/components/layout/Row'
 import { Stack } from '@/components/layout/Stack'
+import { Text } from '@/components/typography/Text'
 
 type HowToPlayProps = {
   /**
@@ -24,6 +25,32 @@ const STEPS = [
   'Guess the Root & Mode 🎯',
   'Come back every day for a new challenge ⏭',
 ]
+
+/**
+ * The drum samples' licence condition, in the words the licence names.
+ *
+ * The kit is MuldjordKit, CC BY 4.0, and unlike the CC0 material in the pack
+ * that licence obliges a credit — one that follows the *rendered grooves*, not
+ * just the source files, because a groove is a derivative work of the samples it
+ * is built from. So it has to be visible to a player, not only to someone
+ * reading `scripts/grooves/samples/provenance.json`.
+ *
+ * The wording is fixed by the kit's own terms and is not ours to paraphrase.
+ *
+ * Linked out, which needed feature-12's link rule narrowing to say what it
+ * always meant: the page offers exactly one way to *navigate the app*, and on a
+ * shared groove that one is the way back to today. A credit pointing off-site is
+ * not navigation, and `GroovePuzzle.test.tsx` now distinguishes the two rather
+ * than counting anchors.
+ */
+const DRUM_CREDIT = 'Drum samples provided by DrumGizmo.org'
+const DRUM_CREDIT_URL = 'https://drumgizmo.org'
+const DRUM_CREDIT_LICENCE = 'CC BY 4.0'
+const DRUM_CREDIT_LICENCE_URL = 'https://creativecommons.org/licenses/by/4.0/'
+
+/** Shared by both credit links: quiet, underlined, and keyboard-visible. */
+const CREDIT_LINK =
+  'underline decoration-border-strong underline-offset-2 transition-colors hover:text-text-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent'
 
 /**
  * Each item is words followed by one trailing mark. Splitting at the last space
@@ -106,6 +133,37 @@ export function HowToPlay({ onClose }: HowToPlayProps) {
             )
           })}
         </ol>
+
+        {/*
+          Outside the ordered list, and quiet: this is a licence condition, not a
+          fifth thing to do. `faint` at `sm` is the page's smallest register,
+          which is where a credit belongs — present and legible, never competing
+          with the four steps above it.
+
+          It lives here because the how-to-play box is the one panel a player can
+          always get back to: the header's help control re-opens it whenever it is
+          closed, so the credit is reachable from every state of the page rather
+          than only on a first visit.
+        */}
+        <Text tone="faint" size="sm">
+          <a
+            href={DRUM_CREDIT_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={CREDIT_LINK}
+          >
+            {DRUM_CREDIT}
+          </a>
+          {' · '}
+          <a
+            href={DRUM_CREDIT_LICENCE_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={CREDIT_LINK}
+          >
+            {DRUM_CREDIT_LICENCE}
+          </a>
+        </Text>
       </Stack>
     </Card>
   )

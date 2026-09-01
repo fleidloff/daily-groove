@@ -13,6 +13,7 @@
  * was (R7).
  */
 
+import { rmsDbfs } from './level.ts'
 import { PEAK_CEILING, SEAM_THRESHOLD, truePeak } from './mix.ts'
 import { offScalePitches } from './theory/pitches.ts'
 import { isValidHarmony } from './theory/validity.ts'
@@ -47,6 +48,27 @@ const FULL_SCALE = 1
  */
 const PEAK_TOLERANCE = 1e-4
 
+/**
+ * The band every groove's integrated level must fall inside, in dBFS RMS.
+ *
+ * Peak cannot do this job, and the pack makes that vivid: every one of the six
+ * feels renders to a true peak of exactly `PEAK_CEILING`, because the master is
+ * normalised there. Peak is the one quantity already equalised across the
+ * catalogue, so it says nothing about whether a groove *sounds* as loud as its
+ * neighbour. RMS over the whole loop measures precisely that.
+ *
+ * The width is honest about what it is: a guard against a gross error - a voice
+ * left at the wrong gain, a template mis-levelled by ten decibels - and not a
+ * mastering tolerance. The six feels as committed span -27.1 dB (half-time) to
+ * -22.1 dB (bright-straight), a five-decibel spread, and closing that spread
+ * means changing the *balance* between voices rather than any master trim: with
+ * the peak pinned, RMS is a function of crest factor. That is a judgement made
+ * by ear, so the band accommodates the measured spread rather than asserting a
+ * balance nobody has listened to.
+ */
+export const LOUDNESS_FLOOR_DB = -29
+export const LOUDNESS_CEILING_DB = -20
+
 export function gateCandidate(args: {
   pcm: Pcm
   events: NoteEvent[]
@@ -60,8 +82,26 @@ export function gateCandidate(args: {
     checkSeam(args.pcm) ??
     checkHarmony(args.music, args.harmony) ??
     checkPitch(args.events, args.music, args.harmony) ??
-    checkDensity(args.events, args.music, args.template)
+    checkDensity(args.events, args.music, args.template) ??
+    checkLoudness(args.pcm)
   )
+}
+
+/**
+ * Outside the loudness band.
+ *
+ * Last in the chain deliberately. The checks before it catch grooves that are
+ * broken; this one catches a groove that is intact but mixed wrong, and
+ * reporting "too quiet" about a groove that is also clipping would bury the
+ * fault worth fixing.
+ */
+function checkLoudness(pcm: Pcm): GateFailure | null {
+  const level = rmsDbfs(pcm)
+  if (level >= LOUDNESS_FLOOR_DB && level <= LOUDNESS_CEILING_DB) return null
+  return {
+    check: 'loudness',
+    detail: `measured ${level.toFixed(1)} dBFS RMS, outside ${LOUDNESS_FLOOR_DB}..${LOUDNESS_CEILING_DB}`,
+  }
 }
 
 /** Over the ceiling, or clipping outright. */

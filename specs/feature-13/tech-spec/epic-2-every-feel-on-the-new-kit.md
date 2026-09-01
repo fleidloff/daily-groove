@@ -3,6 +3,25 @@
 PRD: [../prd/epic-2-every-feel-on-the-new-kit.md](../prd/epic-2-every-feel-on-the-new-kit.md) ·
 Roadmap: [../roadmap.md](../roadmap.md)
 
+> **Reconciled against what was built — 2026-09-01.** The ride is dropped from
+> the feature, so **Track B's ride declarations, R5, R6, R6a, AC4 and AC9 are
+> withdrawn**. All five templates were still re-levelled; the bongo went to
+> `bright-straight` alone.
+>
+> Two things landed differently:
+>
+> - **The templates were corrected by one shared per-voice delta**, not
+>   re-derived independently. The pack's recorded levels changed identically for
+>   every template, so the correction is identical — and re-deriving each would
+>   have rewritten five balances that were already right relative to each other.
+> - **The loudness band ships at -29..-20 dBFS**, far wider than Step I2's
+>   intent. Every feel renders to *exactly* `PEAK_CEILING`, so with peak pinned
+>   RMS is a function of crest factor: closing the 4.8 dB spread means
+>   rebalancing voices by ear. The band is a gross-error guard and says so.
+>
+> A later listening pass took 2 dB off every drum voice. See `.implement/epic-2.md`
+> for the per-feel drum-versus-comp figures, which are the open question left.
+
 ## Approach
 
 Two kinds of work that barely touch: five template files whose numbers are set

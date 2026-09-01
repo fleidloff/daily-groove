@@ -23,3 +23,18 @@ How a feature gets built — the five skills and the one order they run in
 `/implement-feature`), what each reads and writes, and why answering a
 document's questions before moving on is the cheaper order:
 @docs/skills.md
+
+## Changing what the grooves sound like
+
+**[docs/music.md](docs/music.md)** — the musical model of the generator under
+`scripts/grooves/`: the twelve scales and the three rules a new one must satisfy,
+how a chord is derived from a scale, the six feels and every parameter they
+declare, the rhythm pools and fixed placements, bass and comp voicing, what turns
+a grid into a performance, the quality gate's six thresholds, and the four things
+that must never change because altering them re-renders the catalogue and
+reassigns every past puzzle.
+
+Read it when you touch `scripts/grooves/`, and not otherwise — it is a reference
+for musical decisions, not a rule every change has to clear. It is linked rather
+than `@`-imported for that reason: the three documents above load into every
+session, and this one should load only when it is the subject.

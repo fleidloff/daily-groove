@@ -147,4 +147,69 @@ describe('HowToPlay', () => {
     // Whether the box is on screen is the page's state, not the box's.
     expect(screen.getAllByRole('listitem')).toHaveLength(4)
   })
+
+  /**
+   * The drum samples are CC BY 4.0, which obliges a credit in the medium — and
+   * the obligation follows the rendered grooves, not just the source files. So
+   * these are not cosmetic assertions: if the credit is dropped or reworded, the
+   * app is out of licence, and that should break a test rather than pass review.
+   */
+  /**
+   * The drum samples are CC BY 4.0, which obliges a credit in the medium — and
+   * the obligation follows the rendered grooves, not just the source files. So
+   * these are not cosmetic assertions: if the credit is dropped or reworded, the
+   * app is out of licence, and that should break a test rather than pass review.
+   */
+  /**
+   * The drum samples are CC BY 4.0, which obliges a credit in the medium — and
+   * the obligation follows the rendered grooves, not just the source files. So
+   * these are not cosmetic assertions: if the credit is dropped or reworded, the
+   * app is out of licence, and that should break a test rather than pass review.
+   */
+  describe('the drum samples credit', () => {
+    const SOURCE = 'Drum samples provided by DrumGizmo.org'
+
+    it('names the credit in the exact words the licence requires', () => {
+      render(<HowToPlay onClose={vi.fn()} />)
+      expect(screen.getByRole('link', { name: SOURCE })).toHaveAttribute(
+        'href',
+        'https://drumgizmo.org',
+      )
+    })
+
+    it('names the licence and links to it', () => {
+      render(<HowToPlay onClose={vi.fn()} />)
+      expect(screen.getByRole('link', { name: 'CC BY 4.0' })).toHaveAttribute(
+        'href',
+        'https://creativecommons.org/licenses/by/4.0/',
+      )
+    })
+
+    it('leaves the site safely, and never navigates the app', () => {
+      // Both must be off-site: an in-app link here would break feature-12's
+      // rule that the daily page offers no way onward.
+      render(<HowToPlay onClose={vi.fn()} />)
+      for (const name of [SOURCE, 'CC BY 4.0']) {
+        const link = screen.getByRole('link', { name })
+        expect(link.getAttribute('href')).toMatch(/^https:\/\//)
+        expect(link).toHaveAttribute('target', '_blank')
+        expect(link).toHaveAttribute('rel', expect.stringContaining('noopener'))
+      }
+    })
+
+    it('is not a fifth step', () => {
+      // Inside the ordered list it would read as something to do, and it would
+      // break the "exactly four things to know" the box is built around.
+      render(<HowToPlay onClose={vi.fn()} />)
+      expect(screen.getAllByRole('listitem')).toHaveLength(4)
+      expect(screen.getByRole('link', { name: SOURCE }).closest('ol')).toBeNull()
+    })
+
+    it('stays the quietest thing in the box', () => {
+      render(<HowToPlay onClose={vi.fn()} />)
+      const paragraph = screen.getByRole('link', { name: SOURCE }).closest('p')
+      expect(paragraph?.className).toContain('text-text-faint')
+      expect(paragraph?.className).toContain('text-[13px]')
+    })
+  })
 })

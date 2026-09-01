@@ -62,15 +62,27 @@ export const swungSixteenth: FeelTemplate = {
   // under them. The comp is the quietest of the six because the harmony here
   // is carried by the bass — a rootless voicing over a ♭6 needs the root
   // audible beneath it more than it needs to be loud itself.
+  // Corrected for the MuldjordKit drums. The delta is per voice and identical
+  // across all six templates, because the thing that changed is the pack's
+  // recorded levels, not this feel's intent: MuldjordKit's snare and hats sit
+  // at different levels from VCSL's, and every template inherits that equally.
+  // Re-deriving each template independently would have quietly rewritten five
+  // balances that were already right relative to each other.
   gain: {
-    tomHigh: -9,
-    tomLow: -8,
-    kick: -5,
+    tomHigh: -11,
+    tomLow: -10,
+    kick: -8,
     snare: -7,
-    hatClosed: -14,
-    hatOpen: -15,
+    hatClosed: -12,
+    hatOpen: -18,
     bass: -1,
-    comp: -11,
+    // Raised to bring the comp within a few dB of the drum bus. This feel
+    // inherited a comp level from when the kit was a cajon, which left the keys
+    // 8-12 dB under the drums — and the game is to name the chord, so the voice
+    // carrying the chord cannot be the quietest thing in the mix. `open-ballad`
+    // has always been balanced this way on purpose; this brings the rest of the
+    // set to the same principle rather than leaving it as one feel's exception.
+    comp: -2,
   },
   // Narrower than the fast feels on purpose: a heavy groove reads as one band
   // in one room, so nothing is panned past a third of the way out.

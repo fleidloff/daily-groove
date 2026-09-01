@@ -50,6 +50,13 @@ export type VoiceName =
    */
   | 'tomHigh'
   | 'tomLow'
+  /**
+   * Two bongos, for the same reason there are two toms and not three: a bongo
+   * IS two drums. A single `bongo` voice would be a hand drum, and the
+   * interplay between the high and the low is the thing that makes the sound.
+   */
+  | 'bongoHigh'
+  | 'bongoLow'
   | 'bass'
   | 'comp'
 

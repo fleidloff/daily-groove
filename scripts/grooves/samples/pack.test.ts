@@ -9,7 +9,16 @@ const decl = JSON.parse(readFileSync(join(HERE, 'pack.json'), 'utf8')) as PackDe
 const provenance = JSON.parse(readFileSync(join(HERE, 'provenance.json'), 'utf8')) as {
   pack: string
   licence: string
-  samples: { file: string; source: string; sourceFile: string; url: string; licence: string }[]
+  attribution?: string
+  samples: {
+    file: string
+    source: string
+    sourceFile: string
+    url: string
+    licence: string
+    /** Required on every non-CC0 row: the credit its licence obliges us to carry. */
+    attribution?: string
+  }[]
 }
 
 /** Every audio file physically present in the pack, relative to samples/. */
@@ -107,7 +116,7 @@ describe('the pack declares itself', () => {
 
 // Step D2 — AC11
 describe('every sample is CC0 and accounted for', () => {
-  const ALLOWED = ['CC0', 'public-domain']
+  const ALLOWED = ['CC0', 'public-domain', 'CC-BY-4.0']
 
   it('lists every audio file present in the pack', () => {
     const listed = new Set(provenance.samples.map((s) => s.file))
@@ -136,11 +145,34 @@ describe('every sample is CC0 and accounted for', () => {
       expect(ALLOWED, `${s.file} is licensed "${s.licence}"`).toContain(s.licence)
     }
     expect(provenance.licence).toContain('CC0')
+    expect(provenance.licence).toContain('CC-BY-4.0')
+  })
+
+  /**
+   * The drums are CC-BY, which unlike CC0 is a licence with an obligation
+   * attached — and the obligation follows the *rendered grooves*, not just the
+   * source files, because a groove is a derivative work of the samples it is
+   * built from. So a CC-BY row without the attribution text is a row that
+   * cannot legally ship, and that is worth a test rather than a convention.
+   */
+  it('records the required attribution for every sample that is not CC0', () => {
+    const attributed = provenance.samples.filter((s) => s.licence !== 'CC0')
+    expect(attributed.length, 'no non-CC0 samples to check').toBeGreaterThan(0)
+    for (const s of attributed) {
+      expect(s.attribution, `${s.file} is ${s.licence} but names no attribution`).toBe(
+        'Drum samples provided by DrumGizmo.org',
+      )
+    }
+    expect(provenance.attribution).toBe('Drum samples provided by DrumGizmo.org')
   })
 
   it('ships the licence text alongside the audio', () => {
     expect(existsSync(join(HERE, 'LICENSE.txt'))).toBe(true)
     expect(readFileSync(join(HERE, 'LICENSE.txt'), 'utf8')).toContain('CC0 1.0 Universal')
+    expect(existsSync(join(HERE, 'LICENSE-MuldjordKit.txt'))).toBe(true)
+    expect(readFileSync(join(HERE, 'LICENSE-MuldjordKit.txt'), 'utf8')).toContain(
+      'Attribution 4.0 International',
+    )
   })
 })
 

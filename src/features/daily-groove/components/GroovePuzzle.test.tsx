@@ -2816,30 +2816,61 @@ describe('GroovePuzzle', () => {
       expect(notice()).toBeNull()
     })
 
+    /**
+     * Feature-13 narrowed these two from "no anchors" to "no anchors that
+     * navigate the app".
+     *
+     * The rule was always about navigation: the shared page offers exactly one
+     * way onward and it is the way back to today, and the daily page offers
+     * none — which is what makes that one identifiable. Counting every anchor
+     * was a proxy for that, and it stopped being a safe one when the how-to-play
+     * box gained the drum samples' licence credit, which points off-site.
+     *
+     * So the assertion now says the thing it means, and says it more strictly
+     * than before: every in-app link is enumerated *and* every remaining anchor
+     * must leave the site entirely. An internal link cannot hide behind the
+     * carve-out, because there is no carve-out — there are two exhaustive sets.
+     */
+    const inAppLinks = () =>
+      screen.queryAllByRole('link').filter((link) => link.getAttribute('href')?.startsWith('/'))
+
+    const offSiteLinks = () =>
+      screen.queryAllByRole('link').filter((link) => !link.getAttribute('href')?.startsWith('/'))
+
+    const everyOffSiteLinkReallyLeaves = () => {
+      for (const link of offSiteLinks()) {
+        expect(link.getAttribute('href')).toMatch(/^https:\/\//)
+        expect(link).toHaveAttribute('target', '_blank')
+        expect(link).toHaveAttribute('rel', expect.stringContaining('noopener'))
+      }
+    }
+
     it('points every link that leaves the page at today, and offers one while in play (R5, R7, AC5)', async () => {
       const user = userEvent.setup()
       await renderShared()
 
       // Anchors only: the share control is an action, not navigation, and it
       // renders no link at all — it can only ever print a URL as plain text.
-      const links = () => screen.queryAllByRole('link')
-      expect(links()).toHaveLength(1)
-      expect(links()[0]).toHaveAttribute('href', '/')
-      expect(wayBack()).toBe(links()[0])
+      expect(inAppLinks()).toHaveLength(1)
+      expect(inAppLinks()[0]).toHaveAttribute('href', '/')
+      expect(wayBack()).toBe(inAppLinks()[0])
+      everyOffSiteLinkReallyLeaves()
 
       // Still one, and still `/`, once the game is under way.
       await play(user)
       await guess(user, 'G', wrongFlavour())
-      expect(links()).toHaveLength(1)
-      expect(links()[0]).toHaveAttribute('href', '/')
+      expect(inAppLinks()).toHaveLength(1)
+      expect(inAppLinks()[0]).toHaveAttribute('href', '/')
+      everyOffSiteLinkReallyLeaves()
     })
 
     it('adds the only link the daily page never had (R5, AC5)', async () => {
       await renderPuzzle()
 
-      // The daily page carries no link out at all, which is what makes the
+      // The daily page offers no way onward at all, which is what makes the
       // one on the shared page identifiable as the way back.
-      expect(screen.queryAllByRole('link')).toEqual([])
+      expect(inAppLinks()).toEqual([])
+      everyOffSiteLinkReallyLeaves()
     })
 
     it('renders the header with the player’s real streak, as on / (R7a, AC12)', async () => {
@@ -3014,9 +3045,11 @@ describe('GroovePuzzle', () => {
       await guess(user, 'G', wrongFlavour())
       await guess(user, 'D', wrongFlavour())
 
-      // Two misses in: still only the way back that was always there.
+      // Two misses in: still only the way back that was always there. Counted
+      // over in-app links, so the licence credit's off-site anchors do not read
+      // as a second invitation.
       expect(invitation()).toBeNull()
-      expect(screen.getAllByRole('link')).toHaveLength(1)
+      expect(inAppLinks()).toHaveLength(1)
       expect(wayBack()).toHaveAttribute('href', '/')
     })
 
@@ -3039,11 +3072,13 @@ describe('GroovePuzzle', () => {
       ).toBeTruthy()
       expect(panel).not.toContainElement(invite)
 
-      // Two links now, and both still point at `/` — there is no third
-      // destination anywhere on the page.
-      const links = screen.getAllByRole('link')
-      expect(links).toHaveLength(2)
-      for (const link of links) expect(link).toHaveAttribute('href', '/')
+      // Two ways onward now, and both still point at `/` — there is no third
+      // in-app destination anywhere on the page. Any other anchor has to leave
+      // the site outright, which the credit's do.
+      const onward = inAppLinks()
+      expect(onward).toHaveLength(2)
+      for (const link of onward) expect(link).toHaveAttribute('href', '/')
+      everyOffSiteLinkReallyLeaves()
     })
 
     it('shows the same invitation, worded the same way, when it is given up on (R5b, AC14)', async () => {
@@ -3091,7 +3126,7 @@ describe('GroovePuzzle', () => {
       await guess(user, 'C', 'Aeolian')
       expect(solutionPanel()).toBeInTheDocument()
       expect(invitation()).toBeNull()
-      expect(screen.queryAllByRole('link')).toEqual([])
+      expect(inAppLinks()).toEqual([])
       solvedRun.unmount()
 
       mockStore.get.mockResolvedValue(null)
@@ -3105,7 +3140,7 @@ describe('GroovePuzzle', () => {
 
       expect(solutionPanel()).toBeInTheDocument()
       expect(invitation()).toBeNull()
-      expect(screen.queryAllByRole('link')).toEqual([])
+      expect(inAppLinks()).toEqual([])
     })
   })
 })

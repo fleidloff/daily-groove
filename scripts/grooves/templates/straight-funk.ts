@@ -31,16 +31,29 @@ export const straightFunk: FeelTemplate = {
     lean: { snare: 9, hatClosed: -3, hatOpen: -3, rim: 4 },
     driftDepth: 0.005,
   },
+  // Re-derived for the MuldjordKit drums rather than carried over from the
+  // cajon. Each figure is a target level minus that voice's own measured RMS at
+  // unity (see the levelling section of samples/README.md), so the numbers say
+  // where a voice sits in the mix and the pack says how loud its recording is.
+  // The old kit's gains compensated for a cajon with almost no low end; a real
+  // bass drum needs the opposite correction, which is why nothing here is the
+  // old number shifted by a constant.
   gain: {
-    tomHigh: -11,
-    tomLow: -10,
-    kick: -5,
+    tomHigh: -13,
+    tomLow: -12,
+    kick: -8,
     snare: -8,
-    hatClosed: -11,
-    hatOpen: -13,
-    rim: -9,
+    hatClosed: -9,
+    hatOpen: -16,
+    rim: -11,
     bass: -1,
-    comp: -8,
+    // Raised to bring the comp within a few dB of the drum bus. This feel
+    // inherited a comp level from when the kit was a cajon, which left the keys
+    // 8-12 dB under the drums — and the game is to name the chord, so the voice
+    // carrying the chord cannot be the quietest thing in the mix. `open-ballad`
+    // has always been balanced this way on purpose; this brings the rest of the
+    // set to the same principle rather than leaving it as one feel's exception.
+    comp: -3,
   },
   // Kick, snare and bass hold the centre; the cymbals and the comp open the
   // image out either side, the way a kit sits from behind.

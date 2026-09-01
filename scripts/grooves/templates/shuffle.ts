@@ -10,9 +10,11 @@ import type { FeelTemplate } from '../types.ts'
  * reads as a straight eighth with a lean; 1.0 would collapse the off-beat onto
  * the next on-beat.
  *
- * The kit is a ride-and-hats shuffle with no cross-stick: the shuffle's
- * character is in the hand pattern, and a rim on top of it only clutters the
- * bar. The humanize bounds are the loosest of the four — a shuffle that is
+ * The kit is hats and no cross-stick: the shuffle's character is in the hand
+ * pattern, and a rim on top of it only clutters the bar. A ride was tried here
+ * in feature-13 and taken out again — the only kit available was a rock kit and
+ * its ride sounded like one, where a shuffle wants a jazz ride. The hats keep
+ * the time until that cymbal exists. The humanize bounds are the loosest of the four — a shuffle that is
  * metronomically exact stops swinging.
  *
  * `flavours` carries blues and aeolian. This is the pairing R2 is really about:
@@ -36,15 +38,27 @@ export const shuffle: FeelTemplate = {
   },
   // Bass and kick carry the weight; the comp sits back so the hand pattern
   // stays the loudest thing above the backbeat.
+  // Corrected for the MuldjordKit drums. The delta is per voice and identical
+  // across all six templates, because the thing that changed is the pack's
+  // recorded levels, not this feel's intent: MuldjordKit's snare and hats sit
+  // at different levels from VCSL's, and every template inherits that equally.
+  // Re-deriving each template independently would have quietly rewritten five
+  // balances that were already right relative to each other.
   gain: {
-    tomHigh: -10,
-    tomLow: -9,
-    kick: -7,
+    tomHigh: -12,
+    tomLow: -11,
+    kick: -10,
     snare: -7,
-    hatClosed: -9,
-    hatOpen: -9,
+    hatClosed: -7,
+    hatOpen: -12,
     bass: 1,
-    comp: -9,
+    // Raised to bring the comp within a few dB of the drum bus. This feel
+    // inherited a comp level from when the kit was a cajon, which left the keys
+    // 8-12 dB under the drums — and the game is to name the chord, so the voice
+    // carrying the chord cannot be the quietest thing in the mix. `open-ballad`
+    // has always been balanced this way on purpose; this brings the rest of the
+    // set to the same principle rather than leaving it as one feel's exception.
+    comp: -4,
   },
   // The mirror image of straight-funk's kit: hats to the left, comp to the
   // right, so two shuffles and two funks in a row do not sound like one room.

@@ -49,6 +49,20 @@ export const RHYTHM_LABEL = 'rhythm'
 export const GHOST_LABEL = 'ghosts'
 
 /**
+ * The bongo's own generator stream.
+ *
+ * Separate from `rhythmRng` for the same reason the ghosts are, and it is
+ * load-bearing rather than tidy: `rhythmRng` is drawn nine more times after the
+ * comp pattern — the ghost level, the comp spread, the bass line's rest, repeat
+ * and drop decisions, its direction. A `pick` inserted into that sequence
+ * shifts every draw after it, which would re-roll the rhythm of all thirty
+ * grooves including the five feels that have no bongo at all. Its own stream
+ * costs one label and guarantees a feel without a bongo renders exactly as it
+ * did before the voice existed.
+ */
+export const BONGO_LABEL = 'bongo'
+
+/**
  * The octave the bass plays in, as a MIDI offset applied to a pitch class.
  *
  * C1, which is below the instrument's own floor on purpose: a bass player takes
@@ -200,6 +214,13 @@ const VELOCITIES: Record<VoiceName, { strong: number; medium: number; weak: numb
   // the accent shape is the phrase's rather than the bar's.
   tomHigh: { strong: 0.92, medium: 0.8, weak: 0.68 },
   tomLow: { strong: 0.95, medium: 0.83, weak: 0.71 },
+  // A hand, not a stick. Both bongos sit below the snare and below the toms,
+  // because the bongo is a colour over a groove whose time is kept elsewhere —
+  // a hand drum as loud as the backbeat stops being a colour. The low drum is a
+  // touch stronger than the high one, which is how the pair is actually played:
+  // the heel-tone lands and the fingers answer it.
+  bongoHigh: { strong: 0.66, medium: 0.56, weak: 0.46 },
+  bongoLow: { strong: 0.7, medium: 0.6, weak: 0.5 },
   bass: { strong: 0.92, medium: 0.8, weak: 0.68 },
   comp: { strong: 0.72, medium: 0.62, weak: 0.52 },
 }
@@ -232,6 +253,36 @@ function velocityFor(voice: VoiceName, step: number): number {
  * around it.
  */
 const HAT_ACCENTS = [1, 0.72, 0.88, 0.66]
+
+/**
+ * The comp's accent shape: a repeating cycle of multipliers on top of the
+ * metric accent, entered one step further along in every pass.
+ *
+ * The hats got this treatment in feature-9 and the comp did not, which left the
+ * voice carrying the harmony as the flattest thing in the mix: `velocityFor` is
+ * a pure function of metric position, so a chord on a downbeat was struck at
+ * 0.72 in bar one of pass one and at 0.72 in bar four of pass four, give or
+ * take a few percent of noise. Noise around a constant is still, to the ear, a
+ * constant.
+ *
+ * Five entries against comp figures of two or three hits per bar, so the cycle
+ * and the bar do not fall into lockstep — the trap `roundRobin` documents for
+ * alternates. A cycle whose length divided the hit count would repeat in step
+ * with the bar and reintroduce exactly the flatness it exists to remove.
+ *
+ * The numbers are not free. The comp's mean velocity is what every template's
+ * `gain` table was balanced against, so the cycle has to average 1 — and not
+ * merely over its own five entries, but over the WINDOWS the comp actually
+ * reads from it: `k` consecutive entries per bar, rotated by one per pass, for
+ * `k` of two or three and two or four passes. Writing those four means as
+ * equations forces the shape almost entirely: the second entry must be 1, the
+ * first and third must sum to 2, and the last two mirror the first two. What is
+ * left is one free number — how far the accents reach either side of 1 — which
+ * is the only thing here that is tuning rather than arithmetic. Twelve per cent
+ * reads as a player leaning on a chord; a quarter reads as a dynamic swell,
+ * which is not what the briefing asked for.
+ */
+const COMP_ACCENTS = [1.12, 1, 0.88, 1.12, 0.88]
 
 function clampVelocity(velocity: number): number {
   return Math.min(1, Math.max(MIN_VELOCITY, velocity))
@@ -280,6 +331,33 @@ const SNARE_GHOST_PATTERNS: number[][] = [
   [3, 7, 11],
   [3, 11, 15],
 ]
+
+/**
+ * Where the bongo lands, as {high, low} on the sixteenth grid.
+ *
+ * Sparse, and off the strong positions on purpose. The pulse is the hat's; a
+ * hand drum doubling the kick and the backbeat adds density without adding
+ * anything to hear, and the briefing asked for "some bongo where it makes
+ * sense" — a colour, not a second drummer. So no figure marks every
+ * subdivision, and every figure distributes across both drums: one drum struck
+ * repeatedly is a hand drum, and the interplay is what makes it a bongo.
+ */
+const BONGO_PATTERNS: { high: number[]; low: number[] }[] = [
+  { high: [3, 11], low: [6] },
+  { high: [7, 15], low: [2, 10] },
+  { high: [3, 7, 13], low: [10] },
+  { high: [11], low: [3, 14] },
+]
+
+/**
+ * The bongo's accent cycle, applied over its own hits like `HAT_ACCENTS`.
+ *
+ * Four entries against figures of two to four hits per bar, so the cycle and the
+ * bar do not fall into lockstep — the trap `roundRobin` documents for
+ * alternates. Without it every bongo hit at a step class would be one velocity
+ * forever, which is the flat, machine-like part the hats were rescued from.
+ */
+const BONGO_ACCENTS = [1, 0.82, 0.94, 0.74]
 
 const COMP_PATTERNS: number[][] = [
   [2, 10],
@@ -399,6 +477,11 @@ const FILL_DURATIONS: Record<VoiceName, number> = {
   rim: 1,
   tomHigh: 2,
   tomLow: 2,
+  // Present for the type's sake and never reached: the bongo does not play in a
+  // fill. A fill is the kit's phrase, and hand percussion carrying on through it
+  // competes with the one moment in the loop meant to be a statement.
+  bongoHigh: 1,
+  bongoLow: 1,
   bass: 2,
   comp: 4,
 }
@@ -665,6 +748,28 @@ export function buildEvents(
   const hatSteps = grid(pick(rhythmRng, HAT_PATTERNS))
   const bassSteps = grid(pick(rhythmRng, BASS_PATTERNS))
   const compSteps = grid(pick(rhythmRng, COMP_PATTERNS))
+
+  /**
+   * The bongo's figure, off its own stream (see `BONGO_LABEL`), and drawn only
+   * when the feel carries one — which is safe precisely because the stream is
+   * its own: a conditional draw here cannot disturb anything else.
+   */
+  const playsBongo = template.voices.includes('bongoHigh')
+  const bongoFigure = playsBongo
+    ? pick(rngFor(`${spec.template}:${spec.seed}:${BONGO_LABEL}`), BONGO_PATTERNS)
+    : { high: [], low: [] }
+  const bongoHighSteps = grid(bongoFigure.high)
+  const bongoLowSteps = grid(bongoFigure.low)
+
+  /**
+   * The bongo's accent cycle, over its own hits — both drums share one cycle,
+   * because a listener hears one pair of hands rather than two instruments.
+   */
+  const bongoAccents = new Map<number, number>()
+  const bongoLine = [...new Set([...bongoHighSteps, ...bongoLowSteps])].sort((a, b) => a - b)
+  bongoLine.forEach((step, index) => {
+    bongoAccents.set(step, BONGO_ACCENTS[index % BONGO_ACCENTS.length])
+  })
   const snareSteps = grid(placement.snare)
   const hatOpenSteps = grid(placement.hatOpen)
   const rimSteps = grid(placement.rim)
@@ -706,13 +811,38 @@ export function buildEvents(
   })
 
   /**
-   * How hard a hit lands: the metric accent, with the hats' accent cycle on top
-   * of it. Every other voice reads from metric position alone (R12).
+   * Which hit of the bar's comp sequence each comp step is.
+   *
+   * The position in the sequence, and never the grid step: indexing
+   * `COMP_ACCENTS` by the step would partition the bar exactly the way
+   * `velocityFor` already does, and change nothing.
    */
-  const accentedVelocity = (voice: VoiceName, step: number, sixteenth: number) => {
+  const compIndex = new Map<number, number>()
+  compSteps.forEach((step, index) => {
+    compIndex.set(step, index)
+  })
+
+  /**
+   * How hard a hit lands: the metric accent, with an accent cycle on top of it
+   * for the two voices that have one. Kick, snare, rim, toms and bass read from
+   * metric position alone — feature-9's R12, minus the comp, which this epic
+   * takes out of it.
+   *
+   * The hats' cycle is a property of the step. The comp's is rotated by the
+   * pass, which is what makes pass two a different reading of the phrase rather
+   * than the same one again — the same thing `roundRobin` does with a pack's
+   * alternates. The rotation is the pass index and not a draw, so the
+   * determinism `{ template, seed }` promises costs nothing to keep.
+   */
+  const accentedVelocity = (voice: VoiceName, step: number, sixteenth: number, pass = 0) => {
     const base = velocityFor(voice, sixteenth)
-    if (voice !== 'hatClosed' && voice !== 'hatOpen') return base
-    return clampVelocity(base * (hatAccents.get(step) ?? 1))
+    if (voice === 'hatClosed' || voice === 'hatOpen') {
+      return clampVelocity(base * (hatAccents.get(step) ?? 1))
+    }
+    if (voice !== 'comp') return base
+    const index = compIndex.get(step)
+    if (index === undefined) return base
+    return clampVelocity(base * COMP_ACCENTS[(index + pass) % COMP_ACCENTS.length])
   }
 
   const secPerBeat = 60 / bpm
@@ -1062,6 +1192,22 @@ export function buildEvents(
         if (plays('rim') && placement.rimBars.includes(barInPass)) {
           for (const step of rimSteps) add('rim', bar, step, 1)
         }
+        // The bongo: a colour over a groove whose time is kept by the hat, so
+        // it lands in the ordinary branch and never in the fill's.
+        if (plays('bongoHigh')) {
+          for (const step of bongoHighSteps) {
+            const sixteenth = (step * PATTERN_RESOLUTION) / template.subdivision
+            const base = velocityFor('bongoHigh', sixteenth)
+            add('bongoHigh', bar, step, 1, undefined, clampVelocity(base * (bongoAccents.get(step) ?? 1)))
+          }
+        }
+        if (plays('bongoLow')) {
+          for (const step of bongoLowSteps) {
+            const sixteenth = (step * PATTERN_RESOLUTION) / template.subdivision
+            const base = velocityFor('bongoLow', sixteenth)
+            add('bongoLow', bar, step, 1, undefined, clampVelocity(base * (bongoAccents.get(step) ?? 1)))
+          }
+        }
       }
 
       // Bass — the written line, the same one in every pass.
@@ -1076,7 +1222,7 @@ export function buildEvents(
         const spread = voicing.length > 1 ? compSpreadSec / (voicing.length - 1) : 0
         for (const step of compSteps) {
           const sixteenth = (step * PATTERN_RESOLUTION) / template.subdivision
-          const base = accentedVelocity('comp', step, sixteenth)
+          const base = accentedVelocity('comp', step, sixteenth, pass)
           voicing.forEach((midi, index) => {
             const below = voicing.length - 1 - index
             add(
