@@ -1289,6 +1289,7 @@ export function buildEvents(
     scale: scaleName(root, flavour),
     chord: harmony.chordName,
     progression: harmony.progressionName,
+    progressionDegrees: harmony.progressionDegrees,
   }
 
   return { events: shaped, music, harmony }

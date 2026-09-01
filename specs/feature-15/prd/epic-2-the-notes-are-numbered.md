@@ -31,7 +31,15 @@ names from the box today.
 **Out of scope**
 - **Any change to noteheads, clef, ledger lines, accidentals or spacing.**
   Feature-11 Epic 2 finished the drawing; this adds a row under it.
-- **Rhythm, stems, beams, key or time signature.** Still a picture of a scale.
+- **Rhythm, beams, key or time signature.** Still a picture of a scale: nothing
+  is beamed, dotted or barred into time.
+- **Not out of scope any more, and added after this PRD was settled:** the notes
+  are drawn as quarter notes — a filled head with a stem, up on the right below
+  the middle line and down on the left on it and above; the clef is Bravura's G
+  clef, the standard engraved glyph, shipped as path coordinates rather than as a
+  font; and the staff closes on a thin-and-thick final bar. A stem is not
+  rhythm: it is what makes a notehead read as a note to a player who does not
+  read fluently, which is the persona.
 - **The lead sheet's numerals** — Epic 3, and a different notation: scale degrees
   are arabic, the changes are Roman.
 - **Deriving the degrees.** Epic 1 owns the function; this draws what it is

@@ -1,10 +1,32 @@
 import { describe, expect, it } from 'vitest'
-import { BAR_COUNT, barChords } from './changes'
+import { BAR_COUNT, barChords, perBar } from './changes'
 import { GROOVES } from '../../data/grooves.generated'
 
 describe('BAR_COUNT', () => {
   it('is the four bars of the figure every groove loops', () => {
     expect(BAR_COUNT).toBe(4)
+  })
+})
+
+describe('perBar', () => {
+  // R2: one bar mapping, not two. `barChords` and `barNumerals` both go through
+  // this, so a symbol and a numeral in one bar always describe the same chord —
+  // the generator's own `progressionMidi[bar % length]`.
+  it('returns to the first value in bar four when there are three values', () => {
+    expect(perBar(['a', 'b', 'c'])).toEqual(['a', 'b', 'c', 'a'])
+  })
+
+  it('yields four undefineds for an empty list rather than throwing', () => {
+    expect(() => perBar([])).not.toThrow()
+    expect(perBar([])).toEqual([undefined, undefined, undefined, undefined])
+  })
+
+  it('truncates a list longer than four to its first four', () => {
+    expect(perBar([1, 2, 3, 4, 5])).toEqual([1, 2, 3, 4])
+  })
+
+  it('cycles a single value through all four bars', () => {
+    expect(perBar(['x'])).toEqual(['x', 'x', 'x', 'x'])
   })
 })
 

@@ -12,7 +12,7 @@ describe('the generated groove catalogue', () => {
     expect(GROOVES.length).toBeGreaterThan(0)
   })
 
-  it('gives every entry all thirteen fields, correctly typed', () => {
+  it('gives every entry all fourteen fields, correctly typed', () => {
     for (const g of GROOVES) {
       expect(typeof g.id).toBe('string')
       expect(typeof g.uuid).toBe('string')
@@ -26,6 +26,9 @@ describe('the generated groove catalogue', () => {
       expect(typeof g.flavour).toBe('string')
       expect(typeof g.bars).toBe('number')
       expect(typeof g.headDelaySeconds).toBe('number')
+      // F15 E3 — the changes read as degrees. The field travels beside the
+      // progression it describes, and every shipped groove carries it.
+      expect(Array.isArray(g.progressionDegrees), g.id).toBe(true)
     }
   })
 
@@ -234,6 +237,60 @@ describe('every groove in the catalogue can be spelled', () => {
     expect(scaleNotes({ root: 'A', flavour: 'Harmonic minor' })).toEqual([
       'A', 'B', 'C', 'D', 'E', 'F', 'G♯',
     ])
+  })
+})
+
+/**
+ * Feature-15, Epic 3, Step D5 — R2a, R4, AC5, AC8, AC11.
+ *
+ * The lead sheet writes a numeral under every bar of every day, so a groove
+ * whose degrees are missing, short, or point at a note its flavour does not have
+ * is a blank bar on the one screen that owes the player the answer. The sweep is
+ * over the shipped manifest rather than a sample: a sample passes on precisely
+ * the day a thirteenth mode is minted. A failure here names a flavour or an
+ * index, and it is fixed in `lib/theory/numerals.ts` or in the generator's
+ * `chordsForScale` — never by narrowing this test.
+ */
+describe('the changes of every groove read as degrees', () => {
+  it('gives every entry one degree per chord, opening on the tonic', () => {
+    for (const g of GROOVES) {
+      const degrees = g.progressionDegrees as number[]
+      expect(degrees.length, g.id).toBeGreaterThan(0)
+      for (const degree of degrees) {
+        expect(Number.isInteger(degree), `${g.id} degree ${degree}`).toBe(true)
+        expect(degree, g.id).toBeGreaterThanOrEqual(0)
+      }
+      // Bar one is the tonic, so the first index is the root's own (AC10).
+      expect(degrees[0], g.id).toBe(0)
+      // One index per chord symbol: no chord without a degree, and no degree
+      // without a chord (AC5).
+      expect(degrees.length, `${g.id} (${g.progression})`).toBe(
+        g.progression.split('–').length,
+      )
+    }
+  })
+
+  it('names a numeral in all four bars of every groove', async () => {
+    const { barNumerals } = await import('../lib/theory/numerals')
+    const { barChords, BAR_COUNT } = await import('../lib/theory/changes')
+    // A numeral is a degree of the day's own scale, spelled with at most a
+    // double accidental — never a quality and never a figured bass.
+    const NUMERAL = /^[♭♯]{0,2}(I|II|III|IV|V|VI|VII)$/
+
+    for (const g of GROOVES) {
+      const numerals = barNumerals(g.flavour, g.progressionDegrees)
+
+      expect(numerals.length, g.id).toBe(BAR_COUNT)
+      // No blank bar: every one of the four carries a numeral (AC8, AC11).
+      for (const [bar, numeral] of numerals.entries()) {
+        expect(numeral, `${g.id} (${g.flavour}) bar ${bar + 1}`).not.toBe('')
+        expect(numeral, `${g.id} (${g.flavour}) bar ${bar + 1}`).toMatch(NUMERAL)
+      }
+      expect(numerals[0], `${g.id} (${g.flavour})`).toBe('I')
+      // And a symbol and a numeral in one bar always come as a pair, because
+      // both rows go through the same bar arithmetic.
+      expect(barChords(g.progression).length, g.id).toBe(numerals.length)
+    }
   })
 })
 

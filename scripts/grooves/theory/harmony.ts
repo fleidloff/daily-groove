@@ -48,7 +48,22 @@ export type Harmony = {
   chordMidi: number[]
   /** Its display name, e.g. "Cm7". */
   chordName: string
-  /** Scale-degree indices, always starting at 0 (the tonic). */
+  /**
+   * One index per progression chord, in the same order, always starting at 0
+   * (the tonic).
+   *
+   * These are indices into `intervalsFor(flavour)` and **not** diatonic degree
+   * numbers: the blues scale is `[0, 3, 5, 6, 7, 10]`, so its index 2 is the
+   * fourth degree of the scale, not the third. Only for a seven-note flavour do
+   * index + 1 and the degree number coincide.
+   *
+   * The chord on index `d` is rooted on
+   * `(pitchClassOf(root) + intervalsFor(flavour)[d]) % 12` — in both branches of
+   * `chordsForScale`, the derived one (`degrees.forEach((offset, degree) => …)`)
+   * and the idiom one (`degrees.indexOf(offset)`, with `-1` skipped). Anything
+   * naming a degree from this index must look the interval up rather than add
+   * one.
+   */
   progressionDegrees: number[]
   /** Display string, chords joined with en-dashes, e.g. "Cm7–Fm7–B♭7". */
   progressionName: string

@@ -397,6 +397,24 @@ describe('buildEvents — the words match the notes', () => {
     expect(music.progression.split('–')[0]).toBe(music.chord)
   })
 
+  // Feature 15, Epic 3, Step A2 — R4, AC5. The degrees are one of the words
+  // about a groove, so they leave `buildEvents` on `MusicMeta` beside
+  // `progression`, off the same `Harmony` in the same statement. Nothing
+  // downstream re-derives them, and nothing parses a chord symbol back.
+  it('carries the degrees its progression was built from — R4, AC5', () => {
+    for (const feel of allTemplates()) {
+      const { music, harmony } = buildEvents({ ...spec, seed: 7 }, feel)
+      expect(music.progressionDegrees, feel.id).toEqual(harmony.progressionDegrees)
+      // One degree per chord the words name — so no bar can carry a symbol
+      // with no degree behind it (AC11's generator half).
+      expect(music.progressionDegrees.length, feel.id).toBe(
+        music.progression.split('–').length,
+      )
+      // The progression starts on the tonic, so its first index is the tonic's.
+      expect(music.progressionDegrees[0], feel.id).toBe(0)
+    }
+  })
+
   it('walks the bass through the progression’s chord tones', () => {
     for (const seed of seeds) {
       const { events, music, harmony } = buildEvents({ ...spec, seed }, template)

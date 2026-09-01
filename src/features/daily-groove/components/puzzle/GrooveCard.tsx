@@ -29,9 +29,13 @@ type GrooveCardProps = {
  * absent: only the tempo is backed by data worth showing.
  *
  * Once the day is over the answer joins that line — the payoff panel names it
- * too, but the panel is below both cards and out of view while you are playing
- * along, and the two facts a player jamming over the loop needs are how fast
- * and in what. The card does not put it there: `metaLine` composes the whole
+ * too, but the panel is a separate card that scrolls away from the transport as
+ * soon as you look at anything else, and the two facts a player jamming over the
+ * loop needs are how fast and in what. Since feature-15 Epic 5 the panel sits
+ * *beside* this card in the row's second column rather than below both cards, so
+ * the duplication is a few pixels wide on a wide screen and still worth it on a
+ * phone, where the row is one column and the panel is below this card
+ * (F15 E5 R6a, AC10). The card does not put it there: `metaLine` composes the whole
  * string, so this component branches on nothing at all and the two pages that
  * render it differ in data rather than in logic (F12 E3 R4).
  */

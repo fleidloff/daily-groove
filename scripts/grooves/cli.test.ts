@@ -268,6 +268,7 @@ describe('toGroove', () => {
       scale: 'A harmonic minor',
       chord: 'AmMaj7',
       progression: 'Am–Dm–E7',
+      progressionDegrees: [0, 3, 4] as number[],
     } as const
     expect(toGroove(SPECS[0], music, 0.025057).headDelaySeconds).toBe(0.025057)
     // A different file, a different number: nothing here is shared.
@@ -288,11 +289,37 @@ describe('toGroove', () => {
       scale: 'A harmonic minor',
       chord: 'AmMaj7',
       progression: 'Am\u2013Dm\u2013E7',
+      progressionDegrees: [0, 3, 4] as number[],
     } as const
     expect(toGroove(SPECS[0], music, 0).uuid).toBe(SPECS[0].uuid)
     // A different groove, a different uuid: nothing here is shared or derived.
     expect(toGroove(SPECS[1], music, 0).uuid).toBe(SPECS[1].uuid)
     expect(toGroove(SPECS[0], music, 0).uuid).not.toBe(SPECS[1].uuid)
+  })
+
+  // Feature 15, Epic 3, Step A3 — R4, AC5. `toGroove` is the one place the
+  // degrees cross from the generator's `MusicMeta` onto the app's contract, so
+  // it is the one place that could drop them or invent them.
+  it('carries the degrees the music was built from onto the entry — R4, AC5', () => {
+    const music = {
+      bpm: 96,
+      bars: 4,
+      loopBars: 4,
+      root: 'A',
+      flavour: 'harmonic-minor',
+      scale: 'A harmonic minor',
+      chord: 'AmMaj7',
+      progression: 'Am–Dm–E7',
+      // A harmonic minor is [0, 2, 3, 5, 7, 8, 11]: D is +5, index 3; E is +7,
+      // index 4.
+      progressionDegrees: [0, 3, 4] as number[],
+    } as const
+    expect(toGroove(SPECS[0], music, 0).progressionDegrees).toEqual([0, 3, 4])
+    // A different array, a different entry: nothing here is shared or derived.
+    expect(
+      toGroove(SPECS[0], { ...music, progressionDegrees: [0, 4, 3] }, 0)
+        .progressionDegrees,
+    ).toEqual([0, 4, 3])
   })
 
   // Feature 9, Step C2 — R7, AC8. The figure and the file are two numbers, and
@@ -308,6 +335,7 @@ describe('toGroove', () => {
       scale: 'A harmonic minor',
       chord: 'AmMaj7',
       progression: 'Am–Dm–E7',
+      progressionDegrees: [0, 3, 4] as number[],
     } as const
     const entry = toGroove(SPECS[0], music, 0.025057)
     expect(entry.bars).toBe(4)
@@ -344,6 +372,7 @@ describe('displayFlavour', () => {
       scale: 'A harmonic minor',
       chord: 'AmMaj7',
       progression: 'Am–Dm–E7',
+      progressionDegrees: [0, 3, 4] as number[],
     }, 0.025057)
     // The app's parseScale() splits on the first space and title-cases the rest.
     const rest = groove.scale.slice(groove.scale.indexOf(' ') + 1)

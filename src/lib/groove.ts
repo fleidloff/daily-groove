@@ -56,6 +56,17 @@ export type Groove = {
   chord: string // absolute, e.g. "Dmaj7"
   progression: string // absolute, e.g. "Dm–G–C"
   /**
+   * One scale-degree index per progression chord, in the same order — an index
+   * into the flavour's interval table, always starting at 0 (the tonic). What
+   * `scripts/grooves/theory/harmony.ts` computed when it chose the chords, so
+   * the app never parses a chord symbol back into a degree.
+   *
+   * Optional, as `loopBars` is: a manifest written before the field existed
+   * still describes a groove, and where the degrees are missing the numerals
+   * are missing and the bars are not.
+   */
+  progressionDegrees?: number[]
+  /**
    * The answer, carried as its own fields rather than parsed back out of
    * `scale`. The generator knows both because it rendered them, and a parsed
    * string is a second source of truth waiting to disagree with the first.

@@ -239,7 +239,11 @@ Covers: R1, AC1
 - **Implement** — `ScaleStaff.tsx`: `cx = LEFT + i * ADVANCE`,
   `cy = BASELINE - step * (SPACE / 2)`, an `<ellipse>` per note, slightly
   rotated as a real notehead is, and **open** — stroked, not filled. These are
-  whole notes; a filled head with no stem is a different note value, and seven
+  whole notes — superseded by feature-15, which draws quarter notes: a filled
+  head with a stem. The reasoning that follows is why this epic chose otherwise;
+  it no longer describes the component. In particular a filled head *with* a
+  stem is not "a different note value", which is what made the reversal cheap.
+  Original text: whole notes; a filled head with no stem is a different note value, and seven
   filled ovals also read heavier than the staff they sit on.
 - **Green when** — seven noteheads, both orderings hold.
 - **Refactor** — extract `yFor(step)`; B3 and B4 both need it.

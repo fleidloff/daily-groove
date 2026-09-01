@@ -134,9 +134,6 @@ describe('feature components sit in screen regions', () => {
       'AttemptDots',
       'FeedbackLine',
       'NudgeBox',
-      'SolvedPanel',
-      'LeadSheet',
-      'ScaleStaff',
       // Feature-12: the two pieces of copy that frame a shared groove — one
       // above the card saying what the page is, one below the answer sending
       // the player to today's. Both render in the puzzle region; neither is on
@@ -144,16 +141,23 @@ describe('feature components sit in screen regions', () => {
       'SharedGrooveNotice',
       'PlayTodayLink',
     ],
+    // Feature-15 Epic 1, Step A0: the day's payoff is its own screen region.
+    // The box and the two drawings it composes were the largest thing in
+    // `puzzle/` and the only part of it that appears once the guessing is
+    // over, so they read as a region of their own rather than the tail of the
+    // guessing surface. Every later epic in feature-15 writes against these
+    // paths.
+    solved: ['SolvedPanel', 'LeadSheet', 'ScaleStaff'],
   }
 
   const entries = () => readdirSync(COMPONENTS, { withFileTypes: true })
 
-  it('contains exactly the three region directories', () => {
+  it('contains exactly the four region directories', () => {
     const dirs = entries()
       .filter((entry) => entry.isDirectory())
       .map((entry) => entry.name)
       .sort()
-    expect(dirs).toEqual(['header', 'intro', 'puzzle'])
+    expect(dirs).toEqual(['header', 'intro', 'puzzle', 'solved'])
   })
 
   it('holds only the root component at the components/ root', () => {

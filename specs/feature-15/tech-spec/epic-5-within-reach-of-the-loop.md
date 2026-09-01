@@ -433,10 +433,10 @@ Frozen for this epic:
   `src/features/daily-groove/components/puzzle/GrooveCard.test.tsx` (one
   comment, no assertions — see Step A6 and the assumption that flags it)
 - **Must not touch** — `src/features/daily-groove/components/solved/**` (Epics
-  1–4's territory), `components/puzzle/GuessCard.tsx`,
-  `components/puzzle/PlayTodayLink.tsx`, `components/puzzle/LeadSheet.*`,
-  `components/puzzle/ScaleStaff.*`, `structure.test.ts`, the other four composed
-  test files
+  1–4's territory — which since Epic 1's Step A0 is where `SolvedPanel`,
+  `LeadSheet` and `ScaleStaff` all live), `components/puzzle/GuessCard.tsx`,
+  `components/puzzle/PlayTodayLink.tsx`, `structure.test.ts`, the other four
+  composed test files
 - **Role** — `implementer`. The epic is a placement change with its guards: the
   tests and the JSX are the same two files and the same reasoning, and the tests
   that must pass *before* the change only mean anything to whoever writes the
@@ -1076,3 +1076,46 @@ around — for different reasons.
   anchored `FORBIDDEN` regex and why a bare `/order-/` matches
   `border-r-[3px]`; the honest limits of jsdom; one track, because a second would
   share `GroovePuzzle.tsx`; and the wave-3 placement with both its reasons.
+
+### Cycle 2 — 2026-09-01 · two changes after the build, and what they supersede
+
+Both came from the user looking at the built page, and both are recorded in the
+PRD as its Cycle 5. The sections above are the design as first built; these are
+the passages that no longer describe the app.
+
+**The guess card below the row keeps one column's width.** It is wrapped in a
+second `Row` with the same `gap` and the same `collapseBelow`, holding the card
+in an identically classed `min-w-0 w-full flex-1 md:w-auto` column with an empty
+`aria-hidden` spacer beside it — so both rows take a column's width from one
+place. The rejected alternative was `md:w-[calc(50%-0.875rem)]`, which copies
+half of `gap-7` into a second place; change `Row gap="lg"` and it disagrees by
+fourteen pixels, silently. The spacer is `hidden md:block`, which matters on the
+phone: a spacer that stayed a flex item below the breakpoint would add a phantom
+28px of gap under the card.
+
+Superseded by it: the **Architecture** sketch's single `Row`; the bullet *"The
+guess card gets no wrapper in its new position"*, which is now the opposite of
+what happens; and **Contracts**' *"`Row` keeps exactly two children"*, which
+should read *the row the layout cases assert about* keeps exactly two children —
+there are now two rows, and `columnsOf`'s `querySelector('.md\\:flex-row')`
+returns the first, which is why the existing R15 cases still pass unedited.
+
+**The row's columns are equal height.** `align="start"` is gone, so the columns
+take flexbox's own stretch, and each column is a one-cell `grid` so the card or
+panel inside fills the height the column was stretched to. The ended column's
+`Stack` became a `grid grid-rows-[1fr_auto] gap-6`, which lets the box take the
+height and leaves `PlayTodayLink` sitting under it at its natural size.
+
+Superseded by it: every reference above to the row being `items-start` or
+top-aligned, including Step A3's `expect(split).toHaveClass('items-start')` —
+the assertion is now that no `items-*` class overrides the default, plus that
+each column carries `grid`. The *claim* behind AC1a is unchanged: the box's first
+line and the play control share a horizontal band. Stretch aligns both edges, so
+it aligns the tops as well.
+
+**The drawing inside the box also changed, and it is not this epic's.**
+`ScaleStaff` now draws quarter notes behind a generated engraved clef and closes
+on a final bar. It changes the box's height, which is why it is worth knowing
+here: the equal-height rule above is what keeps that from leaving the groove card
+short. The generator for the clef outline is `specs/feature-15/clef-outline.py`,
+and it reproduces the shipped `CLEF_PATH` byte for byte.

@@ -46,9 +46,14 @@ away from the transport to read is a lesson read once.
   At the widths where the row collapses to one column the resulting order is
   groove card, box, guess card.
 - **R1a** — The box's first line therefore sits level with the play control
-  rather than below the whole groove card. The row is top-aligned, and that
-  alignment is the requirement: the lesson and the transport are read together,
-  which is the entire point of the epic.
+  rather than below the whole groove card: the lesson and the transport are read
+  together, which is the entire point of the epic.
+- **R1c** — Two boxes side by side are the same height. Above the collapse point
+  the row's columns stretch to the taller of the two and the card or panel
+  inside each fills its column, so neither box ends short of its neighbour. Two
+  boxes of different heights read as one unfinished, and this holds in both
+  states — the groove card beside the guess card, and the groove card beside the
+  box.
 - **R1b** — The groove card does not move. It is the row's first child before and
   after, so the loop Sam is playing along to is never interrupted by the
   placement change.
@@ -132,9 +137,13 @@ stateDiagram-v2
 - **AC1** (R1) — Given a solved day, when the page renders, then the row's two
   children are the groove card and the box, in that order, and the guess card is
   a sibling after the row — so document order is groove card, box, guess card.
-- **AC1a** (R1a) — Given a solved day, then the box is the row's second column
-  and the row is top-aligned, so the box's first line and the play control share
-  a horizontal band rather than stacking.
+- **AC1a** (R1a, R1c) — Given a solved day, then the box is the row's second
+  column and the row overrides none of flexbox's own alignment, so the two
+  columns share both edges: the box's first line and the play control sit in one
+  horizontal band, and the two boxes are the same height.
+- **AC1c** (R1c) — Given either state, then each column is a one-cell grid, so
+  the card or panel inside it fills the height the column was stretched to
+  rather than sitting content-height within it.
 - **AC1b** (R1b) — Given the transition from unsolved to solved, then the groove
   card's DOM node is the same node before and after, and the audio element it
   contains is not re-created.
@@ -161,7 +170,11 @@ stateDiagram-v2
   control fit vertically together is measured at review, not asserted.
 - **AC7a** (R1, R3) — Given a finished day at a width above the row's collapse
   point, then the box and the groove card each occupy one column of the row, and
-  the guess card occupies the full width below it.
+  the guess card below occupies **one column's width, not the page's**. Below
+  the collapse point it is full width, as it is inside the row.
+- **AC7b** (R3) — Given a finished day, then the width below the row is derived
+  from the same `gap` and the same collapse point as the row itself, not from a
+  second number that could drift from it.
 - **AC9** (R5a) — Given focus on the check button, when the guess is correct,
   then no programmatic scroll is performed.
 - **AC10** (R6a) — Given a finished day, then the groove card's meta line still
@@ -229,3 +242,30 @@ untrue of the day's ending: the check button disables itself the moment the day 
 solved.
 Applied to: R1, R1a, R1b, R3, R3a, R5, Summary, Behaviour details, AC1, AC1a,
 AC1b, AC4, AC6, AC7a, Out of scope
+
+### Cycle 5 — 2026-09-01
+
+**Two changes asked for after the epic was built, both from looking at it.**
+
+**The guess card keeps one column's width below the row.** Asked for directly:
+"when the 'What is it?' box moves to the bottom. Can it please only span half the
+screen for bigger screens? It is because when it is next to the GrooveBox, it
+also only spans half the screen. On smaller screens, it looks perfect."
+Supersedes AC7a's original clause, "the guess card occupies the full width below
+it". A record that doubles in size on the way down reads as a promotion, which is
+the opposite of what moving it below is for.
+Applied to: R3, AC7a, AC7b
+
+**Boxes side by side are the same height.** Asked for directly: "boxes next to
+each other should always have the same height." The row was top-aligned
+(`align="start"`), which aligns the tops and leaves the shorter column short;
+removing the override restores flexbox's own stretch, which aligns both edges.
+R1a's "the row is top-aligned" was the *mechanism* named as the requirement, and
+the requirement was only ever that the first line and the play control are read
+together — stretching keeps that and adds equal height, so R1a keeps its
+substance and loses a sentence about how.
+One correction to the question as asked: the row is flexbox, not the grid. The
+grid is `LeadSheet`'s. Equal height is flexbox's default, switched off by that
+one class; the columns are now one-cell grids so the card inside fills the
+stretched column, which is the half a bare `items-stretch` would not do.
+Applied to: R1a, R1c, AC1a, AC1c

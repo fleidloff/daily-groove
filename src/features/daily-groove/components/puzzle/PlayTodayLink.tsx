@@ -15,7 +15,8 @@ type PlayTodayLinkProps = {
  * way (R5b), and it stays for the rest of the session exactly as the payoff
  * panel above it does.
  *
- * A sibling rendered *after* `SolvedPanel`, never folded into it: that panel is
+ * A sibling rendered *after* `SolvedPanel` (`../solved/SolvedPanel`, its own
+ * screen region since feature-15), never folded into it: that panel is
  * the day's payoff on both pages, and teaching it what a shared groove is would
  * make the one component both pages render the second place that knows.
  *

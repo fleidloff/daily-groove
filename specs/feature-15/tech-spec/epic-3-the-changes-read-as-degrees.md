@@ -544,16 +544,22 @@ Covers: R3a, AC4
   nowhere else in the suite. Run it: fails with "expected '♯II' to be '♭III'" —
   index-based numbering reads a six-note scale as if its degrees were
   consecutive.
-- **Implement** — for a flavour whose interval count is not seven, derive the
-  degree number from the semitone: the position of the nearest `MAJOR` entry at
-  or *above* the interval, with the accidental as the signed difference from
-  it — so 6 semitones takes the fifth and reads `♭V`, never the fourth as
-  `♯IV`.
-- **Green when** — the six blues assertions pass and Step B2's stay green:
-  seven-note flavours keep the index rule, which is what preserves Lydian's
-  `♯IV`.
-- **Refactor** — none. Keep the two rules explicitly separate and say in a
-  comment that length ≠ 7 is the trigger, the way `FLAVOUR_LETTER_STEPS` does.
+- **Implement** — take the degree number from the shipped table:
+  `const number = (lookup(FLAVOUR_LETTER_STEPS, flavour)?.[degree] ?? degree) + 1`,
+  with the accidental unchanged from Step B2 — the signed difference from
+  `MAJOR[number - 1]`. Blues declares `[0, 2, 3, 4, 4, 6]`, so index 3 takes
+  degree 5 and 6 semitones against `MAJOR[4] = 7` reads `♭V`.
+  **Do not derive the number from the semitone.** "The nearest `MAJOR` entry at
+  or above the interval" gives the right answer for blues and the wrong one for
+  Lydian, whose index 3 is a `♯IV` and would read `♭V`; it then needs a
+  special case back to the index for seven-note flavours, which is two rules
+  where the table is one.
+- **Green when** — the six blues assertions pass and Step B2's stay green. Note
+  that the rule above is single, so B2's and B3's assertions both hold under it:
+  B3's predicted red appears only if B2 was written index-only first, which is
+  the order these steps are in.
+- **Refactor** — none. One rule, and a comment naming `FLAVOUR_LETTER_STEPS` as
+  the reason a six-note scale needs no second branch.
 
 #### Step B4 — The numeral says nothing about the chord's quality
 
@@ -570,7 +576,9 @@ Covers: R3, AC3
   lower-casing, and the two named cases document that the half-diminished
   quality lives on the symbol above.
 - **Implement** — nothing expected; fix any flavour the sweep names.
-- **Green when** — all fourteen flavours pass.
+- **Green when** — all thirteen flavours in the table pass. Parameterise over
+  `Object.keys(FLAVOUR_INTERVALS)` with a `>= 13` guard, so a fourteenth grows
+  the sweep rather than failing it.
 - **Refactor** — none.
 
 #### Step B5 — A gap is a blank numeral, never a throw
@@ -619,7 +627,8 @@ Covers: R4, AC5
   `grooves.generated.test.ts` pattern, and `docs.test.ts`'s — and assert its
   source contains none of `split(`, `match(`, `slice(`, `replace(`, `indexOf(`
   over a symbol, and names neither `chord` nor `progression` outside a comment.
-  Assert it imports only `FLAVOUR_INTERVALS` from `./notes`, `perBar` from
+  Assert it imports only `FLAVOUR_INTERVALS` and `FLAVOUR_LETTER_STEPS` from
+  `./notes` — the second is what the degree-number rule needs — `perBar` from
   `./changes`, and types. Run it: passes on arrival — the assertion exists
   because "the generator knows the answer, and a parser would be a second source
   of truth waiting to disagree with it" is the one claim in this epic that a
@@ -844,7 +853,7 @@ Covers: R2a, R4, AC5, AC8, AC11
 - Open `groove-02` (`E Dorian`, `Em7–Bm7–C♯m7♭5`) and read
   `I · V · VI · I` — a three-chord progression whose fourth bar is a return, and
   a sheet that opens on `I` rather than on `ii` of D major.
-- Open a `Blues` groove and read `I · IV · V · I`.
+- Open a `Blues` groove and read `I · V · IV · V`.
 - At 360px, confirm by eye that the sheet still breaks 2 × 2, that each numeral
   sits under its own bar's symbol in the bar's own air, and that no bar grew
   taller. This is the part no jsdom test can assert.
@@ -935,3 +944,80 @@ two share a wave), and the regeneration runs `--manifest-only` (because it
 proves R4b by writing no audio at all). The spec is ready to implement, subject
 to the one ordering constraint stated in Approach: Epic 1's Step A0 first, and
 Epic 1's Track D before this epic's Track D.
+
+### Cycle 2 — 2026-09-01 · the musician's review of Track A
+
+Track A was reviewed by the musician before any file was edited, against the real
+code and all thirty shipped grooves. Its decisions, and the corrections the steps
+need:
+
+**`Harmony.progressionDegrees` is the right quantity — confirmed empirically.**
+`DegreeChord.degree` is an index into `intervalsFor(flavour)`, and the chord's
+root pitch class is derived from that same index in both the derived branch
+(`degrees.forEach((offset, degree) => …)`) and the idiom branch
+(`degrees.indexOf(offset)`, with `-1` skipped). Re-derived over all 30 catalogue
+specs through `buildEvents`: for every chord, the symbol's root pitch class and
+`progressionMidi[k][0] % 12` both equal
+`(pitchClassOf(root) + intervalsFor(flavour)[degrees[k]]) % 12`; `degrees[0]` is
+always `0`; the array's length always equals the progression's chord count.
+**0 mismatches, 30/30.** Every accidental produced across all thirteen flavours
+falls in −1…+1, so no numeral ever needs `♭♭` or `♯♯`.
+
+**Route (a) — the field goes on `MusicMeta`, required — for a stronger reason
+than the spec gave.** `isValidHarmony(music, harmony)` exists to check that the
+words in `MusicMeta` describe the audio in `Harmony`. Putting the degrees on
+`MusicMeta` puts them on the same side of that boundary as `progression`, where
+they can be cross-checked; threading `Harmony` into `toGroove` would make the
+entry's degrees the only harmonic fact in the manifest that never passed through
+`MusicMeta`. It also leaves `add.ts:269` untouched, so `grooves:add` writes the
+field for free.
+
+**The fixture list in Step A2 is wrong in both directions.** It is **8 literals
+across 4 files**: `cli.test.ts` ×4 (~262, ~286, ~302, ~338),
+`theory/pitches.test.ts` ×2 (`MUSIC` ~32, and the blues-idiom literal ~167),
+`theory/validity.test.ts` ×1 (~67), and **`theory/harmony.test.ts:15`'s
+`musicFor`, which the spec misses entirely**. `gate.test.ts` needs **no** edit:
+its literals are `{ ...GOOD.music, … }` spreads and inherit the new field.
+
+**`--manifest-only` does what the spec claims, and there is a residual risk the
+spec did not name.** `cli.ts` parses the flag and calls
+`generate({ encode: !manifestOnly })`; the only write to `public/grooves` is
+guarded by `if (shouldEncode)`. But `headDelaySeconds` is **re-measured** by
+`ffprobe`, not copied — a local ffprobe disagreeing with the mint-time one would
+move the playback trim for every groove and every share link already sent.
+Pre-verified away on this machine: ffprobe 6.0 reports `start_time = 0.025057`
+for all 30 committed mp3s, and all 30 manifest entries already say `0.025057`.
+**If any `headDelaySeconds` line appears in the diff, stop and report — that is
+not a failure to fix locally.**
+
+**Step A5's guard as written is nearly vacuous**, because the derived branch's
+index comes from `forEach` and the idiom branch already skips `indexOf === -1`.
+A future idiom pointing at a note outside the scale would silently *drop* that
+chord, not emit an out-of-range index, so a range check stays green through
+exactly the failure it was written for. The guard must additionally tie the index
+to the audio: `progressionMidi[i][0] % 12 === (pitchClassOf(root) +
+intervalsFor(flavour)[d]) % 12`, swept over `FLAVOURS × ROOTS` — all twelve
+roots, not the three the existing progression sweep uses, contrary to A5's claim.
+Recommended alongside: tighten `harmony.test.ts`'s "reaches beyond the tonic"
+from `degrees.size > 1` to `[...degrees].sort() === [0, 2, 4]`, which is the
+assertion that fires when a blues idiom offset is silently dropped.
+
+**Two fixtures in the steps are musically false and would propagate.** Step A4's
+`ENTRY` is `C♯ harmonic minor / C♯m–F♯m–G♯7` — three chords, so `[0, 2, 6, 3]`
+is both the wrong length and wrong in content (index 2 is E, not F♯). Use
+`[0, 3, 4]`, and `[0, 3, 0]` for `SECOND` (`E♭ dorian / E♭m7–A♭7–E♭m7`). Step
+A3's "different array" pair should be `[0, 3, 4]` vs `[0, 4, 3]`.
+
+**Step I2's blues line is factually wrong.** It says a `Blues` groove reads
+`I · IV · V · I`. All three shipped blues grooves (42, 44, 52) carry
+`[0, 4, 2, 4]` and read **`I · V · IV · V`**. Step B6's synthetic
+`barNumerals('Blues', [0,2,4])` is correct arithmetic but describes no groove.
+
+**One doc fix that is the only thing standing between a future reader and a
+`+1`:** `Harmony.progressionDegrees`' comment must say it is an index into
+`intervalsFor(flavour)` and *not* a diatonic degree number — the blues scale's
+index 2 is its fourth degree.
+
+**No listening sign-off is owed.** No rendered sample changes, so there is
+nothing new to hear; the claims are theory read from the source and measurement
+over the shipped catalogue.

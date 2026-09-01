@@ -44,6 +44,50 @@ describe('src/lib/groove', () => {
     ])
   })
 
+  it('may carry the degrees its progression was built from, or not', () => {
+    // `progressionDegrees` is optional, as `loopBars` is: a manifest written
+    // before the field existed still describes a groove. Both halves asserted
+    // rather than assumed — the app's fallback depends on the second one.
+    const withDegrees = {
+      id: 'groove-01',
+      uuid: '7c3f1b0a-5d84-4e29-9b61-0c2af8d3e517',
+      audioSrc: '/grooves/groove-01.mp3',
+      name: 'Velvet Pocket',
+      bpm: 98,
+      scale: 'C♯ minor',
+      chord: 'C♯m7',
+      progression: 'C♯m–F♯m–G♯7',
+      progressionDegrees: [0, 2, 6, 3],
+      root: 'C♯',
+      flavour: 'Harmonic minor',
+      bars: 4,
+      headDelaySeconds: 0.025057,
+    } satisfies Groove
+
+    expect(withDegrees.progressionDegrees).toEqual([0, 2, 6, 3])
+
+    const withoutDegrees = {
+      id: 'groove-02',
+      uuid: '9a1d4c62-0b3e-4f78-8d55-1e6b7a90c4f3',
+      audioSrc: '/grooves/groove-02.mp3',
+      name: 'Sunroom Shuffle',
+      bpm: 104,
+      scale: 'E♭ dorian',
+      chord: 'E♭m7',
+      progression: 'E♭m7–A♭7–E♭m7',
+      root: 'E♭',
+      flavour: 'Dorian',
+      bars: 4,
+      headDelaySeconds: 0.025057,
+    } satisfies Groove
+
+    // Read back through `Groove`, not through the literal's own inferred type:
+    // the point of the assertion is that a consumer holding a `Groove` finds
+    // the field absent rather than that this object shape lacks it.
+    const asGroove: Groove = withoutDegrees
+    expect(asGroove.progressionDegrees).toBeUndefined()
+  })
+
   it('rejects a Groove that carries no measured head delay', () => {
     // The head delay is measured per file at mint time, so a Groove without
     // one is not a Groove: nothing downstream may fall back to a shared

@@ -210,8 +210,9 @@ Covers: R10a, R10b, AC6
 - **Test first** — same file: assert `scaleDegrees({ root: 'C', flavour: 'Blues' })`
   equals `['1','♭3','4','♭5','5','♭7']`, and that its length matches
   `scaleNotes({ root: 'C', flavour: 'Blues' }).length`. Run it: fails — Step B1's
-  index-based degree number gives `['1','♭2','♭3','♭4','4','♭6']` for a scale
-  whose degrees are not consecutive.
+  index-based degree number gives `['1','♯2','♯3','♯4','5','♯6']` for a scale
+  whose degrees are not consecutive: each interval is measured against the wrong
+  degree of the major scale, and every one of them lands sharp.
 - **Implement** — take the degree *number* from `FLAVOUR_LETTER_STEPS[flavour]`
   where the flavour declares one, and from the index otherwise:
   `number = (FLAVOUR_LETTER_STEPS[flavour]?.[i] ?? i) + 1`. Blues declares
@@ -231,10 +232,11 @@ Covers: R10a, AC6
 
 - **Test first** — same file: iterate `Object.keys(FLAVOUR_INTERVALS)` and assert
   each one returns labels whose count equals `scaleNotes`' for the same answer,
-  with `'1'` first. Run it: passes or fails per flavour; a failure names the
-  flavour.
+  with `'1'` first. The table has thirteen entries; assert the loop ran over more
+  than one so it cannot pass vacuously. Run it: passes or fails per flavour; a
+  failure names the flavour.
 - **Implement** — fix whichever table entry the assertion names.
-- **Green when** — all fourteen flavours pass.
+- **Green when** — all thirteen flavours pass.
 - **Refactor** — none.
 
 #### Step B4 — An unknown flavour throws

@@ -16,6 +16,7 @@ const ENTRY: Groove = {
   scale: 'C♯ minor',
   chord: 'C♯m7',
   progression: 'C♯m–F♯m–G♯7',
+  progressionDegrees: [0, 3, 4],
   root: 'C♯',
   flavour: 'Harmonic minor',
   bars: 4,
@@ -32,6 +33,7 @@ const SECOND: Groove = {
   scale: 'E♭ dorian',
   chord: 'E♭m7',
   progression: 'E♭m7–A♭7–E♭m7',
+  progressionDegrees: [0, 3, 0],
   root: 'E♭',
   flavour: 'Dorian',
   bars: 4,
@@ -171,6 +173,40 @@ describe('renderManifest', () => {
     const source = renderManifest([older])
     expect(source).not.toContain('undefined')
     expect(source).not.toContain('loopBars')
+    expect(evaluate(source)).toEqual([older])
+  })
+
+  // Feature 15, Epic 3, Step A4 — R4, R4a, AC5. The degrees are the first array
+  // field the manifest has ever written, and a value the renderer cannot spell
+  // is a value silently dropped. The line sits directly under the string it
+  // describes, so the diff reads as one added line per groove.
+  it("writes each entry's degrees as an array, directly under its progression", () => {
+    const source = renderManifest([ENTRY])
+    expect(source).toMatch(/^ {4}progressionDegrees: \[0, 3, 4\],$/m)
+    expect(source.indexOf("progression: '")).toBeLessThan(
+      source.indexOf('progressionDegrees:'),
+    )
+    expect(source.indexOf('progressionDegrees:')).toBeLessThan(
+      source.indexOf("root: '"),
+    )
+  })
+
+  it('round-trips the degrees as the array itself, entry by entry', () => {
+    const grooves = evaluate(renderManifest([ENTRY, SECOND]))
+    expect(grooves.map((g) => g.progressionDegrees)).toEqual([
+      [0, 3, 4],
+      [0, 3, 0],
+    ])
+  })
+
+  // `progressionDegrees` is optional on `Groove`, as `loopBars` is, so the same
+  // rule applies to the second optional field: omitted, never `undefined`.
+  it('omits the degrees an entry does not carry, rather than writing undefined', () => {
+    const older: Groove = { ...ENTRY }
+    delete older.progressionDegrees
+    const source = renderManifest([older])
+    expect(source).not.toContain('undefined')
+    expect(source).not.toContain('progressionDegrees')
     expect(evaluate(source)).toEqual([older])
   })
 
@@ -335,6 +371,29 @@ describe('the committed manifest', () => {
     }
     return groups
   }
+
+  // Feature 15, Epic 3, Step A6 — R4, R4b, AC5, AC11. The shipped file, not a
+  // fixture: the app reads this manifest, so the degrees have to be in it.
+  //
+  // The length claim is AC11's manifest half. A bar's numeral is looked up by
+  // the same `[bar % length]` arithmetic that picks its chord symbol, so one
+  // degree per named chord is exactly the condition under which no bar can ever
+  // render with a symbol and no numeral.
+  it('carries one degree per chord of every progression — R4, AC5, AC11', () => {
+    expect(grooves.length).toBeGreaterThan(0)
+    for (const groove of grooves) {
+      const where = groove.id
+      expect(Array.isArray(groove.progressionDegrees), where).toBe(true)
+      const degrees = groove.progressionDegrees as number[]
+      // The progression starts on the tonic, so its first index is the tonic's.
+      expect(degrees[0], where).toBe(0)
+      expect(degrees.length, where).toBe(groove.progression.split('–').length)
+      for (const degree of degrees) {
+        expect(Number.isInteger(degree), where).toBe(true)
+        expect(degree, where).toBeGreaterThanOrEqual(0)
+      }
+    }
+  })
 
   it('holds a groove for every mode, and lets none dominate', () => {
     // Neither a count nor a fixed mode list: both only record the day they were

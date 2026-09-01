@@ -115,7 +115,8 @@ flowchart LR
   reads `♭V`.
 - **AC5** (R4) — Given the shipped manifest, then every groove carries
   `progressionDegrees`, and the app contains no chord-symbol parser.
-- **AC6** (R4b) — Given the catalogue before and after `npm run grooves`, then
+- **AC6** (R4b) — Given the catalogue before and after
+  `npm run grooves -- --manifest-only`, then
   every mp3 and every `headDelaySeconds` is byte-identical, and the existing
   generator boundary and lock tests still pass.
 - **AC7** (R4a, R8) — Given a groove with no `progressionDegrees`, when the box

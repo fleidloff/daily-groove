@@ -27,6 +27,11 @@ a staff shows and a row of letters hides.
 **Out of scope**
 - **The chord symbols and the bars.** Epic 1 owns the lead sheet.
 - **The progress track.** Epic 3.
+- **Superseded by feature-15.** The scale is drawn in quarter notes — a filled
+  head with a stem, turning over at the middle line — behind a generated
+  engraved clef, and the staff closes on a thin-and-thick final bar. The
+  reasoning below is kept as written because it is why the drawing started
+  where it did, not because it still describes the app.
 - **Rhythm.** Whole notes, evenly spaced, no stems, beams, bar lines, time
   signature or key signature. This is a picture of a scale, not a transcription.
 - **The groove's actual melody, bass line or comping.** The app holds no

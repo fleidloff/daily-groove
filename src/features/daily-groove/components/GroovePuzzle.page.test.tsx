@@ -14,14 +14,22 @@
  * | :-- | :-- |
  * | `GroovePuzzle.header.test.tsx`   | `components/header/` — the streak pill, the help toggle, the share control. Does it read or press something in the top bar? |
  * | `GroovePuzzle.intro.test.tsx`    | `components/intro/` — the how-to-play box. Does it open, close or read that box? |
- * | `GroovePuzzle.guessing.test.tsx` | `components/puzzle/`, the guessing half — chips, dots, feedback, the nudge, the way out, the solved panel, simple mode. Does it make or judge a guess? |
+ * | `GroovePuzzle.guessing.test.tsx` | `components/puzzle/`, the guessing half — chips, dots, feedback, the nudge, the way out, simple mode. Does it make or judge a guess? Reaching the solved panel counts: the case is about the guess that got there. |
  * | `GroovePuzzle.sounding.test.tsx` | `components/puzzle/`, the sounding half — the groove card and its meta line, the transport, the progress track, the reference-note voice, the chord row. Does something make a sound, or move with one? |
+ * | `components/solved/` | the payoff box itself — the answer, the character line, the lead sheet, the staff — has no `GroovePuzzle.` file. Its cases are `SolvedPanel.test.tsx`'s, and a case that spans the box *and* another region belongs here. |
  * | `GroovePuzzle.page.test.tsx`     | this file — hydration, storage, layout, the landmark, which groove the page picked, and what the page as a whole does or refuses to render. Does the assertion span regions, or hold no region at all? |
  *
- * **`puzzle/` is two files, not one, and that is deliberate.** Twelve of the
+ * **The regions are four, not three.** Feature-15 moved `SolvedPanel`,
+ * `LeadSheet` and `ScaleStaff` out of `components/puzzle/` into
+ * `components/solved/`, so the payoff box is its own region with its own
+ * colocated tests. The map above was written before that move and used to file
+ * the solved panel under `puzzle/`.
+ *
+ * **`puzzle/` is two files, not one, and that is deliberate.** Nine of the
  * feature's seventeen region components live under `components/puzzle/`,
- * against four in `header/` and one in `intro/`. Grouping strictly by region
- * therefore puts 65 of the 119 cases in a single file — more than half, over
+ * against four in `header/`, three in `solved/` and one in `intro/`. Grouping
+ * strictly by region therefore puts 65 of the 119 cases in a single file — more
+ * than half, over
  * this epic's ceiling of 40, and still the one file every feature would have to
  * touch, which is the problem the split exists to solve. So `puzzle/` divides
  * along a seam that was already visible in the cases: the *guessing surface*
@@ -49,6 +57,7 @@ import {
   control,
   dotStates,
   flavourGroup,
+  flavours,
   GROOVE,
   guess,
   installPuzzleAudio,
@@ -147,6 +156,150 @@ describe('GroovePuzzle', () => {
       .getByRole('heading', { name: 'C Aeolian' })
       .closest('[role="status"]') as HTMLElement
 
+  /**
+   * The two-column row's children, exactly as the existing R15 cases find them.
+   * There are two, before and after feature-15 Epic 5 — what changes is what
+   * the second one holds, never how many there are.
+   */
+  function columnsOf(container: HTMLElement) {
+    const split = container.querySelector('.md\\:flex-row') as HTMLElement
+    const columns = Array.from(split.children) as HTMLElement[]
+    expect(columns).toHaveLength(2)
+    return columns
+  }
+
+  /**
+   * The ended layout: the box is the row's second column beside the groove
+   * card, and the guess card is a later sibling of the row (F15 E5 R1, R1a, R3,
+   * R7, AC1, AC1a, AC4, AC7, AC7a).
+   *
+   * Only the cases that assert the *new* placement call this. The two guard
+   * cases below have to pass before the move as well as after it, so they use
+   * `columnsOf` and never this.
+   */
+  function expectEndedLayout(container: HTMLElement) {
+    const split = container.querySelector('.md\\:flex-row') as HTMLElement
+    const columns = columnsOf(container)
+
+    const box = solutionPanel()
+    const grooveName = screen.getByRole('heading', { name: GROOVE.name })
+    const question = screen.getByRole('heading', {
+      level: 3,
+      name: 'What is it?',
+    })
+
+    // R1, AC1: the row's two children are the groove card and the box, and the
+    // guess card is out of the row entirely.
+    expect(columns[0]).toContainElement(grooveName)
+    expect(columns[1]).toContainElement(box)
+    expect(split).not.toContainElement(question)
+
+    // AC1a: the box is the second column and the row aligns both columns'
+    // edges, which is what puts its first line level with the play control
+    // above `md` — and what gives the two boxes the same height. Flexbox
+    // stretches by default, so the claim is that no `items-*` override turns
+    // that off. A structural assertion, not a measurement: jsdom has no
+    // viewport, and `md:flex-row` is pinned by the existing 'stacks its
+    // columns' case.
+    expect(split.className).not.toMatch(/(^|\s)items-/)
+    // Each column is a one-cell grid, so the card inside fills the height the
+    // column was stretched to rather than sitting content-height inside it.
+    for (const column of columns) {
+      expect(column).toHaveClass('grid')
+    }
+    // AC1c's inner half, and it has to name the right element. `box` is the
+    // `role="status"` div, so its PARENT is the wrapper the column stretches;
+    // asserting on the grandparent checks the column instead, which carries
+    // `grid` for its own reasons and passes whatever the wrapper does. Both the
+    // wrapper and the status div must be grids, or the panel keeps its content
+    // height inside a stretched column and comes up short of the groove card —
+    // which is what happened, and what no assertion caught until someone
+    // looked at the rendered page.
+    expect(box.parentElement, 'the box has no wrapper to stretch').toHaveClass(
+      'grid',
+    )
+    expect(box).toHaveClass('grid')
+
+    // AC7a: each of the row's two children is one column, and the guess card
+    // below keeps that same width rather than spreading to the page. It is a
+    // later sibling of the row, and it is itself a row of the same shape — same
+    // gap, same collapse point, its card in an identically classed column — so
+    // the two rows cannot disagree about how wide a column is.
+    for (const column of columns) {
+      expect(column).toHaveClass('w-full')
+      expect(column).toHaveClass('md:w-auto')
+    }
+    const stack = split.parentElement as HTMLElement
+    expect(stack.className).toContain('flex-col')
+    const siblings = Array.from(stack.children)
+    const guessRoot = siblings.find((el) => el.contains(question)) as HTMLElement
+    expect(guessRoot, 'the guess card is not a sibling of the row').toBeDefined()
+    expect(siblings.indexOf(guessRoot)).toBeGreaterThan(siblings.indexOf(split))
+
+    // The gap is what sets a column's width once `flex-1` has split the
+    // remainder, so the same gap class on both rows is the whole claim. A
+    // hand-written `w-[calc(50%-…)]` would pass the class checks above and
+    // still be fourteen pixels wide of the column it is copying.
+    const gap = Array.from(split.classList).find((c) => c.startsWith('gap-'))
+    expect(gap, 'the row declares no gap').toBeDefined()
+    expect(guessRoot).toHaveClass(gap!)
+
+    // The collapse point is *read off the real row* rather than restated as
+    // `md`, because two breakpoints that can drift apart would be the defect:
+    // if the row above ever collapsed at `sm` and the card below at `md`, there
+    // would be a band of widths where the card is half a page wide with nothing
+    // beside it. One source, both rows.
+    const collapse = Array.from(split.classList).find((c) =>
+      c.endsWith(':flex-row'),
+    )
+    expect(collapse, 'the row declares no collapse point').toBeDefined()
+    const breakpoint = collapse!.split(':')[0]
+    expect(guessRoot).toHaveClass(collapse!)
+
+    const guessColumn = Array.from(guessRoot.children).find((el) =>
+      el.contains(question),
+    ) as HTMLElement
+    expect(guessColumn).toHaveClass('w-full')
+    expect(guessColumn).toHaveClass(`${breakpoint}:w-auto`)
+    expect(guessColumn).toHaveClass('flex-1')
+    // The empty column beside it is what makes `flex-1` halve rather than fill,
+    // and it carries nothing to announce.
+    const spacer = Array.from(guessRoot.children).find(
+      (el) => el !== guessColumn,
+    ) as HTMLElement
+    expect(spacer, 'nothing holds the second half open').toBeDefined()
+    expect(spacer).toHaveAttribute('aria-hidden', 'true')
+    expect(spacer).toBeEmptyDOMElement()
+    // `flex-1` is the whole mechanism: without it the spacer takes no share of
+    // the row and the finished card spreads to the full width, which is the one
+    // thing AC7a exists to prevent. Asserted because deleting it changes no
+    // other assertion in this file.
+    expect(spacer).toHaveClass('flex-1')
+    // And it must not become a flex item on a phone, or it would add a phantom
+    // gap under the card where the row has collapsed to one column.
+    expect(spacer).toHaveClass('hidden')
+    // And it is `display: none` below that same collapse point, which is what
+    // leaves the phone exactly as the user says it already looks: the card full
+    // width, and no phantom gap beneath it, because an element that is not
+    // displayed is not a flex item and takes no `gap`.
+    expect(spacer).toHaveClass('hidden')
+    expect(spacer).toHaveClass(`${breakpoint}:block`)
+
+    // R7: document order is the visual order, at every width — groove card,
+    // box, guess card.
+    expect(
+      grooveName.compareDocumentPosition(box) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy()
+    expect(
+      box.compareDocumentPosition(question) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy()
+
+    // AC7, the horizontal half of R6: a flex child that cannot be forced wider
+    // than its column, and a staff that scales down rather than overflowing.
+    expect(columns[1]).toHaveClass('min-w-0')
+    expect(box.querySelector('svg')).toHaveClass('max-w-full')
+  }
+
   it('waits rather than flashing a fresh game before the day is read (E5 R3, R4, C3a)', async () => {
     // A store that never resolves: the puzzle is stuck in its loading state.
     mockStore.get.mockReturnValue(new Promise<DailyResult | null>(() => {}))
@@ -209,7 +362,9 @@ describe('GroovePuzzle', () => {
     await renderPuzzle()
 
     expect(screen.getByRole('heading', { name: 'C Aeolian' })).toBeInTheDocument()
-    expect(screen.getByText(/solved in one try/i)).toBeInTheDocument()
+    // The box's one line of prose is the lesson now, not the score: the tries
+    // sentence this used to read left with F15 E1 R5.
+    expect(screen.getByText(/the plain minor scale/i)).toBeInTheDocument()
     expect(control()).toHaveAccessibleName('Solved')
     expect(control()).toBeDisabled()
 
@@ -221,6 +376,75 @@ describe('GroovePuzzle', () => {
     expect(
       within(rootGroup()).getByRole('button', { name: 'C' }),
     ).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  // Feature-15 Epic 1, Step D5 — R6, R8, AC9, AC11. The score left the payoff
+  // box; this is the guard that it did not leave the page with it. Asserted
+  // here rather than in a region file because it spans three: the box, the
+  // guessing card's dot row and the header's streak pill.
+  it('keeps one status region, and the score outside it (F15 E1 R6, R8, AC9, AC11)', async () => {
+    const day = (daysAgo: number): DailyResult => ({
+      date: isoDate(new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000)),
+      answer: { root: 'C', flavour: 'Aeolian' },
+      attempts: [SOLVING],
+      solved: true,
+    })
+    const today = day(0)
+    mockStore.get.mockResolvedValue(today)
+    mockStore.getAll.mockResolvedValue([today, day(1), day(2)])
+
+    await renderPuzzle()
+    const panel = solutionPanel()
+
+    // R8 — the payoff is announced once. The panel is the live region; the line
+    // inside it got no live region of its own.
+    expect(panel).toHaveAttribute('role', 'status')
+    expect(panel.querySelectorAll('[role="status"]')).toHaveLength(0)
+
+    // R6, AC11 — the day's outcome and the run are still legible on the page:
+    // the dot row reads Solved, the streak pill shows the run. Neither number
+    // is in the box.
+    expect(panel.textContent).not.toMatch(/streak/i)
+    expect(screen.getByRole('img', { name: 'Solved' })).toBeInTheDocument()
+    expect(screen.getByLabelText(/current streak/i)).toHaveTextContent(
+      '3 days streak',
+    )
+  })
+
+  /**
+   * Feature-15 Epic 3, Step D4 — R6, AC1, AC6. The numerals belong to the box,
+   * and the box only exists once the day is over — so half the answer cannot
+   * reach the screen while the day is still being guessed. Asserted here rather
+   * than in `SolvedPanel.test.tsx` because the subject spans two regions: the
+   * box that draws them and the whole page that must not.
+   */
+  it('writes the day\'s numerals in the box and nowhere else (F15 E3 R6, AC1)', async () => {
+    const user = userEvent.setup()
+    // `GROOVE` predates the field, so the degrees are added here rather than in
+    // the shared fixture: a page that shows numerals needs a groove that has
+    // them, and every other case in the five files is about a groove without.
+    const withDegrees: Groove = { ...GROOVE, progressionDegrees: [0, 3, 4] }
+    await renderPuzzle(<GroovePuzzle groove={withDegrees} />)
+
+    // Mid-puzzle the changes are not on the page, so neither are their degrees.
+    expect(document.querySelectorAll('[data-numeral]')).toHaveLength(0)
+
+    await guess(user, 'C', 'Aeolian')
+
+    const panel = solutionPanel()
+    const numerals = Array.from(
+      document.querySelectorAll<HTMLElement>('[data-numeral]'),
+    )
+    expect(numerals).toHaveLength(4)
+    for (const numeral of numerals) expect(panel).toContainElement(numeral)
+    // Bar four of a three-chord figure is a return, in the numeral as in the
+    // symbol above it.
+    expect(numerals.map((numeral) => numeral.textContent)).toEqual([
+      'I',
+      'IV',
+      'V',
+      'I',
+    ])
   })
 
   it('starts the day fresh when storage holds nothing readable (E5 R5, AC4)', async () => {
@@ -334,6 +558,184 @@ describe('GroovePuzzle', () => {
     }
   })
 
+  /**
+   * Feature-15 Epic 5, Step A1. The epic's most important case, because AC1b is
+   * the criterion a plausible-looking diff can silently break: a `key` on the
+   * first column, or a conditional wrapper above the groove card, reaches the
+   * right document order and remounts the transport that is sounding.
+   *
+   * One case rather than three because it is one transition — and because the
+   * file's case budget is real.
+   */
+  it('keeps the groove card sounding, announces the box once, and moves nothing under the finger (F15 E5 R1b, R4, R5, R5a, AC1b, AC5, AC6, AC9)', async () => {
+    const scrolled = vi.fn()
+    // jsdom does not implement scrollIntoView at all, so it is assigned and
+    // restored rather than spied on — vi.spyOn on a missing method throws.
+    const original = Element.prototype.scrollIntoView
+    Element.prototype.scrollIntoView = scrolled
+    const scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => {})
+    try {
+      const user = userEvent.setup()
+      const { container } = await renderPuzzle()
+
+      // The baseline: one live region on a playable day — the feedback line
+      // under the check control, a `role="status"` since feature-3. AC5's
+      // "exactly one" is about the box, which is why the count is stated rather
+      // than assumed.
+      expect(document.querySelectorAll('[role="status"]')).toHaveLength(1)
+
+      // The loop is sounding before the day ends, which is the state R1b is
+      // about.
+      await play(user)
+      const grooveName = screen.getByRole('heading', { name: GROOVE.name })
+      const transportButton = screen.getByRole('button', {
+        name: 'Stop the loop',
+      })
+      const track = within(columnsOf(container)[0]).getByRole('progressbar')
+
+      await guess(user, 'C', 'Aeolian')
+
+      // AC1b: the same nodes, so nothing in the groove card was unmounted and
+      // the transport was not interrupted. The audio graph itself is owned by
+      // `useTransport` above the row and could not be re-created by a change
+      // inside it; these three identities are what "the same node" asks for.
+      expect(screen.getByRole('heading', { name: GROOVE.name })).toBe(grooveName)
+      expect(screen.getByRole('button', { name: 'Stop the loop' })).toBe(
+        transportButton,
+      )
+      expect(within(columnsOf(container)[0]).getByRole('progressbar')).toBe(
+        track,
+      )
+
+      // AC5: two regions now, exactly one of them the box, none nested in it,
+      // and nothing turned into a dialog or an alert.
+      const regions = Array.from(document.querySelectorAll('[role="status"]'))
+      expect(regions).toHaveLength(2)
+      expect(regions.filter((region) => region === solutionPanel())).toHaveLength(
+        1,
+      )
+      expect(solutionPanel().querySelectorAll('[role="status"]')).toHaveLength(0)
+      expect(solutionPanel()).not.toHaveAttribute('aria-modal')
+      expect(screen.queryAllByRole('dialog')).toEqual([])
+      expect(screen.queryAllByRole('alert')).toEqual([])
+
+      // AC6: the day's own ending settles the check control — feature-11 E4's
+      // behaviour, not this epic's — and the move focuses nothing else. Stated
+      // in the negative on purpose: the guess card is re-parented (R3a), so
+      // jsdom drops focus to `document.body`, and asserting that node would
+      // make the remount a requirement instead of a cost.
+      expect(control()).toBeDisabled()
+      expect(solutionPanel()).not.toContainElement(
+        document.activeElement as HTMLElement | null,
+      )
+      expect(document.activeElement).not.toBe(transportButton)
+
+      // AC9, R5a, R5b: no jump, no pointer, no toast. The announcement and the
+      // reorder are the whole change.
+      expect(scrolled).not.toHaveBeenCalled()
+      expect(scrollTo).not.toHaveBeenCalled()
+    } finally {
+      Element.prototype.scrollIntoView = original
+      scrollTo.mockRestore()
+    }
+  })
+
+  /**
+   * Feature-15 Epic 5, Step A2. Both elements that move in this epic are walked
+   * upward to the feature's region, because a positioning class anywhere on
+   * either chain would mean the placement was achieved with CSS rather than with
+   * markup.
+   */
+  it('achieves the placement in the markup, not with positioning or order (F15 E5 R7, AC8)', async () => {
+    // Anchored at the *start* of a class on purpose: a bare /order-/ matches
+    // `border-r-[3px]`, which the lead sheet really renders. `order-` then has
+    // to take its own suffix — `order-first`, `md:order-2` — or the pattern
+    // would only ever match a class that ends at the hyphen, which is to say
+    // never.
+    const FORBIDDEN =
+      /(?:^|\s)(?:[a-z]+:)?(?:order-\S+|absolute|fixed|sticky)(?:\s|$)/
+
+    const user = userEvent.setup()
+    const { container } = await renderPuzzle()
+    await guess(user, 'C', 'Aeolian')
+
+    const section = container.querySelector(
+      `section[aria-label="${APP_NAME}"]`,
+    ) as HTMLElement
+    const chain: Element[] = [...columnsOf(container)]
+    for (const start of [
+      solutionPanel() as Element,
+      screen.getByRole('heading', { level: 3, name: 'What is it?' }) as Element,
+    ]) {
+      for (
+        let el: Element | null = start;
+        el && el !== section;
+        el = el.parentElement
+      ) {
+        chain.push(el)
+      }
+    }
+    for (const el of chain) {
+      expect(el.className, el.className).not.toMatch(FORBIDDEN)
+    }
+  })
+
+  /**
+   * Feature-15 Epic 5, Step A3. The move itself: the box takes the guess card's
+   * column and the finished guess card drops below the row, with everything it
+   * had inside the row.
+   */
+  it('puts the box beside the groove card and the finished guess card below the row (F15 E5 R1, R1a, R3, AC1, AC1a, AC4, AC7, AC7a)', async () => {
+    const user = userEvent.setup()
+    const { container } = await renderPuzzle()
+
+    await guess(user, 'C', 'Aeolian')
+
+    expectEndedLayout(container)
+
+    const guessRoot = screen
+      .getByRole('heading', { level: 3, name: 'What is it?' })
+      .closest('div') as HTMLElement
+    // R3, AC4: not hidden, not collapsed, not summarised, not stripped.
+    expect(guessRoot).toContainElement(rootGroup())
+    expect(guessRoot).toContainElement(flavourGroup())
+    expect(guessRoot).toContainElement(
+      screen.getByRole('switch', { name: /simple mode/i }),
+    )
+    expect(guessRoot).toContainElement(control())
+    expect(within(flavourGroup()).getAllByRole('button')).toHaveLength(
+      flavours().length,
+    )
+    expect(dotStates()).toHaveLength(3)
+    // R5b: nothing was added to point at the box — no marker, no pointer, no
+    // toast. The feedback line is the card's one live region and predates this.
+    expect(guessRoot.querySelectorAll('[aria-live]')).toHaveLength(1)
+  })
+
+  /**
+   * Feature-15 Epic 5, Step A4. One condition, two endings: a day given up on
+   * is a day ended, and there is no second branch anywhere in the composer.
+   */
+  it('places the box the same way on a day given up on (F15 E5 R8, AC2)', async () => {
+    const revealedDay: DailyResult = {
+      date: TODAY(),
+      answer: { root: 'C', flavour: 'Aeolian' },
+      attempts: [
+        miss('D', wrongFlavour(), false),
+        miss('E', otherWrongFlavour(), false),
+        miss('F', wrongFlavour(), false),
+      ],
+      solved: false,
+      revealed: true,
+    }
+    mockStore.get.mockResolvedValue(revealedDay)
+    mockStore.getAll.mockResolvedValue([revealedDay])
+
+    const { container } = await renderPuzzle()
+
+    expectEndedLayout(container)
+  })
+
   it("falls back to today's groove when no prop is given", async () => {
     await renderPuzzle(<GroovePuzzle />)
     expect(screen.getByRole('button', { name: /^play the loop$/i })).toBeInTheDocument()
@@ -444,11 +846,47 @@ describe('GroovePuzzle', () => {
     })
 
     it("reveals neither the solved panel nor the day's changes before the solve", async () => {
+      const user = userEvent.setup();
       const { container } = await renderFeature();
 
       const groove = selectGrooveForDate(new Date(), GROOVES);
+
+      /** A chip in a row whose label is not the day's answer — a certain miss. */
+      const wrongChips = (group: HTMLElement, answer: string) =>
+        within(group)
+          .getAllByRole('button')
+          .filter((chip) => chipLabel(chip) !== answer);
+
+      // Feature-15 Epic 5, Step A5 — AC3 is about a *part-played* day, which is
+      // the state a reorder could plausibly get wrong, so two guesses are spent
+      // before the layout is read.
+      for (const spend of [0, 1]) {
+        await user.click(wrongChips(rootGroup(), groove.root)[spend]);
+        await user.click(wrongChips(flavourGroup(), groove.flavour)[spend]);
+        await user.click(control());
+      }
+      expect(dotStates().filter((state) => state !== 'unspent')).toHaveLength(2);
+
       expect(container.textContent).not.toContain(groove.chord);
       expect(container.textContent).not.toContain(groove.progression);
+
+      const columns = columnsOf(container as HTMLElement);
+      // Two guesses spent, no terminal state: no box to place, so the row is
+      // the groove card and the guess card, in the order they are today.
+      expect(columns[1]).toContainElement(
+        screen.getByRole('heading', { level: 3, name: 'What is it?' }),
+      );
+      expect(columns[0].querySelector('[role="status"]')).toBeNull();
+      // The page's one live region — the feedback line — is in column two,
+      // where the guess card still is.
+      expect(document.querySelectorAll('[role="status"]')).toHaveLength(1);
+      expect(
+        screen
+          .getByRole('heading', { name: groove.name })
+          .compareDocumentPosition(
+            screen.getByRole('heading', { level: 3, name: 'What is it?' }),
+          ) & Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
     })
 
     it("waits for the day's saved record rather than flashing a fresh game", async () => {
@@ -779,6 +1217,38 @@ describe('GroovePuzzle', () => {
       // one on the shared page identifiable as the way back.
       expect(inAppLinks()).toEqual([])
       everyOffSiteLinkReallyLeaves()
+    })
+
+    /**
+     * Feature-15 Epic 5, Step A6. The shared entry point places the box the
+     * same way — it renders the same components and Sam meets the same problem
+     * here — and the way onward travels with the box rather than being left
+     * below the finished guess card.
+     */
+    it('places the box the same way on a shared groove, with the way onward beneath it (F15 E5 R1, AC1)', async () => {
+      const user = userEvent.setup()
+      const { container } = await renderShared()
+
+      await guess(user, 'C', 'Aeolian')
+
+      expectEndedLayout(container)
+
+      const invite = screen.getByRole('link', { name: /play today.s groove/i })
+      const box = solutionPanel()
+      const columns = columnsOf(container)
+
+      // Feature-12 E3's own relationship, restated at the new position: after
+      // the box, never folded into it (F12 E3 R5a, AC14).
+      expect(
+        box.compareDocumentPosition(invite) & Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy()
+      expect(box).not.toContainElement(invite)
+      // And it travelled with the box rather than being left below the guess
+      // card, so the next move is still beside the answer it belongs to.
+      expect(columns[1]).toContainElement(invite)
+      // Still the only two in-app destinations, and still both `/`.
+      expect(inAppLinks()).toHaveLength(2)
+      for (const link of inAppLinks()) expect(link).toHaveAttribute('href', '/')
     })
 
     it('has the same puzzle region and the same controls in both modes (R4, AC3)', async () => {

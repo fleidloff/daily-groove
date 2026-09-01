@@ -17,7 +17,7 @@ const BANNER = `/**
  * change the catalogue or the generator instead.
  */`
 
-/** The thirteen fields of a Groove, in the order the type declares them. */
+/** The fourteen fields of a Groove, in the order the type declares them. */
 const FIELDS = [
   'id',
   'uuid',
@@ -27,6 +27,7 @@ const FIELDS = [
   'scale',
   'chord',
   'progression',
+  'progressionDegrees',
   'root',
   'flavour',
   'bars',
@@ -38,8 +39,13 @@ const FIELDS = [
  * A literal for one field value, single-quoted like the rest of the codebase
  * so the committed module needs no reformatting to pass lint. Escaping is
  * JSON's, with the quote characters swapped over.
+ *
+ * Every shape a `Groove` field can hold is spelled here, in one place, so a
+ * field the renderer cannot spell is a compile error rather than a value
+ * silently dropped from the manifest.
  */
-function literal(value: string | number): string {
+function literal(value: string | number | readonly number[]): string {
+  if (Array.isArray(value)) return `[${value.join(', ')}]`
   if (typeof value === 'number') return String(value)
   const json = JSON.stringify(value)
   const inner = json

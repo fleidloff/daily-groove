@@ -162,6 +162,18 @@ export type MusicMeta = {
   chord: string
   /** Display string, e.g. "Cm–Fm–G7". */
   progression: string
+  /**
+   * One scale-degree index per progression chord — `Harmony.progressionDegrees`
+   * verbatim. An index into `intervalsFor(flavour)`, not a diatonic degree
+   * number.
+   *
+   * Required, not optional: every render path knows it, because `buildHarmony`
+   * computed it in order to choose the chords. It sits on `MusicMeta` rather
+   * than being threaded from `Harmony` so that it lands on the same side of
+   * `isValidHarmony`'s boundary as `progression`, where the words can be
+   * cross-checked against the audio.
+   */
+  progressionDegrees: number[]
 }
 
 /**

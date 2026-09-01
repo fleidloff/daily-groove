@@ -4,7 +4,7 @@ import type { Flavour, MusicMeta } from '../types.ts'
 import { rngFor } from '../rng.ts'
 import { buildHarmony, chordNameFor, pitchClassesOf } from './harmony.ts'
 import { FLAVOURS, intervalsFor, pitchesOf, scaleName } from './scales.ts'
-import { ROOTS } from './notes.ts'
+import { ROOTS, pitchClassOf } from './notes.ts'
 import { VALIDITY, isValidHarmony, scaleDegreePitchClasses } from './validity.ts'
 
 /** The pitch classes a chord's MIDI notes sound, ascending and deduplicated. */
@@ -12,7 +12,13 @@ function pitchClassesOfMidi(midi: number[]): number[] {
   return [...new Set(midi.map((m) => m % 12))].sort((a, b) => a - b)
 }
 
-function musicFor(root: Root, flavour: Flavour, chord: string, progression: string): MusicMeta {
+function musicFor(
+  root: Root,
+  flavour: Flavour,
+  chord: string,
+  progression: string,
+  progressionDegrees: number[],
+): MusicMeta {
   return {
     bpm: 100,
     bars: 4,
@@ -22,6 +28,7 @@ function musicFor(root: Root, flavour: Flavour, chord: string, progression: stri
     scale: scaleName(root, flavour),
     chord,
     progression,
+    progressionDegrees,
   }
 }
 
@@ -167,11 +174,45 @@ describe('buildHarmony — valid for every flavour and every root', () => {
     for (const flavour of FLAVOURS) {
       for (const root of ROOTS) {
         const h = buildHarmony(root, flavour, rngFor(`v:${root}:${flavour}`))
-        const music = musicFor(root, flavour, h.chordName, h.progressionName)
+        const music = musicFor(root, flavour, h.chordName, h.progressionName, h.progressionDegrees)
         expect({ root, flavour, valid: isValidHarmony(music, h) }).toEqual({
           root,
           flavour,
           valid: true,
+        })
+      }
+    }
+  })
+
+  // Feature 15, Epic 3, Step A5 — R4, AC8. Every degree the generator can draw
+  // is a degree the flavour's interval table actually has, AND it names the
+  // chord that is really sounding.
+  //
+  // A range check alone is nearly vacuous here: the derived branch's index comes
+  // from `forEach`, and the idiom branch already skips `degrees.indexOf(offset)
+  // === -1`. A future idiom pointing at a note outside the scale would silently
+  // *drop* that chord rather than emit an out-of-range index, so the range check
+  // stays green through exactly the failure it was written for. What must also
+  // hold is the tie to the audio: the chord on index `d` is rooted on
+  // `(pitchClassOf(root) + intervalsFor(flavour)[d]) % 12`. The app looks each
+  // index up in its own interval table and derives an accidental from the
+  // semitone, so an index that does not name the sounding chord would print a
+  // numeral for a chord nobody plays — and nothing else in the suite would say
+  // so.
+  it('draws only degrees its flavour has, and each names the chord sounding — R4, AC8', () => {
+    for (const flavour of FLAVOURS) {
+      const intervals = intervalsFor(flavour)
+      for (const root of ROOTS) {
+        const h = buildHarmony(root, flavour, rngFor(`v:${root}:${flavour}`))
+        h.progressionDegrees.forEach((degree, i) => {
+          const where = `${root} ${flavour} chord ${i + 1}`
+          expect(Number.isInteger(degree), where).toBe(true)
+          expect(degree, where).toBeGreaterThanOrEqual(0)
+          expect(degree, where).toBeLessThan(intervals.length)
+          // The chord's own root, as rendered, against the one the index names.
+          expect(h.progressionMidi[i][0] % 12, where).toBe(
+            (pitchClassOf(root) + intervals[degree]) % 12,
+          )
         })
       }
     }
@@ -216,7 +257,11 @@ describe('buildHarmony — the blues idiom', () => {
     const degrees = new Set(
       ROOTS.flatMap((root) => buildHarmony(root, 'blues', rngFor(`b:${root}`)).progressionDegrees),
     )
-    expect(degrees.size).toBeGreaterThan(1)
+    // Exactly the three the idiom states — offsets 0, 5 and 7, which are indices
+    // 0, 2 and 4 of the blues scale [0, 3, 5, 6, 7, 10]. Named rather than
+    // counted: `size > 1` stays green when an idiom offset is silently dropped
+    // by `degrees.indexOf(offset) === -1`, and this is what fires instead.
+    expect([...degrees].sort((a, b) => a - b)).toEqual([0, 2, 4])
   })
 })
 

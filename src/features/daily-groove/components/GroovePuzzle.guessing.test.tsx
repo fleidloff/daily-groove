@@ -373,7 +373,8 @@ describe('GroovePuzzle', () => {
     expect(giveUp()).toBeNull()
 
     // The third miss puts it on the card (AC6).
-    await guess(user, 'G', otherWrongFlavour())
+    const third = otherWrongFlavour()
+    await guess(user, 'G', third)
     expect(giveUp()).toHaveAccessibleName('Give up and show the answer')
 
     // One press only arms it: the answer is still withheld and the day is
@@ -396,6 +397,13 @@ describe('GroovePuzzle', () => {
     expect(screen.queryByText(/streak now/i)).toBeNull()
     expect(
       within(panel).getByRole('img', { name: CHANGES_READ }),
+    ).toBeInTheDocument()
+    // F15 E4 R2, R11, AC2, AC11 — and it says how close the *last* wrong guess
+    // came, which on this day is the third. A day given up on reads the same
+    // sentence as a day solved: `selectNearMiss` is handed the attempts and
+    // nothing about how the day ended.
+    expect(
+      within(panel).getByText(new RegExp(`^You said ${third} — `)),
     ).toBeInTheDocument()
 
     // ...the offer itself is gone, and so is the way back in (AC8a).
@@ -481,19 +489,37 @@ describe('GroovePuzzle', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('opens the solved panel with the answer, the tries and the changes (E4 R1-R5, AC1, AC3, AC4)', async () => {
+  it('opens the solved panel with the answer, its lesson, the near miss and the changes (E4 R1-R5, AC1, AC3, AC4, F15 E1 R5, F15 E4 R1, R2, AC1, AC2)', async () => {
     const user = userEvent.setup()
     const { container } = await renderPuzzle()
+    const wrong = wrongFlavour()
 
-    await guess(user, 'C', wrongFlavour())
+    await guess(user, 'C', wrong)
     await guess(user, 'C', 'Aeolian')
 
     expect(
       screen.getByRole('heading', { name: 'C Aeolian' }),
     ).toBeInTheDocument()
-    // Two attempts were spent, and today's solve is the streak's first day.
-    expect(screen.getByText(/solved in 2 tries/i)).toBeInTheDocument()
-    expect(screen.getByText(/streak now 1/i)).toBeInTheDocument()
+    // The sentence this used to read — `solved in 2 tries · streak now 1` —
+    // is gone: F15 E1 R5 clears the score out of the box and spends its one
+    // line of prose on what makes the mode sound as it does. Same subjects,
+    // read where the app shows them now — the box's lesson, the dot row, and
+    // the header's streak pill.
+    const panel = solutionPanel()
+    expect(panel.textContent).toMatch(/the plain minor scale/i)
+    expect(panel.textContent).not.toMatch(/tr(y|ies)/i)
+    expect(panel.textContent).not.toMatch(/streak/i)
+    expect(screen.getByRole('img', { name: 'Solved' })).toBeInTheDocument()
+    // F15 E4 R1, R2, AC1, AC2 — and the box names the mode the guess came from,
+    // read off the attempts the page already holds rather than off anything the
+    // component works out for itself.
+    expect(
+      within(panel).getByText(new RegExp(`^You said ${wrong} — `)),
+    ).toBeInTheDocument()
+    // Today's solve is the streak's first day.
+    expect(screen.getByLabelText('Current streak')).toHaveTextContent(
+      '1 day streak',
+    )
     expect(
       within(container).getByRole('img', { name: CHANGES_READ }),
     ).toBeInTheDocument()
@@ -711,7 +737,10 @@ describe('GroovePuzzle', () => {
     expect(saved.revealed).toBeUndefined()
     expect(saved.answer).toEqual({ root: 'C', flavour: 'Dorian' })
     // A solve is a solve: the day counts toward the streak like any other.
-    expect(screen.getByText(/streak now 1/i)).toBeInTheDocument()
+    // The box no longer says so in prose (F15 E1 R5) — the header's pill does.
+    expect(screen.getByLabelText('Current streak')).toHaveTextContent(
+      '1 day streak',
+    )
   })
 
   it('carries the preference into the page it opens with (E5 R7, AC7)', async () => {
@@ -733,6 +762,40 @@ describe('GroovePuzzle', () => {
    * changes here: the shared framing, the way back to today and the date line
    * are all Epic 3's. This block is the persistence switch and only that.
    */
+
+  /**
+   * Feature-15 Epic 4, Step C6 — R5, R5a, AC4. Simple mode scores the guess
+   * against a *family*, so what is stored is `Major` or `Minor` — a word with no
+   * intervals to compare, which would throw in the degree arithmetic. This is
+   * the case the guard in `nearMiss.ts` exists for, asserted where the real
+   * stored attempt shape reaches the real box.
+   */
+  it('carries no near-miss line on a simple-mode day (F15 E4 R5, R5a, AC4)', async () => {
+    await enableSimpleMode()
+    const user = userEvent.setup()
+    await renderPuzzle()
+    const [wrongRoot, otherWrongRoot] = simpleRoots().filter((r) => r !== 'C')
+
+    await guess(user, wrongRoot, 'Major')
+    await guess(user, otherWrongRoot, 'Major')
+    // The nudge has selected the day's root by now, so the third press is the
+    // third miss — the same flow the threshold case above walks.
+    await user.click(control())
+    expect(dotStates()).toEqual(['spent', 'spent', 'spent'])
+
+    await user.click(giveUp() as HTMLElement)
+    await user.click(giveUp() as HTMLElement)
+
+    // The box still pays the day off, and nothing threw getting there...
+    const panel = solutionPanel()
+    expect(
+      within(panel).getByRole('heading', { name: 'C Aeolian' }),
+    ).toBeInTheDocument()
+    expect(within(panel).getByText(/the plain minor scale/i)).toBeInTheDocument()
+    // ...and it says nothing about how close `Minor` was, because the game
+    // asked a different question.
+    expect(screen.queryByText(/you said/i)).toBeNull()
+  })
 
   describe('a shared groove (F12 E1)', () => {
 

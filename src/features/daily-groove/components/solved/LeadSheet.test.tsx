@@ -4,9 +4,17 @@ import { LeadSheet } from './LeadSheet'
 
 const CHANGES = ['C7', 'Em7♭5', 'B♭maj7', 'Fmaj7']
 
+/** `groove-01`'s real degrees, as Track B's `barNumerals` writes them. */
+const NUMERALS = ['I', 'III', '♭VII', 'IV']
+
 /** The bar elements, in document order. */
 function bars(container: HTMLElement): HTMLElement[] {
   return Array.from(container.querySelectorAll<HTMLElement>('[data-bar]'))
+}
+
+/** The numeral elements, in document order. */
+function numerals(container: HTMLElement): HTMLElement[] {
+  return Array.from(container.querySelectorAll<HTMLElement>('[data-numeral]'))
 }
 
 describe('LeadSheet', () => {
@@ -80,6 +88,18 @@ describe('LeadSheet', () => {
     const { container } = render(<LeadSheet chords={CHANGES} />)
 
     expect(container.textContent).toBe(CHANGES.join(''))
+  })
+
+  it('adds the numerals and still nothing else — no title, key or tempo (R5)', () => {
+    const { container } = render(
+      <LeadSheet chords={CHANGES} numerals={NUMERALS} />,
+    )
+
+    // Four symbols and four numerals, interleaved bar by bar, and no other
+    // word on the page: the numeral is the only thing this epic adds.
+    expect(container.textContent).toBe(
+      CHANGES.map((chord, bar) => `${chord}${NUMERALS[bar]}`).join(''),
+    )
   })
 
   // --- Step C3 — R9, AC6 ---------------------------------------------------
@@ -159,5 +179,149 @@ describe('LeadSheet', () => {
 
     expect(bars(container)).toHaveLength(4)
     expect(screen.getByRole('img')).toBeInTheDocument()
+  })
+
+  // --- Step C1 — R1, AC1 ---------------------------------------------------
+
+  it('draws one numeral under each bar, in bar order (R1, AC1)', () => {
+    const { container } = render(
+      <LeadSheet chords={CHANGES} numerals={NUMERALS} />,
+    )
+
+    for (const bar of bars(container)) {
+      expect(bar.querySelectorAll('[data-numeral]')).toHaveLength(1)
+    }
+    expect(numerals(container).map((numeral) => numeral.textContent)).toEqual(
+      NUMERALS,
+    )
+  })
+
+  // --- Step C2 — R7, AC9 ---------------------------------------------------
+
+  it('sits in the air the bar already reserves, changing no geometry (R7, AC9)', () => {
+    const plain = render(<LeadSheet chords={CHANGES} />).container
+    const withNumerals = render(
+      <LeadSheet chords={CHANGES} numerals={NUMERALS} />,
+    ).container
+
+    // Not a list of utilities to keep in step: the claim is that a bar drawn
+    // with a numeral is the same box as a bar drawn without one. The moment the
+    // numeral is put in flow and the padding is grown to make room, this fails.
+    const classes = bars(withNumerals).map((bar) => bar.className)
+    expect(classes).toEqual(bars(plain).map((bar) => bar.className))
+    for (const className of classes) {
+      expect(className).toMatch(/\bpb-9\b/)
+      expect(className).toMatch(/\bpl-3\b/)
+      expect(className).toMatch(/\bpt-1\b/)
+      expect(className).toMatch(/\brelative\b/)
+      expect(className).toMatch(/\bborder-l\b/)
+    }
+  })
+
+  it('keeps the two-by-two break the grid guarantees (R7, AC9)', () => {
+    const { container } = render(
+      <LeadSheet chords={CHANGES} numerals={NUMERALS} />,
+    )
+    const sheet = within(container).getByRole('img')
+
+    expect(sheet.className).toMatch(/\bgrid-cols-2\b/)
+    expect(sheet.className).toMatch(/\bsm:grid-cols-4\b/)
+    expect(sheet.className).not.toMatch(/\bflex-wrap\b/)
+  })
+
+  it('holds each numeral inside its own bar, whatever the layout (R7, AC9)', () => {
+    const { container } = render(
+      <LeadSheet chords={CHANGES} numerals={NUMERALS} />,
+    )
+    const drawn = bars(container)
+    const drawnNumerals = numerals(container)
+
+    expect(drawnNumerals).toHaveLength(drawn.length)
+    for (const numeral of drawnNumerals) {
+      expect(numeral.className).toMatch(/\babsolute\b/)
+      expect(numeral.className).toMatch(/\bleft-3\b/)
+      expect(numeral.className).toMatch(/\bbottom-/)
+    }
+    // jsdom resolves no media query, so the 2 × 2 break itself is checked by
+    // eye. Containment is the layout-independent half of the same claim.
+    drawn.forEach((bar, index) => {
+      drawnNumerals.forEach((numeral, other) => {
+        expect(bar.contains(numeral)).toBe(index === other)
+      })
+    })
+  })
+
+  // --- Step C3 — R5 --------------------------------------------------------
+
+  it('letters the numerals in the same hand, one size under the symbol (R5)', () => {
+    const { container } = render(
+      <LeadSheet chords={CHANGES} numerals={NUMERALS} />,
+    )
+
+    for (const numeral of NUMERALS) {
+      const lettering = within(container).getByText(numeral)
+      expect(lettering.className).toMatch(/font-jazz/)
+      // `Lettering size="sm"` — smaller than the symbol's `md` above it.
+      expect(lettering.className).toMatch(/text-\[15px\]/)
+    }
+  })
+
+  // --- Step C4 — R4a, R8, AC7 ----------------------------------------------
+
+  it('draws no numeral where a bar has none, and keeps the bar (R4a, R8, AC7)', () => {
+    const { container } = render(
+      <LeadSheet chords={CHANGES} numerals={['I', '', '', 'IV']} />,
+    )
+    const drawn = bars(container)
+
+    expect(drawn).toHaveLength(4)
+    expect(drawn[1].querySelectorAll('[data-numeral]')).toHaveLength(0)
+    expect(drawn[2].querySelectorAll('[data-numeral]')).toHaveLength(0)
+    expect(drawn[1].textContent).toBe('Em7♭5')
+    expect(drawn[2].textContent).toBe('B♭maj7')
+    expect(numerals(container).map((numeral) => numeral.textContent)).toEqual([
+      'I',
+      'IV',
+    ])
+  })
+
+  it('draws four bars and no numerals when the prop is absent (R4a, R8, AC7)', () => {
+    const { container } = render(<LeadSheet chords={CHANGES} />)
+
+    expect(bars(container)).toHaveLength(4)
+    expect(numerals(container)).toHaveLength(0)
+    expect(
+      screen.getByRole('img', { name: 'C7 · Em7♭5 · B♭maj7 · Fmaj7' }),
+    ).toBeInTheDocument()
+  })
+
+  it('draws numerals over blank bars rather than throwing (R4a, R8, AC7)', () => {
+    expect(() =>
+      render(
+        <LeadSheet chords={['', '', '', '']} numerals={['I', 'V', 'I', 'V']} />,
+      ),
+    ).not.toThrow()
+  })
+
+  // --- Step C5 — R1, AC1 ---------------------------------------------------
+
+  it('reads each bar as its symbol and its numeral to a screen reader (R1, AC1)', () => {
+    render(<LeadSheet chords={CHANGES} numerals={NUMERALS} />)
+
+    // `role="img"` hides the subtree, so a numeral left out of the accessible
+    // name is a numeral no screen-reader user ever hears.
+    expect(
+      screen.getByRole('img', {
+        name: 'C7 I · Em7♭5 III · B♭maj7 ♭VII · Fmaj7 IV',
+      }),
+    ).toBeInTheDocument()
+  })
+
+  it('names only the bars that have a numeral (R1, R8, AC1, AC7)', () => {
+    render(<LeadSheet chords={CHANGES} numerals={['I', '', '', 'IV']} />)
+
+    expect(
+      screen.getByRole('img', { name: 'C7 I · Em7♭5 · B♭maj7 · Fmaj7 IV' }),
+    ).toBeInTheDocument()
   })
 })

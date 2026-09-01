@@ -74,6 +74,7 @@ function musicFor(root: Root, flavour: Flavour, harmony: Harmony): MusicMeta {
     scale: scaleName(root, flavour),
     chord: harmony.chordName,
     progression: harmony.progressionName,
+    progressionDegrees: harmony.progressionDegrees,
   }
 }
 

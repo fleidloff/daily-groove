@@ -43,7 +43,7 @@ import { GrooveHeader } from './header/GrooveHeader'
 import { ShareGroove } from './header/ShareGroove'
 import { HowToPlay } from './intro/HowToPlay'
 import { GuessCard } from './puzzle/GuessCard'
-import { SolvedPanel } from './puzzle/SolvedPanel'
+import { SolvedPanel } from './solved/SolvedPanel'
 import { TransportPanel } from './puzzle/TransportPanel'
 import { Card } from '@/components/surfaces/Card'
 import { PlayControl } from '@/components/controls/PlayControl'
@@ -322,6 +322,39 @@ function GroovePuzzleView({
   // already in progress would flash as untouched, and a solved day as unplayed.
   if (!hydrated) return <PuzzleLoading />
 
+  /*
+    One element, rendered in one of two places: inside the row's second column
+    while the day is in play, and as a sibling below the row once it has ended
+    (F15 E5 R1, R3). Hoisted rather than written twice so its twenty props exist
+    once and cannot drift between the two positions — which is what makes AC4's
+    "the same props it had inside the row" true by construction rather than by
+    inspection. The two references are mutually exclusive, so React never sees
+    both.
+  */
+  const guessCard = (
+    <GuessCard
+      roots={roots}
+      flavours={flavours}
+      selectedRoot={offeredRoot}
+      selectedFlavour={offeredFlavour}
+      onSelectRoot={selectRoot}
+      onHearRoot={playRoot}
+      onSelectFlavour={selectFlavour}
+      canCheck={canCheckOffered}
+      onCheck={check}
+      solved={solved}
+      feedback={feedback}
+      showNudge={showNudge}
+      dots={dots}
+      answerRoot={answer.root}
+      revealed={revealed}
+      showReveal={showReveal}
+      onReveal={reveal}
+      simple={simple}
+      onToggleSimple={setSimple}
+    />
+  )
+
   return (
     <section aria-label={REGION_LABEL}>
       <Stack gap="xl">
@@ -370,8 +403,16 @@ function GroovePuzzleView({
             one way back to today (F12 E3 R1, R2, R3, R5). */}
         {shared && <SharedGrooveNotice />}
 
-        <Row gap="lg" align="start" collapseBelow="md">
-          <div className="min-w-0 w-full flex-1 md:w-auto">
+        {/*
+          No `align`, so the columns take flexbox's own default and stretch to
+          the taller of the two (F15 E5 R1a). Two boxes side by side with
+          different heights read as one unfinished; equal height is what makes
+          them a pair. The tops still line up — that is what puts the box's
+          first line level with the play control — because stretching aligns
+          both edges rather than only the top.
+        */}
+        <Row gap="lg" collapseBelow="md">
+          <div className="min-w-0 w-full flex-1 md:w-auto grid">
             {/* The card is handed a finished meta line rather than a date, so
                 the two pages differ in data and the card branches on nothing.
                 A shared groove belongs to no day, and today's date here would
@@ -433,55 +474,95 @@ function GroovePuzzleView({
             </GrooveCard>
           </div>
 
-          <div className="min-w-0 w-full flex-1 md:w-auto">
-            <GuessCard
-              roots={roots}
-              flavours={flavours}
-              selectedRoot={offeredRoot}
-              selectedFlavour={offeredFlavour}
-              onSelectRoot={selectRoot}
-              onHearRoot={playRoot}
-              onSelectFlavour={selectFlavour}
-              canCheck={canCheckOffered}
-              onCheck={check}
-              solved={solved}
-              feedback={feedback}
-              showNudge={showNudge}
-              dots={dots}
-              answerRoot={answer.root}
-              revealed={revealed}
-              showReveal={showReveal}
-              onReveal={reveal}
-              simple={simple}
-              onToggleSimple={setSimple}
-            />
+          <div className="min-w-0 w-full flex-1 md:w-auto grid">
+            {/*
+              The payoff takes the guess card's column once the day has ended
+              either way, so the lesson is read level with the transport rather
+              than two cards below it (F15 E5 R1, R1a). A revealed day sees the
+              same panel: the solution is what the player asked for, and the
+              panel itself drops the claim of a win (E3 R10, R10a).
+
+              Document order is the placement — no `order`, no absolute or fixed
+              positioning, so a screen reader and a sighted reader meet the
+              day's payoff at the same point (F15 E5 R7).
+
+              The conditional is deliberately confined to *this* column. The row
+              keeps exactly two static children, and nothing between the row and
+              `GrooveCard` is conditional: a wrapper or a varying `key` above the
+              groove card would change its position in the tree and remount the
+              transport that is sounding through it (F15 E5 R1b). Re-parenting
+              the guess card below does re-create its subtree, and that is the
+              accepted cost — it holds no state of its own, so it re-renders
+              identically from the session's props (F15 E5 R3a).
+            */}
+            {solved || revealed ? (
+              <div
+                // The box fills the column so it ends level with the groove
+                // card beside it (F15 E5 R1c). A grid stretches its auto-sized
+                // row to the container, which is what does that.
+                //
+                // The explicit `1fr auto` pair is only correct when the link is
+                // there: declaring two rows applies the gap between them
+                // whether or not the second holds anything, which left 24px of
+                // empty panel under the box on the daily page.
+                className={
+                  shared ? 'grid grid-rows-[1fr_auto] gap-6' : 'grid'
+                }
+              >
+                <SolvedPanel
+                  answer={answer}
+                  progression={groove.progression}
+                  progressionDegrees={groove.progressionDegrees}
+                  attempts={attempts}
+                  revealed={revealed}
+                />
+                {/*
+                  And on a shared groove only, the next move: today's puzzle
+                  (F12 E3 R5a, R5b, R5c). Still a sibling after the panel rather
+                  than a branch inside it — the panel is the day's payoff on both
+                  pages, and it is not the place that knows what a shared groove
+                  is — and now in the same column as the panel, directly beneath
+                  it, so the way onward stays beside the answer it belongs to
+                  rather than landing below the finished guess card (F12 E3 R5a,
+                  AC14; F15 E5 R1).
+
+                  The condition reduces to `shared` alone: the branch it sits in
+                  has already established the terminal state, so it is no longer
+                  spelled twice.
+                */}
+                {shared && <PlayTodayLink />}
+              </div>
+            ) : (
+              guessCard
+            )}
           </div>
         </Row>
 
         {/*
-          The payoff, below both cards, once the day has ended either way (R6).
-          A revealed day sees the same panel: the solution is what the player
-          asked for. The panel itself drops the claim of a win (E3 R10, R10a).
+          The record of how the day was played, once it has ended: the same card
+          with the same props, one place lower (F15 E5 R3, AC4).
+
+          It keeps the width it had as the row's second column rather than
+          spreading to the full page. Beside the groove card it was half the
+          width, and a finished record that doubles in size on the way down
+          reads as a promotion — the opposite of what moving it below is for.
+          Below the row's collapse point it is full width, which is what it
+          already was inside the row.
+
+          The width is a second `Row` with the same `gap` and the same
+          `collapseBelow`, holding the card in an identical column and an empty
+          one beside it, rather than a `w-[calc(50%-…)]` naming half of `gap-7`
+          by hand. Both rows then take their column width from one place: change
+          `gap` above and this follows, where a hand-written calc would quietly
+          disagree by fourteen pixels. The empty column is the price, and it is
+          `aria-hidden` because there is nothing in it to read.
         */}
         {(solved || revealed) && (
-          <SolvedPanel
-            answer={answer}
-            tries={attempts.length}
-            streak={streak}
-            progression={groove.progression}
-            revealed={revealed}
-          />
+          <Row gap="lg" collapseBelow="md">
+            <div className="min-w-0 w-full flex-1 md:w-auto grid">{guessCard}</div>
+            <div aria-hidden="true" className="hidden flex-1 md:block" />
+          </Row>
         )}
-
-        {/*
-          And on a shared groove only, the next move: today's puzzle (F12 E3
-          R5a, R5b, R5c). A sibling after the panel rather than a branch inside
-          it — the panel is the day's payoff on both pages, and it is not the
-          place that knows what a shared groove is. It reuses the panel's own
-          `solved || revealed` above rather than deriving a second name for the
-          same terminal state, so both endings get it and neither can drift.
-        */}
-        {shared && (solved || revealed) && <PlayTodayLink />}
       </Stack>
     </section>
   )

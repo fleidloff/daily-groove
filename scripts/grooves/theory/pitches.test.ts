@@ -38,6 +38,9 @@ const MUSIC: MusicMeta = {
   scale: 'C dorian',
   chord: 'Cm7',
   progression: 'Cm7–F7',
+  // Read off HARMONY rather than restated: the words and the audio in this
+  // fixture must not be able to drift apart.
+  progressionDegrees: HARMONY.progressionDegrees,
 }
 
 /** The onset of a sixteenth-note step of a bar, in seconds from the loop's start. */
@@ -173,6 +176,7 @@ describe('offScalePitches', () => {
         scale: scaleName('C', 'blues'),
         chord: harmony.chordName,
         progression: harmony.progressionName,
+        progressionDegrees: harmony.progressionDegrees,
       }
       // E is a chord tone of C7 and not a member of the C blues scale.
       expect(pitchesOf('C', 'blues')).not.toContain(4)

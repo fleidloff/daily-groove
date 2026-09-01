@@ -61,6 +61,7 @@ export function toGroove(
     scale: music.scale,
     chord: music.chord,
     progression: music.progression,
+    progressionDegrees: music.progressionDegrees,
     root: music.root,
     flavour: displayFlavour(music.flavour),
     bars: music.bars,

@@ -16,6 +16,14 @@ const ACCIDENTALS = ['', '♭', '♭♭', '♯', '♯♯']
 /** Drawn on a line a previous note in the same scale altered. */
 const NATURAL = '♮'
 
+/**
+ * The lowest step any scale in the rotation can occupy: C4, one ledger line
+ * below the bottom staff line, on a scale rooted on C. It follows from
+ * `staffNotes`' own rule — the root sits at its letter's first occurrence at or
+ * above middle C — and it is what the staff's degree row is placed clear of.
+ */
+export const STAFF_FLOOR_STEP = 0
+
 export type StaffNote = {
   /** Diatonic steps above middle C. C4 = 0, D4 = 1, B4 = 6, C5 = 7. */
   step: number

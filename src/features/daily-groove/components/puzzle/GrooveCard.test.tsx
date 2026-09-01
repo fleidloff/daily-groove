@@ -97,8 +97,9 @@ describe('GrooveCard', () => {
   })
 
   // F11 — the answer joins the meta line once the day is over. The payoff panel
-  // names it too, but it is below both cards and out of view while you play
-  // along; the card that is playing should say what you are playing over.
+  // names it too, but it is a separate card that scrolls away from the transport
+  // — beside this one since F15 E5, below it on a phone — while you play along;
+  // the card that is playing should say what you are playing over.
   //
   // Since F12 E3 the card is handed the finished line, so *where* the answer
   // sits in it is `metaLine`'s subject and is asserted in
