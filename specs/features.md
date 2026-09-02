@@ -33,6 +33,7 @@ tested and verified). Lettered candidates sit at ✏️ **Briefed** until promot
 | [15](feature-15/) | Explain the answer | ✅ Done | Turns the solved box from a scoreboard into the day's lesson — why it is that mode, the notes and the changes as degrees, and how near the guess came. |
 | [16](feature-16/) | Hear the mode | ✅ Done | Gives the mode row a voice — tap a mode to hear a short lick in it from the day's root — and puts both rows on the groove's beat, quieter, behind a switch that turns the tap sounds off. |
 | [17](feature-17/) | Fair feedback | ✅ Done | Stops handing the root over — the nudge narrows the root row instead of naming it — and lets the chips remember what Check confirmed and what it ruled out. |
+| [18](feature-18/) | Coach the ear | 🛠 Ready to implement | Keeps a how-to-listen line in the hint box for the whole day — changing with each miss and with what the miss showed — and gives it the slot the verdict line used to hold. |
 
 ## Prepared candidates
 
