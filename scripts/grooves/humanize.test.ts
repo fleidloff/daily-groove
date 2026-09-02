@@ -31,16 +31,10 @@ function feel(overrides: Partial<FeelTemplate> = {}): FeelTemplate {
   }
 }
 
-/**
- * Which subdivision a time reads as. `+ 0` normalises the negative zero a note
- * nudged a hair before the loop's first step produces, which is the same grid
- * position as +0 and only Object.is disagrees.
- */
 function gridIndex(timeSec: number, stepSec: number = STEP): number {
   return Math.round(timeSec / stepSec) + 0
 }
 
-/** One event per subdivision step, straight on the grid. */
 function grid(steps: number): NoteEvent[] {
   return Array.from({ length: steps }, (_, step) => ({
     voice: 'hatClosed' as const,
@@ -145,7 +139,6 @@ describe('humanize — R5, R7, AC4, AC5', () => {
   })
 
   it('never nudges a note into a neighbouring subdivision — R7', () => {
-    // A bound far wider than half a subdivision must still be clamped to it.
     const reckless = feel({ humanize: { timingMs: 1000, velocity: 0, lean: {}, driftDepth: 0 } })
     const events = grid(32)
     const nudged = humanize(events, reckless, rngFor('g:reckless'), BPM)
@@ -192,7 +185,6 @@ describe('fitToLoop — every event stays inside the loop', () => {
   it('pins the end of the last event to the end of the loop', () => {
     const events: NoteEvent[] = [
       { voice: 'kick', timeSec: 0, durationSec: STEP, velocity: 0.9 },
-      // Rings well past the loop.
       { voice: 'hatClosed', timeSec: loopSec - STEP + 0.02, durationSec: STEP, velocity: 0.5 },
     ]
     const fitted = fitToLoop(events, loopSec)
@@ -200,10 +192,6 @@ describe('fitToLoop — every event stays inside the loop', () => {
     expect(end).toBeCloseTo(loopSec, 12)
   })
 
-  // Feature-9, Epic 4, Step A2 - R1, AC2. `fitToLoop` used to stretch whichever
-  // event ended last so the buffer, sized from the events, measured the loop.
-  // Once a duration is audible that stretch is a longer note, and the length
-  // now comes from `bars`/`bpm` in `renderVoices` instead.
   it('does not stretch the last event to reach the end of the loop', () => {
     const pulledEarly = loopSec - STEP - 0.02
     const events: NoteEvent[] = [
@@ -242,7 +230,6 @@ describe('fitToLoop — every event stays inside the loop', () => {
 })
 
 describe('humanize — a voice leans consistently, R1, R2, AC1', () => {
-  /** One event per step for each of two voices, straight on the grid. */
   function twoVoiceGrid(steps: number): NoteEvent[] {
     const events: NoteEvent[] = []
     for (let step = 0; step < steps; step++) {
@@ -271,8 +258,6 @@ describe('humanize — a voice leans consistently, R1, R2, AC1', () => {
 
   it('applies the same lean to every hit of a voice, in every pass', () => {
     const events = twoVoiceGrid(8)
-    // Two passes, each on a generator of its own: the lean is a property of the
-    // feel, so it must not vary with the draw.
     const offsets = ['g:lean:0', 'g:lean:1'].flatMap((label) =>
       humanize(events, leaning, rngFor(label), BPM)
         .map((e, i) => ({ voice: e.voice, offset: e.timeSec - events[i].timeSec }))
@@ -334,10 +319,8 @@ describe('humanize — adjacent hits move together, R3, R5, AC3, AC5', () => {
     humanize: { timingMs: 10, velocity: 0, lean: {}, driftDepth: 0 },
   })
 
-  /** Eight passes' worth of labels, so the statistics below are not one draw. */
   const LABELS = Array.from({ length: 8 }, (_, i) => `g:walk:${i}`)
 
-  /** One event per step for each of `voices`, interleaved, straight on the grid. */
   function interleaved(steps: number, voices: readonly NoteEvent['voice'][]): NoteEvent[] {
     const events: NoteEvent[] = []
     for (let step = 0; step < steps; step++) {
@@ -348,14 +331,12 @@ describe('humanize — adjacent hits move together, R3, R5, AC3, AC5', () => {
     return events
   }
 
-  /** The timing deviation humanize applied to each event, in order. */
   function deviations(events: NoteEvent[], label: string): number[] {
     return humanize(events, walking, rngFor(label), BPM).map(
       (e, i) => e.timeSec - events[i].timeSec,
     )
   }
 
-  /** Mean |d[i+lag] − d[i]| pooled over every series. */
   function pooledLag(series: number[][], lag: number): number {
     let sum = 0
     let count = 0
@@ -377,9 +358,6 @@ describe('humanize — adjacent hits move together, R3, R5, AC3, AC5', () => {
     const events = interleaved(32, ['kick'])
     const series = LABELS.map((label) => deviations(events, label))
 
-    // Independent draws would put these two within ~30 % of each other; a walk
-    // takes a small step from where the previous hit landed. The 0.7 is a
-    // margin: pooled over eight passes the ratio sits near 0.42.
     expect(pooledLag(series, 1)).toBeLessThan(0.7 * pooledAbs(series))
   })
 
@@ -410,15 +388,11 @@ describe('humanize — adjacent hits move together, R3, R5, AC3, AC5', () => {
     const kickToBass = LABELS.reduce((a, l) => a + paired(withBass, l), 0)
     const kickToSnare = LABELS.reduce((a, l) => a + paired(withSnare, l), 0)
 
-    // A voice drawn independently of the kick sits as far from it as chance
-    // allows; the bass is derived from the kick's own series, so it tracks it.
     expect(kickToBass).toBeLessThan(0.7 * kickToSnare)
   })
 })
 
 describe('humanize — nothing crosses a subdivision, R6, AC6', () => {
-  // Deliberately reckless: a lean and a walk that, added, would carry a hit
-  // past the halfway mark to the next sixteenth.
   const extreme = feel({
     voices: ['snare', 'hatClosed'],
     humanize: { timingMs: 60, velocity: 0, lean: { snare: 40, hatClosed: -40 }, driftDepth: 0 },
@@ -435,8 +409,6 @@ describe('humanize — nothing crosses a subdivision, R6, AC6', () => {
     return events
   }
 
-  // 68 bpm is the slowest feel in the catalogue and 140 the fastest; at 140 the
-  // sixteenth is short enough that lean + walk would leave it unclamped.
   for (const bpm of [68, 140]) {
     it(`keeps every hit on the subdivision it was written for at ${bpm} bpm`, () => {
       const stepSec = stepSecFor(bpm, SUBDIVISION)
@@ -459,8 +431,6 @@ describe('humanize — nothing crosses a subdivision, R6, AC6', () => {
     const stepSec = stepSecFor(bpm, SUBDIVISION)
     const atTheLimit = feel({
       voices: ['snare'],
-      // A lean already past the guard on its own, and a walk too narrow to
-      // pull any hit back inside it: every displacement must land on the cap.
       humanize: { timingMs: 20, velocity: 0, lean: { snare: 90 }, driftDepth: 0 },
     })
     const events = gridAt(bpm, 24).filter((e) => e.voice === 'snare')
@@ -475,9 +445,6 @@ describe('humanize — nothing crosses a subdivision, R6, AC6', () => {
 describe('applyDrift — the tempo breathes and comes back, R13, AC12', () => {
   const PASS_SEC = STEP * 64
   const DEPTH = 0.006
-  // The integral of the tempo deviation, not the deviation itself: a tempo
-  // running `DEPTH` fast and slow across a pass accumulates this much position
-  // offset at the crest. See `applyDrift`.
   const AMPLITUDE = (DEPTH * PASS_SEC) / (2 * Math.PI)
 
   const at = (timeSec: number): NoteEvent => ({
@@ -505,8 +472,6 @@ describe('applyDrift — the tempo breathes and comes back, R13, AC12', () => {
         AMPLITUDE + 1e-12,
       )
     }
-    // A quarter of the way in is the crest, three quarters the trough: the
-    // envelope pulls late, then early, then resolves.
     expect(drifted[0].timeSec - events[0].timeSec).toBeCloseTo(AMPLITUDE, 12)
     expect(drifted[2].timeSec - events[2].timeSec).toBeCloseTo(-AMPLITUDE, 12)
   })
@@ -527,8 +492,6 @@ describe('applyDrift — the tempo breathes and comes back, R13, AC12', () => {
       expect(event.timeSec + event.durationSec).toBeLessThanOrEqual(loopSec + AMPLITUDE)
       expect(event.durationSec).toBe(STEP)
     }
-    // The end of the pass is a fixed point, so nothing is pushed past it by the
-    // envelope itself.
     expect(applyDrift([at(loopSec)], DEPTH, PASS_SEC)[0].timeSec).toBeCloseTo(loopSec, 12)
   })
 

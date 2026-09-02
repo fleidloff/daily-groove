@@ -11,7 +11,6 @@ import {
 import { GROOVES } from '../../data/grooves.generated'
 import { loopSecondsOf } from '../theory/music'
 
-/** A `BeatSource` whose start time the test moves, with real subscribers. */
 function fakeSource(startTime: number | null = null) {
   const listeners = new Set<() => void>()
   const source = {
@@ -31,7 +30,6 @@ function fakeSource(startTime: number | null = null) {
   return source
 }
 
-// Step A1 — R8, R8a: the quarter note is the only division this module knows.
 describe('beatSeconds', () => {
   it('turns a tempo into the length of one quarter note (R8, R8a)', () => {
     expect(beatSeconds(120)).toBe(0.5)
@@ -48,7 +46,6 @@ describe('beatSeconds', () => {
 })
 
 describe('secondsToNextBeat', () => {
-  // Step A2 — R6, R6b, AC8b: the wait to the next beat, and never backwards.
   it('waits not at all on a beat (R6)', () => {
     expect(secondsToNextBeat(0, 0.5)).toBe(0)
     expect(secondsToNextBeat(2.0, 0.5)).toBe(0)
@@ -70,7 +67,6 @@ describe('secondsToNextBeat', () => {
     }
   })
 
-  // Step A3 — R6a, AC8a: a tap just before a beat is that beat.
   it('counts a tap inside the tolerance as the beat itself (R6a, AC8a)', () => {
     expect(secondsToNextBeat(0.5 - BEAT_TOLERANCE_SECONDS / 2, 0.5)).toBe(0)
   })
@@ -91,7 +87,6 @@ describe('secondsToNextBeat', () => {
     expect(BEAT_TOLERANCE_SECONDS).toBeLessThan(0.12)
   })
 
-  // Step A4 — R8, AC6: the wait scales with the tempo.
   describe('at two tempos (R8, AC6)', () => {
     const slow = beatSeconds(67)
     const fast = beatSeconds(134)
@@ -114,7 +109,6 @@ describe('secondsToNextBeat', () => {
     })
   })
 
-  // Step A5 — R8, R4: the grid survives every loop wrap, catalogue-wide.
   describe('across the whole catalogue (R8, R4)', () => {
     it('gives every groove a usable beat length', () => {
       for (const groove of GROOVES) {
@@ -138,7 +132,6 @@ describe('secondsToNextBeat', () => {
 })
 
 describe('createGrooveClock', () => {
-  // Step A6 — R6, R7, AC4, AC5.
   it('answers with the graph time of the next beat (R6, AC4)', () => {
     const source = fakeSource(10)
     const clock = createGrooveClock(source, 120)
@@ -184,7 +177,6 @@ describe('createGrooveClock', () => {
     expect(source.listenerCount).toBe(0)
   })
 
-  // Step A7 — R9, AC7: the clock reads its source and never writes to it.
   it('reads only the two members of BeatSource (R9, AC7)', () => {
     const read: string[] = []
     const target: BeatSource = {

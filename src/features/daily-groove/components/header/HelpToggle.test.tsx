@@ -4,8 +4,6 @@ import userEvent from '@testing-library/user-event'
 import { HelpToggle } from './HelpToggle'
 
 describe('HelpToggle', () => {
-  // --- B3: reopening is a real button (R8, R9, AC10) -----------------------
-
   it('is a button whose accessible name says what it opens (R9, AC10)', () => {
     render(<HelpToggle onShow={vi.fn()} />)
 
@@ -50,7 +48,6 @@ describe('HelpToggle', () => {
     expect(screen.getByRole('button', { name: 'How to play' })).toHaveFocus()
   })
 
-  // The half a `<span onClick>` would silently fail.
   it('is operable by the enter key (R9, AC10)', async () => {
     const user = userEvent.setup()
     const onShow = vi.fn()
@@ -82,8 +79,6 @@ describe('HelpToggle', () => {
     await user.click(toggle)
     await user.click(toggle)
 
-    // No `aria-pressed`, no latch: the box has its own close control, and a
-    // question mark that hides things is a surprise.
     expect(onShow).toHaveBeenCalledTimes(2)
     expect(toggle).not.toHaveAttribute('aria-pressed')
   })

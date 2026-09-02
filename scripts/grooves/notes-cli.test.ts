@@ -8,15 +8,8 @@ import type { Lock } from './lock.ts'
 import { type NotesResult, main } from './notes-cli.ts'
 import { noteFileName, noteSpecs } from './notes.ts'
 
-/**
- * Encoding needs ffmpeg, exactly as `npm run notes` does. Where it is absent
- * the render cannot be exercised at all, so the suite reports itself skipped
- * rather than failing on a missing binary — the guard the notes ship behind
- * (`npm run grooves:verify`) is the part that must run everywhere.
- */
 const HAS_FFMPEG = spawnSync('ffmpeg', ['-version']).status === 0
 
-/** A lock as `npm run grooves` leaves it: grooves recorded, no notes. */
 const GROOVES_ONLY: Lock = {
   catalogueSha256: 'a'.repeat(64),
   manifestSha256: 'b'.repeat(64),
@@ -56,12 +49,6 @@ describe.skipIf(!HAS_FFMPEG)('npm run notes', () => {
     }
   })
 
-  /**
-   * The PCM the determinism assertions read is keyed by pitch id, not by root.
-   * Keyed by root it would hold twelve entries for a twenty-four-pitch run —
-   * each octave-5 render overwriting its octave-4 namesake — and every
-   * determinism check through it would quietly cover only the upper octave.
-   */
   it('returns the pre-encode PCM for all twenty-four, keyed by pitch id', () => {
     expect(result.pcm.size).toBe(24)
     expect([...result.pcm.keys()].sort()).toEqual(noteSpecs().map((spec) => spec.id).sort())
@@ -75,12 +62,6 @@ describe.skipIf(!HAS_FFMPEG)('npm run notes', () => {
     expect([...source.matchAll(/^ {4}root: /gm)]).toHaveLength(36)
   })
 
-  /**
-   * AC19. The lock is keyed by pitch id for the same reason the PCM map is: with
-   * root ids, twenty-four specs produce twenty-four entries carrying twelve
-   * duplicate ids, `note-c.mp3` is hashed twice and `note-c-5.mp3` never — and
-   * `grooves:verify` passes with the whole upper octave unverified.
-   */
   it('records all twenty-four notes under their pitch ids, plus manifest and pack', () => {
     expect(lock.notes).toHaveLength(24)
     expect(lock.notes?.map((entry) => entry.id).sort()).toEqual(
@@ -95,8 +76,6 @@ describe.skipIf(!HAS_FFMPEG)('npm run notes', () => {
     expect(lock.packSha256).toMatch(/^[0-9a-f]{64}$/)
   })
 
-  // The notes and the grooves are rendered by two commands into one lock, so
-  // the one that renders no groove must not speak for the grooves.
   it('leaves the groove side of the lock exactly as it found it', () => {
     expect(lock.catalogueSha256).toBe(GROOVES_ONLY.catalogueSha256)
     expect(lock.manifestSha256).toBe(GROOVES_ONLY.manifestSha256)
@@ -104,18 +83,6 @@ describe.skipIf(!HAS_FFMPEG)('npm run notes', () => {
   })
 })
 
-/**
- * AC15, end to end. The suite above proves `renderNote` is a pure function of
- * the pack — two calls agree sample for sample — but the artifact the lock
- * hashes is the *encoded* file, and nothing above ever encodes twice. A drift
- * between PCM and mp3 (a nondeterministic step between render and encode, or an
- * ffmpeg that stopped being reproducible for fixed input) would leave every
- * other test green while the determinism the lock rests on was gone.
- *
- * It renders both runs itself rather than reusing the suite above: that one
- * removes its directory in `afterAll`, so its files are gone by the time this
- * block executes.
- */
 describe.skipIf(!HAS_FFMPEG)('npm run notes, run twice', () => {
   const runs: string[] = []
   const locks: Lock[] = []
@@ -142,7 +109,6 @@ describe.skipIf(!HAS_FFMPEG)('npm run notes, run twice', () => {
   const sha256 = (path: string) =>
     createHash('sha256').update(readFileSync(path)).digest('hex')
 
-  // AC18: twenty-four now, not twelve.
   it('encodes twenty-four byte-identical files (AC15, AC18)', () => {
     for (const spec of noteSpecs()) {
       const name = noteFileName(spec.root, spec.octave)

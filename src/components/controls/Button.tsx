@@ -11,9 +11,7 @@ type ButtonProps = {
   onPress: () => void
   disabled: boolean
   tone: ButtonTone
-  /** Sets aria-label. Without it the accessible name stays the children. */
   label?: string
-  /** How much room the button takes. Defaults to `md`. */
   size?: ButtonSize
 }
 
@@ -31,11 +29,6 @@ const TONE: Record<ButtonTone, string> = {
   solved: 'bg-accent-soft text-paper-tint',
 }
 
-/**
- * The full-width call to action. `idle` is the waiting state, `ready` the
- * live one, `solved` the finished one. `size` sets how much room it takes;
- * the two sizes differ in vertical padding and type size and in nothing else.
- */
 export function Button({
   children,
   onPress,

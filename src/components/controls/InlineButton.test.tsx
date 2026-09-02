@@ -69,8 +69,6 @@ describe('InlineButton', () => {
     expect(screen.getByRole('button', { name: 'Send' })).toBeEnabled()
   })
 
-  // This is the whole reason the control exists rather than a second size of
-  // `Button`: it hugs its label so it can sit inline beside other page furniture.
   it('hugs its label instead of spanning its container (A1, R1c)', () => {
     const { container } = render(<InlineButton onPress={() => {}}>Send</InlineButton>)
 

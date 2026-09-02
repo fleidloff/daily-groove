@@ -9,21 +9,6 @@ import { templateById } from './templates/index.ts'
 import { renderVoices } from './voices.ts'
 import type { Pcm } from './types.ts'
 
-/**
- * The gate, run over the whole committed catalogue.
- *
- * `gate.test.ts` proves the gate rejects what it should, on one groove. This
- * proves the shipped catalogue passes it — which is a different claim, and the
- * one nothing was making.
- *
- * It is worth its cost because `npm run grooves` does **not** gate: only
- * `grooves:add` does. A change to the generator can therefore render, lock and
- * ship 44 grooves that the gate would have refused, and nothing says so. That
- * happened once during feature-9: two grooves went over the seam threshold and
- * were found by sweeping this by hand, three epics after the sweep should have
- * been a test.
- */
-
 const SAMPLE_RATE = 44100
 const OVERHANG_BARS = 1
 
@@ -57,14 +42,6 @@ describe('the committed catalogue, through the gate', () => {
 })
 
 describe('the render is deterministic', () => {
-  /**
-   * Two renders of one spec, compared sample for sample.
-   *
-   * The claim `npm run grooves` rests on — run it twice and `git status` is
-   * clean — measured where it is cheap to measure. Encoding is left out: ffmpeg
-   * is deterministic given identical PCM, and the property at risk is upstream
-   * of it, in anything that might read a clock or an unseeded generator.
-   */
   it('renders the same spec to the same samples twice', () => {
     const spec = readCatalogue()[0]
     const a = render(spec).pcm
@@ -75,7 +52,6 @@ describe('the render is deterministic', () => {
   })
 })
 
-/** The first frame at which two buffers differ, or -1. */
 function firstDifference(a: Pcm, b: Pcm): number {
   for (let i = 0; i < a.left.length; i += 1) {
     if (a.left[i] !== b.left[i] || a.right[i] !== b.right[i]) return i

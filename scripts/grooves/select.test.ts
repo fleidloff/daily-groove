@@ -79,7 +79,6 @@ describe('selectSeeds', () => {
       expect(firstIds.has(spec.id), `${spec.id} was re-issued`).toBe(false)
       expect(firstSeeds.has(spec.seed), `seed ${spec.seed} was re-used`).toBe(false)
     }
-    // Numbering continues from the highest already used, never from the count.
     const highest = Math.max(...first.map((s) => Number(s.id.slice(-2))))
     expect(Number(more[0].id.slice(-2))).toBe(highest + 1)
   })

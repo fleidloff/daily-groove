@@ -24,7 +24,6 @@ describe('parseIsoDate', () => {
     expect(date.getFullYear()).toBe(2026)
     expect(date.getMonth()).toBe(7)
     expect(date.getDate()).toBe(30)
-    // Noon, not midnight: a DST step of ±1h can never move the calendar day.
     expect(date.getHours()).toBe(12)
   })
 })
@@ -51,27 +50,6 @@ describe('selectGrooveForDate', () => {
   })
 })
 
-/**
- * The determinism net. Every date of 2026 is mapped to a groove id and the
- * whole year is pinned as literals. A player's groove of the day is a promise
- * about a date, not about a release — if this sweep changes, every past date
- * has been reassigned a different puzzle.
- *
- * The literals were re-captured once, in feature-7 Epic 1, when the pick stopped
- * hashing a date into the set and started walking a shuffled lap of it. That
- * re-assignment is the epic's declared cost (PRD, "What a growing catalogue
- * does"): nothing reads the pick for a past date, and a played day carries its
- * own `grooveId` in `DailyResult`. It is not a licence to re-capture again —
- * the next time this sweep fails, the pick has drifted.
- *
- * Two set sizes are swept because a groove id is picked modulo the set size:
- * agreement modulo 16 does not imply agreement modulo 3, so both are pinned.
- */
-/**
- * A canonical uuid per fixture, from a counter rather than a real mint: the
- * pick reads only `id`, so what matters here is that the field is present and
- * well-formed, not which value it holds.
- */
 let fixtureUuids = 0
 const nextFixtureUuid = () =>
   `00000000-0000-4000-8000-${String((fixtureUuids += 1)).padStart(12, '0')}`
@@ -135,37 +113,19 @@ describe('selectGrooveForDate determinism', () => {
   })
 })
 
-
-/**
- * Rotation tests (feature-7 Epic 1). The catalogues here are hand-built
- * literals rather than the real `GROOVES`: the pick must be provably
- * size-agnostic, and the real catalogue changes size under this file.
- */
 const makeGrooves = (count: number): Groove[] =>
   Array.from({ length: count }, (_, i) => sweepGroove(`g${String(i).padStart(2, '0')}`))
 
-/** A local Date at noon, `offset` calendar days after 1970-01-01. */
 const dayAt = (offset: number): Date => new Date(1970, 0, 1 + offset, 12, 0, 0, 0)
 
-/** The day index the pick will actually see for `dayAt(offset)`. */
 const indexAt = (offset: number): number => dayIndexOf(isoDate(dayAt(offset)))
 
-/**
- * The first offset at or after `from` that opens a lap of `n`. Laps are fixed
- * blocks measured from the epoch (R5), so a window that proves R1 has to start
- * on a boundary; starting mid-lap spans two laps and proves nothing.
- */
 const lapStart = (n: number, from = 0): number => {
   let offset = from
   while (indexAt(offset) % n !== 0) offset += 1
   return offset
 }
 
-/**
- * How many days the seam tests sweep. Two hundred is not enough: with sixteen
- * grooves the first collision between a lap's opener and the last lap's closer
- * does not fall inside it, so a 200-day sweep passes with the guard deleted.
- */
 const SEAM_SPAN = 5_000
 
 const idsOver = (grooves: Groove[], startOffset: number, days: number): string[] =>

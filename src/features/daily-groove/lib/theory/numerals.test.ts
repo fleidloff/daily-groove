@@ -6,16 +6,10 @@ import { FLAVOUR_INTERVALS } from './notes'
 import { BAR_COUNT } from './changes'
 
 describe('romanNumeral', () => {
-  // R2b, AC10: the numerals are counted from the day's root, so index 0 is
-  // always `I`. The function takes a flavour and has no root to count from
-  // anything else — the parent major scale is unreachable from here.
   it('names index 0 the tonic', () => {
     expect(romanNumeral('Mixolydian', 0)).toBe('I')
   })
 
-  // R3a: a seven-note mode's degree number is its index + 1, and the accidental
-  // is the signed difference from the major scale at the same degree — right in
-  // both directions, so Lydian's 6 semitones is ♯IV and Mixolydian's 10 is ♭VII.
   it('writes a natural degree with no accidental', () => {
     expect(romanNumeral('Mixolydian', 3)).toBe('IV')
   })
@@ -36,16 +30,6 @@ describe('romanNumeral', () => {
 })
 
 describe('romanNumeral over a scale that is not seven notes', () => {
-  // R3a, AC4: the blues scale is `1 ♭3 4 ♭5 5 ♭7` — six degrees, whose indices
-  // are therefore not consecutive degree numbers. The numbers come from
-  // `FLAVOUR_LETTER_STEPS`, which already declares them, so index 1 is the
-  // third degree and not the second.
-  //
-  // Worth knowing: `harmony.ts`'s `IDIOMS.blues` states its chords at offsets
-  // 0, 5 and 7 — indices 0, 2 and 4 — so a shipped blues groove only ever
-  // reads `I · IV · V`. The ♭5 degree exists in the scale and carries no chord
-  // today, which is exactly why `♭V` is asserted here: a future idiom on that
-  // degree would otherwise print `♯IV`.
   it('reads the blues scale as I ♭III IV ♭V V ♭VII', () => {
     expect(romanNumeral('Blues', 0)).toBe('I')
     expect(romanNumeral('Blues', 1)).toBe('♭III')
@@ -63,10 +47,6 @@ describe('romanNumeral says nothing about the chord quality', () => {
     expect(FLAVOURS.length).toBeGreaterThanOrEqual(13)
   })
 
-  // R3, AC3: plain numerals. Upper case throughout, no lower case for minor, no
-  // `ø` or `°` for half-diminished or diminished, no `+`, no `7`, no `♭5`
-  // suffix. The quality is already written above, on the symbol. This assertion
-  // exists to stop a later "helpful" lower-casing.
   it.each(FLAVOURS)('writes %s as bare accidental-plus-numeral throughout', (flavour) => {
     const intervals = FLAVOUR_INTERVALS[flavour]
     const numerals = intervals.map((_semitone, degree) => romanNumeral(flavour, degree))
@@ -76,9 +56,6 @@ describe('romanNumeral says nothing about the chord quality', () => {
     }
   })
 
-  // Two degrees of one scale must never read as the same numeral, or the sheet
-  // names one degree for two the groove plays — the blues scale's ♭V and V are
-  // the case that makes this worth asserting.
   it.each(FLAVOURS)('gives %s a distinct numeral for every degree', (flavour) => {
     const intervals = FLAVOUR_INTERVALS[flavour]
     const numerals = intervals.map((_semitone, degree) => romanNumeral(flavour, degree))
@@ -86,9 +63,6 @@ describe('romanNumeral says nothing about the chord quality', () => {
     expect(new Set(numerals).size).toBe(numerals.length)
   })
 
-  // The two cases the PRD names by hand. On an E Dorian day the half-diminished
-  // chord is the sixth degree and reads `VI`, never `vii` and never `VIø`; the
-  // quality lives on the `C♯m7♭5` above it.
   it('reads E Dorian\u2019s C\u266Fm7\u266D5 degree as a plain VI', () => {
     expect(romanNumeral('Dorian', 5)).toBe('VI')
   })
@@ -99,11 +73,6 @@ describe('romanNumeral says nothing about the chord quality', () => {
 })
 
 describe('a gap is a blank numeral, never a throw', () => {
-  // R4a, R8, AC7: this module is deliberately the total one. A numeral is less
-  // load-bearing than a bar, so an unknown flavour, an index the scale does not
-  // have, or missing degrees altogether all produce an empty string — unlike
-  // the staff's `scaleDegrees`, which throws, because a gap there is a broken
-  // drawing rather than one missing label.
   it('gives an unknown flavour an empty numeral rather than throwing', () => {
     expect(() => romanNumeral('Klingon', 0)).not.toThrow()
     expect(romanNumeral('Klingon', 0)).toBe('')
@@ -134,11 +103,7 @@ describe('a gap is a blank numeral, never a throw', () => {
 })
 
 describe('barNumerals', () => {
-  // R1, R2, R2a, R2b, AC2, AC10: one numeral per bar, mapped by `perBar` — the
-  // same function `barChords` maps the symbols through — so bar four of a
-  // three-chord progression is bar one's numeral rather than a blank.
   it('returns to bar one in bar four when the progression has three chords', () => {
-    // The PRD's example: Em7–Bm7–C♯m7♭5 on an E Dorian day.
     expect(barNumerals('Dorian', [0, 4, 5])).toEqual(['I', 'V', 'VI', 'I'])
   })
 
@@ -156,8 +121,6 @@ describe('barNumerals', () => {
     expect(barNumerals('Lydian', [0, 1, 2, 3, 4, 5, 6])).toHaveLength(BAR_COUNT)
   })
 
-  // R2b, AC10: whatever the day's flavour, the tonic is `I`. There is no root in
-  // the signature, so this is the only answer the function can give.
   it.each(Object.keys(FLAVOUR_INTERVALS))('opens %s on the tonic', (flavour) => {
     expect(barNumerals(flavour, [0])[0]).toBe('I')
   })
@@ -169,13 +132,8 @@ describe('there is no chord-symbol parser here', () => {
     'utf8',
   )
 
-  /** The source with its comments removed, so prose about chords is not code. */
   const CODE = SOURCE.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '')
 
-  // R4, AC5: the generator knows which degree it chose, and a parser here would
-  // be a second source of truth waiting to disagree with it. This assertion
-  // exists because that is the one claim in the epic a later convenience edit
-  // would quietly break.
   it.each(['split(', 'match(', 'slice(', 'replace(', 'indexOf('])(
     'takes apart no string with %s',
     (call) => {

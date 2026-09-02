@@ -20,8 +20,6 @@ describe('FLOOR_RULES', () => {
   })
 
   it('names the document each rule comes from', () => {
-    // A floor rule nobody can trace back to a doc is a rule this file invented,
-    // and `docs/coding-guidelines.md` stays the single source of truth.
     for (const rule of FLOOR_RULES) {
       expect(rule.why).toMatch(/docs\/(architecture|coding-guidelines)\.md/)
     }
@@ -34,14 +32,6 @@ describe('FLOOR_RULES', () => {
   })
 })
 
-/**
- * A definition carrying all six floor rules, worded as a definition would word
- * them rather than copied from `FLOOR_RULES` — the patterns are meant to match
- * the substance, so the fixture has to be prose.
- *
- * It names no path under the feature tree: `scripts/grooves/boundary.test.ts`
- * string-scans every `.ts` file under `scripts/` and fails on that literal.
- */
 const COMPLETE = `---
 name: complete
 description: A definition that carries the whole floor.
@@ -67,10 +57,6 @@ description: A definition that carries the whole floor.
    builds.
 `
 
-/**
- * `COMPLETE` states the six rules as a numbered list, in `FLOOR_RULES` order.
- * Dropping item `n` drops exactly the rule `FLOOR_RULES[n - 1]` names.
- */
 function withoutRule(source: string, n: number): string {
   const item = new RegExp(`^${n}\\. [\\s\\S]*?(?=^${n + 1}\\. |^$)`, 'm')
   const out = source.replace(item, '')
@@ -78,7 +64,6 @@ function withoutRule(source: string, n: number): string {
   return out
 }
 
-/** The same definition with rule 4 — and only rule 4 — struck out. */
 const INCOMPLETE = withoutRule(COMPLETE, 4).replace(
   'name: complete',
   'name: incomplete',
@@ -107,9 +92,6 @@ describe('findMissingFloorRules', () => {
   it.each(FLOOR_RULES.map((rule, index) => [index + 1, rule.id] as const))(
     'catches rule %i, %s, when it alone is struck out',
     (n, id) => {
-      // AC17, one rule at a time. A pattern that cannot notice its own rule
-      // being deleted reports the floor as carried forever, which is worse
-      // than no guard at all — so each of the six is deleted in turn.
       writeFileSync(join(dir, 'complete.md'), withoutRule(COMPLETE, n))
 
       expect(findMissingFloorRules(dir)).toEqual([`complete.md: ${id}`])
@@ -124,10 +106,6 @@ describe('findMissingFloorRules', () => {
   })
 
   it('refuses a directory with no definitions in it rather than passing', () => {
-    // A guard on the guard. If an empty or missing directory answered `[]`,
-    // the assertion below about the real definitions would pass while there
-    // were no definitions at all — the one way this test could report a floor
-    // that nobody carries.
     expect(() => findMissingFloorRules(dir)).toThrow(/no agent definitions/i)
     expect(() => findMissingFloorRules(join(dir, 'absent'))).toThrow(
       /no agent definitions/i,
@@ -135,20 +113,9 @@ describe('findMissingFloorRules', () => {
   })
 })
 
-/**
- * The floor is only real if the five definitions carry it. This reads them from
- * disk rather than trusting that five markdown files agree by inspection, and
- * it is the checklist the definitions are written against: every entry it
- * returns is a rule missing from a file, named.
- */
 describe('the definitions carry the floor', () => {
   const AGENTS = '.claude/agents'
 
-  /** R1's five roles. `findMissingFloorRules` grades the files it finds, so a
-   * definition that does not exist yet is not a rule it can report missing —
-   * which is why the roster is asserted here rather than folded into the
-   * function, whose fixture contract is to judge exactly the directory it is
-   * given. */
   const ROLES = [
     'architect',
     'implementer',

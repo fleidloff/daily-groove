@@ -1,21 +1,5 @@
-/**
- * The probe stage: what an mp3 says about itself.
- *
- * An mp3 does not begin with its music. The encoder puts a short priming
- * signal at the head of the stream, and every decoder that honours the
- * LAME/Xing header reports it as the audio stream's `start_time`. That offset
- * is a property of the file and of the encoder that wrote it, never a constant
- * to be shared across a catalogue — so it is measured once, per file, at mint
- * time, and carried in the manifest.
- *
- * `ffprobe` ships with `ffmpeg`, which the generator already requires, so this
- * adds no new tool. The spawn-and-reject shape is `encode.ts`'s and
- * `decode.ts`'s.
- */
-
 import { spawn } from 'node:child_process'
 
-/** The audio stream's `start_time`, via ffprobe. The encoder's head delay. */
 export function probeHeadDelaySeconds(mp3Path: string): Promise<number> {
   return new Promise((resolve, reject) => {
     const ffprobe = spawn('ffprobe', [
@@ -46,9 +30,6 @@ export function probeHeadDelaySeconds(mp3Path: string): Promise<number> {
         return
       }
 
-      // `N/A` for a stream with no start time, and an empty string for a file
-      // with no audio stream at all. Neither is a delay, and guessing zero for
-      // either would put a silently wrong number in the manifest.
       const raw = Buffer.concat(stdout).toString().trim()
       const seconds = Number(raw)
       if (raw === '' || !Number.isFinite(seconds)) {

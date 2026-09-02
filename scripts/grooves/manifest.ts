@@ -3,12 +3,6 @@ import { dirname } from 'node:path'
 import type { Groove } from '../../src/lib/groove.ts'
 import type { Pools } from './pools.ts'
 
-/**
- * The generated module is committed and imported directly by the feature, so
- * it is written the way a hand-written module would be: the app's own import
- * style (no file extension), one entry per catalogue groove, and a banner that
- * tells the next reader where the real source is.
- */
 const BANNER = `/**
  * GENERATED FILE - DO NOT EDIT.
  *
@@ -17,7 +11,6 @@ const BANNER = `/**
  * change the catalogue or the generator instead.
  */`
 
-/** The fourteen fields of a Groove, in the order the type declares them. */
 const FIELDS = [
   'id',
   'uuid',
@@ -35,15 +28,6 @@ const FIELDS = [
   'headDelaySeconds',
 ] as const
 
-/**
- * A literal for one field value, single-quoted like the rest of the codebase
- * so the committed module needs no reformatting to pass lint. Escaping is
- * JSON's, with the quote characters swapped over.
- *
- * Every shape a `Groove` field can hold is spelled here, in one place, so a
- * field the renderer cannot spell is a compile error rather than a value
- * silently dropped from the manifest.
- */
 function literal(value: string | number | readonly number[]): string {
   if (Array.isArray(value)) return `[${value.join(', ')}]`
   if (typeof value === 'number') return String(value)
@@ -56,9 +40,6 @@ function literal(value: string | number | readonly number[]): string {
 }
 
 function renderEntry(entry: Groove): string {
-  // `loopBars` is optional on Groove — a manifest written before the field
-  // existed still describes a groove — so a field the entry does not carry is
-  // left out rather than written as the word `undefined`.
   const lines = FIELDS.flatMap((field) => {
     const value = entry[field]
     return value === undefined ? [] : [`    ${field}: ${literal(value)},`]
@@ -66,7 +47,6 @@ function renderEntry(entry: Groove): string {
   return ['  {', ...lines, '  },'].join('\n')
 }
 
-/** One `export const NAME: string[] = [...]` block, one value per line. */
 function renderPool(name: string, values: readonly string[]): string {
   const head = `export const ${name}: string[] = `
   if (values.length === 0) return `${head}[]\n`
@@ -74,11 +54,6 @@ function renderPool(name: string, values: readonly string[]): string {
   return `${head}[\n${body}\n]\n`
 }
 
-/**
- * The distractor pools, as a comment and three exported arrays. Emitted only
- * when the caller has pools to emit, so the renderer keeps working for a
- * caller that has none yet.
- */
 const POOL_BANNER = `/**
  * Distractor pools: every value the catalogue uses, plus a fixed vocabulary of
  * plausible alternatives it does not, so a four-option set can always be built
@@ -94,11 +69,6 @@ function renderPools(pools: Pools): string {
   ].join('\n')
 }
 
-/**
- * The full source text of `grooves.generated.ts` for these entries, and for
- * the distractor pools when they are given. `pools` is optional so a caller
- * that only has entries still renders a valid module.
- */
 export function renderManifest(
   entries: readonly Groove[],
   pools?: Pools,
@@ -112,7 +82,6 @@ export function renderManifest(
   return `${head}${grooves}${tail}`
 }
 
-/** Render the entries and write them to `path`, creating its directory. */
 export function writeManifest(
   entries: readonly Groove[],
   path: string,

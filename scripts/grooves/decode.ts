@@ -1,21 +1,9 @@
-/**
- * Decoding, by way of ffmpeg.
- *
- * Nothing in this repository parses a container format: a sample file is piped
- * through ffmpeg to raw `f32le` and read back as PCM. That is what lets the
- * pack hold WAV, FLAC or anything else ffmpeg reads.
- *
- * A subprocess per file is the cost, and it is paid once - `loadPack` decodes
- * every declared file at load time and holds the buffers.
- */
-
 import { spawn } from 'node:child_process'
 import { deinterleave } from './pcmio.ts'
 import type { Pcm } from './types.ts'
 
 export const DEFAULT_SAMPLE_RATE = 44100
 
-/** Injectable so tests can count decodes without spawning anything. */
 export type Decoder = (path: string, sampleRate?: number) => Promise<Pcm>
 
 export function decodeAudioFile(
@@ -59,7 +47,6 @@ export function decodeAudioFile(
   })
 }
 
-/** Reads the bytes as f32 without assuming the Buffer's offset is 4-aligned. */
 function toFloat32(bytes: Buffer): Float32Array {
   const frames = Math.floor(bytes.length / 4)
   const raw = new Float32Array(frames)

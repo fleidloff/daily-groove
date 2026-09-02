@@ -4,7 +4,6 @@ import { useId } from 'react'
 import { Chip } from './Chip'
 import { EyebrowLabel } from '@/components/typography/EyebrowLabel'
 
-/** Columns at the base width, and above the `md` breakpoint. */
 export type ChipColumns = { base: 2 | 4; wide: 4 | 6 | 7 }
 
 type ChipGroupProps = {
@@ -15,14 +14,9 @@ type ChipGroupProps = {
   disabled: boolean
   name: string
   columns: ChipColumns
-  /** Given to every chip in the row. */
   adornment?: string
 }
 
-// Tailwind's JIT only sees literal class strings, so the column count maps
-// through a lookup rather than being interpolated into `grid-cols-${n}`.
-// `ChipColumns` is a union of the counts in use, so a count with no class here
-// is a type error rather than a silently missing class.
 const COLUMN_CLASS: Record<number, string> = {
   2: 'grid-cols-2',
   4: 'grid-cols-4',
@@ -36,19 +30,6 @@ const WIDE_CLASS: Record<number, string> = {
   7: 'md:grid-cols-7',
 }
 
-/**
- * A labelled single-select row of chips. Only `value` reads as pressed, so
- * choosing another option replaces the selection rather than adding to it.
- *
- * The chips sit on a grid of equal columns, so the row spreads across its
- * container and a trailing short row leaves empty cells instead of stretching.
- * `columns` carries counts, not row names: the caller is what knows how many
- * options it has, and a group that had learned what its rows mean would have
- * stopped being a primitive. `adornment` is the same bargain: one decorative
- * mark for the whole row, and the caller is what decides what it means. Not one
- * per option — a row where some chips are marked and others are not is not a
- * thing this group models.
- */
 export function ChipGroup({
   label,
   options,

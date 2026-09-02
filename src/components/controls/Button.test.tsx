@@ -121,8 +121,6 @@ describe('Button', () => {
     expect(large).not.toContain('py-[15px]')
     expect(large).not.toContain('text-[15px]')
 
-    // Everything that is not size — radius, tones, focus ring — is identical,
-    // checked by stripping the size utilities rather than listing the rest.
     const withoutSize = (classes: string) =>
       classes
         .split(/\s+/)
@@ -167,10 +165,4 @@ describe('Button', () => {
     expect(button).toHaveAccessibleName('▶ Play the loop')
     expect(button).not.toHaveAttribute('aria-label')
   })
-
-  // R3 / AC10 — "the size names no domain concept" — is enforced repo-wide by
-  // `src/app/globals.test.ts` guard I5, which reads every design-system file,
-  // tests included, against a domain-vocabulary pattern. A local version here
-  // would have to name the banned words to ban them, which is itself the leak
-  // I5 catches. One guard, in the place that already owns the rule.
 })

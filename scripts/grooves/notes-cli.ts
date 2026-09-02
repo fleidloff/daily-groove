@@ -8,20 +8,6 @@ import { writeNotesManifest } from './notes-manifest.ts'
 import { loadPack } from './pack.ts'
 import type { SamplePack } from './types.ts'
 
-/**
- * `npm run notes` — render the reference notes, C4 to B5.
- *
- * Its own command, not a stage of `npm run grooves`. The notes are a function
- * of the sample pack alone, and the pack changes far less often than the
- * catalogue does: folding them in would re-render twenty-four files on every
- * catalogue edit, and hand the same cost to `grooves:add`.
- *
- * The price of two commands is one lock written by both, and this is the side
- * that pays it: the notes are merged into whatever the groove render left
- * behind. Nothing here rebuilds the groove entries — this command has not
- * rendered a groove and cannot vouch for one.
- */
-
 const HERE = dirname(fileURLToPath(import.meta.url))
 
 export const DEFAULT_PACK_DIR = join(HERE, 'samples')
@@ -33,7 +19,6 @@ export const DEFAULT_NOTES_MANIFEST_PATH = join(
 export const DEFAULT_LOCK_PATH = join(HERE, 'grooves.lock.json')
 export const SAMPLE_RATE = 44100
 
-/** The pack's declaration, whose hash is what makes a stale render visible. */
 export function packDeclarationPath(packDir: string): string {
   return join(packDir, 'pack.json')
 }
@@ -43,20 +28,12 @@ export type NotesOptions = {
   outDir?: string
   manifestPath?: string
   lockPath?: string
-  /** Injected by tests that have a pack already loaded. */
   pack?: SamplePack
-  /** When false, no mp3 is written and the lock is left alone. */
   encode?: boolean
 }
 
 export type NotesResult = {
   specs: ReferenceNote[]
-  /**
-   * Pre-encode PCM, keyed by scientific pitch id. Determinism is asserted on
-   * this. Keyed by root it would hold twelve entries for a twenty-four-pitch
-   * run — the octave-5 render overwriting its octave-4 namesake — and the
-   * assertion would silently cover half the set.
-   */
   pcm: Map<string, { left: Float32Array; right: Float32Array }>
 }
 
@@ -95,21 +72,6 @@ type LockTargets = {
   packDir: string
 }
 
-/**
- * Merge what this render produced into the committed lock.
- *
- * A note's lock id is its scientific pitch — `C♯5`, not `c-sharp-5` — and
- * `lock.ts` derives the file name from it, so the recorded key stays the thing
- * the app and the catalogue both speak in. It is the pitch and not the root
- * because there are two octaves: root ids would record twenty-four entries
- * under twelve names, hash `note-c.mp3` twice and `note-c-5.mp3` never, and
- * leave `grooves:verify` green with the upper octave unchecked (AC19).
- *
- * With no lock on disk there is nothing to merge into, and inventing a
- * catalogue hash here would record a groove render that never happened. The
- * audio and the manifest are already written; the run says what it skipped and
- * leaves the guard to be re-established by `npm run grooves`.
- */
 function recordInLock(specs: readonly ReferenceNote[], targets: LockTargets): void {
   const existing = readLock(targets.lockPath)
   if (existing === null) {

@@ -23,16 +23,10 @@ import {
   type LockPaths,
 } from './lock.ts'
 
-/**
- * One canonical v4 uuid per fixture groove, derived from its position so the
- * fixture stays deterministic. The guard reads the catalogue's uuids, so a
- * fixture catalogue without them is not a catalogue the guard would pass.
- */
 function fixtureUuid(i: number): string {
   return `a0000000-0000-4000-8000-${String(i + 1).padStart(12, '0')}`
 }
 
-/** Bytes that stand in for an mp3 — the lock never looks inside one. */
 function audioBytes(id: string, n = 2048): Buffer {
   const buf = Buffer.alloc(n)
   for (let i = 0; i < n; i += 1) buf[i] = (i * 31 + id.charCodeAt(id.length - 1)) % 251
@@ -49,7 +43,6 @@ type Fixture = {
   paths: { grooveDir: string; cataloguePath: string; manifestPath: string }
 }
 
-/** A temp tree where audio, manifest and catalogue all match the lock. */
 function fixture(ids: string[] = ['groove-01', 'groove-02']): Fixture {
   const dir = mkdtempSync(join(tmpdir(), 'grooves-lock-'))
   const grooveDir = join(dir, 'public', 'grooves')
@@ -118,7 +111,6 @@ describe('readLock / writeLock — Step B1', () => {
       'groove-05',
       'groove-09',
     ])
-    // ...and on disk, not merely in memory.
     expect(readFileSync(lockPath, 'utf8').indexOf('groove-02')).toBeLessThan(
       readFileSync(lockPath, 'utf8').indexOf('groove-09'),
     )
@@ -172,7 +164,6 @@ describe('verifyLock — Step B2', () => {
     expect(failures).toHaveLength(1)
     expect(failures[0].check).toBe('checksum')
     expect(failures[0].detail).toContain('groove-02')
-    // The size is unchanged, so only the hash can have caught this.
     expect(readFileSync(file).length).toBe(f.lock.grooves[1].bytes)
   })
 
@@ -258,19 +249,6 @@ describe('verifyLock — Step B2b, stale inputs and outputs', () => {
   })
 })
 
-/**
- * Feature-10, Track B, widened by feature-16 Epic 1 Track B. The reference
- * notes are a second artifact family in the same lock: mp3s named by pitch,
- * their own generated manifest, and the pack declaration they were rendered
- * from. Two octaves now, so a note is keyed by its scientific pitch rather
- * than by its root alone.
- *
- * Every expectation here is a literal file name. `notes.ts`'s `noteFileName`
- * asserts the same literals on its own side and the two are never asserted
- * against each other, because this module may not import that one — see
- * `noteFile`'s comment for the four things that have to stay true across both
- * copies of the rule.
- */
 const NOTE_FILES: Record<string, string> = {
   C4: 'note-c.mp3',
   'C\u266f4': 'note-c-sharp.mp3',
@@ -278,17 +256,13 @@ const NOTE_FILES: Record<string, string> = {
   C5: 'note-c-5.mp3',
   'C\u266f5': 'note-c-sharp-5.mp3',
   'E\u266d5': 'note-e-flat-5.mp3',
-  // The ids a lock written before the widening carries: no octave digit at all.
-  // They name the same three base-octave files (R27).
   C: 'note-c.mp3',
   'C\u266f': 'note-c-sharp.mp3',
   'E\u266d': 'note-e-flat.mp3',
 }
 
-/** The fixture's notes: both octaves, so every path in the guard is walked. */
 const NOTE_IDS = ['C4', 'C\u266f4', 'E\u266d4', 'C5', 'C\u266f5', 'E\u266d5']
 
-/** What today's committed lock records, until the artifacts are re-rendered. */
 const HISTORICAL_IDS = ['C', 'C\u266f', 'E\u266d']
 
 type NotesFixture = Fixture & {
@@ -299,7 +273,6 @@ type NotesFixture = Fixture & {
   notesLock: Lock
 }
 
-/** The groove fixture, plus an intact notes family beside it. */
 function notesFixture(ids: string[] = NOTE_IDS): NotesFixture {
   const f = fixture()
   const notesDir = join(f.dir, 'public', 'notes')
@@ -345,25 +318,16 @@ describe('noteFile — a scientific-pitch id names the file (Step B1, R30)', () 
   })
 
   it('reads an id with no octave digit as the base octave', () => {
-    // Today's committed lock records `A`, `E\u266d`, `B` — no digits at all. Between
-    // this change landing and the artifacts being re-rendered, those are the ids
-    // `noteFile` is handed, and they have to keep naming the twelve committed
-    // files or `prebuild` goes red for a render nobody has run yet. Leniency
-    // hides nothing: the file must still exist and still hash-match.
     expect(noteFile('/notes', 'C')).toBe('/notes/note-c.mp3')
     expect(noteFile('/notes', 'C\u266f')).toBe('/notes/note-c-sharp.mp3')
     expect(noteFile('/notes', 'E\u266d')).toBe('/notes/note-e-flat.mp3')
     expect(noteFile('/notes', 'B')).toBe('/notes/note-b.mp3')
-    // ...and the bare id and the base-octave id name one file, never two.
     for (const root of ROOT_SLUGS) {
       expect(noteFile('/notes', root)).toBe(noteFile('/notes', `${root}4`))
     }
   })
 
   it('names the base octave bare and the octave above with a plain decimal suffix', () => {
-    // Stronger than one regex over both octaves: a single `[a-z0-9-]+` pattern
-    // also matches `note-c4.mp3`, so it would pass the naming scheme R27
-    // forbids. Each octave is asserted against its own shape instead.
     const names: string[] = []
     for (const root of ROOT_SLUGS) {
       const base = noteFile('/notes', `${root}4`)
@@ -372,19 +336,12 @@ describe('noteFile — a scientific-pitch id names the file (Step B1, R30)', () 
       expect(upper, root).toMatch(/^\/notes\/note-[a-z-]+-5\.mp3$/)
       names.push(base, upper)
     }
-    // Twenty-four pitches, twenty-four distinct files.
     expect(names).toHaveLength(24)
     expect(new Set(names).size).toBe(24)
   })
 })
 
 describe('verifyLock — two note entries may not share one id (Step B1)', () => {
-  // The trap this closes: a render that keys its lock entries by root rather
-  // than by pitch produces twenty-four entries with twelve duplicate ids, each
-  // duplicate hashing the same file. Every hash matches, nothing is missing,
-  // the guard passes and reports "24 notes" — a fully green, completely wrong
-  // lock. A duplicate id is never legitimate: `sorted()` already treats the id
-  // as the key that identifies an entry.
   it('fails, naming the id, when the notes family repeats one', () => {
     const f = notesFixture()
     const doubled: Lock = {
@@ -439,8 +396,6 @@ describe('verifyLock — Step B1, a lock written before the notes existed', () =
   })
 
   it('still returns none when the note paths are supplied but the lock has nothing to check', () => {
-    // `grooves:verify` always passes the note paths. A pre-epic lock must not
-    // start failing because a path it never recorded a hash for now exists.
     const f = notesFixture()
     const preEpic: Lock = {
       catalogueSha256: f.lock.catalogueSha256,
@@ -596,7 +551,6 @@ describe('Step B5a — `npm run grooves` does not drop the notes', () => {
     expect(read.notes).toEqual(f.notesLock.notes)
     expect(read.notesManifestSha256).toBe(f.notesLock.notesManifestSha256)
     expect(read.packSha256).toBe(f.notesLock.packSha256)
-    // ...and on disk, in a stable order after the grooves.
     const json = readFileSync(f.lockPath, 'utf8')
     expect(json.indexOf('"grooves"')).toBeLessThan(json.indexOf('"notes"'))
     expect(json.indexOf('"notes"')).toBeLessThan(json.indexOf('"notesManifestSha256"'))
@@ -607,8 +561,6 @@ describe('Step B5a — `npm run grooves` does not drop the notes', () => {
     const f = notesFixture()
     writeLock(f.notesLock, f.lockPath)
 
-    // Exactly what `npm run grooves` produces: it has rendered no note and
-    // cannot vouch for one, so what it builds carries none.
     const groovesOnly = buildLock(f.paths, ['groove-01', 'groove-02'])
     expect(groovesOnly.notes).toBeUndefined()
     writeLock(mergeLock(readLock(f.lockPath), groovesOnly), f.lockPath)
@@ -617,7 +569,6 @@ describe('Step B5a — `npm run grooves` does not drop the notes', () => {
     expect(after.notes).toEqual(f.notesLock.notes)
     expect(after.notesManifestSha256).toBe(f.notesLock.notesManifestSha256)
     expect(after.packSha256).toBe(f.notesLock.packSha256)
-    // The groove family is still the one that was just rendered.
     expect(after.grooves).toEqual(groovesOnly.grooves)
   })
 
@@ -664,11 +615,6 @@ describe('Step B3 — the guard needs no audio toolchain (R13, AC11)', () => {
     'templates',
     'theory',
   ]
-  // `uuid.ts` and `catalogue.ts` are on this list deliberately, not by
-  // oversight: the guard now checks the catalogue's uuids, so it has to read the
-  // catalogue and recognise a uuid. Neither module renders anything — `uuid.ts`
-  // imports only `node:crypto`, `catalogue.ts` only `node:fs` and `node:url` —
-  // so the no-audio-toolchain guarantee below is untouched (F12 E1 Step A7).
   const ALLOWED = new Set([
     'node:fs',
     'node:crypto',
@@ -706,30 +652,17 @@ describe('Step B3 — the guard needs no audio toolchain (R13, AC11)', () => {
   }
 
   it('verifies a whole fixture without any audio module being loadable', () => {
-    // The proof that matters: nothing in the verify path decodes or renders.
     const f = fixture()
     expect(verifyLock(f.lock, f.paths)).toEqual([])
   })
 })
 
-/**
- * Feature-12, Epic 1, Step A7 — R3, R8, R9, R10, AC3, AC4.
- *
- * The uuid is what a share link carries, and it lives in the catalogue, which is
- * hand-editable. So the guard that already proves the committed artifacts match
- * their input also proves the input's uuids are usable: one per groove, well
- * formed, and held by exactly one groove. Every failure names the groove, because
- * "a uuid is wrong somewhere in thirty entries" is not a fixable report.
- */
 describe("verifyLock — the catalogue's uuids", () => {
   type Spec = { id: string; uuid?: string; template: string; seed: number }
 
-  /** The fixture with `specs` as its catalogue, and a lock that matches it. */
   function withCatalogue(specs: readonly Spec[]) {
     const f = fixture(specs.map((s) => s.id))
     writeFileSync(f.cataloguePath, `${JSON.stringify(specs, null, 2)}\n`)
-    // Re-locked against the catalogue just written, so the only thing left for
-    // the guard to complain about is the uuids themselves.
     return { paths: f.paths, lock: buildLock(f.paths, specs.map((s) => s.id)) }
   }
 
@@ -783,8 +716,6 @@ describe("verifyLock — the catalogue's uuids", () => {
   })
 
   it('reports a uuid fault alongside the artifact faults, not instead of them', () => {
-    // The two checks are independent: a stale manifest does not excuse a broken
-    // uuid, and neither hides the other.
     const f = withCatalogue([
       { id: 'groove-01', uuid: A, template: 'straight-funk', seed: 1 },
       { id: 'groove-02', uuid: A, template: 'shuffle', seed: 2 },
@@ -798,9 +729,6 @@ describe("verifyLock — the catalogue's uuids", () => {
   })
 
   it('returns a failure rather than throwing when the catalogue will not parse', () => {
-    // The guard used to never open the catalogue, only hash it. It must not start
-    // throwing where it used to report: a corrupt catalogue is caught by its
-    // hash, and the uuid checks simply have nothing to say about it.
     const f = fixture()
     writeFileSync(f.cataloguePath, 'not json at all')
 
@@ -821,11 +749,6 @@ describe("verifyLock — the catalogue's uuids", () => {
   })
 })
 
-// Step C2 — R5b, AC7a. `verifyLock` walks the lock's entries, so it is blind in
-// one direction: an mp3 whose catalogue row has been deleted stays on disk,
-// passes the build guard, and ships to every visitor. This walks the directory
-// instead, so the committed audio and the committed lock have to agree both
-// ways round.
 describe('Step C2 — public/grooves holds one mp3 per locked groove and no others', () => {
   const GROOVE_DIR = join(import.meta.dirname, '..', '..', 'public', 'grooves')
   const LOCK_PATH = join(import.meta.dirname, 'grooves.lock.json')

@@ -17,7 +17,6 @@ const ALL: Flavour[] = [
   'harmonic-major',
 ]
 
-/** The four Epic 6 added, on top of the eight that shipped before it. */
 const ADDED: Flavour[] = ['melodic-minor', 'lydian-dominant', 'phrygian-dominant', 'harmonic-major']
 
 describe('intervalsFor', () => {
@@ -64,11 +63,6 @@ describe('intervalsFor', () => {
   })
 })
 
-/**
- * Epic 4 — the generator speaks modes. `major` and `minor` name the same seven
- * pitches as `ionian` and `aeolian`; the modal spellings are the ones the game
- * offers, so the old two must be gone from the vocabulary entirely.
- */
 describe('the modal vocabulary', () => {
   it('offers ionian and aeolian, and neither major nor minor', () => {
     expect(FLAVOURS).toContain('ionian')
@@ -78,8 +72,6 @@ describe('the modal vocabulary', () => {
   })
 
   it('keeps the two renamed flavours in the places they held', () => {
-    // Order is what a seed's flavour draw depends on: a reordered list renders
-    // different audio for an unchanged catalogue entry.
     expect(FLAVOURS[0]).toBe('ionian')
     expect(FLAVOURS[1]).toBe('aeolian')
   })
@@ -107,8 +99,6 @@ describe('scaleName', () => {
   })
 
   it('spells the four hyphenated modes Epic 6 added as words', () => {
-    // The ids stay hyphenated so `scaleName`'s existing replacement is all the
-    // display spelling needs — the same bargain 'harmonic-minor' already made.
     expect(scaleName('C', 'melodic-minor')).toBe('C melodic minor')
     expect(scaleName('C', 'lydian-dominant')).toBe('C lydian dominant')
     expect(scaleName('E♭', 'phrygian-dominant')).toBe('E♭ phrygian dominant')
@@ -138,13 +128,6 @@ describe('pitchesOf', () => {
   })
 })
 
-/**
- * Epic 6 — twelve modes, not eight. The gate every candidate had to clear is
- * the perfect fifth: without it `chordsForScale` can build no nameable tonic
- * and the app's `familyOf` has no honest third to grade by. That is what
- * excludes locrian and every symmetric scale, and it is asserted here rather
- * than left as a comment in `scales.ts`.
- */
 describe('the twelve-mode vocabulary', () => {
   it('offers twelve flavours', () => {
     expect(FLAVOURS.length).toBe(12)
@@ -152,8 +135,6 @@ describe('the twelve-mode vocabulary', () => {
   })
 
   it('does not offer locrian', () => {
-    // Its diminished fifth makes it neither family in any honest reading, and
-    // leaves `chordsForScale` no in-scale tonic to name.
     expect(FLAVOURS).not.toContain('locrian')
   })
 

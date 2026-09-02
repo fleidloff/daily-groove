@@ -2,12 +2,6 @@ import { describe, expect, it } from 'vitest'
 import type { Groove } from '../../src/lib/groove.ts'
 import { buildPools } from './pools.ts'
 
-/**
- * A stand-in catalogue in the notation the renderer actually emits — Unicode
- * accidentals, en-dash separated progressions, two-word flavours. The
- * assertions below are properties of `buildPools`, so they keep their meaning
- * when the real catalogue is re-selected.
- */
 const ENTRIES: Groove[] = [
   {
     id: 'groove-01',
@@ -55,7 +49,6 @@ const ENTRIES: Groove[] = [
 
 const POOL_NAMES = ['scales', 'chords', 'progressions'] as const
 
-/** The catalogue field each pool is drawn from. */
 const SOURCE: Record<(typeof POOL_NAMES)[number], keyof Groove> = {
   scales: 'scale',
   chords: 'chord',
@@ -77,7 +70,6 @@ describe('buildPools', () => {
     }
   })
 
-  // AC14: every value the catalogue uses is in its pool.
   it('contains every value its entries use', () => {
     const pools = buildPools(ENTRIES)
     for (const name of POOL_NAMES) {
@@ -87,8 +79,6 @@ describe('buildPools', () => {
     }
   })
 
-  // AC14: enough distinct distractors for buildOptions to fill a four-option
-  // set for *any* groove — three distractors beyond the correct answer.
   it('has at least four distinct members more than the catalogue uses', () => {
     const pools = buildPools(ENTRIES)
     for (const name of POOL_NAMES) {
@@ -133,12 +123,6 @@ describe('buildPools', () => {
   })
 })
 
-/**
- * The modes added when the vocabulary grew from eight to twelve, in the
- * lower-case flavour spelling the renderer emits. Every one of them needs
- * distractors, or the day its mode is the answer is the day the wrong options
- * beside it are all in some other mode — which reads as a hint.
- */
 const NEW_MODES = [
   'melodic minor',
   'lydian dominant',
@@ -146,16 +130,9 @@ const NEW_MODES = [
   'harmonic major',
 ]
 
-/**
- * The full distractor vocabulary: `buildPools` on an empty catalogue is
- * exactly the fixed list, so the assertions below reach it without the module
- * having to export its internals.
- */
 const SCALE_DISTRACTORS = buildPools([]).scales
 
 describe('SCALE_DISTRACTORS', () => {
-  // AC3/AC4: each new mode is present, and present on more than one root, so
-  // the pool never has to reuse a root to fill a set.
   it.each(NEW_MODES)('carries at least two entries for %s, on different roots', (mode) => {
     const entries = SCALE_DISTRACTORS.filter((s) => s.endsWith(` ${mode}`))
     expect(entries.length, `${mode}: ${entries.join(', ')}`).toBeGreaterThanOrEqual(2)
@@ -163,9 +140,6 @@ describe('SCALE_DISTRACTORS', () => {
     expect(roots.size, `${mode} roots: ${[...roots].join(', ')}`).toBe(entries.length)
   })
 
-  // AC4: the accidental is the Unicode glyph the renderer emits, never ASCII.
-  // 'B♭ lydian dominant', not 'Bb lydian dominant' — a distractor spelled
-  // differently from the answers stands out as the odd one, which is a hint.
   it('spells every accidental with ♯ or ♭, never # or b', () => {
     for (const entry of SCALE_DISTRACTORS) {
       const [root] = entry.split(' ')
@@ -174,10 +148,6 @@ describe('SCALE_DISTRACTORS', () => {
     }
   })
 
-  // AC4: the flavour is the modal name, lower case. 'A ionian', never
-  // 'A major' — feature-7 renamed the answers and left the pool behind once,
-  // and a pool whose distractors read 'A major' hands over the answer by its
-  // spelling alone.
   it('names every flavour modally, in lower case', () => {
     const MODAL = new Set([
       'ionian',

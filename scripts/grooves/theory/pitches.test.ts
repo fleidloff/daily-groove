@@ -9,18 +9,11 @@ import type { MusicMeta, NoteEvent, VoiceName } from '../types.ts'
 
 const BPM = 120
 const BEATS_PER_BAR = 4
-/** 2 seconds at 120 bpm. */
 const BAR_SEC = (60 / BPM) * BEATS_PER_BAR
 
-/** C dorian: C D E♭ F G A B♭. B natural and C♯ are outside it. */
 const CM7 = [60, 63, 67, 70]
 const F7 = [65, 69, 72, 75]
 
-/**
- * Two chords over a four-bar figure, so every bar line is a chord change —
- * including the one at the loop's end, where bar four's F7 leads back into bar
- * one's Cm7.
- */
 const HARMONY: Harmony = {
   chordMidi: CM7,
   chordName: 'Cm7',
@@ -38,12 +31,9 @@ const MUSIC: MusicMeta = {
   scale: 'C dorian',
   chord: 'Cm7',
   progression: 'Cm7–F7',
-  // Read off HARMONY rather than restated: the words and the audio in this
-  // fixture must not be able to drift apart.
   progressionDegrees: HARMONY.progressionDegrees,
 }
 
-/** The onset of a sixteenth-note step of a bar, in seconds from the loop's start. */
 function at(bar: number, sixteenth: number): number {
   return bar * BAR_SEC + (sixteenth * BAR_SEC) / 16
 }
@@ -55,13 +45,11 @@ function note(voice: VoiceName, midi: number, timeSec: number): NoteEvent {
 const bass = (midi: number, timeSec: number) => note('bass', midi, timeSec)
 const comp = (midi: number, timeSec: number) => note('comp', midi, timeSec)
 
-/** A kick: no `midi`, so the check has nothing to say about it. */
 function kick(timeSec: number): NoteEvent {
   return { voice: 'kick', timeSec, durationSec: 0.2, velocity: 0.9 }
 }
 
 describe('offScalePitches', () => {
-  // Step C1 — R9, R10, AC10, AC11
   describe('the rule', () => {
     it('admits a bass line and a comp voicing built from the scale', () => {
       const events = [
@@ -95,9 +83,7 @@ describe('offScalePitches', () => {
     })
   })
 
-  // Step C3 — R8, R8a, AC9, AC9a
   describe('the approach-note exception', () => {
-    /** B natural, a semitone below the C that bar 3 and bar 1 are built on. */
     const B_BELOW_C = 47
 
     it('admits one bass semitone below the next chord’s root, on the bar’s last off-beat', () => {
@@ -106,7 +92,6 @@ describe('offScalePitches', () => {
     })
 
     it('admits the same note a semitone above the next root', () => {
-      // C♯, a semitone above bar 3's C.
       expect(offScalePitches([bass(49, at(1, 15))], MUSIC, HARMONY)).toEqual([])
     })
 
@@ -125,7 +110,6 @@ describe('offScalePitches', () => {
     })
 
     it('reports a pitch that is not a semitone from the next root', () => {
-      // F♯, a tritone from bar 3's C, in the approach position.
       expect(offScalePitches([bass(42, at(1, 15))], MUSIC, HARMONY)).toHaveLength(1)
     })
 
@@ -136,12 +120,10 @@ describe('offScalePitches', () => {
     })
 
     it('reports an approach note in a bar that leads into the same chord', () => {
-      // One chord for the whole figure: no change anywhere, so no exception.
       const oneChord: Harmony = { ...HARMONY, progressionMidi: [CM7], progressionDegrees: [0] }
       expect(offScalePitches([bass(B_BELOW_C, at(1, 15))], MUSIC, oneChord)).toHaveLength(1)
     })
 
-    // R8a, AC9a — the loop's end is a chord change like any other.
     it('admits an approach note on the last off-beat of the final bar, into bar one', () => {
       expect(offScalePitches([bass(B_BELOW_C, at(3, 15))], MUSIC, HARMONY)).toEqual([])
     })
@@ -162,8 +144,6 @@ describe('offScalePitches', () => {
     })
   })
 
-  // R9, R10a — the only other hole, and the proof that it is empty everywhere
-  // but blues.
   describe('the flavour’s own chords', () => {
     it('admits the major third of a blues I7, which the six-note scale omits', () => {
       const harmony = buildHarmony('C', 'blues', rngFor('pitches:blues'))
@@ -178,7 +158,6 @@ describe('offScalePitches', () => {
         progression: harmony.progressionName,
         progressionDegrees: harmony.progressionDegrees,
       }
-      // E is a chord tone of C7 and not a member of the C blues scale.
       expect(pitchesOf('C', 'blues')).not.toContain(4)
       expect(harmony.chordMidi).toContain(64)
       expect(offScalePitches([comp(64, at(0, 2))], music, harmony)).toEqual([])

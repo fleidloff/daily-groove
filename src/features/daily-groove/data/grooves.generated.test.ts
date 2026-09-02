@@ -26,27 +26,11 @@ describe('the generated groove catalogue', () => {
       expect(typeof g.flavour).toBe('string')
       expect(typeof g.bars).toBe('number')
       expect(typeof g.headDelaySeconds).toBe('number')
-      // F15 E3 — the changes read as degrees. The field travels beside the
-      // progression it describes, and every shipped groove carries it.
       expect(Array.isArray(g.progressionDegrees), g.id).toBe(true)
     }
   })
 
-  /**
-   * Feature-12, Epic 1 — R1, R1a, R2, R3, AC1, AC14.
-   *
-   * The uuid is the only identifier a share link carries, so a manifest that
-   * lost it, lower-cased it differently, or repeated one is a manifest whose
-   * links point at the wrong groove or at nothing. It is asserted *here*, on
-   * the committed file, and not only through the two consumers that happen to
-   * iterate `GROOVES` — `grooveByUuid` and `grooveHref` — because dropping
-   * `'uuid'` from `FIELDS` in `scripts/grooves/manifest.ts` must fail the test
-   * that owns the manifest, not just the tests that read it.
-   */
   it('gives every entry a canonical v4 uuid, and no two the same', () => {
-    // Canonical: lowercase, hyphenated, 36 characters, version nibble 4 and a
-    // variant nibble of 8/9/a/b. The same shape `scripts/grooves/uuid.ts`
-    // enforces on the catalogue this file is generated from.
     const CANONICAL =
       /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/
 
@@ -55,24 +39,16 @@ describe('the generated groove catalogue', () => {
     }
 
     expect(new Set(GROOVES.map((g) => g.uuid)).size).toBe(GROOVES.length)
-    // And it is a second identifier, never a restatement of the first: a uuid
-    // derived from the catalogue position would not survive a renumbering,
-    // which is the whole reason it exists.
     for (const g of GROOVES) {
       expect(g.uuid, g.id).not.toContain(g.id)
     }
   })
 
-  // Epic 2, Step E6: the head delay is measured from each mp3 by ffprobe at
-  // render time. The app reads the number it was given rather than inferring
-  // one, so a manifest that lost it is a manifest the player cannot use.
   it('carries a measured head delay for every entry', () => {
     for (const g of GROOVES) {
       expect(Number.isFinite(g.headDelaySeconds), g.id).toBe(true)
       expect(g.headDelaySeconds, g.id).toBeGreaterThanOrEqual(0)
     }
-    // Sixteen zeroes would pass every assertion above while meaning the probe
-    // silently failed on every file, so at least one must be a real offset.
     expect(
       GROOVES.some((g) => g.headDelaySeconds > 0),
       'every head delay is zero — the probe measured nothing',
@@ -109,7 +85,6 @@ describe('the generated groove catalogue', () => {
 })
 
 describe('the audio behind the catalogue', () => {
-  // The check that would have caught seven zero-byte placeholder mp3s shipping.
   it('has a real, non-empty file behind every entry', () => {
     for (const g of GROOVES) {
       const file = join(PUBLIC, g.audioSrc)
@@ -131,11 +106,6 @@ describe('the audio behind the catalogue', () => {
   })
 })
 
-/**
- * Walk a tree and hand back every TypeScript source file in it, tests
- * included: a test that parses a scale string is a second source of truth
- * just as surely as production code that does.
- */
 function sourceFiles(root: string): string[] {
   const found: string[] = []
   const walk = (dir: string) => {
@@ -159,7 +129,6 @@ describe('the app reads grooves from one place', () => {
     expect(offenders).toEqual([])
   })
 
-  // AC8: seed.ts is gone, and nothing anywhere still reaches for it.
   it('imports nothing at all from a seed module', () => {
     const offenders = sourceFiles(SRC).filter((file) =>
       /from\s*'[^']*\.\/seed'/.test(readFileSync(file, 'utf8')),
@@ -177,16 +146,9 @@ describe('the app reads grooves from one place', () => {
   })
 })
 
-/**
- * R8: `root` and `flavour` are the answer; `scale` is a display string. A
- * derivation that takes the answer apart out of `scale` is a second source of
- * truth, and it breaks the moment a flavour is two words — `harmonic minor`
- * would quietly become root `harmonic`.
- */
 describe('the answer comes from its own fields, never from the scale string', () => {
   const FEATURE = join(SRC, 'features', 'daily-groove')
 
-  // This file names the patterns it bans, so it excludes itself from the scan.
   const files = () =>
     sourceFiles(FEATURE).filter((f) => !f.endsWith('grooves.generated.test.ts'))
 
@@ -215,8 +177,6 @@ describe('the answer comes from its own fields, never from the scale string', ()
 })
 
 describe('every groove in the catalogue can be spelled', () => {
-  // The solved panel calls scaleNotes() unguarded, so a flavour the speller does
-  // not know crashes the day it comes up. This is the tripwire for that.
   it('has an interval entry for every flavour the catalogue uses', async () => {
     const { scaleNotes } = await import('../lib/theory/notes')
     for (const g of GROOVES) {
@@ -240,17 +200,6 @@ describe('every groove in the catalogue can be spelled', () => {
   })
 })
 
-/**
- * Feature-15, Epic 3, Step D5 — R2a, R4, AC5, AC8, AC11.
- *
- * The lead sheet writes a numeral under every bar of every day, so a groove
- * whose degrees are missing, short, or point at a note its flavour does not have
- * is a blank bar on the one screen that owes the player the answer. The sweep is
- * over the shipped manifest rather than a sample: a sample passes on precisely
- * the day a thirteenth mode is minted. A failure here names a flavour or an
- * index, and it is fixed in `lib/theory/numerals.ts` or in the generator's
- * `chordsForScale` — never by narrowing this test.
- */
 describe('the changes of every groove read as degrees', () => {
   it('gives every entry one degree per chord, opening on the tonic', () => {
     for (const g of GROOVES) {
@@ -260,10 +209,7 @@ describe('the changes of every groove read as degrees', () => {
         expect(Number.isInteger(degree), `${g.id} degree ${degree}`).toBe(true)
         expect(degree, g.id).toBeGreaterThanOrEqual(0)
       }
-      // Bar one is the tonic, so the first index is the root's own (AC10).
       expect(degrees[0], g.id).toBe(0)
-      // One index per chord symbol: no chord without a degree, and no degree
-      // without a chord (AC5).
       expect(degrees.length, `${g.id} (${g.progression})`).toBe(
         g.progression.split('–').length,
       )
@@ -273,41 +219,27 @@ describe('the changes of every groove read as degrees', () => {
   it('names a numeral in all four bars of every groove', async () => {
     const { barNumerals } = await import('../lib/theory/numerals')
     const { barChords, BAR_COUNT } = await import('../lib/theory/changes')
-    // A numeral is a degree of the day's own scale, spelled with at most a
-    // double accidental — never a quality and never a figured bass.
     const NUMERAL = /^[♭♯]{0,2}(I|II|III|IV|V|VI|VII)$/
 
     for (const g of GROOVES) {
       const numerals = barNumerals(g.flavour, g.progressionDegrees)
 
       expect(numerals.length, g.id).toBe(BAR_COUNT)
-      // No blank bar: every one of the four carries a numeral (AC8, AC11).
       for (const [bar, numeral] of numerals.entries()) {
         expect(numeral, `${g.id} (${g.flavour}) bar ${bar + 1}`).not.toBe('')
         expect(numeral, `${g.id} (${g.flavour}) bar ${bar + 1}`).toMatch(NUMERAL)
       }
       expect(numerals[0], `${g.id} (${g.flavour})`).toBe('I')
-      // And a symbol and a numeral in one bar always come as a pair, because
-      // both rows go through the same bar arithmetic.
       expect(barChords(g.progression).length, g.id).toBe(numerals.length)
     }
   })
 })
 
 describe('the catalogue is a real rotation', () => {
-  // Epic 4 (feature-7) took the rotation from sixteen to eighteen: six
-  // replacements minted, then the two `Blues` and two `Harmonic minor` grooves
-  // deleted from `catalogue.json`. The rotation only ever grew — 16 → 22 → 18.
   it('holds enough grooves for a real rotation', () => {
-    // Not a fixed count. The catalogue grows every time `grooves:add` runs, and
-    // pinning a number records the day the test was written rather than a
-    // property of the rotation.
     expect(GROOVES.length).toBeGreaterThanOrEqual(18)
   })
 
-  // Feature-9 Epic 6 took the vocabulary from six modes to twelve, so a fixed
-  // list of six no longer describes it. The property that list existed for is
-  // that no answer is much likelier than another.
   it('lets no mode dominate the answers', () => {
     const counts = new Map<string, number>()
     for (const g of GROOVES) counts.set(g.flavour, (counts.get(g.flavour) ?? 0) + 1)
@@ -318,11 +250,6 @@ describe('the catalogue is a real rotation', () => {
     expect(Math.max(...n)).toBeLessThanOrEqual(Math.min(...n) * 3)
   })
 
-  // Feature-7 retired the blues and harmonic-minor grooves while leaving both
-  // modes in their templates, so they stayed mintable and ungraded — a crash in
-  // simple mode waiting on the day either came up. Feature-9 Epic 6 grades them
-  // and the catalogue carries them again. This assertion is inverted rather than
-  // deleted so the reversal is visible in the record.
   it('carries every mode its own family table can grade', async () => {
     const { familyOf } = await import('../lib/theory/families')
     for (const g of GROOVES) {
@@ -347,29 +274,12 @@ describe('the catalogue is a real rotation', () => {
       expect(pools.CHORD_POOL, g.id).toContain(g.chord)
       expect(pools.PROGRESSION_POOL, g.id).toContain(g.progression)
     }
-    // Enough distinct members that a four-option picker can always be filled.
     expect(new Set(pools.SCALE_POOL).size).toBeGreaterThanOrEqual(
       new Set(GROOVES.map((g) => g.scale)).size + 4,
     )
   })
 })
 
-/**
- * The answers as they stood before feature-9 re-rendered the catalogue.
- *
- * This is a regression guard, not a description. Feature-9 changes how every
- * groove *sounds* — passes, instruments, timing, voicings, fills — and none of
- * that may change what a groove *is*, because a player's stored history refers
- * to grooves by id. A record of solving `groove-07` has to keep describing the
- * music it described when they solved it.
- *
- * The generator guarantees this by construction: the stream that draws tempo,
- * root, flavour and harmony keeps the label `events` and its draw order, and
- * every later change draws from `rhythm` instead. This table is what proves the
- * guarantee held.
- *
- * When it fails, the fix is the generator's draw order — never this table.
- */
 const ANSWERS_BEFORE_FEATURE_9 = [
   { id: 'groove-01', bpm: 105, scale: 'C mixolydian', chord: 'C7', progression: 'C7–Em7♭5–B♭maj7–Fmaj7', root: 'C', flavour: 'Mixolydian' },
   { id: 'groove-02', bpm: 96, scale: 'E dorian', chord: 'Em7', progression: 'Em7–Bm7–C♯m7♭5', root: 'E', flavour: 'Dorian' },
@@ -393,11 +303,6 @@ const ANSWERS_BEFORE_FEATURE_9 = [
 
 describe('the answers feature-9 must not move', () => {
   it('still covers every groove it was written to protect', () => {
-    // A subset, not the whole catalogue. The table guards the eighteen that
-    // existed when feature-9 began re-rendering — grooves whose ids are already
-    // in players' stored history. Grooves minted since have no history to
-    // protect and must not be pinned, or every future mint would have to edit
-    // this table to pass.
     const pinned = ANSWERS_BEFORE_FEATURE_9.map((a) => a.id)
     const present = new Set(GROOVES.map((g) => g.id))
     expect(pinned).toHaveLength(18)

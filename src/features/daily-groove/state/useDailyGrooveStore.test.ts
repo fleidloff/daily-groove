@@ -207,7 +207,6 @@ describe('createDailyGrooveStore', () => {
       expect(state.selectedRoot).toBe('G')
       expect(state.selectedFlavour).toBe('Mixolydian')
       expect(state.solved).toBe(false)
-      // The restored pair was already tried, so it cannot be re-checked.
       expect(state.canCheck()).toBe(false)
     })
 
@@ -232,10 +231,8 @@ describe('createDailyGrooveStore', () => {
       expect(state.solved).toBe(false)
     })
   })
-  // --- Epic 3 (feature-7): the terminal state -------------------------------
 
   describe('reveal()', () => {
-    // Step B1 — E3 R7, R9, R12
     it('ends the day without solving it, and spends no attempt', () => {
       const store = freshStore()
       store.getState().selectRoot('G')
@@ -247,7 +244,6 @@ describe('createDailyGrooveStore', () => {
 
       const state = store.getState()
       expect(state.revealed).toBe(true)
-      // Giving up is not a win, and the reveal itself is not an attempt.
       expect(state.solved).toBe(false)
       expect(state.attempts).toEqual(spent)
     })
@@ -264,8 +260,6 @@ describe('createDailyGrooveStore', () => {
 
       store.getState().reveal()
 
-      // A fresh, valid pair — different from the one just tried — is still
-      // refused: the day is over.
       store.getState().selectFlavour('Dorian')
       expect(store.getState().canCheck()).toBe(false)
       store.getState().check()
@@ -295,10 +289,8 @@ describe('createDailyGrooveStore', () => {
   })
 
   describe("the second miss selects the day's root", () => {
-    /** A day whose root is nothing the test ever guesses. */
     const E_DORIAN: Answer = { root: 'E', flavour: 'Dorian' }
 
-    // Step B2 — E3 R4, R5, AC3, AC4
     it('leaves the selection alone on the first miss', () => {
       const store = createDailyGrooveStore(E_DORIAN)
       store.getState().selectRoot('C')
@@ -318,7 +310,6 @@ describe('createDailyGrooveStore', () => {
 
       expect(store.getState().attempts).toHaveLength(2)
       expect(store.getState().selectedRoot).toBe('E')
-      // Only the root is handed over — the flavour is still the player's guess.
       expect(store.getState().selectedFlavour).toBe('Mixolydian')
     })
 
@@ -331,7 +322,6 @@ describe('createDailyGrooveStore', () => {
       store.getState().check()
       expect(store.getState().selectedRoot).toBe('E')
 
-      // The selection is the player's to change, and a third miss leaves it be.
       store.getState().selectRoot('C')
       store.getState().check()
 
@@ -339,7 +329,6 @@ describe('createDailyGrooveStore', () => {
       expect(store.getState().selectedRoot).toBe('C')
     })
 
-    // E3 R3, AC2 — guesses stay unlimited: the row marks par, not lives.
     it('scores and records a fourth miss like the first', () => {
       const store = createDailyGrooveStore(E_DORIAN)
       const flavours = ['Mixolydian', 'Lydian', 'Mixolydian', 'Lydian']
@@ -364,7 +353,6 @@ describe('createDailyGrooveStore', () => {
       store.getState().selectFlavour('Dorian')
       store.getState().check()
 
-      // One miss, then a solve: the rule counts misses, not checks.
       expect(store.getState().solved).toBe(true)
       expect(store.getState().selectedRoot).toBe('E')
       expect(store.getState().selectedFlavour).toBe('Dorian')
@@ -414,12 +402,6 @@ describe('createDailyGrooveStore', () => {
     })
   })
 
-  // Feature 7, Epic 5, Step D2 — R5, R8, AC4, AC5, AC8.
-  //
-  // The comparison on the flavour half is a parameter, so simple mode can
-  // loosen it without the store learning what simple mode is. It is read at
-  // check time rather than captured at creation, which is what lets the puzzle
-  // swap it mid-day without recreating the store and resetting the day.
   describe('the flavour matcher', () => {
     it('grades exactly when none is given, as it always has', () => {
       const store = createDailyGrooveStore(ANSWER)
@@ -443,7 +425,6 @@ describe('createDailyGrooveStore', () => {
       expect(attempt.flavourMatched).toBe(true)
       expect(attempt.correct).toBe(true)
       expect(store.getState().solved).toBe(true)
-      // What the player pressed is what is recorded, not the mode behind it.
       expect(attempt.flavour).toBe('Minor')
     })
 
@@ -463,15 +444,12 @@ describe('createDailyGrooveStore', () => {
         current(answer, guess),
       )
 
-      // Under the exact comparison, the family word is just a wrong flavour.
       store.getState().selectRoot('C')
       store.getState().selectFlavour('Minor')
       store.getState().check()
       expect(store.getState().attempts).toHaveLength(1)
       expect(store.getState().solved).toBe(false)
 
-      // Swap the comparison on the same store instance: the attempt already
-      // spent is still there, and the next check grades the new way (AC8).
       current = familyMatch
       store.getState().selectRoot('G')
       store.getState().check()

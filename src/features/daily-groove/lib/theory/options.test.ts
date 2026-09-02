@@ -37,7 +37,6 @@ describe('buildOptions', () => {
   it('produces different orderings/sets for different seeds (generally)', () => {
     const a = buildOptions('C minor', pool, 'seed-1', 4)
     const b = buildOptions('C minor', pool, 'seed-2', 4)
-    // Not a hard guarantee for all seeds, but these two must differ.
     expect(a).not.toEqual(b)
   })
 
@@ -79,12 +78,6 @@ describe('seededShuffle', () => {
   })
 })
 
-/**
- * R8/AC8: one seeded shuffle exists in the tree, and it is this one. The guard
- * has to keep itself out of its own search, so the Fisher-Yates marker is
- * assembled from fragments rather than written as one literal — otherwise this
- * file would be the second holder it is meant to forbid.
- */
 const FISHER_YATES = 'for (let i = out.length - ' + '1; i > 0; i--)'
 
 function sourceFilesUnder(dir: string): string[] {

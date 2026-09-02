@@ -2,12 +2,6 @@ import { describe, expect, it } from 'vitest'
 import { nameFor } from './name.ts'
 import { ADJECTIVES, NOUNS, WORDS } from './words.ts'
 
-/**
- * The vocabularies a name must never leak. Both accidental spellings are
- * listed: the app spells roots with Unicode accidentals ('C♯', 'E♭') and the
- * player may well type the ASCII ones, so a word matching either would hand
- * over the answer.
- */
 const NOTE_WORDS = [
   'A',
   'B',
@@ -56,7 +50,6 @@ const MODE_WORDS = [
   'diatonic',
 ]
 
-/** Whole words of a phrase, lowercased, punctuation stripped from the edges. */
 function wordsOf(phrase: string): string[] {
   return phrase
     .split(/[\s\-–—]+/)
@@ -112,7 +105,6 @@ describe('the curated word list', () => {
     }
   })
 
-  // AC8: no generated name contains a note name or a mode name.
   it('contains no note name and no mode name, checked as whole words', () => {
     for (const word of WORDS) {
       for (const token of wordsOf(word)) {
@@ -132,8 +124,6 @@ describe('the curated word list', () => {
 })
 
 describe('generated names', () => {
-  // AC8, checked on the output rather than the vocabulary, so a future
-  // nameFor that joined or decorated words would still be caught.
   it('leak no note or mode name for any of a thousand seeds', () => {
     for (let i = 0; i < 1000; i++) {
       const name = nameFor(`groove-${i}`)

@@ -1,37 +1,16 @@
-/**
- * Spelled note names → positions on a staff.
- *
- * A staff line is a letter, not a semitone: E♭ and E sit on the same line and
- * differ only by the glyph in front of the notehead. So nothing here does pitch
- * arithmetic — `scaleNotes` has already done the hard part of choosing the
- * letters, and this walks them.
- */
-
-/** The letters of a staff, in the order they ascend from middle C. */
 const LETTERS = ['C', 'D', 'E', 'F', 'G', 'A', 'B']
 
-/** Every accidental `notes.ts` can spell, plus the empty string for none. */
 const ACCIDENTALS = ['', '♭', '♭♭', '♯', '♯♯']
 
-/** Drawn on a line a previous note in the same scale altered. */
 const NATURAL = '♮'
 
-/**
- * The lowest step any scale in the rotation can occupy: C4, one ledger line
- * below the bottom staff line, on a scale rooted on C. It follows from
- * `staffNotes`' own rule — the root sits at its letter's first occurrence at or
- * above middle C — and it is what the staff's degree row is placed clear of.
- */
 export const STAFF_FLOOR_STEP = 0
 
 export type StaffNote = {
-  /** Diatonic steps above middle C. C4 = 0, D4 = 1, B4 = 6, C5 = 7. */
   step: number
-  /** '♯' | '♭' | '♯♯' | '♭♭' | '♮' | '' — drawn to the left of the notehead. */
   accidental: string
 }
 
-/** Thrown when a name is not a letter A–G with an accidental we can spell. */
 export class UnknownNoteError extends Error {
   constructor(note: string) {
     super(`Not a spelled note: "${note}"`)
@@ -39,16 +18,7 @@ export class UnknownNoteError extends Error {
   }
 }
 
-/**
- * Spelled note names → staff positions, ascending from the root in the octave
- * above middle C. Throws UnknownNoteError on a name it cannot parse, so a
- * catalogue that grows a new spelling fails in tests, not on the panel.
- */
 export function staffNotes(names: string[]): StaffNote[] {
-  // The root sits in the octave running upward from middle C — its letter's
-  // first occurrence at or above C4, which is just its index in LETTERS. Each
-  // later note wraps to the next octave when its letter falls below the one
-  // before it, which is what puts E Dorian's C♯ at step 7 rather than step 0.
   let octave = 0
   let previous = -1
 
@@ -64,10 +34,6 @@ export function staffNotes(names: string[]): StaffNote[] {
     return { step: octave * LETTERS.length + index, accidental }
   })
 
-  // A G following a G♭ has to say it is natural: with no key signature, an
-  // accidental holds for the rest of the line it was drawn on. Only the blues
-  // scale puts two notes on one line, but the rule is stated for any scale that
-  // does.
   return notes.map((note, i) => {
     if (note.accidental !== '') return note
     const altered = notes

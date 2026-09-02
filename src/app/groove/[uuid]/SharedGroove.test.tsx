@@ -8,12 +8,6 @@ import {
   type Groove,
 } from "@/features/daily-groove";
 
-/**
- * The app router, which jsdom provides no context for. It is a framework
- * module, not one of the feature's, so standing it in mocks nothing the route
- * boundary cares about — and this is the file where navigation belongs, which is
- * why the redirect lives here rather than inside the puzzle.
- */
 const { replaceMock, pushMock } = vi.hoisted(() => ({
   replaceMock: vi.fn(),
   pushMock: vi.fn(),
@@ -32,12 +26,6 @@ vi.mock("next/navigation", async (importOriginal) => ({
 
 import { SharedGroove } from "./SharedGroove";
 
-/**
- * The catalogue, read from disk and resolved through the feature's own lookup —
- * the same source `page.test.tsx` uses, and for the same reason: `GROOVES` is
- * not on the public surface, and hard-coding uuids here would go stale the next
- * time the catalogue is re-rendered.
- */
 const CATALOGUE_PATH = "scripts/grooves/catalogue.json";
 
 const grooves: Groove[] = (
@@ -48,7 +36,6 @@ const grooves: Groove[] = (
   .map((entry) => grooveByUuid(entry.uuid))
   .filter((groove): groove is Groove => groove !== undefined);
 
-/** Today's groove, and one that is not — by the feature's own answer. */
 const todays = () => grooves.find((g) => isTodaysGroove(g, new Date()))!;
 const notTodays = () => grooves.find((g) => !isTodaysGroove(g, new Date()))!;
 
@@ -72,8 +59,6 @@ describe("a shared link to today's own groove", () => {
     render(<SharedGroove groove={todays()} />);
 
     await waitFor(() => expect(replaceMock).toHaveBeenCalledWith("/"));
-    // `replace`, not `push`: Back must not bounce the player into a URL they
-    // were never meant to land on.
     expect(pushMock).not.toHaveBeenCalled();
   });
 
@@ -81,8 +66,6 @@ describe("a shared link to today's own groove", () => {
     render(<SharedGroove groove={todays()} />);
 
     await waitFor(() => expect(replaceMock).toHaveBeenCalled());
-    // Nothing to play, nothing to guess with, and no shared framing to read —
-    // so nothing is fetched and nothing sounds while the redirect happens.
     expect(
       screen.queryByRole("button", { name: /play the groove/i }),
     ).toBeNull();
@@ -103,9 +86,6 @@ describe("a shared link to any other groove", () => {
   it("plays as a shared groove, exactly as before", async () => {
     render(<SharedGroove groove={notTodays()} />);
 
-    // The puzzle mounts and the redirect does not fire. The framing itself is
-    // the feature's and is asserted inside it; what matters here is that the
-    // route hands the groove over untouched.
     await waitFor(() =>
       expect(
         screen.getByRole("heading", { name: notTodays().name }),
@@ -122,16 +102,11 @@ describe("SharedGroove reaches the feature only for the answer", () => {
   );
 
   it("asks the feature which groove is today's rather than deciding itself", () => {
-    // The rule this guards: the route owns *where to send the player*, and the
-    // feature owns *which groove belongs to which day*. A route that reached for
-    // the rotation itself would be a second place that knows.
     expect(source).toContain("isTodaysGroove");
     expect(source).not.toMatch(/selectGrooveForDate|GROOVES|hashString/);
   });
 
   it("reads the day on the client, never at module scope", () => {
-    // A `new Date()` evaluated once at import would freeze the answer for the
-    // lifetime of the server process.
     expect(source).toMatch(/isTodaysGroove\(groove, new Date\(\)\)/);
     expect(source).toContain("useSyncExternalStore");
   });

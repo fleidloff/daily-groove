@@ -6,22 +6,14 @@ import {
   type FakeContext,
 } from '../../testing/fakeAudioContext'
 
-/** One sample at 44.1kHz — tighter than any error this epic is fixing. */
 const ONE_SAMPLE = 1 / 44100
 
-/** groove-01: a 9.16898s file carrying 9.142857s of music at 105bpm. */
 const GROOVE_01 = {
   src: '/grooves/groove-01.mp3',
   loopSeconds: 9.142857,
   headDelaySeconds: 0.025057,
 }
 
-/**
- * Drain the microtask queue, so a press has reached the decode it is waiting
- * on. A macrotask turn rather than a fixed number of `Promise.resolve()`s: the
- * fetch-then-arrayBuffer-then-decode chain is several ticks long, and counting
- * them makes the test depend on how the player spells its awaits.
- */
 async function flush() {
   await new Promise((resolve) => {
     setTimeout(resolve, 0)
@@ -29,15 +21,11 @@ async function flush() {
 }
 
 afterEach(async () => {
-  // The context is a page-level singleton now; `installFakeAudioContext()`
-  // forgets any stale one, and this closes the last test's for good.
   await releaseAudioContext()
   vi.unstubAllGlobals()
   vi.restoreAllMocks()
 })
 
-// Step B1 — the seam every other assertion runs against. jsdom implements no
-// Web Audio, so the fake context is what a timing test can drive by hand.
 describe('installFakeAudioContext', () => {
   it('installs a context the test can drive', () => {
     const fake: FakeContext = installFakeAudioContext({ bufferSeconds: 10 })
@@ -60,7 +48,6 @@ describe('installFakeAudioContext', () => {
 })
 
 describe('createAudioPlayer', () => {
-  // Step B2 — R6, AC7: nothing touches the audio hardware until a press.
   describe('no context exists until the first press (R6, AC7)', () => {
     it('constructs no AudioContext when the player is built', () => {
       const fake = installFakeAudioContext()
@@ -95,7 +82,6 @@ describe('createAudioPlayer', () => {
     })
   })
 
-  // Step B3 — R10, AC10: the file is fetched and decoded exactly once.
   describe('the file is decoded once (R10, AC10)', () => {
     it('shares one in-flight decode between concurrent loads', async () => {
       const fake = installFakeAudioContext()
@@ -137,7 +123,6 @@ describe('createAudioPlayer', () => {
     })
   })
 
-  // Step B4 — R1, R10, AC1, AC10: one looping source over the musical window.
   describe('playing starts one looping source over the musical window (R1, AC1)', () => {
     it('loops the source between the groove’s own boundaries', async () => {
       const fake = installFakeAudioContext({ bufferSeconds: 9.16898 })
@@ -184,7 +169,6 @@ describe('createAudioPlayer', () => {
     })
   })
 
-  // Step B5 — R8, AC9: stopping rewinds; the next press starts a new node.
   describe('stopping ends the source and the next press starts a new one (R8, AC9)', () => {
     it('stops the node, and elapsed returns to 0', async () => {
       const fake = installFakeAudioContext()
@@ -214,14 +198,12 @@ describe('createAudioPlayer', () => {
       expect(fake.sources).toHaveLength(2)
       expect(player.getElapsed()).toBe(0)
       expect(player.isPlaying()).toBe(true)
-      // The decoded buffer is reused; only the node is single-use.
       expect(fake.decodeCalls).toBe(1)
       expect(fake.sources[1].buffer).toBe(fake.sources[0].buffer)
       player.dispose()
     })
   })
 
-  // Step B6 — R2, R3, AC4, AC4a: elapsed is the context clock, latency-corrected.
   describe('elapsed is the context clock minus the output latency (R3, AC4)', () => {
     it('reads 0 until the first audio has reached the listener', async () => {
       const fake = installFakeAudioContext({ outputLatency: 0.2 })
@@ -274,10 +256,6 @@ describe('createAudioPlayer', () => {
     })
   })
 
-  // Steps C1, C2 — R8: the graph time the groove's first sample was *emitted*
-  // at. Deliberately not latency-corrected: anything scheduled against the
-  // groove has to sit on the same clock the groove was handed to the graph on,
-  // or it lands one output latency late. `getElapsed()` stays the heard one.
   describe('the start time is the emission clock (R8)', () => {
     it('reports the graph time the source was started at', async () => {
       const fake = installFakeAudioContext()
@@ -290,7 +268,6 @@ describe('createAudioPlayer', () => {
 
       expect(player.getStartTime()).toBe(3)
 
-      // A start time, not an elapsed time: the clock moves, this does not.
       fake.advance(5)
       expect(player.getStartTime()).toBe(3)
 
@@ -309,11 +286,8 @@ describe('createAudioPlayer', () => {
       fake.advance(2)
 
       const startedAt = player.getStartTime()!
-      // Heard: two seconds of graph time minus the 200ms still in the pipe.
       expect(player.getElapsed()).toBeCloseTo(1.8, 9)
-      // Emitted: the full two seconds.
       expect(fake.currentTime - startedAt).toBeCloseTo(2, 9)
-      // The gap between the two timelines is exactly the reported latency.
       expect(fake.currentTime - startedAt - player.getElapsed()).toBeCloseTo(
         fake.outputLatency!,
         9,
@@ -323,7 +297,6 @@ describe('createAudioPlayer', () => {
     })
   })
 
-  // Step B7 — R7a, AC8b, AC8c: loading is visible while it happens.
   describe('loading is visible while it happens (R7a, AC8b, AC8c)', () => {
     it('is loading between the press and the first sound', async () => {
       const fake = installFakeAudioContext()
@@ -369,7 +342,6 @@ describe('createAudioPlayer', () => {
     })
   })
 
-  // Step B8 — R7, AC8, AC8a, AC8d: every failure path raises the same error.
   describe('every failure path raises the same error (R7, AC8, AC8a)', () => {
     it('rejects when the decode fails, and leaves the busy state', async () => {
       const fake = installFakeAudioContext()
@@ -453,8 +425,6 @@ describe('createAudioPlayer', () => {
       player.dispose()
     })
 
-    // Step C2 — R14, R16, AC13: the context outlives the player that used it,
-    // because the reference voice may still be holding it.
     it('dispose() stops the source and reports nothing playing', async () => {
       const fake = installFakeAudioContext()
       const player = createAudioPlayer(GROOVE_01)

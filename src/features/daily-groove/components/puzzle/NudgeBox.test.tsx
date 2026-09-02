@@ -27,8 +27,6 @@ describe('NudgeBox', () => {
   })
 
   it('leaves the feedback line the only status region (R5)', () => {
-    // The nudge is additional context beside the feedback line, not a second
-    // status: the card must still have exactly one role="status".
     render(<NudgeBox root="G" />)
     expect(screen.queryByRole('status')).not.toBeInTheDocument()
   })

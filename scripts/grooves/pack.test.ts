@@ -148,16 +148,6 @@ describe('the committed sample pack', () => {
   }, 120_000)
 })
 
-/**
- * Epic 5, Step B1 — the toms, and the rules the whole percussion pack follows.
- *
- * These read the committed declaration and the committed audio from disk. They
- * are the guard on the *files*, not on `loadPack`: the pack can load a wrongly
- * prepared sample perfectly well, and the mistakes that matter here — a stereo
- * file, a 48 kHz file, a velocity layer that was normalised until it stopped
- * being a velocity layer — are only visible in the bytes.
- */
-
 const SAMPLES = join(here, 'samples')
 
 const committed = JSON.parse(
@@ -168,7 +158,6 @@ const committedProvenance = JSON.parse(
   readFileSync(join(SAMPLES, 'provenance.json'), 'utf8'),
 ) as { samples: { file: string; source: string; sourceFile: string; licence: string }[] }
 
-/** Every voice struck rather than pitched — the ones declared with `layers`. */
 const PERCUSSIVE: VoiceName[] = ['kick', 'snare', 'hatClosed', 'hatOpen', 'rim', 'tomHigh', 'tomLow']
 
 const TOMS: VoiceName[] = ['tomHigh', 'tomLow']
@@ -181,7 +170,6 @@ function filesOf(voice: VoiceName): string[] {
   return layersOf(voice).flatMap((layer) => layer.files)
 }
 
-/** `codec,sampleRate,channels` as the file itself declares them. */
 function format(file: string): string {
   const probed = spawnSync('ffprobe', [
     '-v', 'error',
@@ -195,7 +183,6 @@ function format(file: string): string {
   return probed.stdout.toString().trim()
 }
 
-/** The file's own samples, un-resampled and un-upmixed, as ffmpeg reads them. */
 function samplesOf(file: string): Float32Array {
   const decoded = spawnSync(
     'ffmpeg',
@@ -217,7 +204,6 @@ function peakOf(file: string): number {
   return peak
 }
 
-/** A layer's level: the mean peak of its round-robin alternates. */
 function levelOf(layer: VelocityLayer): number {
   return layer.files.reduce((sum, file) => sum + peakOf(file), 0) / layer.files.length
 }
@@ -284,7 +270,6 @@ describe('the committed pack’s percussion', () => {
     }
   }, 120_000)
 
-  // AC2 — the toms are the same library, and the same drum family, as the snare.
   it('records a provenance entry for every tom file, naming the snare’s source', () => {
     const recorded = new Map(committedProvenance.samples.map((s) => [s.file, s]))
     const snare = recorded.get(filesOf('snare')[0])!
@@ -296,19 +281,11 @@ describe('the committed pack’s percussion', () => {
         expect(entry, `${file} is in the pack but not in provenance.json`).toBeDefined()
         expect(entry!.source, `${file} names a different library than the snare`).toBe(snare.source)
         expect(entry!.licence).toBe('CC-BY-4.0')
-        // Same kit as the snare - one drummer, one session, one room - rather
-        // than a hand percussion sample standing in for a tom.
         expect(entry!.sourceFile).toMatch(/^samples\/Tom\d\//)
       }
     }
   })
 
-  /**
-   * Still two drums and not one pitched twice — the reason `VoiceName` declares
-   * a high and a low tom and no invented middle. MuldjordKit has four, so the
-   * two chosen are a rack tom and the floor tom: the widest real interval the
-   * kit holds.
-   */
   it('takes the high tom and the low tom from different drums', () => {
     const upstream = (voice: VoiceName) =>
       new Set(
@@ -325,25 +302,8 @@ describe('the committed pack’s percussion', () => {
   })
 })
 
-/**
- * Feature 9, Epic 2, Step B2 — the upright bass.
- *
- * `bass` is the pack's first non-VCSL voice: a pizzicato solo contrabass from
- * VSCO 2 Community Edition, replacing a TX81Z FM Piano that was standing in for
- * a bass and had been heard and rejected. These read the committed declaration
- * and the committed audio from disk for the same reason the percussion ones do:
- * the mistakes that matter are in the bytes, not in `loadPack`.
- *
- * The register it achieves is 26-51, not the 22-50 the spec asks for. MIDI 28
- * is a four-string contrabass's open low E and the instrument has nothing
- * below it; `samples/README.md` records why that gap was left rather than
- * filled with an offline pitch-shift, which is the arithmetic the renderer
- * already does and so would have added coverage in name only.
- */
-
 type MeasuredNote = { midi: number; measuredHz?: number; layers: VelocityLayer[] }
 
-/** The sampled notes of a pitched voice, lowest first. */
 function notesOf(voice: VoiceName): MeasuredNote[] {
   return [...((committed.voices[voice]?.notes ?? []) as MeasuredNote[])].sort(
     (a, b) => a.midi - b.midi,
@@ -354,12 +314,10 @@ function pitchedFilesOf(voice: VoiceName): string[] {
   return notesOf(voice).flatMap((note) => note.layers.flatMap((layer) => layer.files))
 }
 
-/** The MIDI note a frequency sounds, as a real number. */
 function midiOf(hz: number): number {
   return 12 * Math.log2(hz / 440) + 69
 }
 
-/** Every note the generator can ask the bass for: `BASS_BASE_MIDI` and an octave below. */
 const BASS_PLAYED = { lowest: 24, highest: 47 }
 
 describe('the committed pack’s bass', () => {
@@ -397,7 +355,6 @@ describe('the committed pack’s bass', () => {
     }
   }, 120_000)
 
-  // The un-normalised layers, note by note: VSCO's `v1` under its `v3`.
   it('leaves each note’s velocity layers un-normalised, so v3 is louder than v1', () => {
     for (const note of notesOf('bass')) {
       const levels = note.layers.map(levelOf)
@@ -421,11 +378,6 @@ describe('the committed pack’s bass', () => {
     }
   })
 
-  /**
-   * The instrument's own floor, pinned so it is a recorded fact rather than an
-   * oversight. Raise `lowest` only by adding a note that was sampled, not one
-   * that was pitched down.
-   */
   it('covers the register the contrabass has: MIDI 26 up, not the 22 the spec asks for', () => {
     const midi = notesOf('bass').map((note) => note.midi)
     const lowest = midi[0]
@@ -434,14 +386,10 @@ describe('the committed pack’s bass', () => {
     expect(lowest, 'the lowest sampled note is not the contrabass’s open low E').toBe(28)
     expect(highest + 2, 'the bass does not reach the top of its register').toBeGreaterThanOrEqual(50)
 
-    // Everything the generator actually asks for is inside the sampled span or
-    // below its floor by no more than the octave drop `events.ts` allows.
     expect(BASS_PLAYED.highest).toBeLessThanOrEqual(highest + 2)
     expect(lowest - BASS_PLAYED.lowest, 'the low octave drops further than 4 semitones below the pack').toBeLessThanOrEqual(4)
   })
 
-  // AC3 — sounding pitch is measured, never read off the filename. VSCO 2 names
-  // octaves with C3 as middle C, so `E0` sounds at MIDI 28.
   it('declares a midi that its measured fundamental agrees with, within half a semitone', () => {
     const notes = notesOf('bass')
     expect(notes.length).toBeGreaterThan(0)
@@ -456,8 +404,6 @@ describe('the committed pack’s bass', () => {
   })
 
   it('is not the octave the filenames would suggest read as scientific pitch', () => {
-    // `BKCtbss_Pizz_E0` read as scientific E0 would be MIDI 16; read as a
-    // written contrabass part it would be MIDI 40. It is measured at 28.
     const lowest = notesOf('bass')[0]
     expect(lowest.midi).toBe(28)
     expect(lowest.measuredHz).toBeGreaterThan(39)
@@ -483,18 +429,6 @@ describe('the committed pack’s bass', () => {
   })
 })
 
-/**
- * Feature 9, Epic 2 — the upright piano and the cross-stick.
- *
- * The last two stand-ins. `comp` was a TX81Z Clavisynth and is now VSCO 2 CE's
- * `Keys/Upright Piano`; `rim` was a woodblock and is now `Snare2_stick`, the
- * cross-stick of the very snare drum the pack already plays. Both read the
- * committed declaration and the committed audio from disk, because the
- * mistakes that matter — a stereo file, a normalised layer, a note declared at
- * a pitch it does not sound — are only visible in the bytes.
- */
-
-/** The register `comp` is required to cover, from the PRD's R7. */
 const COMP_REGISTER = { lowest: 46, highest: 86 }
 
 describe('the committed pack’s comp', () => {
@@ -532,9 +466,6 @@ describe('the committed pack’s comp', () => {
     }
   }, 120_000)
 
-  // VSCO's `dyn1`, `dyn2` and `dyn3` are three strikes of one key at three
-  // dynamics. A pack whose three measure the same has been normalised, and the
-  // renderer's layer choice would then carry no information at all.
   it('leaves each note’s velocity layers un-normalised, so dyn3 is louder than dyn1', () => {
     const notes = notesOf('comp')
     expect(notes.length, 'comp declares no notes').toBeGreaterThan(0)
@@ -562,7 +493,6 @@ describe('the committed pack’s comp', () => {
         `comp has a ${midi[i] - midi[i - 1]}-semitone gap at MIDI ${midi[i - 1]}`,
       ).toBeLessThanOrEqual(4)
     }
-    // Nearest-note selection reaches two semitones either side of a sample.
     expect(midi[0] - 2, 'comp does not reach the bottom of its register').toBeLessThanOrEqual(
       COMP_REGISTER.lowest,
     )
@@ -572,8 +502,6 @@ describe('the committed pack’s comp', () => {
     ).toBeGreaterThanOrEqual(COMP_REGISTER.highest)
   })
 
-  // AC3 — sounding pitch is measured, never read off the filename. This is the
-  // assertion the Clavisynth's two-octave mislabelling bought.
   it('declares a midi that its measured fundamental agrees with, within half a semitone', () => {
     const notes = notesOf('comp')
     expect(notes.length).toBeGreaterThan(0)
@@ -587,11 +515,6 @@ describe('the committed pack’s comp', () => {
     }
   })
 
-  /**
-   * VSCO's file index is neither a MIDI number nor a semitone offset: the
-   * filenames step by 2 where the pitch steps by 4. Pinning that relation is
-   * what stops a later note being added by reading the number off the name.
-   */
   it('is not the pitch the file index would suggest read as a semitone offset', () => {
     const notes = notesOf('comp')
     const indexOf = (note: (typeof notes)[number]) =>
@@ -632,12 +555,6 @@ describe('the committed pack’s rim', () => {
     )
   })
 
-  /**
-   * The rim and the snare now come off the same drum in the same session, which
-   * the VCSL cross-stick never did: it was a different snare in a different
-   * room, and the coherence this test asserts was aspirational. It is now
-   * literal - both are MuldjordKit's one snare.
-   */
   it('comes off the same drum as the snare, so the kit coheres by source', () => {
     const recorded = new Map(committedProvenance.samples.map((s) => [s.file, s]))
     const sourceOf = (file: string) => {
@@ -653,13 +570,6 @@ describe('the committed pack’s rim', () => {
     }
   })
 
-  /**
-   * The old rim declared a single velocity layer, because VCSL recorded its
-   * cross-stick at one dynamic only and splitting it would have declared a
-   * dynamic the recording did not carry. MuldjordKit records this stroke across
-   * eleven dynamic groups, so the rim now carries real layers - and every layer
-   * still round-robins, so a repeat never replays one file.
-   */
   it('declares real velocity layers, each round-robined so a repeat never replays one file', () => {
     const layers = layersOf('rim')
     expect(layers.length, 'rim declares too few layers').toBeGreaterThanOrEqual(2)
@@ -670,11 +580,6 @@ describe('the committed pack’s rim', () => {
     }
   })
 
-  /**
-   * AC10 — the README names the pack that ships. The Clavisynth and the
-   * woodblock survive elsewhere in the file as the lesson they taught, so this
-   * reads the voice-mapping table rather than the whole document.
-   */
   it('is named in the README’s voice-mapping table, and so is the piano', () => {
     const readme = readFileSync(join(SAMPLES, 'README.md'), 'utf8')
     const table = readme

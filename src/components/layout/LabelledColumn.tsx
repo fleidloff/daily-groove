@@ -6,14 +6,6 @@ type LabelledColumnProps = {
   children: ReactNode
 }
 
-/**
- * An eyebrow label over its content, exposed as a labelled group so assistive
- * technology reads the two as one unit rather than as loose text.
- *
- * The label takes its colour from the surface it sits on rather than from a
- * fixed token, so the same column reads correctly on paper and on an inverted
- * panel without the caller choosing a treatment.
- */
 export function LabelledColumn({ label, children }: LabelledColumnProps) {
   const labelId = useId()
 

@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { hashString, intBetween, pick, rngFor } from './rng.ts'
 
-/** Step 0a — generator tests run in a node environment, not jsdom. */
 describe('the generator test project', () => {
   it('runs under node', () => {
     expect(typeof process.versions.node).toBe('string')
@@ -37,11 +36,6 @@ describe('rngFor', () => {
 })
 
 describe('hashString', () => {
-  /**
-   * The same pin table as src/lib/hash.test.ts. The generator now imports the
-   * app's one copy, so this asserts the import is wired, not that a second
-   * implementation agrees — there is no second implementation.
-   */
   it('matches the shared pin table, so both sides agree on a seed', () => {
     const pins: ReadonlyArray<readonly [string, number]> = [
       ['', 2166136261],

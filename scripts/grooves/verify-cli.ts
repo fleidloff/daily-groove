@@ -1,15 +1,6 @@
 import { join, resolve } from 'node:path'
 import { readLock, verifyLock, type Lock } from './lock.ts'
 
-/**
- * `npm run grooves:verify` — the build guard, wired as `prebuild`.
- *
- * It reads the committed lock and compares it against the committed audio, the
- * generated manifest and the catalogue. It renders nothing, so it needs no
- * ffmpeg and no sample pack (R13): its only imports are `path` and `lock.ts`,
- * and lock.test.ts asserts that by reading this file.
- */
-
 const HERE = import.meta.dirname
 
 export const DEFAULT_LOCK_PATH = join(HERE, 'grooves.lock.json')
@@ -24,11 +15,6 @@ export const DEFAULT_NOTES_MANIFEST_PATH = join(
   HERE,
   '../../src/features/daily-groove/data/notes.generated.ts',
 )
-/**
- * The pack the reference notes were rendered from. Its *declaration* only —
- * the guard hashes this one json file and never opens a sample, which is what
- * keeps it runnable on a machine that has no pack checked out at all.
- */
 export const DEFAULT_PACK_DECLARATION_PATH = join(HERE, 'samples/pack.json')
 
 export type VerifyOptions = {
@@ -39,11 +25,9 @@ export type VerifyOptions = {
   notesDir?: string
   notesManifestPath?: string
   packDeclarationPath?: string
-  /** Where messages go. Injected by tests; defaults to stderr. */
   log?: (line: string) => void
 }
 
-/** Runs the guard and resolves to the process exit code: 0 intact, 1 broken. */
 export async function main(options: VerifyOptions = {}): Promise<number> {
   const log = options.log ?? ((line: string) => console.error(line))
   const lockPath = options.lockPath ?? DEFAULT_LOCK_PATH
@@ -72,9 +56,6 @@ export async function main(options: VerifyOptions = {}): Promise<number> {
 
   const failures = verifyLock(lock, paths)
   if (failures.length === 0) {
-    // Both counts, always: a lock that has stopped recording the notes reads as
-    // `0 notes` here rather than as silence, which is the only way anyone would
-    // notice the guard had quietly stopped guarding them.
     log(
       `grooves:verify — ${lock.grooves.length} grooves, ${lock.notes?.length ?? 0} notes, the manifests and the catalogue all match the lock.`,
     )

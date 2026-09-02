@@ -1,72 +1,29 @@
-/**
- * The mix stage: per-voice tracks become one stereo buffer.
- *
- * Pure and deterministic. Each voice is levelled by its template gain and
- * placed in the image by its template pan, the tracks are summed, the region
- * rendered past the loop is folded back onto the start so the loop closes, the
- * bus rounds the crest, and the master is scaled so its TRUE peak sits on the
- * ceiling - so a groove is never clipped and never arrives silent.
- *
- * The seam is closed by overhang, not by a crossfade: `renderVoices` renders a
- * bar past the loop end, and that bar is summed onto bar 1 here. A cymbal
- * ringing at bar 4 therefore rings over bar 1 exactly as it would if the loop
- * were really repeating, and the downbeat - the one transient that must stay
- * sharp - is left alone.
- */
-
 import type { FeelTemplate, Pcm, Track } from './types.ts'
 
-/** Peak the mix is normalised to, ~-1 dBFS, leaving headroom for the encoder. */
 export const PEAK_CEILING = 0.891
 
-/** Largest tolerable discontinuity between the last and first sample of a loop. */
 export const SEAM_THRESHOLD = 0.02
 
 const DEFAULT_SAMPLE_RATE = 44100
 const DEFAULT_BEATS_PER_BAR = 4
 
-/**
- * How much of the summed bus is sent to the room. One amount for the whole mix
- * (R11): the fault being fixed is that the voices sound like they are standing
- * in different places, and a single shared send is the most direct statement
- * that they are not. Tuned by ear - enough to glue seven dry voices, little
- * enough to leave a sixteenth-note pattern legible.
- */
 export const ROOM_SEND = 0.18
 
-/** Roughly how long the room takes to fall away. A small room, not a hall. */
 const ROOM_DECAY_SEC = 0.6
 
-/**
- * Four parallel combs and two allpasses - a Schroeder network. The comb delays
- * are mutually prime once rounded to frames (`primeFrames` below), so their
- * echo trains never line up and the tail reads as a room rather than as a
- * flutter. Seconds, not frames, so the room is the same room at any rate.
- */
 const COMB_DELAYS_SEC = [0.0297, 0.0331, 0.0371, 0.0411]
 const ALLPASS_DELAYS_SEC = [0.005, 0.0017]
 
-/** The allpasses colour nothing; they only smear the combs into a density. */
 const ALLPASS_GAIN = 0.5
 
-/** Below this the bus is exactly linear; above it the crest is rounded. */
 const BUS_KNEE = 0.8
 
-/** Inter-sample peaks are estimated on a 4x oversampled grid. */
 const OVERSAMPLE = 4
 
-/**
- * Optional, so every Epic 1 caller keeps working. Give it a loop length and the
- * mix wraps its overhang and truncates to exactly that length; leave it out and
- * the mix is as long as the longest track, as before.
- */
 export type MixOptions = {
-  /** Loop length in bars. Needs `bpm` unless `loopFrames` is given. */
   loopBars?: number
   bpm?: number
-  /** Defaults to 4. */
   beatsPerBar?: number
-  /** Loop length in frames, when the caller has already worked it out. */
   loopFrames?: number
 }
 
@@ -91,13 +48,6 @@ export function mixTracks(tracks: Track[], template: FeelTemplate, options: MixO
     }
   }
 
-  // The room goes on the summed bus BEFORE the overhang is folded, and the
-  // ordering is deliberate (R13). `wrap` folds the bar rendered past the loop
-  // end back onto bar 1, so a tail generated here lands in the overhang and is
-  // folded like every other tail: the room rings over bar 1 exactly as it would
-  // if the loop were really repeating. Reverberating the already-wrapped buffer
-  // would instead grow a fresh tail with nowhere to go, and the loop's last
-  // sample would no longer sit next to its first.
   applyRoom(left, right, sampleRate)
 
   const master =
@@ -111,28 +61,10 @@ export function mixTracks(tracks: Track[], template: FeelTemplate, options: MixO
   return { sampleRate, left: master.left, right: master.right }
 }
 
-/**
- * True peak, estimated on a 4x oversampled grid. The highest stored sample is
- * not the highest point of the waveform it represents; normalising to the
- * stored peak alone leaves inter-sample overshoot for the encoder to clip.
- */
 export function truePeak(pcm: Pcm): number {
   return Math.max(channelTruePeak(pcm.left), channelTruePeak(pcm.right))
 }
 
-/**
- * Place the mix in one room: a Schroeder reverb, mixed in at `ROOM_SEND`.
- *
- * Four parallel comb filters make the echo train, two allpasses in series smear
- * it into a density, and the result is added to the dry signal in place. Pure
- * array arithmetic - no dependency, no impulse response, no committed asset,
- * and nothing that reads the clock or a random source, so the same spec renders
- * byte-identical audio (R12).
- *
- * Both channels run the same network. The dry signal keeps whatever image the
- * panner gave it; the room itself is centred, which is what "one shared space"
- * means and what keeps a centred voice identical in both channels.
- */
 export function applyRoom(left: Float32Array, right: Float32Array, sampleRate: number): void {
   room(left, sampleRate)
   room(right, sampleRate)
@@ -155,10 +87,6 @@ function room(channel: Float32Array, sampleRate: number): void {
   for (let i = 0; i < channel.length; i += 1) channel[i] += ROOM_SEND * wet[i]
 }
 
-/**
- * One comb, accumulated onto the wet bus: the output is the delay line, so the
- * room starts after the first delay rather than doubling the dry signal.
- */
 function comb(input: Float32Array, wet: Float32Array, delay: number, feedback: number): void {
   const line = new Float32Array(delay)
   let cursor = 0
@@ -170,7 +98,6 @@ function comb(input: Float32Array, wet: Float32Array, delay: number, feedback: n
   }
 }
 
-/** One allpass stage, in place. Flat in magnitude; it only disperses in time. */
 function allpass(signal: Float32Array, delay: number): void {
   const line = new Float32Array(delay)
   let cursor = 0
@@ -183,16 +110,10 @@ function allpass(signal: Float32Array, delay: number): void {
   }
 }
 
-/** Feedback that leaves the comb 60 dB down after `ROOM_DECAY_SEC`. */
 function feedbackFor(delay: number, sampleRate: number): number {
   return 10 ** ((-3 * delay) / (ROOM_DECAY_SEC * sampleRate))
 }
 
-/**
- * A delay in frames, rounded up to a prime. Distinct primes are mutually prime
- * by construction, which is the property the network needs and which rounding a
- * duration to the nearest frame does not give on its own.
- */
 function primeFrames(seconds: number, sampleRate: number): number {
   let frames = Math.max(2, Math.round(seconds * sampleRate))
   while (!isPrime(frames)) frames += 1
@@ -217,11 +138,6 @@ function resolveLoopFrames(options: MixOptions, sampleRate: number): number | un
   return Math.max(0, Math.round((beats * 60 * sampleRate) / options.bpm))
 }
 
-/**
- * Fold everything rendered past the loop back onto the start, then truncate to
- * exactly the loop length. Modulo, so an overhang longer than the loop still
- * lands where a real repeat would put it.
- */
 function wrap(channel: Float32Array, loopFrames: number): Float32Array {
   const looped = new Float32Array(loopFrames)
   const kept = Math.min(loopFrames, channel.length)
@@ -236,30 +152,17 @@ function wrap(channel: Float32Array, loopFrames: number): Float32Array {
   return looped
 }
 
-/** dBFS to linear. An undeclared voice sits at unity. */
 function amplitudeOf(dbfs: number | undefined): number {
   if (dbfs === undefined) return 1
   return 10 ** (dbfs / 20)
 }
 
-/**
- * Equal-power panning: -1 hard left, 0 centred, +1 hard right. Equal power
- * rather than linear, so a voice keeps its apparent loudness as it moves off
- * centre. An undeclared voice sits in the middle.
- */
 function panGains(pan: number | undefined): [number, number] {
   const position = Math.min(1, Math.max(-1, pan ?? 0))
   const angle = ((position + 1) * Math.PI) / 4
   return [Math.cos(angle), Math.sin(angle)]
 }
 
-/**
- * Light bus processing, run at a fixed working level so it treats every mix the
- * same regardless of how loud the sum happened to arrive: normalise to unity,
- * then round anything above the knee with a soft curve. Below the knee the bus
- * is exactly linear, and the curve is continuous and smooth through it, so no
- * discontinuity is introduced at the loop seam.
- */
 function bus(left: Float32Array, right: Float32Array): void {
   const peak = storedPeak(left, right)
   if (peak === 0) return
@@ -280,7 +183,6 @@ function softKnee(sample: number): number {
   return Math.sign(sample) * shaped
 }
 
-/** Scale the master onto the ceiling - up as readily as down. */
 function normalise(left: Float32Array, right: Float32Array): void {
   const peak = Math.max(channelTruePeak(left), channelTruePeak(right))
   if (peak === 0) return
@@ -320,7 +222,6 @@ function channelTruePeak(channel: Float32Array): number {
   return peak
 }
 
-/** Catmull-Rom, which passes through every sample and estimates between them. */
 function interpolate(a: number, b: number, c: number, d: number, t: number): number {
   const t2 = t * t
   const t3 = t2 * t

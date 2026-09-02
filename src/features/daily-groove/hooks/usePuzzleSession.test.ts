@@ -2,8 +2,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, renderHook, waitFor } from '@testing-library/react'
 import type { Attempt, DailyResult, Groove, Root } from '../types'
 
-// Mock the persistence seam so `useProgress` reads and writes a controllable
-// store — no real localStorage. `useProgress` defaults to this module-singleton.
 const { mockStore } = vi.hoisted(() => ({
   mockStore: {
     get: vi.fn(),
@@ -11,8 +9,6 @@ const { mockStore } = vi.hoisted(() => ({
     save: vi.fn(),
   },
 }))
-// Only the module singleton is stood in for: `createReadOnlyStore` stays the
-// real decorator, because the shared session under test is the real one.
 vi.mock('../lib/persistence/storage', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../lib/persistence/storage')>()),
   createLocalStore: () => mockStore,
@@ -41,16 +37,12 @@ const GROOVE: Groove = {
   headDelaySeconds: 0.025057,
 }
 
-/** The day the session is played on, fixed so the record's date is knowable. */
 const DAY = new Date(2026, 7, 29, 12, 0, 0)
 const TODAY = () => isoDate(DAY)
 const YESTERDAY = () => isoDate(new Date(2026, 7, 28, 12, 0, 0))
 
-/** The day's four flavour chips, resolved exactly as the puzzle resolves them. */
 const flavours = () => flavourOptions(DAY, GROOVE)
-/** A flavour that is on offer today but is not the answer. */
 const wrongFlavour = () => flavours().find((f) => f !== 'Minor') as string
-/** A second wrong flavour, so a third guess can differ from the second. */
 const otherWrongFlavour = () =>
   flavours().filter((f) => f !== 'Minor' && f !== wrongFlavour())[0]
 
@@ -66,14 +58,12 @@ const SOLVING: Attempt = {
   flavourMatched: true,
 }
 
-/** Render the hook and wait for the saved day to be read into it. */
 async function renderSession() {
   const rendered = renderHook(() => usePuzzleSession(GROOVE, DAY))
   await waitFor(() => expect(rendered.result.current.hydrated).toBe(true))
   return rendered
 }
 
-/** Pick a pair and check it, as the guessing card's three presses would. */
 async function guess(
   result: { current: ReturnType<typeof usePuzzleSession> },
   root: Root,
@@ -92,15 +82,12 @@ async function guess(
 
 describe('usePuzzleSession', () => {
   beforeEach(() => {
-    // Default persistence: empty store, save resolves.
     mockStore.get.mockReset().mockResolvedValue(null)
     mockStore.getAll.mockReset().mockResolvedValue([])
     mockStore.save.mockReset().mockResolvedValue(undefined)
   })
 
   it('opens an untouched day, unhydrated until the record is read (AC1)', async () => {
-    // A store that never resolves: the session never leaves its loading state,
-    // so no fresh game can be painted on top of a day already in progress.
     mockStore.get.mockReturnValue(new Promise<DailyResult | null>(() => {}))
     mockStore.getAll.mockReturnValue(new Promise<DailyResult[]>(() => {}))
 
@@ -133,7 +120,6 @@ describe('usePuzzleSession', () => {
       result.current.selectRoot('C')
     })
     expect(result.current.selectedRoot).toBe('C')
-    // A root alone is not enough.
     expect(result.current.canCheck).toBe(false)
 
     await act(async () => {
@@ -162,10 +148,8 @@ describe('usePuzzleSession', () => {
 
     await guess(result, 'C', wrong)
 
-    // The attempt is scored against the groove's own root and flavour.
     expect(result.current.attempts).toEqual([miss('C', wrong, true)])
     expect(result.current.solved).toBe(false)
-    // The same pair can never be submitted twice in a row.
     expect(result.current.canCheck).toBe(false)
 
     await act(async () => {
@@ -173,7 +157,6 @@ describe('usePuzzleSession', () => {
     })
     expect(result.current.attempts).toHaveLength(1)
 
-    // Changing a half hands the check back.
     await act(async () => {
       result.current.selectFlavour(otherWrongFlavour())
     })
@@ -193,7 +176,6 @@ describe('usePuzzleSession', () => {
     ])
     expect(result.current.canCheck).toBe(false)
 
-    // A solved day stops accepting input, and no further attempt is appended.
     await act(async () => {
       result.current.selectRoot('G')
     })
@@ -220,11 +202,9 @@ describe('usePuzzleSession', () => {
 
     expect(result.current.attempts).toEqual(stored.attempts)
     expect(result.current.solved).toBe(false)
-    // The last pair checked is the pair the chips come back showing.
     expect(result.current.selectedRoot).toBe('G')
     expect(result.current.selectedFlavour).toBe(wrong)
 
-    // The next guess counts as the third attempt, not the first.
     await guess(result, 'D', wrong)
     expect(result.current.attempts).toHaveLength(3)
   })
@@ -244,7 +224,6 @@ describe('usePuzzleSession', () => {
     expect(result.current.solved).toBe(true)
     expect(result.current.attempts).toEqual([SOLVING])
     expect(result.current.canCheck).toBe(false)
-    // The day's streak is derived from the stored results, not persisted.
     expect(result.current.streak).toBe(1)
   })
 
@@ -252,8 +231,6 @@ describe('usePuzzleSession', () => {
     const { result } = await renderSession()
     const wrong = wrongFlavour()
 
-    // Each check writes a record, which changes `todayResult`. Re-hydrating on
-    // that change would throw away the selection the player has since made.
     await guess(result, 'C', wrong)
     await act(async () => {
       result.current.selectRoot('D')
@@ -263,8 +240,6 @@ describe('usePuzzleSession', () => {
     expect(result.current.attempts).toHaveLength(1)
   })
 
-  // Moved from GroovePuzzle.test.tsx: the record written on every check is the
-  // session's own concern, and asserts on the store rather than on any render.
   it('writes the day after every check, not only on a solve (E5 R2, AC1)', async () => {
     const { result } = await renderSession()
     const wrong = wrongFlavour()
@@ -277,7 +252,6 @@ describe('usePuzzleSession', () => {
       answer: { root: 'C', flavour: 'Minor' },
       attempts: [miss('C', wrong, true)],
       solved: false,
-      // The day now records the groove it played (E5 R7, AC7).
       grooveId: GROOVE.id,
     })
 
@@ -296,7 +270,6 @@ describe('usePuzzleSession', () => {
   it('writes nothing when a check is refused (AC1)', async () => {
     const { result } = await renderSession()
 
-    // Neither half picked: nothing to score, so nothing to record.
     await act(async () => {
       result.current.check()
     })
@@ -305,7 +278,6 @@ describe('usePuzzleSession', () => {
     await guess(result, 'C', wrongFlavour())
     expect(mockStore.save).toHaveBeenCalledTimes(1)
 
-    // The same pair again: rejected by the store, so no second record.
     await act(async () => {
       result.current.check()
     })
@@ -334,28 +306,19 @@ describe('usePuzzleSession', () => {
 
     const { result } = await renderSession()
 
-    // Yesterday was left unsolved, so it starts no run.
     expect(result.current.streak).toBe(0)
 
-    // Solving today moves the streak immediately — no reload. That the derive
-    // still sees every stored record is what the number proves.
     await guess(result, 'C', 'Minor')
     expect(result.current.streak).toBe(1)
 
-    // The list of past records is not handed out any more (E6 R3a, AC5a).
     expect(Object.keys(result.current)).not.toContain('history')
   })
-
-  // --- F8 Epic 3, Step C3: who arrived, passed through unchanged ------------
 
   it('passes "new or lapsed" through from useProgress (F8 E3 R16, R17)', async () => {
     const { result } = await renderSession()
 
-    // Nothing saved: the game explains itself (F8 E3 R1).
     expect(result.current.newOrLapsed).toBe(true)
 
-    // ...and it survives the write today's first guess makes, because the
-    // answer is latched at load rather than derived from the record set.
     await guess(result, 'C', wrongFlavour())
     expect(result.current.newOrLapsed).toBe(true)
   })
@@ -382,27 +345,21 @@ describe('usePuzzleSession', () => {
       flavour: GROOVE.flavour,
     })
   })
-  // --- Epic 3 (feature-7): giving up ends the day --------------------------
 
-  // Step B2 seen through the session — E3 R4, AC3
   it("hands the day's root over on the second miss (E3 R4, AC3)", async () => {
     const { result } = await renderSession()
     const wrong = wrongFlavour()
 
-    // Neither guess names the answer's root, so the selection that appears
-    // could only have come from the rule.
     await guess(result, 'G', wrong)
     expect(result.current.selectedRoot).toBe('G')
 
     await guess(result, 'D', wrong)
 
     expect(result.current.selectedRoot).toBe('C')
-    // Handed over, not locked: the day is still playable (E3 R5).
     expect(result.current.solved).toBe(false)
     expect(result.current.revealed).toBe(false)
   })
 
-  // Step B5 — E3 R7, R8, R9
   it('reveal() ends the day and records it as given up (E3 R7, R9)', async () => {
     const { result } = await renderSession()
     const wrong = wrongFlavour()
@@ -420,7 +377,6 @@ describe('usePuzzleSession', () => {
     })
 
     expect(result.current.revealed).toBe(true)
-    // Given up is not solved, and the reveal itself is not an attempt.
     expect(result.current.solved).toBe(false)
     expect(result.current.attempts).toEqual(spent)
     expect(mockStore.save).toHaveBeenCalledTimes(4)
@@ -450,7 +406,6 @@ describe('usePuzzleSession', () => {
       result.current.check()
     })
     expect(result.current.attempts).toHaveLength(1)
-    // One record for the guess, one for the reveal, and nothing after.
     expect(mockStore.save).toHaveBeenCalledTimes(2)
   })
 
@@ -468,7 +423,6 @@ describe('usePuzzleSession', () => {
     expect(mockStore.save).toHaveBeenCalledTimes(1)
   })
 
-  // Step B3 seen through the session — E3 R8, AC9
   it('hydrates a revealed day as over and unplayable (E3 R8, AC9)', async () => {
     const wrong = wrongFlavour()
     const stored: DailyResult = {
@@ -487,7 +441,6 @@ describe('usePuzzleSession', () => {
     expect(result.current.solved).toBe(false)
     expect(result.current.canCheck).toBe(false)
     expect(result.current.attempts).toEqual(stored.attempts)
-    // Given up is not a win: the run is not extended (E3 R10, AC11).
     expect(result.current.streak).toBe(0)
   })
 
@@ -505,24 +458,12 @@ describe('usePuzzleSession', () => {
     const { result } = await renderSession()
 
     expect(result.current.revealed).toBe(false)
-    // The day carries on exactly as it does today.
     await guess(result, 'D', wrong)
     expect(result.current.attempts).toHaveLength(2)
   })
 
-  // --- Feature 7, Epic 5: simple mode --------------------------------------
-
-  /**
-   * A groove whose flavour is one of the six modes, so it has a family. The
-   * fixture above answers `Minor`, which is a family and not a mode: simple
-   * mode's comparison is undefined over it by design.
-   */
   const DORIAN: Groove = { ...GROOVE, flavour: 'Dorian', scale: 'C Dorian' }
 
-  /**
-   * Render the session in a given mode, with the mode changeable afterwards —
-   * which is the whole point of the block below.
-   */
   async function renderModal(simple: boolean) {
     const rendered = renderHook(
       ({ mode }: { mode: boolean }) => usePuzzleSession(DORIAN, DAY, mode),
@@ -580,14 +521,9 @@ describe('usePuzzleSession', () => {
       rerender({ mode: true })
     })
 
-    // The same store, still holding the same two attempts. A store recreated on
-    // the switch would come back empty — the hydration latch has already been
-    // spent, so nothing would ever put the day back.
     expect(result.current.attempts).toEqual(spent)
     expect(result.current.attempts).toHaveLength(2)
-    // Switching is not an attempt, and writes nothing (R8a).
     expect(mockStore.save.mock.calls).toHaveLength(writes)
-    // The day's groove and its answer are untouched.
     expect(result.current.answer).toEqual({ root: 'C', flavour: 'Dorian' })
     expect(result.current.solved).toBe(false)
     expect(result.current.revealed).toBe(false)
@@ -602,14 +538,10 @@ describe('usePuzzleSession', () => {
       rerender({ mode: true })
     })
 
-    // The matcher is read at check time, so the switch reaches the very next
-    // check with no new store behind it.
     await guess(result, 'C', 'Minor')
     expect(result.current.solved).toBe(true)
     expect(result.current.attempts).toHaveLength(2)
 
-    // ...and back again: a day solved is over, but the third attempt proves the
-    // swap is not one-way. Rendered on a fresh session to keep the day open.
     const second = await renderModal(true)
     await guess(second.result, 'C', 'Minor')
     expect(second.result.current.solved).toBe(true)
@@ -621,8 +553,6 @@ describe('usePuzzleSession', () => {
     await guess(result, 'G', 'Major')
     await guess(result, 'D', 'Major')
 
-    // The same threshold, the same handover: nothing about the nudge is
-    // mode-dependent.
     expect(result.current.attempts).toHaveLength(2)
     expect(result.current.selectedRoot).toBe('C')
   })
@@ -635,20 +565,10 @@ describe('usePuzzleSession', () => {
     const saved = mockStore.save.mock.calls.at(-1)?.[0] as DailyResult
     expect(saved.solved).toBe(true)
     expect(saved.date).toBe(TODAY())
-    // The day's answer is the groove's real mode, whatever was pressed to
-    // reach it, and the attempt keeps what the player actually pressed.
     expect(saved.answer).toEqual({ root: 'C', flavour: 'Dorian' })
     expect(saved.attempts.at(-1)?.flavour).toBe('Minor')
   })
 
-  // --- Feature 12, Epic 1: the session that records nothing ----------------
-
-  /**
-   * A session can be handed its own `ResultStore`, which is how a shared groove
-   * is played through one that drops its writes (F12 E1 R18, R19). The store
-   * below is a *different* object from the module singleton, so a session that
-   * quietly ignored the injection would be caught by the singleton's spies.
-   */
   function injectable() {
     const inner = {
       get: vi.fn().mockResolvedValue(null),
@@ -658,7 +578,6 @@ describe('usePuzzleSession', () => {
     return { inner, store: createReadOnlyStore(inner as ResultStore) }
   }
 
-  /** Render the session against an injected store, and wait for hydration. */
   async function renderInjected(store: ResultStore) {
     const rendered = renderHook(() =>
       usePuzzleSession(GROOVE, DAY, false, store),
@@ -672,12 +591,8 @@ describe('usePuzzleSession', () => {
 
     const { result } = await renderInjected(store)
 
-    // The records the streak is derived from come from the injected store...
     expect(inner.getAll).toHaveBeenCalledTimes(1)
-    // ...while the day's own record is never asked for: a shared groove has
-    // nothing to restore, whatever the inner store holds for today (R21, AC11).
     expect(inner.get).not.toHaveBeenCalled()
-    // The module singleton was never consulted either.
     expect(mockStore.get).not.toHaveBeenCalled()
     expect(mockStore.getAll).not.toHaveBeenCalled()
     expect(result.current.attempts).toEqual([])
@@ -689,10 +604,8 @@ describe('usePuzzleSession', () => {
 
     await guess(result, 'G', wrongFlavour())
 
-    // The guess landed in the session...
     expect(result.current.attempts).toHaveLength(1)
     expect(result.current.solved).toBe(false)
-    // ...and nowhere else.
     expect(inner.save).not.toHaveBeenCalled()
     expect(mockStore.save).not.toHaveBeenCalled()
   })
@@ -731,8 +644,6 @@ describe('usePuzzleSession', () => {
 
     expect(result.current.streak).toBe(1)
 
-    // A miss neither advances the run nor breaks it: the day it would have
-    // written is never written, so yesterday is still the anchor.
     await guess(result, 'G', wrongFlavour())
     expect(result.current.streak).toBe(1)
     expect(inner.save).not.toHaveBeenCalled()
@@ -755,7 +666,6 @@ describe('usePuzzleSession', () => {
     expect(inner.save).not.toHaveBeenCalled()
     first.unmount()
 
-    // The next session reads the same records back: the solve moved nothing.
     const { result } = await renderInjected(store)
     expect(result.current.streak).toBe(1)
     expect(result.current.attempts).toEqual([])

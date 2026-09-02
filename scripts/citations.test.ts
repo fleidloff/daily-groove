@@ -6,15 +6,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { checkCitations, parseCitations } from './citations.ts'
 
-/** The repo root, so the check resolves paths the way a report writes them. */
 const REPO_ROOT = resolve(import.meta.dirname, '..')
-
-/**
- * Fixtures name `src/lib/` and `scripts/` paths only.
- * `scripts/grooves/boundary.test.ts` string-scans every `.ts` file under
- * `scripts/` and fails on the feature path literal, so no fixture here may
- * write one — and none needs to: the parser does not care what a path points at.
- */
 
 const ONE_ROW = `## Acceptance criteria
 
@@ -32,7 +24,6 @@ const GRADED = `## Acceptance criteria
 | AC3 | not done | |
 `
 
-/** Every citation here resolves against the real repo. */
 const CLEAN = `## Acceptance criteria
 
 | AC | Status | Evidence |
@@ -91,8 +82,6 @@ describe('checkCitations', () => {
   })
 
   it('names a citation whose test name is not in the file it cites', () => {
-    // `src/lib/hash.test.ts` is real and pinned. This is the failure that
-    // matters: a citation that was true when it was written and is not now.
     expect(
       checkCitations(
         [
@@ -153,12 +142,6 @@ describe('checkCitations', () => {
   })
 })
 
-/**
- * The declarations a real suite writes. A citation naming a test the file does
- * declare must resolve whatever shape the declaration takes, or the check turns
- * into noise the lead learns to scroll past — which is the same as not having
- * it.
- */
 describe('the declaration shapes a citation may name', () => {
   let root: string
 
@@ -250,8 +233,6 @@ describe('a report that quotes a bad citation as an example', () => {
       '```',
     ].join('\n')
 
-    // AC12 asks a report to demonstrate a bad citation. Without this, the guard
-    // fires on the demonstration.
     expect(parseCitations(report).map((c) => c.ac)).toEqual(['AC1'])
   })
 })

@@ -3,7 +3,6 @@ import type { Flavour, VoiceName } from '../types.ts'
 import { FLAVOURS, INTERVALS } from '../theory/scales.ts'
 import { TEMPLATES, allTemplates, templateById } from './index.ts'
 
-/** Half of one subdivision step at the fastest tempo a template allows, in ms. */
 function halfStepMs(subdivision: number, topBpm: number): number {
   return (((60 / topBpm) * 4) / subdivision) * 500
 }
@@ -37,14 +36,6 @@ describe('the registry', () => {
   })
 })
 
-// Step A1 — R1, AC1. Templates that differ in the three things a listener
-// would call the feel, not only in name.
-//
-// Feature-9, Epic 6, Step B1 — R1, R2a, AC1. Four became six. Every count here
-// is stated as `TEMPLATE_COUNT` rather than as a literal, because these
-// assertions are all the same claim — no two feels are the same feel — and a
-// seventh template should have to be given its own pocket in one place, not
-// argued with in four.
 const TEMPLATE_COUNT = 6
 
 describe('the template set — R1, AC1', () => {
@@ -70,11 +61,6 @@ describe('the template set — R1, AC1', () => {
     expect(new Set(humanizes).size).toBe(TEMPLATE_COUNT)
   })
 
-  // Instrumentation used to be unique per template too, and is no longer: every
-  // feel now plays both hats, because a kit has both and the two feels that went
-  // without were the poorer for it. What is left to differentiate a voice set is
-  // the cross-stick, so the assertion is what remains true — the kits are not
-  // all the same — rather than a uniqueness the design no longer wants.
   it('does not give every template the same kit', () => {
     const voiceSets = allTemplates().map((t) => [...t.voices].sort().join(','))
     expect(new Set(voiceSets).size).toBeGreaterThan(1)
@@ -88,12 +74,6 @@ describe('the template set — R1, AC1', () => {
   })
 })
 
-// Step A2 — R2, R5, AC15. The pairs are what makes the game's chip row
-// honest: every flavour offered has grooves behind it, and no groove answers to
-// a flavour the game does not offer.
-//
-// Feature-9, Epic 6, Step B2 — R2, R2a, R6b, AC2, AC2b. The same invariant over
-// six templates and twelve modes, plus the family split it now has to hold.
 describe('flavour coverage — R2, R5, AC15', () => {
   it('gives every template exactly two flavours', () => {
     for (const template of allTemplates()) {
@@ -121,11 +101,6 @@ describe('flavour coverage — R2, R5, AC15', () => {
     expect([...new Set(union)].sort()).toEqual([...(FLAVOURS as Flavour[])].sort())
   })
 
-  // Feature-9, Epic 6, Step B2 — R6b, R6c, AC2b. Simple mode offers Major and
-  // Minor and grades a mode by its third, so an uneven set makes one of the two
-  // answers the better blind guess. Six and six, and the split is asserted here
-  // rather than only in the app's family table because it is a property of the
-  // set the TEMPLATES choose, and this is the file that chooses it.
   it('splits the twelve evenly between the two families', () => {
     const union = allTemplates().flatMap((t) => t.flavours)
     const byThird = { major: [] as Flavour[], minor: [] as Flavour[] }
@@ -141,7 +116,6 @@ describe('flavour coverage — R2, R5, AC15', () => {
   })
 
   it('pairs each flavour with a feel that suits it', () => {
-    // The musical judgement of R2, pinned so a later edit is a deliberate one.
     expect([...templateById('straight-funk').flavours].sort()).toEqual([
       'dorian',
       'mixolydian',
@@ -155,10 +129,6 @@ describe('flavour coverage — R2, R5, AC15', () => {
       'harmonic-minor',
       'phrygian',
     ])
-    // Epic 6's two. Melodic minor and lydian dominant are one scale heard two
-    // ways; phrygian dominant and harmonic major both put a ♭6 against a major
-    // third. Each pair is narrow on purpose — hearing the feel has to leave a
-    // real choice, not a formality.
     expect([...templateById('open-ballad').flavours].sort()).toEqual([
       'lydian-dominant',
       'melodic-minor',
@@ -213,14 +183,7 @@ describe('every template', () => {
   })
 })
 
-// Feature 9, Epic 1, Step B1 — R2, R2a, AC2. A groove is several passes of the
-// same four-bar figure, and how many is a property of the feel: the count sits
-// beside the tempo range that causes the spread, so a slow feel can declare
-// fewer without every other feel getting shorter.
 describe('the pass count — R2, R2a, AC2', () => {
-  // Feature-9, Epic 3, Step D1 (R1, R2, AC2). Lean is declared per template with
-  // no shared default: a shuffle and a half-time groove do not lay back by the
-  // same amount, and a default would quietly make them.
   it('declares a signed lean for the voices that carry the feel', () => {
     for (const template of allTemplates()) {
       const lean = template.humanize.lean
@@ -257,16 +220,12 @@ describe('the pass count — R2, R2a, AC2', () => {
   })
 
   it('never declares fewer than two passes', () => {
-    // One pass is a loop that repeats itself byte for byte — the behaviour
-    // passes exist to replace (R2a).
     for (const template of allTemplates()) {
       expect(template.passes, template.id).toBeGreaterThanOrEqual(2)
     }
   })
 
   it('lets the slow feel declare fewer passes than the fast ones', () => {
-    // R2: templates may differ. Half-time's 68–80 bpm makes four passes a
-    // ~56-second file, so it declares two.
     const counts = new Set(allTemplates().map((t) => t.passes))
     expect(counts.size).toBeGreaterThan(1)
     expect(templateById('half-time').passes).toBeLessThan(

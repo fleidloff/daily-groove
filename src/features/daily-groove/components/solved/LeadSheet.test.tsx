@@ -4,22 +4,17 @@ import { LeadSheet } from './LeadSheet'
 
 const CHANGES = ['C7', 'Em7♭5', 'B♭maj7', 'Fmaj7']
 
-/** `groove-01`'s real degrees, as Track B's `barNumerals` writes them. */
 const NUMERALS = ['I', 'III', '♭VII', 'IV']
 
-/** The bar elements, in document order. */
 function bars(container: HTMLElement): HTMLElement[] {
   return Array.from(container.querySelectorAll<HTMLElement>('[data-bar]'))
 }
 
-/** The numeral elements, in document order. */
 function numerals(container: HTMLElement): HTMLElement[] {
   return Array.from(container.querySelectorAll<HTMLElement>('[data-numeral]'))
 }
 
 describe('LeadSheet', () => {
-  // --- Step C1 — R1, R12, AC1 ----------------------------------------------
-
   it('draws one chord symbol per bar, in order (R1, AC1)', () => {
     const { container } = render(<LeadSheet chords={CHANGES} />)
 
@@ -41,8 +36,6 @@ describe('LeadSheet', () => {
     expect(container.querySelectorAll('[tabindex]')).toHaveLength(0)
   })
 
-  // --- Step C2 — R5, R5a, AC5, AC5a ----------------------------------------
-
   it('rules every bar with a bar line on its left (R5, AC5)', () => {
     const { container } = render(<LeadSheet chords={CHANGES} />)
 
@@ -56,17 +49,12 @@ describe('LeadSheet', () => {
     const sheet = screen.getByRole('img')
     const drawn = bars(container)
 
-    // The thick half of the double bar rides on the sheet's right edge, not on
-    // the last bar, so it is one row deep across four bars and two rows deep
-    // when they break 2 × 2. `inset-y-0` on the thin half is the same rule.
     expect(sheet.className).toMatch(/border-r-\[3px\]/)
     const thin = sheet.querySelector(':scope > [data-double-bar]')
     expect(thin).not.toBeNull()
     expect((thin as HTMLElement).className).toMatch(/\bborder-r\b/)
     expect((thin as HTMLElement).className).toMatch(/\binset-y-0\b/)
 
-    // No bar closes itself — a rule that stopped at the last cell would end
-    // half way up the right-hand side of a broken sheet.
     for (const bar of drawn) {
       expect(bar.className).not.toMatch(/border-r/)
       expect(bar.querySelector('[data-double-bar]')).toBeNull()
@@ -78,7 +66,6 @@ describe('LeadSheet', () => {
 
     expect(container.querySelector('svg')).toBeNull()
     expect(container.innerHTML).not.toMatch(/stave|staff|slash/i)
-    // A stave is horizontal rules; a lead sheet's bar lines are vertical only.
     for (const element of container.querySelectorAll<HTMLElement>('*')) {
       expect(element.className).not.toMatch(/\bborder-[tb]\b/)
     }
@@ -95,14 +82,10 @@ describe('LeadSheet', () => {
       <LeadSheet chords={CHANGES} numerals={NUMERALS} />,
     )
 
-    // Four symbols and four numerals, interleaved bar by bar, and no other
-    // word on the page: the numeral is the only thing this epic adds.
     expect(container.textContent).toBe(
       CHANGES.map((chord, bar) => `${chord}${NUMERALS[bar]}`).join(''),
     )
   })
-
-  // --- Step C3 — R9, AC6 ---------------------------------------------------
 
   it('reads as the four chords in order to a screen reader (R9, AC6)', () => {
     render(<LeadSheet chords={CHANGES} />)
@@ -125,28 +108,20 @@ describe('LeadSheet', () => {
     )
   })
 
-  // --- Step C4 — R10 -------------------------------------------------------
-
   it('breaks two-by-two, never three-and-one, on a phone (R10)', () => {
     const { container } = render(<LeadSheet chords={CHANGES} />)
     const sheet = screen.getByRole('img')
 
-    // Two fixed columns below `sm`, four above it. A grid is what makes the
-    // break structural: four bars are 2 × 2 on a phone and 1 × 4 on the panel,
-    // and no width of chord symbol can produce 3 + 1.
     expect(sheet.className).toMatch(/\bgrid\b/)
     expect(sheet.className).toMatch(/\bgrid-cols-2\b/)
     expect(sheet.className).toMatch(/\bsm:grid-cols-4\b/)
     expect(sheet.className).not.toMatch(/overflow-x/)
 
-    // Nothing may reintroduce per-item wrapping, which is what decides 3 + 1.
     expect(sheet.className).not.toMatch(/\bflex-wrap\b/)
     for (const bar of bars(container)) {
       expect(bar.className).not.toContain('basis-')
     }
   })
-
-  // --- Step C8 — R8, AC8 ---------------------------------------------------
 
   it('takes its ink from the surface, fixing no colour of its own (R8, AC8)', () => {
     const { container } = render(<LeadSheet chords={CHANGES} />)
@@ -158,8 +133,6 @@ describe('LeadSheet', () => {
       expect(element).not.toHaveAttribute('stroke')
     }
   })
-
-  // --- Totality: the sheet draws whatever it is handed ----------------------
 
   it('draws a repeated bar as a repeat, not as a gap (R2 via barChords, AC2)', () => {
     const { container } = render(
@@ -181,8 +154,6 @@ describe('LeadSheet', () => {
     expect(screen.getByRole('img')).toBeInTheDocument()
   })
 
-  // --- Step C1 — R1, AC1 ---------------------------------------------------
-
   it('draws one numeral under each bar, in bar order (R1, AC1)', () => {
     const { container } = render(
       <LeadSheet chords={CHANGES} numerals={NUMERALS} />,
@@ -196,17 +167,12 @@ describe('LeadSheet', () => {
     )
   })
 
-  // --- Step C2 — R7, AC9 ---------------------------------------------------
-
   it('sits in the air the bar already reserves, changing no geometry (R7, AC9)', () => {
     const plain = render(<LeadSheet chords={CHANGES} />).container
     const withNumerals = render(
       <LeadSheet chords={CHANGES} numerals={NUMERALS} />,
     ).container
 
-    // Not a list of utilities to keep in step: the claim is that a bar drawn
-    // with a numeral is the same box as a bar drawn without one. The moment the
-    // numeral is put in flow and the padding is grown to make room, this fails.
     const classes = bars(withNumerals).map((bar) => bar.className)
     expect(classes).toEqual(bars(plain).map((bar) => bar.className))
     for (const className of classes) {
@@ -242,16 +208,12 @@ describe('LeadSheet', () => {
       expect(numeral.className).toMatch(/\bleft-3\b/)
       expect(numeral.className).toMatch(/\bbottom-/)
     }
-    // jsdom resolves no media query, so the 2 × 2 break itself is checked by
-    // eye. Containment is the layout-independent half of the same claim.
     drawn.forEach((bar, index) => {
       drawnNumerals.forEach((numeral, other) => {
         expect(bar.contains(numeral)).toBe(index === other)
       })
     })
   })
-
-  // --- Step C3 — R5 --------------------------------------------------------
 
   it('letters the numerals in the same hand, one size under the symbol (R5)', () => {
     const { container } = render(
@@ -261,12 +223,9 @@ describe('LeadSheet', () => {
     for (const numeral of NUMERALS) {
       const lettering = within(container).getByText(numeral)
       expect(lettering.className).toMatch(/font-jazz/)
-      // `Lettering size="sm"` — smaller than the symbol's `md` above it.
       expect(lettering.className).toMatch(/text-\[15px\]/)
     }
   })
-
-  // --- Step C4 — R4a, R8, AC7 ----------------------------------------------
 
   it('draws no numeral where a bar has none, and keeps the bar (R4a, R8, AC7)', () => {
     const { container } = render(
@@ -303,13 +262,9 @@ describe('LeadSheet', () => {
     ).not.toThrow()
   })
 
-  // --- Step C5 — R1, AC1 ---------------------------------------------------
-
   it('reads each bar as its symbol and its numeral to a screen reader (R1, AC1)', () => {
     render(<LeadSheet chords={CHANGES} numerals={NUMERALS} />)
 
-    // `role="img"` hides the subtree, so a numeral left out of the accessible
-    // name is a numeral no screen-reader user ever hears.
     expect(
       screen.getByRole('img', {
         name: 'C7 I · Em7♭5 III · B♭maj7 ♭VII · Fmaj7 IV',

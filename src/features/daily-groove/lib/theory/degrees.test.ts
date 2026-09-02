@@ -28,8 +28,6 @@ describe('scaleDegrees', () => {
   })
 
   it('names the blues scale six degrees, not seven', () => {
-    // Its degrees are not consecutive: the ♭5 and the 5 share degree number
-    // five, and there is no second or sixth at all.
     expect(scaleDegrees({ root: 'C', flavour: 'Blues' })).toEqual([
       '1',
       '♭3',
@@ -46,10 +44,7 @@ describe('scaleDegrees', () => {
   })
 
   it('names every flavour the table carries, one label per note', () => {
-    // Derived from the table's own keys: a hardcoded list would still pass on
-    // the day a fifteenth flavour is added, which is the failure this guards.
     const flavours = Object.keys(FLAVOUR_INTERVALS)
-    // Guard the loop against passing vacuously if the table ever imports empty.
     expect(flavours.length).toBeGreaterThan(1)
     for (const flavour of flavours) {
       const answer = { root: 'C', flavour } as Parameters<typeof scaleDegrees>[0]
@@ -63,8 +58,6 @@ describe('scaleDegrees', () => {
   })
 
   it('throws UnknownFlavourError for a flavour the table has never heard of', () => {
-    // R10c: the library fails loudly. The panel's tolerance for a mode with no
-    // character line is the panel's, not this function's.
     expect(() =>
       scaleDegrees({ root: 'C', flavour: 'Klingon' } as Parameters<typeof scaleDegrees>[0]),
     ).toThrow(UnknownFlavourError)

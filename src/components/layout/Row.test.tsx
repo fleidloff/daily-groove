@@ -59,7 +59,6 @@ describe('Row', () => {
     )
     const root = container.firstElementChild as HTMLElement
 
-    // The stacked case is the default, the split is the override.
     expect(root.className).toContain('flex-col')
     expect(root.className).toContain('md:flex-row')
   })

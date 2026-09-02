@@ -1,12 +1,5 @@
 @import "tailwindcss";
 
-/* ---------------------------------------------------------------------------
-   Token layer — the single source of truth for colour, radius and shadow.
-   Every value the app draws with is named here; no component carries a hex.
-   The dark palette below redefines exactly the same --color-* names, so the
-   whole app re-themes at this one swap point and no component needs `dark:`.
-   --------------------------------------------------------------------------- */
-
 @theme {
   --color-paper: #f5f2ea;
   --color-paper-tint: #fbf9f3;
@@ -19,8 +12,6 @@
   --color-accent-hover: #33492f;
   --color-accent-soft: #7e9b6e;
   --color-accent-track: #8fa87c;
-  /* Ink that always reads on an accent-filled surface. The dark palette flips
-     the accent ramp light, so this flips dark to keep the panel legible. */
   --color-on-accent: #f7f5ec;
   --color-text: #23291f;
   --color-text-muted: #8a9180;
@@ -35,14 +26,10 @@
   --shadow-card: 0 1px 0 #ffffff inset, 0 18px 40px -32px rgba(48, 58, 42, 0.45);
 
   --font-display: var(--font-newsreader), Georgia, "Times New Roman", serif;
-  /* The hand-lettered face the two display sizes use. It falls back through the
-     serif so a heading never lands on the browser default. */
   --font-jazz: var(--font-jazz-hand), var(--font-newsreader), Georgia, serif;
   --font-sans: var(--font-dm-sans), system-ui, -apple-system, sans-serif;
 }
 
-/* Dark palette — same names, different values. Radii and the shadow are
-   palette-independent and deliberately stay out of this block. */
 @media (prefers-color-scheme: dark) {
   :root {
     --color-paper: #16190f;

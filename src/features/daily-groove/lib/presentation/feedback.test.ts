@@ -7,7 +7,6 @@ import {
   dotStates,
 } from './feedback'
 
-/** The day's answer throughout: G Dorian. */
 const attempt = (
   root: Attempt['root'],
   flavour: string,
@@ -21,21 +20,15 @@ const attempt = (
   flavourMatched,
 })
 
-/** G Mixolydian against G Dorian — right root, wrong flavour. */
 const ROOT_ONLY = attempt('G', 'Mixolydian', true, false)
-/** C Dorian against G Dorian — right flavour, wrong root. */
 const FLAVOUR_ONLY = attempt('C', 'Dorian', false, true)
-/** C Mixolydian against G Dorian — neither half right. */
 const NEITHER = attempt('C', 'Mixolydian', false, false)
-/** G Dorian against G Dorian. */
 const EXACT = attempt('G', 'Dorian', true, true)
 
-/** A list of exactly `n` missed guesses, cycling the three wrong shapes. */
 const misses = (n: number): Attempt[] =>
   Array.from({ length: n }, (_, i) => [NEITHER, ROOT_ONLY, FLAVOUR_ONLY][i % 3])
 
 describe('selectFeedback', () => {
-  // Step A1 — R4, AC4
   it('gives opening guidance about listening for the tonic before any guess', () => {
     const feedback = selectFeedback([], false)
     expect(feedback.tone).toBe('neutral')
@@ -43,7 +36,6 @@ describe('selectFeedback', () => {
     expect(feedback.message.length).toBeGreaterThan(0)
   })
 
-  // Step A2 — R3, AC5
   it('names the root as right when only the root matched', () => {
     const feedback = selectFeedback([ROOT_ONLY], false)
     expect(feedback.tone).toBe('warm')
@@ -51,7 +43,6 @@ describe('selectFeedback', () => {
     expect(feedback.message).toMatch(/right/i)
   })
 
-  // Step A3 — R3, AC6
   it('names the mode as right and the tonic as elsewhere when only the mode matched', () => {
     const feedback = selectFeedback([FLAVOUR_ONLY], false)
     expect(feedback.tone).toBe('warm')
@@ -59,7 +50,6 @@ describe('selectFeedback', () => {
     expect(feedback.message).toMatch(/tonic/i)
   })
 
-  // Step A4 — R3, AC7
   it('says not it, keep playing when neither half matched', () => {
     const feedback = selectFeedback([NEITHER], false)
     expect(feedback.tone).toBe('warm')
@@ -76,7 +66,6 @@ describe('selectFeedback', () => {
     )
   })
 
-  // Step A5 — R9, AC13
   it('returns the solved wording when the day is solved, whatever the last attempt was', () => {
     for (const last of [ROOT_ONLY, FLAVOUR_ONLY, NEITHER, EXACT]) {
       const feedback = selectFeedback([NEITHER, ROOT_ONLY, last], true)
@@ -89,7 +78,6 @@ describe('selectFeedback', () => {
     expect(selectFeedback([], true).tone).toBe('solved')
   })
 
-  // Step I1 support — R10, AC14: never colour alone
   it('gives every case its own wording, not just its own tone', () => {
     const messages = [
       selectFeedback([], false),
@@ -124,7 +112,6 @@ describe('selectFeedback', () => {
 })
 
 describe('shouldShowNudge', () => {
-  // Step A6 — R5, AC8, AC12
   it('is hidden before any guess', () => {
     expect(shouldShowNudge([], false)).toBe(false)
   })
@@ -151,13 +138,11 @@ describe('shouldShowNudge', () => {
   })
 
   it('counts only failed attempts, not correct ones', () => {
-    // One miss plus the solving attempt is still one miss.
     expect(shouldShowNudge([NEITHER, EXACT], false)).toBe(false)
   })
 })
 
 describe('dotStates', () => {
-  // Step A7 — R1, R2, AC1, AC2, AC3
   it('is three unspent dots before any guess', () => {
     expect(dotStates([], false)).toEqual(['unspent', 'unspent', 'unspent'])
   })
@@ -202,8 +187,6 @@ describe('dotStates', () => {
     dotStates(attempts, false)
     expect(attempts).toHaveLength(2)
   })
-  // Step A3 — E3 R3, AC2: the row marks par, not lives. A fourth miss is
-  // scored and recorded and still leaves the row exactly three dots wide.
   it('leaves the row full, and three wide, after a fourth miss', () => {
     const four = dotStates(misses(4), false)
     expect(four).toHaveLength(3)
@@ -212,7 +195,6 @@ describe('dotStates', () => {
 })
 
 describe('shouldOfferReveal', () => {
-  // Step A1 — E3 R6, R11, AC6, AC7
   it('is not offered before the third miss', () => {
     expect(shouldOfferReveal([], false, false)).toBe(false)
     expect(shouldOfferReveal(misses(1), false, false)).toBe(false)
@@ -234,11 +216,9 @@ describe('shouldOfferReveal', () => {
   })
 
   it('counts only failed attempts, not the solving one', () => {
-    // Two misses plus a correct pair is still two misses.
     expect(shouldOfferReveal([...misses(2), EXACT], false, false)).toBe(false)
   })
 
-  // Step A2 — E3 R11, R12, AC12
   it('stops offering once the day has been revealed', () => {
     expect(shouldOfferReveal(misses(4), false, true)).toBe(false)
     expect(shouldOfferReveal(misses(9), false, true)).toBe(false)
@@ -250,8 +230,6 @@ describe('shouldOfferReveal', () => {
     const second = shouldOfferReveal(attempts, false, false)
     const third = shouldOfferReveal(attempts, false, false)
     expect([first, second, third]).toEqual([true, true, true])
-    // Nothing is remembered between calls: revealing and un-revealing the same
-    // list flips the answer back, which a stored flag could not do.
     expect(shouldOfferReveal(attempts, false, true)).toBe(false)
     expect(shouldOfferReveal(attempts, false, false)).toBe(true)
   })

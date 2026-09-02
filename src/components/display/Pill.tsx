@@ -5,7 +5,6 @@ type PillProps = {
   icon?: ReactNode
 }
 
-/** A rounded outline chip carrying a short label and an optional leading icon. */
 export function Pill({ children, icon }: PillProps) {
   return (
     <span className="inline-flex items-center gap-2 rounded-full border border-border-strong bg-surface px-4 py-2 text-[14px] text-text">

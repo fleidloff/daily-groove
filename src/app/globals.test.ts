@@ -5,9 +5,6 @@ import { describe, expect, it } from 'vitest'
 const cssPath = resolve(process.cwd(), 'src/app/globals.css')
 const css = readFileSync(cssPath, 'utf8')
 
-/**
- * Returns the balanced `{ ... }` body that starts at or after `from`.
- */
 function blockBodyAt(source: string, from: number): string {
   const open = source.indexOf('{', from)
   if (open === -1) return ''
@@ -146,10 +143,6 @@ describe('globals.css dark palette', () => {
   })
 })
 
-// --- Epic 1 integration guards (Steps I1, I3, I4) -------------------------
-// These live here rather than in a new file so the token layer and the rules
-// that protect it stay together.
-
 import { readdirSync, statSync } from 'node:fs'
 
 function sourceFiles(dir: string): string[] {
@@ -197,13 +190,6 @@ describe('Epic 1 integration guards', () => {
   })
 
   it('I5: the design system carries no domain vocabulary (Epic 2)', () => {
-    // Primitives must be reusable by construction. A chip that knows what a
-    // "flavour" is has stopped being a design-system component. Test files
-    // count: a fixture naming a domain concept is the same leak.
-    //
-    // Deliberately excludes "root" and "scale": both are ordinary vocabulary
-    // here (a DOM root, the token spacing scale), so guarding them would mean
-    // permanent false positives rather than signal.
     const DOMAIN =
       /\b(flavour|flavor|groove|chord|progression|bpm|streak|dorian|mixolydian|lydian|phrygian|locrian)\b/i
     const offenders = DESIGN_SYSTEM.filter((f) =>

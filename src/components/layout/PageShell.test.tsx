@@ -22,8 +22,6 @@ describe('PageShell', () => {
   })
 
   it('exposes no styling escape hatch', () => {
-    // The props type is children-only; this is the compile-time contract made
-    // visible. Rendering with only children must be enough.
     const { container } = render(<PageShell>only children</PageShell>)
     expect(container.textContent).toBe('only children')
   })

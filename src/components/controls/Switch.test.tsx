@@ -3,13 +3,9 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { Switch } from './Switch'
 
-// An ordinary label, chosen so the primitive's own test names nothing this app
-// happens to be about. The words are the caller's; the control never holds any.
 const LABEL = 'Notifications'
 
 describe('Switch', () => {
-  // --- Step B1: a labelled switch that reports its state (R13, R14, AC12) ---
-
   it('is a switch whose accessible name is the label it was given', () => {
     render(<Switch label={LABEL} checked={false} onChange={vi.fn()} />)
 
@@ -35,8 +31,6 @@ describe('Switch', () => {
 
     expect(screen.getByRole('switch')).toHaveAttribute('type', 'button')
   })
-
-  // --- Step B2: it asks for a state and holds none of its own (R13) --------
 
   it('asks to be turned on when it is off', async () => {
     const user = userEvent.setup()
@@ -66,13 +60,10 @@ describe('Switch', () => {
     await user.click(screen.getByRole('switch'))
     await user.click(screen.getByRole('switch'))
 
-    // A control that had latched locally would ask for `false` the second time.
     expect(onChange).toHaveBeenNthCalledWith(1, true)
     expect(onChange).toHaveBeenNthCalledWith(2, true)
     expect(screen.getByRole('switch')).toHaveAttribute('aria-checked', 'false')
   })
-
-  // --- Step B3: keyboard reachable, and operable by space and enter --------
 
   it('is reachable by keyboard', async () => {
     const user = userEvent.setup()
@@ -105,8 +96,6 @@ describe('Switch', () => {
     expect(onChange).toHaveBeenCalledWith(true)
   })
 
-  // --- Step B4: the track is decoration, and moves with `checked` (R14) ----
-
   it('draws a track that is hidden from assistive technology', () => {
     const { container } = render(
       <Switch label={LABEL} checked={false} onChange={vi.fn()} />,
@@ -138,11 +127,8 @@ describe('Switch', () => {
 
     const control = screen.getByRole('switch', { name: /notifications/i })
     expect(control.textContent).toContain(LABEL)
-    // Whatever the track draws, it contributes no words of its own.
     expect(control.textContent).toBe(LABEL)
   })
-
-  // --- Step B5: settled declines the press, live keeps the affordances -----
 
   it('carries the native disabled attribute when it is settled', () => {
     render(<Switch label={LABEL} checked onChange={vi.fn()} disabled />)

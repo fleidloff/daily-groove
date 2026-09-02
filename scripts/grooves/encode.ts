@@ -1,21 +1,7 @@
-/**
- * The encode stage: one stereo buffer becomes an mp3.
- *
- * The buffer is piped into ffmpeg as raw `f32le` - the mirror image of how
- * samples are decoded - so no container format is written by hand at either end
- * of the pipeline.
- *
- * The mp3 is treated as an artifact of the PCM, not as the thing determinism is
- * asserted on: encoders differ between ffmpeg builds, so a byte comparison of
- * the file would fail across machines for reasons that have nothing to do with
- * the music.
- */
-
 import { spawn } from 'node:child_process'
 import { interleave } from './pcmio.ts'
 import type { Pcm } from './types.ts'
 
-/** Epic 2 tunes this in one place. */
 export const MP3_BITRATE = '192k'
 
 export function encodeMp3(pcm: Pcm, outPath: string): Promise<void> {
@@ -40,8 +26,6 @@ export function encodeMp3(pcm: Pcm, outPath: string): Promise<void> {
       reject(new Error(`ffmpeg could not be started to encode ${outPath}: ${error.message}`))
     })
 
-    // ffmpeg closes stdin as soon as it gives up on a bad output path; that
-    // EPIPE is not the failure worth reporting, the exit code is.
     ffmpeg.stdin.on('error', () => {})
 
     ffmpeg.on('close', (code) => {

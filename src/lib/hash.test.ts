@@ -3,13 +3,8 @@ import { join, relative } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { hashString } from '@/lib/hash'
 
-/**
- * A change-detector, by design. Its job is not to prove FNV-1a correct — it is
- * to fail loudly the moment someone edits the one function the app and the
- * generator share. The numbers below were produced by the implementation as it
- * stood before it moved into src/lib/, and they must never be regenerated to
- * make a failing run pass.
- */
+// A change-detector. When this table fails, restore hashString — never
+// regenerate the table.
 const PIN: ReadonlyArray<readonly [string, number]> = [
   ['', 2166136261],
   ['a', 3826002220],
@@ -41,11 +36,6 @@ describe('hashString', () => {
   })
 })
 
-/**
- * The FNV prime, spelled arithmetically so this file is not itself a second
- * place the constant is written — a literal here would be a second copy and
- * would fail the very assertion below.
- */
 const FNV_PRIME = String(2 ** 24 + 403)
 
 const REPO_ROOT = join(import.meta.dirname, '..', '..')

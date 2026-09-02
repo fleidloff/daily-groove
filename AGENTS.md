@@ -24,6 +24,13 @@ How a feature gets built — the five skills and the one order they run in
 document's questions before moving on is the cheaper order:
 @docs/skills.md
 
+## Comments
+
+**Code should explain itself, so avoid comments.** Don't narrate the code or the
+change you just made. Leave a comment only for something genuinely non-obvious
+(a workaround, a platform quirk, a ticket reference). Never write prose in a
+comment.
+
 ## Changing what the grooves sound like
 
 **[docs/music.md](docs/music.md)** — the musical model of the generator under

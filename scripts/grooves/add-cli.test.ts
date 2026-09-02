@@ -10,11 +10,6 @@ import type { GateFailure, GrooveSpec } from './types.ts'
 const ROOT = join(process.cwd(), 'scripts', 'grooves')
 const REAL_LOCK = join(ROOT, 'grooves.lock.json')
 const REAL_CATALOGUE = join(ROOT, 'catalogue.json')
-/**
- * A committed mp3, copied in as the stand-in for audio an earlier run minted.
- * A mint measures the head delay of every file it describes, so the fixture's
- * already-minted audio has to be audio.
- */
 const REAL_MP3 = join(process.cwd(), 'public', 'grooves', 'groove-01.mp3')
 const COMMITTED = {
   lock: readFileSync(REAL_LOCK, 'utf8'),
@@ -22,7 +17,6 @@ const COMMITTED = {
   audio: audioFingerprint(join(process.cwd(), 'public', 'grooves')),
 }
 
-/** Every file in the committed audio directory, by name and size. */
 function audioFingerprint(dir: string): string {
   return readdirSync(dir)
     .sort()
@@ -54,15 +48,6 @@ function fixture() {
   }
 }
 
-/**
- * A render is not a unit of work you can do in five seconds any more.
- *
- * Every candidate now carries per-pass humanization, a tempo drift, note-offs, a
- * hi-hat choke, a Schroeder reverb and a fill, over a catalogue four times the
- * length it was — and these tests shell out to the real CLI. Vitest's 5 s
- * default was written against a much lighter pipeline; under parallel load these
- * time out and read as flaky when nothing is flaky but the clock.
- */
 const RENDER_TIMEOUT_MS = 60_000
 
 describe('grooves:add CLI', () => {

@@ -28,10 +28,6 @@ describe('scaleNotes', () => {
   })
 
   it('spells every root and flavour without repeating or skipping a letter', () => {
-    // The real invariant. A seven-note scale uses each letter exactly once. A
-    // scale that is not seven notes cannot: the blues scale has six degrees and
-    // its flat fifth and natural fifth share a letter by construction, so it
-    // declares its own letters and is asserted against its own spelling below.
     for (const root of ROOTS) {
       for (const [flavour, intervals] of Object.entries(FLAVOUR_INTERVALS)) {
         const notes = scaleNotes({ root, flavour })
@@ -46,8 +42,6 @@ describe('scaleNotes', () => {
   })
 
   it('gives the seeded natural-root scales their conventional accidentals', () => {
-    // The old premise held for these by coincidence; keep it asserted where it
-    // is actually true, so a regression in the common case still fails.
     expect(scaleNotes({ root: 'C', flavour: 'Aeolian' })).toEqual([
       'C', 'D', 'E\u266d', 'F', 'G', 'A\u266d', 'B\u266d',
     ])
@@ -60,8 +54,6 @@ describe('scaleNotes', () => {
   })
 
   it('spells as many distinct notes as a flavour has degrees, from every root', () => {
-    // Driven off the interval table rather than a catalogue, so it covers every
-    // root rather than the handful a catalogue happens to use.
     for (const [flavour, intervals] of Object.entries(FLAVOUR_INTERVALS)) {
       for (const root of ROOTS) {
         const label = `${root} ${flavour}`
@@ -71,7 +63,6 @@ describe('scaleNotes', () => {
         expect(notes[0], label).toBe(root)
         expect(new Set(notes).size, label).toBe(intervals.length)
         if (intervals.length === 7) {
-          // A diatonic scale uses each letter name exactly once.
           expect(new Set(notes.map((n) => n[0])).size, label).toBe(7)
         }
         for (const note of notes) expect(note.length, label).toBeGreaterThan(0)
@@ -100,9 +91,6 @@ describe('scaleNotes', () => {
   })
 
   it('keeps the root as given and spells one letter per degree', () => {
-    // A diatonic scale never repeats or skips a letter. C\u266f Minor starts on
-    // C\u266f \u2014 not its flat twin \u2014 and every degree that follows takes the next
-    // letter, whatever accidental that needs.
     expect(scaleNotes({ root: 'C\u266f', flavour: 'Aeolian' })).toEqual([
       'C\u266f',
       'D\u266f',
@@ -116,8 +104,6 @@ describe('scaleNotes', () => {
   })
 
   it('spells A Dorian with a sharpened sixth, not a flattened seventh letter', () => {
-    // Regression: a fixed flat spelling returned A B C D E G\u266d G \u2014 two Gs and no
-    // F. The letter rule is what prevents it.
     expect(scaleNotes({ root: 'A', flavour: 'Dorian' })).toEqual([
       'A',
       'B',
@@ -144,10 +130,6 @@ describe('scaleNotes', () => {
 })
 
 describe('FLAVOUR_INTERVALS', () => {
-  // The catalogue now carries Blues and Harmonic minor, and this table has an
-  // entry for neither — so SolvedPanel throws on a solved blues day. Fixing it
-  // means teaching the speller a six-note scale, which is not this unit's to
-  // decide; the gap is pinned here rather than quietly dropped.
   it('covers every flavour the catalogue uses', async () => {
     const { GROOVES } = await import('../../data/grooves.generated')
     for (const g of GROOVES) {
@@ -156,7 +138,6 @@ describe('FLAVOUR_INTERVALS', () => {
   })
 
   it('starts every flavour on the root, ascending and inside the octave', () => {
-    // Not "seven degrees": the blues scale has six, which is the point of it.
     for (const [flavour, intervals] of Object.entries(FLAVOUR_INTERVALS)) {
       expect(intervals.length, flavour).toBeGreaterThanOrEqual(5)
       expect(intervals[0], flavour).toBe(0)

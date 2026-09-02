@@ -9,9 +9,6 @@ describe('BAR_COUNT', () => {
 })
 
 describe('perBar', () => {
-  // R2: one bar mapping, not two. `barChords` and `barNumerals` both go through
-  // this, so a symbol and a numeral in one bar always describe the same chord —
-  // the generator's own `progressionMidi[bar % length]`.
   it('returns to the first value in bar four when there are three values', () => {
     expect(perBar(['a', 'b', 'c'])).toEqual(['a', 'b', 'c', 'a'])
   })
@@ -31,21 +28,14 @@ describe('perBar', () => {
 })
 
 describe('barChords', () => {
-  // AC1: a four-chord progression is one chord per bar, in order.
   it('gives a four-chord progression one chord per bar', () => {
     expect(barChords('C7–Em7♭5–B♭maj7–Fmaj7')).toEqual(['C7', 'Em7♭5', 'B♭maj7', 'Fmaj7'])
   })
 
-  // AC2: the generator comps progressionMidi[bar % length], so with three
-  // chords bar four is a return to bar one rather than a new change. The sheet
-  // is wrong the moment it disagrees with what is sounding.
   it('returns to bar one in bar four when the progression has three chords', () => {
     expect(barChords('Em7–Bm7–C♯m7♭5')).toEqual(['Em7', 'Bm7', 'C♯m7♭5', 'Em7'])
   })
 
-  // AC3: total over degenerate input — one chord cycles, five are truncated,
-  // and nothing throws. A missing progression is a data problem; four blank
-  // bars beat the day's payoff crashing.
   it('cycles a single chord through all four bars', () => {
     expect(barChords('C7')).toEqual(['C7', 'C7', 'C7', 'C7'])
   })
@@ -73,10 +63,6 @@ describe('barChords', () => {
     expect(barChords('Cm7––F7')).toEqual(['Cm7', 'F7', 'Cm7', 'F7'])
   })
 
-  // R2, R3: the tripwire for a future catalogue. Every groove that ships must
-  // fill four bars with real symbols, and bar one must be the tonic chord the
-  // card already names — the generator writes the progression's head as
-  // `chord`, and events.test.ts asserts the same relation from its side.
   describe('over the shipped catalogue', () => {
     it('covers all 30 catalogued grooves', () => {
       expect(GROOVES).toHaveLength(30)

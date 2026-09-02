@@ -48,17 +48,11 @@ describe('layout.tsx fonts', () => {
     expect(source).toMatch(/import\s+localFont\s+from\s*['"]next\/font\/local['"]/)
   })
 
-  // AC4 — every face goes through `next/font`, which self-hosts at build time.
-  // Nothing may reach a font CDN at runtime, and the cheapest way that could
-  // regress is someone adding a stylesheet link back to the head.
   it('reaches no third-party font host', () => {
     expect(source).not.toMatch(/fonts\.(googleapis|gstatic)\.com/)
     expect(source).not.toMatch(/<link\b/)
   })
 
-  // AC7 — `swap` is the whole of the no-layout-shift answer: the fallback
-  // paints first and the face replaces it. Switching to `optional` or `block`
-  // changes first-paint behaviour materially and would otherwise pass silently.
   it('loads every face with display: swap', () => {
     const declarations = source.match(/display:\s*['"](\w+)['"]/g) ?? []
     expect(declarations, 'expected one display per font').toHaveLength(3)
@@ -111,13 +105,6 @@ describe('the jazz face is vendored into the repo', () => {
   })
 })
 
-// AC5 (R6, R7) — the tab title and the meta description name the app and state
-// its pitch. Asserted against the source rather than the imported module:
-// importing `layout.tsx` pulls `next/font/google` into the test environment,
-// which is why every assertion in this file reads the file from disk. Matching
-// the identifiers rather than the literals is the point — the words live in
-// `src/lib/branding.ts`, and a metadata block that inlines them would drift
-// from the masthead that renders the same two constants.
 describe('layout.tsx metadata names the app', () => {
   it('imports the branding constants', () => {
     expect(source).toMatch(/import\s*\{[^}]*\bAPP_NAME\b[^}]*\}\s*from\s*['"]@\/lib\/branding['"]/)

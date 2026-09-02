@@ -74,15 +74,11 @@ describe('AttemptDots', () => {
     expect(screen.getByRole('img', { name: /solved/i })).toBeInTheDocument()
   })
 
-  // --- Epic 3 (feature-7) Step C1: the dots say what they mean (R1, R2, AC1)
-
   it('explains that three is par and guessing continues, in the accessible name (R1, R2, AC1)', () => {
     render(<AttemptDots states={['spent', 'spent', 'unspent']} />)
 
     const row = screen.getByRole('img')
-    // The count it always carried...
     expect(row).toHaveAccessibleName(expect.stringContaining('2 of 3 attempts spent'))
-    // ...plus what the row actually means.
     expect(row).toHaveAccessibleName(expect.stringMatching(/par/i))
     expect(row).toHaveAccessibleName(expect.stringMatching(/not a limit/i))
     expect(row).toHaveAccessibleName(expect.stringMatching(/keep guessing/i))
@@ -118,16 +114,6 @@ describe('AttemptDots', () => {
   })
 })
 
-/**
- * Relocated from `src/app/page.test.tsx` (Epic 3, Step C2). What an untouched
- * day opens with: three unspent dots, the opening guidance, and no nudge. The
- * dot row is this file's subject and the other two are the state it opens
- * beside, so the test stays whole and keeps its composed render.
- *
- * The guidance and the nudge are also pinned as values next to the function
- * that decides them, in `lib/presentation/feedback.test.ts` — those assertions
- * predate this move; these are the rendered half.
- */
 describe('through the composed page', () => {
   it("opens with three unspent attempt dots and the opening guidance", async () => {
     await renderFeature();

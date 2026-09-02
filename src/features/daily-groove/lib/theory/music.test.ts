@@ -20,9 +20,6 @@ describe('answerOf', () => {
   })
 
   it('keeps a two-word flavour intact, which a parse of `scale` would not', () => {
-    // 'E\u266d harmonic minor' split on the first space gives flavour
-    // 'harmonic minor' but a naive split gives root 'harmonic'. Reading the
-    // fields cannot go wrong either way.
     const groove = {
       ...GROOVES[0],
       scale: 'E\u266d harmonic minor',
@@ -61,8 +58,6 @@ describe('every groove in the catalogue', () => {
 
 describe('flavourPool', () => {
   it('is exactly the set of flavours the catalogue actually uses', () => {
-    // Asserted as a property of the data rather than against a fixed list, so
-    // the test keeps its meaning when the generated catalogue changes.
     const used = GROOVES.map((g) => g.flavour)
     expect(flavourPool(GROOVES)).toEqual([...new Set(used)].sort())
   })
@@ -77,7 +72,6 @@ describe('flavourPool', () => {
   })
 
   it('widens automatically when a groove uses a new flavour', () => {
-    // A flavour no real groove carries, so this cannot pass vacuously.
     const extra = { ...GROOVES[0], id: 'extra', scale: 'C whole tone', flavour: 'Whole tone' }
     expect(flavourPool(GROOVES)).not.toContain('Whole tone')
     expect(flavourPool([...GROOVES, extra])).toContain('Whole tone')
@@ -120,7 +114,6 @@ describe('flavourOptions', () => {
 describe('simpleRootOptions', () => {
   const ANSWER: Answer = { root: 'E\u266d', flavour: 'Dorian' }
 
-  /** Twenty consecutive days, spanning a month boundary and a leap day. */
   const DATES = Array.from(
     { length: 20 },
     (_, i) => new Date(2026, 1, 20 + i),
@@ -143,7 +136,6 @@ describe('simpleRootOptions', () => {
   it.each(DATES.map((d) => [d.toDateString(), d] as const))(
     "always includes the day's correct root on %s (R3, AC2)",
     (_label, date) => {
-      // A fixed six would leave a groove rooted in E\u266d unanswerable.
       expect(simpleRootOptions(date, ANSWER)).toContain('E\u266d')
     },
   )
@@ -190,12 +182,6 @@ describe('simpleRootOptions', () => {
   })
 })
 
-/**
- * Relocated from `src/app/page.test.tsx` (Epic 3, Step C3). It asserts on the
- * options themselves rather than on rendered chips, so unlike its sibling in
- * `components/puzzle/GuessCard.test.tsx` it needs no composed render: the day
- * the player is actually handed must always include the answer.
- */
 describe("today's options, as the page resolves them", () => {
   it("offers today's deterministic flavour options, including the answer", () => {
     const today = new Date();
@@ -208,10 +194,6 @@ describe("today's options, as the page resolves them", () => {
 
 describe('loopSecondsOf', () => {
   it('gives the musical length of the loop from its tempo and bar count', () => {
-    // The loop length is `loopBars`, so it is stated rather than inherited from
-    // the catalogue entry these fixtures are spread from — that entry is a
-    // real sixteen-bar groove and would drown the arithmetic under test.
-    // 4 bars of 4/4 at 96bpm is 16 beats, and 16 * 60/96 = 10s exactly.
     expect(loopSecondsOf({ ...GROOVES[0], bpm: 96, bars: 4, loopBars: 4 })).toBeCloseTo(10, 6)
     expect(loopSecondsOf({ ...GROOVES[0], bpm: 105, bars: 4, loopBars: 4 })).toBeCloseTo(
       9.142857,
@@ -233,21 +215,13 @@ describe('loopSecondsOf', () => {
     expect(loopSecondsOf({ ...GROOVES[0], bpm: -1 })).toBe(0)
   })
 
-  // Feature-9, Epic 1, Step D1 (R8, AC8). The file is several passes of the
-  // four-bar figure, so the loop the player must bracket is `loopBars` long,
-  // not `bars`. Measuring the figure would cut a sixteen-bar groove off after
-  // its first quarter.
   it("measures the file's loop, not the four-bar figure (R8, AC8)", () => {
-    // 16 bars of 4/4 at 100bpm is 64 beats, and 64 * 60/100 = 38.4s exactly.
     expect(
       loopSecondsOf({ ...GROOVES[0], bpm: 100, bars: 4, loopBars: 16 }),
     ).toBeCloseTo(38.4, 6)
   })
 
   it('falls back to `bars` when an entry carries no `loopBars` (R8)', () => {
-    // A manifest written before the field existed still describes a groove.
-    // The field has to be removed deliberately: every entry in the shipped
-    // catalogue now carries it, so spreading one in would smuggle it back.
     const groove = { ...GROOVES[0], bpm: 100, bars: 4 }
     delete groove.loopBars
     expect('loopBars' in groove).toBe(false)
@@ -264,30 +238,11 @@ describe('loopSecondsOf', () => {
   })
 })
 
-/**
- * Epic 4, Step D2 — the pool is whatever the catalogue carries.
- *
- * The first two blocks below pin behaviour that already holds (R2, R9): the
- * pool is derived from the seed data, and the day's row keeps its shape. They
- * exist so a later change cannot quietly narrow either one.
- *
- * The last two are structural (R7, R8). The rotation *is* the generated
- * catalogue: a groove that should not be played is a groove that is not in
- * `catalogue.json`, so no flag, allowlist or predicate stands between `GROOVES`
- * and either the day's pick or the option pool. That is a claim about the whole
- * source tree, which no import can check, so they read `src/` from disk.
- */
 describe('the rotation is the generated catalogue (Epic 4)', () => {
-  /**
-   * A canonical uuid per fixture, from a counter rather than a real mint: the
-   * pools read the flavour, so what matters is that the field is present and
-   * well-formed, not which value it holds.
-   */
   let fixtureUuids = 0
   const nextFixtureUuid = () =>
     `00000000-0000-4000-8000-${String((fixtureUuids += 1)).padStart(12, '0')}`
 
-  /** A groove built from nothing, so the pool cases cannot lean on real data. */
   function fake(id: string, flavour: string): Groove {
     return {
       id,
@@ -304,8 +259,6 @@ describe('the rotation is the generated catalogue (Epic 4)', () => {
       headDelaySeconds: 0,
     }
   }
-
-  // --- R2: the pool is exactly the catalogue's distinct flavours ------------
 
   it('returns exactly the distinct flavours of a hand-built catalogue (R2)', () => {
     const catalogue = [
@@ -328,14 +281,10 @@ describe('the rotation is the generated catalogue (Epic 4)', () => {
   })
 
   it('drops nothing the real catalogue carries (R7)', () => {
-    // The size-agnostic form of "no predicate is applied": however many
-    // flavours the generated catalogue holds today, the pool holds all of them.
     expect(flavourPool(GROOVES)).toHaveLength(
       new Set(GROOVES.map((g) => g.flavour)).size,
     )
   })
-
-  // --- R9: four options, seeded by the date, always including the answer ----
 
   it("keeps the day's row at four options including the answer (R9, AC2)", () => {
     for (let i = 0; i < 40; i++) {
@@ -359,11 +308,8 @@ describe('the rotation is the generated catalogue (Epic 4)', () => {
     }
   })
 
-  // --- R7: no retirement flag, no allowlist, no rotation filter -------------
-
   const SRC = join(process.cwd(), 'src')
 
-  /** Every `.ts`/`.tsx` under `src/` that is not itself a test. */
   function sourceFiles(dir: string = SRC): string[] {
     return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
       const full = join(dir, entry.name)
@@ -374,22 +320,12 @@ describe('the rotation is the generated catalogue (Epic 4)', () => {
     })
   }
 
-  /**
-   * A file's code with its comments blanked out.
-   *
-   * The rule is about what the app *does*, not about how it is described, and
-   * prose is where a word like "retired" legitimately turns up — the feature
-   * already writes about retired components in its own tests. Judging the code
-   * keeps these assertions from failing the next time someone describes
-   * something accurately.
-   */
   function code(file: string): string {
     return readFileSync(file, 'utf8')
       .replace(/\/\*[\s\S]*?\*\//g, ' ')
       .replace(/(^|[^:])\/\/[^\n]*/g, '$1')
   }
 
-  /** `path: matched text` for every source file whose code matches `pattern`. */
   function hits(pattern: RegExp): string[] {
     return sourceFiles().flatMap((file) => {
       const found = code(file).match(pattern)
@@ -398,14 +334,6 @@ describe('the rotation is the generated catalogue (Epic 4)', () => {
   }
 
   it('carries no retirement flag anywhere in the source (R7, AC8)', () => {
-    // A groove that should not be played is a groove that is not in
-    // `catalogue.json`. Nothing downstream is allowed to learn that a groove
-    // was ever there, so there is no field and no constant recording that one
-    // was retired.
-    //
-    // Matched without word boundaries on purpose: `RETIRED_IDS` and
-    // `isRetired` are exactly the shapes this is looking for, and `\b` sees
-    // neither of them.
     expect(hits(/retire(?:d|s|ment|ing)?/i)).toEqual([])
   })
 
@@ -415,26 +343,14 @@ describe('the rotation is the generated catalogue (Epic 4)', () => {
     expect(
       hits(new RegExp(`\\b(?:${verbs})[_ ]?(?:list|ed)?[_ ]?(?:${nouns})\\b`, 'i')),
     ).toEqual([])
-    // The same list under the other word order, e.g. `FLAVOUR_ALLOWLIST`.
     expect(
       hits(new RegExp(`\\b(?:${nouns})[_ ]?(?:${verbs})[_ ]?(?:list|ed)?\\b`, 'i')),
     ).toEqual([])
   })
 
   it('filters the rotation nowhere (R7, AC8)', () => {
-    // Two shapes of the same mistake: narrowing `GROOVES` at a call site, and a
-    // predicate that decides on a groove's flavour.
     expect(hits(/\bGROOVES\b[^\n]*\.\s*(?:filter|slice|splice)\s*\(/)).toEqual([])
 
-    // The predicate half looks for the flavour being read *off an item* — the
-    // shape a groove-shaped predicate has, whether the field is reached with a
-    // dot or destructured out of the parameter. It deliberately does not match
-    // a predicate whose parameter *is* a flavour: `pool.filter((flavour) =>
-    // familyOf(flavour) === family)` narrows a mode pool, not the rotation,
-    // and feature-16's `simpleModes.ts` does exactly that to decide which lick
-    // a simple-mode chip sounds. An earlier version of this pattern matched
-    // any predicate mentioning the word at all, which is wider than the rule
-    // it stands behind.
     expect(
       hits(
         /\.\s*filter\s*\([^)\n]*\)?\s*=>[^\n]*\.\s*(?:flavour|mode)\b/i,
@@ -448,8 +364,6 @@ describe('the rotation is the generated catalogue (Epic 4)', () => {
   })
 
   it('hands the whole catalogue to the day’s pick and to the pool (R7, AC8)', () => {
-    // The positive half: wherever the rotation is consumed, the argument is the
-    // bare generated array.
     const picks = hits(/selectGrooveForDate\([^\n]*\bGROOVES\b\s*\)/)
     expect(picks.length).toBeGreaterThan(0)
 
@@ -457,15 +371,11 @@ describe('the rotation is the generated catalogue (Epic 4)', () => {
     expect(pools.length).toBeGreaterThan(0)
   })
 
-  // --- R8: the flavour type stays open -------------------------------------
-
   it('leaves `Flavour` in src/lib/groove.ts a plain string (R8, AC9)', () => {
     const source = readFileSync(join(SRC, 'lib', 'groove.ts'), 'utf8')
     const declaration = source.match(/export type Flavour\s*=([^\n]*)/)
 
     expect(declaration).not.toBeNull()
-    // Exactly `string` — not a union, not a template literal, not a narrowing
-    // of the vocabulary. The pool is derived from the seed data at runtime.
     expect(declaration?.[1].trim()).toBe('string')
   })
 })

@@ -1,15 +1,3 @@
-/**
- * Loading a sample pack from a directory.
- *
- * The pack is reached only through its `pack.json` declaration - never through
- * hard-coded paths - which is what lets the real CC0 pack and the synthesized
- * placeholder pack satisfy one interface.
- *
- * Decoding happens once, here, at load time. `get` is synchronous and serves
- * already-decoded buffers, so the voices stage stays a pure function and no
- * render ever spawns a process per note.
- */
-
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { type Decoder, decodeAudioFile } from './decode.ts'
@@ -22,7 +10,6 @@ import type {
   VoiceName,
 } from './types.ts'
 
-/** How many files are decoded at once. One subprocess each, so keep it modest. */
 const DECODE_CONCURRENCY = 8
 
 export async function loadPack(dir: string, decode: Decoder = decodeAudioFile): Promise<SamplePack> {
@@ -53,7 +40,6 @@ export async function loadPack(dir: string, decode: Decoder = decodeAudioFile): 
   }
 }
 
-/** Every file the declaration names, once, in declaration order. */
 function filesOf(declaration: PackDeclaration): string[] {
   const files = new Set<string>()
 
@@ -93,35 +79,10 @@ async function decodeAll(
   return buffers
 }
 
-/**
- * How long a sample is ramped up from zero, if it does not already start there.
- *
- * Half a millisecond — 22 frames at 44.1 kHz — which is below the ear's ability
- * to hear an attack soften and far shorter than the shortest transient in the
- * pack.
- */
 const LEAD_IN_SEC = 0.0005
 
-/** Below this a first frame is silence for practical purposes. */
 const SILENT_ENOUGH = 1e-4
 
-/**
- * Ramp a sample up from zero if its first frame is not already there.
- *
- * A sample that begins mid-waveform is a step from silence, and the loop seam
- * is where that step gets found: `mixTracks` folds the overhang onto bar one, so
- * the first sample of the render survives into the wrapped buffer as a
- * discontinuity against the decaying tail at the last one — and then `normalise`
- * multiplies it by whatever gain the master needed. Three of the committed
- * samples start as high as 0.008, all of them the cajon standing in for a kick,
- * and after normalisation that is enough to put two grooves over the gate's
- * seam threshold once anything shifts the mix balance.
- *
- * Trimming the sample properly is the real fix and belongs to whoever restocks
- * the pack. Doing it here as well costs nothing and makes the guarantee hold for
- * whatever arrives next, rather than for the files that happen to be committed
- * today.
- */
 function startFromSilence(pcm: Pcm): Pcm {
   if (Math.abs(pcm.left[0]) < SILENT_ENOUGH && Math.abs(pcm.right[0]) < SILENT_ENOUGH) return pcm
 
@@ -147,12 +108,6 @@ function nearestNote<T extends { midi: number }>(notes: T[], midi: number | unde
   return best
 }
 
-/**
- * The first layer whose `maxVelocity` covers the request, then the alternate at
- * `index` wrapped into that layer's round-robins. Epic 1's caller passes
- * `velocity: 1, index: 0`, so it always lands on the top layer's first file and
- * leaves the rest of the pack for Epic 2.
- */
 function pick(
   buffers: Map<string, Pcm>,
   layers: VelocityLayer[],
@@ -173,11 +128,6 @@ function pick(
   return { pcm, nominalVelocity: nominalOf(layers, at) }
 }
 
-/**
- * The velocity a layer's samples represent: its declared value, or the midpoint
- * of the band it covers. The band runs from the previous layer's ceiling to its
- * own, so the top layer of a 0.45/1.0 pair is nominally 0.725.
- */
 function nominalOf(layers: VelocityLayer[], at: number): number {
   const layer = layers[at]
   if (layer.nominalVelocity !== undefined) return layer.nominalVelocity

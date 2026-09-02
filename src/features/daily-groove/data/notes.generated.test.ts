@@ -7,14 +7,6 @@ import { ROOTS } from '../lib/theory/music'
 
 const PUBLIC = join(process.cwd(), 'public')
 
-/**
- * Feature-10 Epic 1, Step I1. The reference notes are generated the same way
- * the grooves are, so they are guarded the same way: the module is only as
- * good as the twelve files behind it, and the row is only playable if every
- * root a chip can offer has one.
- *
- * Modelled on `grooves.generated.test.ts` beside it.
- */
 describe('the generated reference notes', () => {
   it('carries one note per chromatic root', () => {
     expect(NOTES).toHaveLength(12)
@@ -39,8 +31,6 @@ describe('the generated reference notes', () => {
     expect(new Set(NOTES.map((note) => note.audioSrc)).size).toBe(NOTES.length)
   })
 
-  // The check that would have caught twelve zero-byte placeholders shipping —
-  // the same one the groove catalogue carries.
   it('has a real, non-empty file behind every entry', () => {
     for (const note of NOTES) {
       const file = join(PUBLIC, note.audioSrc)
@@ -49,8 +39,6 @@ describe('the generated reference notes', () => {
     }
   })
 
-  // The row can only ever offer roots the catalogue uses, so a groove whose
-  // root has no note is a day with a silent chip on it.
   it('has a note for every root the catalogue answers with', () => {
     const known = new Set(NOTES.map((note) => note.root))
     for (const groove of GROOVES) {
@@ -60,19 +48,6 @@ describe('the generated reference notes', () => {
   })
 })
 
-/**
- * Feature-16 Epic 1, Track A — R26, R27, R29, AC17.
- *
- * `PITCHES` is what a lick is sequenced from, and a lick's top note is its root
- * (60..71) plus an octave — so the range has to reach 83 with no gaps, and
- * every entry has to have a real file behind it.
- *
- * The completeness assertions here are not redundant with `grooves:verify`.
- * `verifyLock` iterates whatever ids the lock happens to record, so an
- * under-render — twelve files, twelve lock entries, a twelve-entry manifest —
- * is internally consistent and passes `prebuild` in silence. Only a test that
- * knows the expected count catches it, and this is that test.
- */
 describe('the generated pitch range', () => {
   it('covers C4 to B5 with no gaps', () => {
     expect(PITCHES).toHaveLength(24)
@@ -100,8 +75,6 @@ describe('the generated pitch range', () => {
     }
   })
 
-  // R27: the row's twelve are the base octave of the range, not a second
-  // rendering of it. If these ever disagree, one of the two is stale.
   it('carries the root row exactly, as its base octave', () => {
     const base = PITCHES.filter((pitch) => pitch.octave === 4).map((pitch) => ({
       root: pitch.root,

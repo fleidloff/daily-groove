@@ -1,15 +1,3 @@
-/**
- * A sample pack with no samples on disk.
- *
- * Every buffer is synthesized in memory - a short noise burst under an envelope
- * for the percussive voices, a decaying sine for the pitched ones - so the
- * pipeline is testable without binary fixtures and without an ffmpeg subprocess
- * per note. It satisfies the same `SamplePack` interface as the real pack, which
- * is the whole point: the renderer needs no branch for it.
- *
- * It is a test artifact. Nothing rendered from it is ever committed.
- */
-
 import type {
   PackDeclaration,
   PackSample,
@@ -24,7 +12,6 @@ const DEFAULT_SAMPLE_RATE = 44100
 const PERCUSSIVE: VoiceName[] = ['kick', 'snare', 'hatClosed', 'hatOpen', 'rim']
 const PITCHED: VoiceName[] = ['bass', 'comp']
 
-/** Seconds of decay, per percussive voice. */
 const DECAY: Record<string, number> = {
   kick: 0.3,
   snare: 0.22,
@@ -33,7 +20,6 @@ const DECAY: Record<string, number> = {
   rim: 0.08,
 }
 
-/** Sampled notes per pitched voice, every four semitones, as the real pack is. */
 const NOTES: Record<string, number[]> = {
   bass: [28, 32, 36, 40, 44, 48],
   comp: [48, 52, 56, 60, 64, 68, 72],
@@ -42,13 +28,9 @@ const NOTES: Record<string, number[]> = {
 export type PlaceholderPackOptions = {
   id?: string
   sampleRate?: number
-  /** Which voices the pack declares. Defaults to all seven. */
   voices?: VoiceName[]
-  /** Velocity layers per voice. Epic 1 only ever reaches the top one. */
   layers?: number
-  /** Round-robin alternates per layer. Epic 1 only ever reaches the first. */
   roundRobins?: number
-  /** Sampled notes per pitched voice, to force a transposition in a test. */
   notes?: Partial<Record<'bass' | 'comp', number[]>>
 }
 
@@ -107,12 +89,6 @@ export function placeholderPack(options: PlaceholderPackOptions = {}): SamplePac
   }
 }
 
-/**
- * Layers are named by their `maxVelocity`, not by their position, so the top
- * layer's first alternate carries the same file key however many layers the
- * pack declares. That is what lets a one-layer pack and a three-layer pack
- * render byte-identical audio in this epic.
- */
 function layersFor(
   voice: VoiceName,
   layerCount: number,
@@ -159,7 +135,6 @@ function fileFor(layers: VelocityLayer[], velocity: number, index: number): stri
 
 const cache = new Map<string, Pcm>()
 
-/** Synthesis is keyed by file name, so the same name always sounds the same. */
 function synthesize(file: string, sampleRate: number): Pcm {
   const key = `${file}@${sampleRate}`
   const cached = cache.get(key)
@@ -215,11 +190,6 @@ function decayingSine(midi: number, amplitude: number, sampleRate: number): Pcm 
   return { sampleRate, left, right }
 }
 
-/**
- * A local FNV-1a and mulberry32. The generator's own `rng.ts` belongs to the
- * music stage; the placeholder pack keeps its noise deterministic without
- * reaching across to it.
- */
 function seedOf(text: string): number {
   let hash = 0x811c9dc5
   for (let i = 0; i < text.length; i += 1) {
@@ -240,11 +210,6 @@ function mulberry32(seed: number): () => number {
   }
 }
 
-/**
- * The midpoint of the band the requested velocity falls in — the same rule the
- * real pack applies, so a test that renders against this pack measures the same
- * scaling the catalogue does.
- */
 function nominalOf(layers: VelocityLayer[], velocity: number): number {
   if (layers.length === 0) return 1
   const found = layers.findIndex((layer) => velocity <= layer.maxVelocity)

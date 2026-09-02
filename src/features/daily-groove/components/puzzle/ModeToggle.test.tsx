@@ -4,8 +4,6 @@ import userEvent from '@testing-library/user-event'
 import { ModeToggle } from './ModeToggle'
 
 describe('ModeToggle', () => {
-  // --- C1: the toggle renders and reports (R1, R11, AC1) --------------------
-
   it('is a switch whose name says what it switches (R1, AC1)', () => {
     render(<ModeToggle simple={false} onChange={vi.fn()} />)
 
@@ -54,13 +52,10 @@ describe('ModeToggle', () => {
     await user.click(screen.getByRole('switch'))
     await user.click(screen.getByRole('switch'))
 
-    // A control that had latched locally would ask for `false` the second time.
     expect(onChange).toHaveBeenNthCalledWith(1, true)
     expect(onChange).toHaveBeenNthCalledWith(2, true)
     expect(screen.getByRole('switch')).toHaveAttribute('aria-checked', 'false')
   })
-
-  // --- R11, AC11: keyboard-reachable and keyboard-operable ------------------
 
   it('is reachable by keyboard (R11, AC11)', async () => {
     const user = userEvent.setup()
@@ -107,10 +102,6 @@ describe('ModeToggle', () => {
     )
   })
 
-  // --- F11 E4: the switch settles once the day is over ----------------------
-
-  // Step A1. The prop is optional and defaults to off, so every call site that
-  // never heard of it keeps the switch it has today.
   it('is live when it is told nothing about the day being over (F11 E4 R3)', async () => {
     const user = userEvent.setup()
     const onChange = vi.fn()
@@ -122,8 +113,6 @@ describe('ModeToggle', () => {
     expect(onChange).toHaveBeenCalledWith(true)
   })
 
-  // Step A2. The mechanism is the native attribute, so the browser is the one
-  // declining — not a guard inside the handler (R1a).
   it('carries the native disabled attribute when the day is over (F11 E4 R1a, AC5)', () => {
     render(<ModeToggle simple onChange={vi.fn()} disabled />)
 
@@ -145,7 +134,6 @@ describe('ModeToggle', () => {
     const onChange = vi.fn()
     render(<ModeToggle simple={false} onChange={onChange} disabled />)
 
-    // Nothing may focus it either — `disabled` takes it out of the tab order.
     await user.tab()
     expect(screen.getByRole('switch')).not.toHaveFocus()
 
@@ -156,8 +144,6 @@ describe('ModeToggle', () => {
     expect(onChange).not.toHaveBeenCalled()
   })
 
-  // Step A3. Settling is a change of state, not of what the control is: the
-  // finished card still has to say which mode the day was played in.
   it('still reads as a switch that is on when it has settled (F11 E4 R4, R5, AC4, AC5)', () => {
     render(<ModeToggle simple onChange={vi.fn()} disabled />)
 
@@ -177,13 +163,11 @@ describe('ModeToggle', () => {
       <ModeToggle simple onChange={vi.fn()} disabled />,
     )
 
-    // The track is the decoration that shows the position at a glance.
     const track = container.querySelector('[aria-hidden="true"]')
     expect(track).not.toBeNull()
     expect(track?.className).toMatch(/bg-accent/)
   })
 
-  // Step A4. A control that cannot be used must not go on offering itself.
   it('drops the affordances of a live control when it has settled (F11 E4 R6)', () => {
     render(<ModeToggle simple onChange={vi.fn()} disabled />)
 

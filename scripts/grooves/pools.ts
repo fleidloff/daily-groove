@@ -1,33 +1,11 @@
 import type { Groove } from '../../src/lib/groove.ts'
 
-/**
- * The three distractor pools the generated module exports. They exist so the
- * app's `buildOptions` can fill a four-option set for any groove: the correct
- * value plus three plausible wrong ones.
- *
- * They are derived, never hand-maintained — the union of what the catalogue
- * actually uses and a fixed vocabulary of plausible alternatives. Deriving the
- * first half is what stops a pool drifting away from the answers it is meant
- * to hide.
- */
 export type Pools = {
   scales: string[]
   chords: string[]
   progressions: string[]
 }
 
-/**
- * Plausible scales the catalogue does not use — spread across the twelve roots
- * and the twelve flavours the game offers, in the same notation the renderer
- * emits (Unicode accidentals, lower-case flavour), with at least two roots per
- * flavour so a set never has to reuse one.
- *
- * Epic 4 (feature-7) spelled these modally: `A major` and `C minor` became
- * `A ionian` and `C aeolian`. These are display strings rather than `Flavour`
- * values, so the union rename could not reach them and nothing failed to
- * compile — but a pool whose real answers read `B ionian` and whose distractors
- * read `A major` hands the player the answer by its spelling alone.
- */
 const SCALE_DISTRACTORS = [
   'A aeolian',
   'A dorian',
@@ -63,7 +41,6 @@ const SCALE_DISTRACTORS = [
   'G phrygian',
 ] as const
 
-/** Plausible chord symbols the catalogue does not use. */
 const CHORD_DISTRACTORS = [
   'A7',
   'A♭maj7',
@@ -91,7 +68,6 @@ const CHORD_DISTRACTORS = [
   'Gmaj7',
 ] as const
 
-/** Plausible progressions the catalogue does not use. */
 const PROGRESSION_DISTRACTORS = [
   'A♭maj7–Fm7–B♭m7–E♭7',
   'Am–Dm–E7',
@@ -119,21 +95,10 @@ const PROGRESSION_DISTRACTORS = [
   'Gmaj7–Em7–Am7–D7',
 ] as const
 
-/**
- * One pool: everything used, plus the fixed vocabulary, deduped and sorted by
- * code unit. Sorting (rather than localeCompare) keeps the rendered module
- * byte-identical on every machine, so a re-render is a no-op diff.
- */
 function pool(used: readonly string[], distractors: readonly string[]): string[] {
   return [...new Set([...used, ...distractors])].sort()
 }
 
-/**
- * The three pools for a catalogue. Each contains every value its entries use —
- * so the correct answer is always in its own pool — plus at least four values
- * they do not, which is what guarantees `buildOptions` can always fill four
- * options.
- */
 export function buildPools(entries: readonly Groove[]): Pools {
   return {
     scales: pool(

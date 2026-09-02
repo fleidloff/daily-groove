@@ -13,7 +13,6 @@ const TONE: Record<TextTone, string> = {
   default: 'text-text',
   muted: 'text-text-muted',
   faint: 'text-text-faint',
-  // For accent-filled surfaces, whose ink flips with the palette.
   inverted: 'text-on-accent',
   'inverted-muted': 'text-on-accent/75',
 }
@@ -23,7 +22,6 @@ const SIZE: Record<TextSize, string> = {
   md: 'text-[15px] leading-[1.55]',
 }
 
-/** Body copy. */
 export function Text({ children, tone = 'default', size = 'md' }: TextProps) {
   return <p className={`${TONE[tone]} ${SIZE[size]}`}>{children}</p>
 }

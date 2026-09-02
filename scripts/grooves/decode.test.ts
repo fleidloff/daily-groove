@@ -35,8 +35,6 @@ describe('decodeAudioFile', () => {
     const durationSec = pcm.left.length / pcm.sampleRate
     expect(Math.abs(durationSec - 0.5)).toBeLessThan(0.001)
 
-    // Not a level assertion: ffmpeg's mono-to-stereo upmix applies its own pan
-    // law, so this only says the decode carried signal rather than zeroes.
     const peak = pcm.left.reduce((m, v) => Math.max(m, Math.abs(v)), 0)
     expect(peak).toBeGreaterThan(0.05)
   })

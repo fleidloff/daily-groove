@@ -2,18 +2,6 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { GROOVES } from '../../data/grooves.generated'
 import { grooveByUuid } from './grooveByUuid'
 
-/**
- * Feature-12, Epic 1, Step B1 — R1b, R12, R13; AC7, AC15.
- *
- * The uuids are read from the committed `GROOVES` rather than written out here,
- * so a re-render of the manifest cannot leave this file asserting against a
- * groove that no longer exists.
- */
-
-/**
- * A canonical v4 uuid that no groove holds. Asserted against the manifest
- * below, so it cannot quietly become a real groove's uuid.
- */
 const UNUSED_UUID = '00000000-0000-4000-8000-000000000000'
 
 afterEach(() => {
@@ -57,7 +45,6 @@ describe('grooveByUuid', () => {
   })
 
   it('resolves nothing for a well-formed uuid no groove holds (R14)', () => {
-    // The premise: the fixture really is unused.
     expect(GROOVES.map((groove) => groove.uuid)).not.toContain(UNUSED_UUID)
 
     expect(grooveByUuid(UNUSED_UUID)).toBeUndefined()
@@ -68,8 +55,6 @@ describe('grooveByUuid', () => {
   })
 
   it('resolves the same groove on any day (R13)', () => {
-    // R13 holds by construction — nothing here reads a clock — so the clock is
-    // moved under it rather than the source being inspected.
     const entry = GROOVES[GROOVES.length - 1]
 
     vi.useFakeTimers()

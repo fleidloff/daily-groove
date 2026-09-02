@@ -34,17 +34,11 @@ const JUSTIFY: Record<RowJustify, string> = {
   end: 'justify-end',
 }
 
-// Stacked is the default and the split is the override, so a narrow viewport
-// never has to undo a wide-viewport layout.
 const COLLAPSE: Record<RowCollapse, string> = {
   sm: 'flex-col sm:flex-row',
   md: 'flex-col md:flex-row',
 }
 
-/**
- * Horizontal flow, optionally collapsing to a single column below a named
- * breakpoint.
- */
 export function Row({ children, gap, align, justify, collapseBelow }: RowProps) {
   const direction = collapseBelow ? COLLAPSE[collapseBelow] : 'flex-row'
   const className = [

@@ -6,29 +6,24 @@ const LINK = 'https://x.test/groove/u'
 type ShareFn = (data: { url: string }) => Promise<void>
 type WriteFn = (text: string) => Promise<void>
 
-/** A share sheet that opens and completes. */
 function openingSheet() {
   return vi.fn<ShareFn>(() => Promise.resolve())
 }
 
-/** A share sheet the player dismisses: the browser rejects with an AbortError. */
 function dismissedSheet() {
   return vi.fn<ShareFn>(() =>
     Promise.reject(new DOMException('Share canceled', 'AbortError')),
   )
 }
 
-/** A share sheet that fails for some other reason. */
 function failingSheet(error: unknown) {
   return vi.fn<ShareFn>(() => Promise.reject(error))
 }
 
-/** A clipboard that accepts the write. */
 function workingClipboard() {
   return vi.fn<WriteFn>(() => Promise.resolve())
 }
 
-/** A clipboard the browser refuses — no permission, or no clipboard at all. */
 function refusingClipboard() {
   return vi.fn<WriteFn>(() =>
     Promise.reject(new Error('Write permission denied')),
@@ -171,7 +166,6 @@ describe('browserShareDeps', () => {
     expect(deps.share).toBeTypeOf('function')
     expect(deps.write).toBeTypeOf('function')
 
-    // Unbound, each of these would throw on `this`.
     await deps.share?.({ url: LINK })
     await deps.write?.(LINK)
 

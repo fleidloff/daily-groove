@@ -6,8 +6,6 @@ import userEvent from '@testing-library/user-event'
 import { TapSoundsToggle } from './TapSoundsToggle'
 
 describe('TapSoundsToggle', () => {
-  // --- Step D1: a switch that says what it switches (R1, R13, R14, AC12) ----
-
   it('is a switch whose name says what it switches (R1, AC12)', () => {
     render(<TapSoundsToggle on onChange={vi.fn()} />)
 
@@ -56,7 +54,6 @@ describe('TapSoundsToggle', () => {
     await user.click(screen.getByRole('switch'))
     await user.click(screen.getByRole('switch'))
 
-    // A control that had latched locally would ask for `false` the second time.
     expect(onChange).toHaveBeenNthCalledWith(1, true)
     expect(onChange).toHaveBeenNthCalledWith(2, true)
     expect(screen.getByRole('switch')).toHaveAttribute('aria-checked', 'false')
@@ -99,18 +96,6 @@ describe('TapSoundsToggle', () => {
     expect(screen.getByRole('switch')).toHaveAttribute('type', 'button')
   })
 
-  // --- Step D2: it has no way to be locked (R5a) ----------------------------
-
-  /**
-   * R5a made structural rather than defaulted: the switch is a durable
-   * preference, not a record of how the day was played, and the guess card is
-   * the only place it can be changed — so it stays live once the day ends.
-   *
-   * A default of `false` would be one prop away from being locked by a later
-   * edit, so the rule asserted here is that the prop *cannot exist*. That is a
-   * fact about the source rather than about a render, so it is read from disk
-   * the way `structure.test.ts` reads `PlayControl`'s prop list.
-   */
   it('declares no way to be locked, so a later edit cannot lock it (R5a)', () => {
     const source = readFileSync(
       join(

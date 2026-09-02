@@ -14,8 +14,6 @@ import { GROOVES } from '../../data/grooves.generated'
 const POOL = flavourPool(GROOVES)
 
 describe('rootMidiOf', () => {
-  // R1: every lick is rooted on the day's root, in the octave the reference
-  // notes already occupy, so C4 is the floor and B4 the ceiling.
   it('puts a root in the reference octave', () => {
     expect(rootMidiOf('C')).toBe(60)
     expect(rootMidiOf('E♭')).toBe(63)
@@ -34,8 +32,6 @@ describe('rootMidiOf', () => {
 })
 
 describe('degreeSemitones', () => {
-  // R5, R6: the degree is an index into the mode's own table, which is what
-  // makes one written phrase sound different in each of the twelve.
   it('resolves a degree through the mode that is playing', () => {
     expect(degreeSemitones('Lydian', 3)).toBe(6)
     expect(degreeSemitones('Ionian', 3)).toBe(5)
@@ -58,7 +54,6 @@ describe('degreeSemitones', () => {
 })
 
 describe('scheduleLick', () => {
-  // AC5, AC10: the phrase as written, resolved against one root and one tempo.
   it('turns a lick, a root and a tempo into the notes to schedule', () => {
     const notes = scheduleLick({ flavour: 'Lydian', root: 'C', bpm: 120 })
     expect(notes).toHaveLength(LICKS.Lydian.length)
@@ -71,8 +66,6 @@ describe('scheduleLick', () => {
     })
   })
 
-  // AC10: the same phrase at the catalogue's slowest and fastest tempo — same
-  // pitches, times in proportion.
   it.each(POOL)('scales %s with the tempo, pitch for pitch', (flavour) => {
     const slow = scheduleLick({ flavour, root: 'F', bpm: 67 })
     const fast = scheduleLick({ flavour, root: 'F', bpm: 130 })
@@ -84,8 +77,6 @@ describe('scheduleLick', () => {
     })
   })
 
-  // R26: the render provides C4–B5 and nothing else, so a phrase that reaches
-  // past it is a phrase with no file behind it.
   it('stays inside the rendered range, from every root', () => {
     for (const flavour of POOL) {
       for (const root of ROOTS) {
@@ -97,7 +88,6 @@ describe('scheduleLick', () => {
     }
   })
 
-  // AC5: from one root, no two modes produce the same pitches.
   it('gives twelve different sequences of pitches from one root', () => {
     const sequences = POOL.map((flavour) =>
       JSON.stringify(scheduleLick({ flavour, root: 'C', bpm: 100 }).map((n) => n.midi)),
@@ -106,8 +96,6 @@ describe('scheduleLick', () => {
     expect(new Set(sequences).size).toBe(12)
   })
 
-  // R20: a mode with no phrase, and a tempo that makes no sense, are both
-  // silence — this is reached from a click handler.
   it('is silence, not a throw, when there is nothing to play', () => {
     expect(scheduleLick({ flavour: 'Locrian', root: 'C', bpm: 100 })).toEqual([])
     expect(scheduleLick({ flavour: 'Lydian', root: 'C', bpm: 0 })).toEqual([])

@@ -4,16 +4,6 @@ import userEvent from '@testing-library/user-event'
 import { ShareGroove } from './ShareGroove'
 import type { Groove } from '../../types'
 
-/**
- * The control that hands the player this groove's link (F12 E2, Steps C1–C3).
- *
- * Both browser capabilities are injected — `deps` and `origin` are props — so
- * nothing here shims `navigator` or `window.location`, and every one of the four
- * outcomes is reachable by passing a different pair of functions. The decision
- * itself is `lib/share/share.ts`'s and is tested there; what is under test here
- * is only what the player sees for each outcome.
- */
-
 const GROOVE: Groove = {
   id: 'groove-07',
   uuid: '61607a6c-3f9e-4fd7-9724-99ea22d32e4a',
@@ -35,7 +25,6 @@ const LINK = `${ORIGIN}/groove/${GROOVE.uuid}`
 const shareControl = () => screen.getByRole('button', { name: 'Share' })
 const liveRegion = () => document.querySelector('[aria-live="polite"]')
 
-/** Let the awaited share decision settle and the state it sets paint. */
 async function settle() {
   await act(async () => {
     await Promise.resolve()
@@ -43,16 +32,6 @@ async function settle() {
   })
 }
 
-/**
- * Press the control under fake timers.
- *
- * `fireEvent` rather than `userEvent` in the three tests below, and only there:
- * `userEvent` schedules waits of its own on the timers being faked, and the two
- * deadlock. What those tests are about is the *clock* — a confirmation that
- * clears itself two seconds later — and the press is incidental. That the
- * control answers to a real keyboard is asserted separately, on real timers,
- * which is where an assertion about keyboard operation belongs anyway.
- */
 async function press() {
   await act(async () => {
     fireEvent.click(shareControl())
@@ -65,8 +44,6 @@ afterEach(() => {
 })
 
 describe('ShareGroove (F12 E2)', () => {
-  // --- Step C1 — pressing share offers this groove's link ------------------
-
   it("offers this groove's link, and the same one every time (R3, R8, AC2)", async () => {
     const share = vi.fn().mockResolvedValue(undefined)
     const user = userEvent.setup()
@@ -81,7 +58,6 @@ describe('ShareGroove (F12 E2)', () => {
     await user.click(shareControl())
     await settle()
 
-    // Same groove, same link — the second press is not a new URL.
     expect(share).toHaveBeenCalledTimes(2)
     expect(share.mock.calls[1][0]).toEqual({ url: LINK })
   })
@@ -117,8 +93,6 @@ describe('ShareGroove (F12 E2)', () => {
     await user.click(shareControl())
     await settle()
 
-    // The origin is read at press time, not at render: a page rendered on the
-    // server has none.
     expect(share).toHaveBeenCalledWith({
       url: `${window.location.origin}/groove/${GROOVE.uuid}`,
     })
@@ -132,24 +106,18 @@ describe('ShareGroove (F12 E2)', () => {
     await user.click(shareControl())
     await settle()
 
-    // The sheet opening is the confirmation.
     expect(screen.queryByText('Link copied')).toBeNull()
     expect(screen.queryByText(LINK)).toBeNull()
     expect(screen.queryByRole('alert')).toBeNull()
   })
-
-  // --- Step C2 — copying confirms itself, and the confirmation clears ------
 
   it('copies the link from the keyboard alone, and announces it (R6, R14, AC5, AC9)', async () => {
     const user = userEvent.setup()
     const write = vi.fn().mockResolvedValue(undefined)
     render(<ShareGroove groove={GROOVE} origin={ORIGIN} deps={{ write }} />)
 
-    // The live region is on the page before there is anything to say, which is
-    // what lets a screen reader announce the change rather than a new node.
     expect(liveRegion()).not.toBeNull()
 
-    // Keyboard only: tab to it and press Enter (AC9).
     await user.tab()
     expect(shareControl()).toHaveFocus()
     await user.keyboard('{Enter}')
@@ -159,7 +127,6 @@ describe('ShareGroove (F12 E2)', () => {
     const confirmation = screen.getByText('Link copied')
     expect(confirmation.closest('[aria-live="polite"]')).not.toBeNull()
 
-    // Still focused, still named the same, and it answers again.
     expect(shareControl()).toHaveFocus()
     expect(shareControl()).toHaveAccessibleName('Share')
     await user.keyboard('{Enter}')
@@ -180,7 +147,6 @@ describe('ShareGroove (F12 E2)', () => {
     })
 
     expect(screen.queryByText('Link copied')).toBeNull()
-    // The live region stays on the page, empty, ready to say it again.
     expect(liveRegion()).not.toBeNull()
     expect(shareControl()).toBeInTheDocument()
 
@@ -200,11 +166,8 @@ describe('ShareGroove (F12 E2)', () => {
 
     view.unmount()
 
-    // The pending clear is cancelled, so nothing sets state on a gone tree.
     expect(vi.getTimerCount()).toBe(0)
   })
-
-  // --- Step C3 — the last resort shows the URL -----------------------------
 
   it('hands the URL over when the clipboard refuses (R11, R13, AC6)', async () => {
     const user = userEvent.setup()
@@ -216,10 +179,7 @@ describe('ShareGroove (F12 E2)', () => {
 
     const shown = screen.getByText(LINK)
     expect(shown).toBeInTheDocument()
-    // Selectable by construction: one click takes the whole URL, because the
-    // player has to copy it by hand.
     expect(shown.className).toContain('select-all')
-    // A link the player can still copy is not an error (R13).
     expect(screen.queryByRole('alert')).toBeNull()
   })
 
@@ -245,11 +205,8 @@ describe('ShareGroove (F12 E2)', () => {
       vi.advanceTimersByTime(10_000)
     })
 
-    // It persists: a confirmation may vanish, a link you have to read may not.
     expect(screen.getByText(LINK)).toBeInTheDocument()
   })
-
-  // --- The dismissed sheet, which is not a failure -------------------------
 
   it('says nothing at all when the sheet is dismissed (R12, AC7)', async () => {
     const user = userEvent.setup()
@@ -267,17 +224,13 @@ describe('ShareGroove (F12 E2)', () => {
     expect(screen.queryByRole('alert')).toBeNull()
     expect(screen.queryByText('Link copied')).toBeNull()
     expect(screen.queryByText(LINK)).toBeNull()
-    // Nothing was copied behind the player's back, either.
     expect(write).not.toHaveBeenCalled()
 
-    // And the control is back at rest, ready to be pressed again.
     expect(shareControl()).toBeEnabled()
     await user.click(shareControl())
     await settle()
     expect(share).toHaveBeenCalledTimes(2)
   })
-
-  // --- The label, which never changes (R2) --------------------------------
 
   it('says "Share" whatever has just happened (R2, AC1)', async () => {
     const user = userEvent.setup()
@@ -287,8 +240,6 @@ describe('ShareGroove (F12 E2)', () => {
     await user.click(shareControl())
     await settle()
 
-    // After the URL has been handed over, the control still says the one thing
-    // it does.
     expect(shareControl()).toHaveAccessibleName('Share')
   })
 })

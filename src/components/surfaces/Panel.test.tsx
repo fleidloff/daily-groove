@@ -63,9 +63,6 @@ describe('PanelColumns', () => {
     const { container } = render(<PanelColumns>Alpha</PanelColumns>)
     const root = container.firstElementChild as HTMLElement
 
-    // Every multi-column declaration must carry a breakpoint prefix, so the
-    // stacked case is the default rather than something a narrow viewport
-    // has to undo.
     const multi = root.className
       .split(' ')
       .filter((token) => /grid-cols-([2-9]|1[0-2])$/.test(token))

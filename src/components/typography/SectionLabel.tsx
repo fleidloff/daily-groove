@@ -6,11 +6,6 @@ type SectionLabelProps = {
   action?: ReactNode
 }
 
-/**
- * A section heading in eyebrow form, with an optional node — a link, a count —
- * pushed to the far side of the row. With no action the row still holds the
- * label alone, so a section can gain one later without a layout change.
- */
 export function SectionLabel({ children, action }: SectionLabelProps) {
   return (
     <div className="flex items-baseline justify-between gap-4">

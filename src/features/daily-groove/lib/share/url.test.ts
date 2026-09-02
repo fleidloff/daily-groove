@@ -2,12 +2,6 @@ import { describe, expect, it } from 'vitest'
 import { GROOVES } from '../../data/grooves.generated'
 import { GROOVE_PATH, grooveHref, shareUrlOf } from './url'
 
-/**
- * Feature-12, Epic 1, Step B2 — R12; AC14.
- *
- * The groove is taken from the committed manifest rather than hand-made, so the
- * uuid under test is the one a real link would carry.
- */
 const groove = GROOVES[0]
 
 describe('GROOVE_PATH', () => {
@@ -65,15 +59,11 @@ describe('shareUrlOf', () => {
     for (const entry of GROOVES) {
       const url = shareUrlOf(entry, 'https://example.test')
 
-      // Positively: the whole URL is the origin, the path and the uuid.
       expect(url, entry.id).toBe(`https://example.test/groove/${entry.uuid}`)
       expect(url, entry.id).toMatch(
         /^https:\/\/example\.test\/groove\/[0-9a-f-]{36}$/,
       )
 
-      // And so it can name none of the things the puzzle asks the player for.
-      // Case-sensitive: the manifest capitalises all five, while the URL is
-      // lowercase hex, so a hex run inside the uuid cannot be a false hit.
       expect(url, entry.id).not.toContain(entry.root)
       expect(url, entry.id).not.toContain(entry.flavour)
       expect(url, entry.id).not.toContain(entry.scale)

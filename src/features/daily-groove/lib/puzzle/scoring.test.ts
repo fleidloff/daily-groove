@@ -139,7 +139,6 @@ describe('the flavour matcher', () => {
       )
       expect(attempt.correct).toBe(false)
       expect(attempt.flavourMatched).toBe(false)
-      // The root half is still reported, so the feedback line can say so.
       expect(attempt.rootMatched).toBe(true)
     })
 

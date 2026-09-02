@@ -14,7 +14,6 @@ const GAP: Record<Space, string> = {
   xl: 'gap-10',
 }
 
-/** Vertical flow. Spacing comes from the token scale, never from the caller. */
 export function Stack({ children, gap }: StackProps) {
   return <div className={`flex flex-col ${GAP[gap]}`}>{children}</div>
 }

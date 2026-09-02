@@ -6,17 +6,12 @@ import {
 } from './context'
 import { installFakeAudioContext } from '../../testing/fakeAudioContext'
 
-/**
- * The context is a module-level singleton, so every test here has to hand it
- * back: `releaseAudioContext()` is the only reason that function exists.
- */
 afterEach(async () => {
   await releaseAudioContext()
   vi.unstubAllGlobals()
   vi.restoreAllMocks()
 })
 
-// Step C1 — R14, R15, AC12: one context, built on first use and not before.
 describe('sharedAudioContext', () => {
   it('constructs nothing until it is asked for one (R15, AC12)', () => {
     const fake = installFakeAudioContext()

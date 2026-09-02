@@ -7,12 +7,6 @@ import type { GrooveSpec } from './types.ts'
 import { backfillUuids } from './uuid-cli.ts'
 import { isCanonicalUuid } from './uuid.ts'
 
-/**
- * Feature-12, Epic 1, Step A4. The backfill is committed rather than deleted
- * after its one run, so it is tested like anything else that ships: it fills the
- * gaps, it reports what it did, and it is safe to run again.
- */
-
 const dirs: string[] = []
 
 afterEach(() => {

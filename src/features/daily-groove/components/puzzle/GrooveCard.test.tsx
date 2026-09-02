@@ -28,15 +28,8 @@ const GROOVE: Groove = {
   headDelaySeconds: 0.025057,
 }
 
-/** The same groove at the tempo most of the assertions below read back. */
 const GROOVE_105: Groove = { ...GROOVE, bpm: 105 }
 
-/**
- * The finished meta line, composed exactly as `GroovePuzzleView` composes it
- * (F12 E3 Step A2). The card no longer decides this line — it is handed the
- * string — so the assertions below go through `metaLine` rather than a literal,
- * and the rendered line they were always about stays their subject.
- */
 const metaFor = (groove: Groove) => metaLine(groove, DAY)
 
 describe('GrooveCard', () => {
@@ -91,20 +84,9 @@ describe('GrooveCard', () => {
     const { container } = render(
       <GrooveCard groove={GROOVE} meta={metaFor(GROOVE)} />,
     )
-    // The canvas' "No. 214 · 4 bars · loops forever" is dropped, not filled.
     expect(screen.queryByText(/No\.|bars|loops/)).not.toBeInTheDocument()
     expect(container.textContent ?? '').not.toMatch(/No\.|bars|loops/)
   })
-
-  // F11 — the answer joins the meta line once the day is over. The payoff panel
-  // names it too, but it is a separate card that scrolls away from the transport
-  // — beside this one since F15 E5, below it on a phone — while you play along;
-  // the card that is playing should say what you are playing over.
-  //
-  // Since F12 E3 the card is handed the finished line, so *where* the answer
-  // sits in it is `metaLine`'s subject and is asserted in
-  // `lib/presentation/date.test.ts`. What stays the card's subject is that it
-  // renders the line whole, and puts none of it in the heading.
 
   it('renders a line carrying the answer exactly as it was composed', () => {
     render(
@@ -114,7 +96,6 @@ describe('GrooveCard', () => {
       />,
     )
 
-    // One node, the composed string verbatim — the order is metaLine's to set.
     expect(
       screen.getByText('105 bpm · C Mixolydian · Sunday, 30 August'),
     ).toBeInTheDocument()
@@ -142,8 +123,6 @@ describe('GrooveCard', () => {
   it('repeats the day beside the tempo, in one muted line', () => {
     render(<GrooveCard groove={GROOVE_105} meta={metaFor(GROOVE_105)} />)
 
-    // One node, not two: the tempo and the day read as a single meta line
-    // under the name, the way a lead sheet heads a chart.
     expect(
       screen.getByText('105 bpm · Sunday, 30 August'),
     ).toBeInTheDocument()
@@ -152,11 +131,6 @@ describe('GrooveCard', () => {
   it('writes the day exactly as the page header writes it', () => {
     render(<GrooveCard groove={GROOVE} meta={metaFor(GROOVE)} />)
 
-    // The line the card is handed comes from `metaLine`, which composes
-    // `dateLine` — the same function the header writes the day with, so the two
-    // cannot drift into different spellings of the same day. Asserting the
-    // shared output rather than a literal is what makes that a guarantee
-    // rather than a coincidence.
     expect(
       screen.getByText(new RegExp(dateLine(DAY).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))),
     ).toBeInTheDocument()
@@ -171,11 +145,7 @@ describe('GrooveCard', () => {
     expect(screen.getByText('transport goes here')).toBeInTheDocument()
   })
 
-  // --- F12 Epic 3, Step A2: the card renders the line it is given -----------
-
   it('renders whatever meta line it is handed, verbatim (F12 E3 R1a, R4, AC11)', () => {
-    // The shared page's line, as `GroovePuzzleView` composes it. The card is
-    // the same card: only the string differs.
     const { rerender } = render(
       <GrooveCard groove={GROOVE_105} meta={metaLine(GROOVE_105, null)} />,
     )
@@ -200,16 +170,6 @@ describe('GrooveCard', () => {
   })
 
   it('branches on nothing about which page renders it (F12 E3 R4, AC3)', () => {
-    // Read from the source, because the rule is about what the card no longer
-    // decides, not about what it draws: the day, the words "shared groove" and
-    // the mode the page is in are all things it is now simply handed.
-    //
-    // Comments are blanked first, on the same reasoning as the retirement guard
-    // in `lib/theory/music.test.ts`: the rule is about what the code does, not
-    // how it is described, and the card's own doc comment has to be free to
-    // explain which page's line it is handed without tripping the assertion.
-    // Every shape being looked for — an import, a call, a type annotation —
-    // survives the blanking.
     const source = readFileSync(
       join(process.cwd(), 'src/features/daily-groove/components/puzzle/GrooveCard.tsx'),
       'utf8',
@@ -223,12 +183,6 @@ describe('GrooveCard', () => {
   })
 })
 
-/**
- * Relocated from `src/app/page.test.tsx` (Epic 3, Step C2). These assert the
- * card as the page composes it, against the groove the day actually selects,
- * so they keep the composed render they were written against rather than a
- * hand-made prop.
- */
 describe('through the composed page', () => {
   it("shows today's groove card", async () => {
     await renderFeature();

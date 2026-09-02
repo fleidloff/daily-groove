@@ -9,8 +9,6 @@ const GROUPS = ['controls', 'display', 'layout', 'surfaces', 'typography']
 const COMPONENTS: Record<string, string[]> = {
   layout: ['Container', 'PageShell', 'Row', 'Stack', 'LabelledColumn'],
   surfaces: ['Card', 'Panel'],
-  // `Switch` joined in F16 Epic 2, Step B6: the guess card's two toggles are
-  // one control with different words, so the treatment lives here once.
   controls: ['Button', 'Chip', 'ChipGroup', 'InlineButton', 'PlayControl', 'Switch'],
   typography: ['Heading', 'Text', 'EyebrowLabel', 'SectionLabel', 'Lettering'],
   display: ['Pill', 'ProgressTrack'],
@@ -26,7 +24,6 @@ function walk(dir: string): string[] {
 const allFiles = walk(componentsDir)
 const sourceFiles = allFiles.filter((f) => /\.tsx?$/.test(f))
 
-/** Every `from '…'` and `import('…')` specifier in a source file. */
 function importSpecifiers(source: string): string[] {
   const specifiers: string[] = []
   const patterns = [
@@ -41,7 +38,6 @@ function importSpecifiers(source: string): string[] {
 }
 
 describe('design system structure', () => {
-  // Step A1 — R3, AC2
   it('has no barrel files', () => {
     const barrels = allFiles
       .filter((f) => /(^|\/)index\.tsx?$/.test(f))
@@ -50,7 +46,6 @@ describe('design system structure', () => {
     expect(barrels).toEqual([])
   })
 
-  // Step A2 — R1, R2, AC1
   it('contains exactly the five role folders plus tokens.ts', () => {
     const entries = readdirSync(componentsDir, { withFileTypes: true })
 
@@ -60,8 +55,6 @@ describe('design system structure', () => {
       .sort()
     expect(directories).toEqual(GROUPS)
 
-    // Structural tests are the only test files allowed to sit at the root;
-    // no component or its test may.
     const files = entries
       .filter((entry) => entry.isFile() && !/\.test\.tsx?$/.test(entry.name))
       .map((entry) => entry.name)
@@ -69,7 +62,6 @@ describe('design system structure', () => {
     expect(files).toEqual(['tokens.ts'])
   })
 
-  // Step A2 — R1, AC1
   it('places every component in its role folder beside its own test', () => {
     const missing: string[] = []
 
@@ -85,11 +77,7 @@ describe('design system structure', () => {
     expect(missing).toEqual([])
   })
 
-  // Step D2, D3 — R7, R10, AC8
   it('has no component file its role folder does not list', () => {
-    // The converse of the assertion above. Without it a deletion is not
-    // provable: dropping a name from COMPONENTS while the file stays on disk
-    // would leave every assertion green.
     const unlisted: string[] = []
 
     for (const [group, names] of Object.entries(COMPONENTS)) {
@@ -106,16 +94,6 @@ describe('design system structure', () => {
     expect(unlisted.sort()).toEqual([])
   })
 
-  // Step D1 — R9, AC8a
-  // Step D1 widened by Epic 2 Step C1 — R7a, AC8b: `busy` joins them, because
-  // the page has a pending press to report. The rule is unchanged — a prop no
-  // caller can reach does not survive — so the list stays exact.
-  // feature-8 Epic 2, Step B4 — R3, R4, AC10: the rule is about *reachable
-  // props*, which the exact list below enforces on its own. The old blanket ban
-  // on the word `size` was only a proxy for it. The control now asks `Button`
-  // for the large size, and that is the control's own choice, not a knob a
-  // caller turns — so the ban narrows to a `size` prop, and the choice is
-  // pinned instead.
   it('gives PlayControl only the four props its one caller can reach', () => {
     const source = readFileSync(join(componentsDir, 'controls/PlayControl.tsx'), 'utf8')
 
@@ -127,18 +105,12 @@ describe('design system structure', () => {
     )
     expect(props).toEqual(['isPlaying', 'onToggle', 'busy', 'text'])
 
-    // The `size` *prop* is gone, and with it the branch that rendered
-    // `IconButton`. What survives is the control naming its own size on the
-    // `Button` it renders.
     expect(source).not.toContain('PlayControlSize')
     expect(source).not.toContain('IconButton')
     expect(source).not.toMatch(/^\s{2}size\??:/m)
     expect(source).toContain('size="lg"')
   })
 
-  // feature-7 Epic 3, Step C2 — R2, AC1. The dot row's explanation is carried
-  // by its own `aria-label` and a native `title`, so the epic adds no
-  // design-system primitive to deliver it.
   it('has no tooltip component', () => {
     const tooltips = allFiles
       .map((f) => f.slice(componentsDir.length + 1))
@@ -147,15 +119,6 @@ describe('design system structure', () => {
     expect(tooltips).toEqual([])
   })
 
-  // Epic 2 Step A2 — R1c, AC12: `InlineButton` is listed above, so the two
-  // assertions either side of this comment already cover it — it must sit in
-  // `controls/` beside its own test, and it may climb out of no folder. The
-  // other half of AC12, "its source names nothing from `src/features`", is
-  // owned repo-wide by guard I2 in `src/app/globals.test.ts`, which reads every
-  // design-system file from disk. A local copy here would be a worse second
-  // copy of that guard, so there is none.
-
-  // Step A3 — R10, AC8
   it('has no import that climbs out of its own folder', () => {
     const offenders: string[] = []
 

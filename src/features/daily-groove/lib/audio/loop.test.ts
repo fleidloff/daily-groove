@@ -3,12 +3,9 @@ import { deriveLoopWindow, loopPosition } from './loop'
 import { GROOVES } from '../../data/grooves.generated'
 import { loopSecondsOf } from '../theory/music'
 
-/** One sample at 44.1kHz — tighter than any error this epic is fixing. */
 const ONE_SAMPLE = 1 / 44100
 
 describe('deriveLoopWindow', () => {
-  // Step A1 — R4, AC5: the window starts at the groove's own measured head
-  // delay, not at a constant shared across the catalogue.
   it('starts the window at the head delay it was given (R4, AC5)', () => {
     const window = deriveLoopWindow(0.025057, 9.142857, 9.16898)
 
@@ -23,7 +20,6 @@ describe('deriveLoopWindow', () => {
     expect(window.loopEnd).toBeCloseTo(10.05, 6)
   })
 
-  // Step A2 — R4, AC5: a window is clamped to the buffer it sits in.
   it('drops a head delay that does not fit inside the buffer to 0 (R4)', () => {
     const window = deriveLoopWindow(12, 4, 9.16898)
 
@@ -43,8 +39,6 @@ describe('deriveLoopWindow', () => {
     expect(window.loopEnd).toBeGreaterThanOrEqual(window.loopStart)
   })
 
-  // Step A3 — R1, AC1: every groove in the catalogue gets a window exactly its
-  // own musical length, with no added silence at the loop point.
   describe('across the whole catalogue (R1, AC1)', () => {
     it('has a groove to check', () => {
       expect(GROOVES.length).toBeGreaterThan(0)
@@ -68,7 +62,6 @@ describe('deriveLoopWindow', () => {
 })
 
 describe('loopPosition', () => {
-  // Step A4 — R2, AC2, AC3: elapsed seconds wrap inside the loop.
   it('maps elapsed seconds onto 0..1 of the loop (R2, AC3)', () => {
     expect(loopPosition(2.5, 10)).toBeCloseTo(0.25, 9)
   })

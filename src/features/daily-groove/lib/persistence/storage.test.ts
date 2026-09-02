@@ -94,8 +94,6 @@ describe('createLocalStore', () => {
     })
   })
 
-  // --- Epic 5: the groove a day played --------------------------------------
-
   describe('the groove id a day played (E5 R7, R8)', () => {
     const withId: DailyResult = { ...resultA, grooveId: 'groove-07' }
 
@@ -121,7 +119,6 @@ describe('createLocalStore', () => {
     })
 
     it('loads a record written without a groove id, every other field intact (E5 R8, AC8, AC9)', async () => {
-      // A v2 envelope written by hand, exactly as a pre-Epic-5 session left it.
       const legacy = {
         date: '2026-08-19',
         answer: { root: 'B\u266d', flavour: 'Lydian' },
@@ -222,12 +219,6 @@ describe('createLocalStore', () => {
   })
 })
 
-/**
- * The seam a shared groove is played through (F12 E1 R18, AC9). Reads pass
- * through untouched — the streak the header shows has to stay honest — and the
- * write path is simply gone, so a shared session cannot record a day even by
- * accident.
- */
 describe('createReadOnlyStore', () => {
   function fakeStore(): ResultStore {
     return {
@@ -237,36 +228,20 @@ describe('createReadOnlyStore', () => {
     }
   }
 
-  /**
-   * `get` answers "what has been played on this date", and on a shared groove
-   * the answer is always nothing — so it does NOT delegate.
-   *
-   * The tech spec's Step C1 asked for a delegating `get`, and that is the one
-   * place it is wrong about its own PRD: today's saved record describes a
-   * different groove, scored against a different answer. Delegating would open a
-   * shared link that had arrived after the daily was solved as *already solved*,
-   * with an attempt row belonging to another puzzle. R21 and AC11 are explicit
-   * that a shared groove opens fresh every visit.
-   */
   it('answers nothing for any date, whatever the inner store holds (R21, AC11)', async () => {
     const inner = fakeStore()
     const store = createReadOnlyStore(inner)
 
     expect(await store.get('2026-08-21')).toBeNull()
     expect(await store.get('1999-01-01')).toBeNull()
-    // Not consulted at all: there is no date on which a shared groove has a
-    // record to restore.
     expect(inner.get).not.toHaveBeenCalled()
   })
 
   it('reports that it persists nothing, so no caller holds its records (R19, AC9)', () => {
     expect(createReadOnlyStore(fakeStore()).persists).toBe(false)
-    // The stores that do write leave the marker absent rather than `true`.
     expect(createLocalStore().persists).toBeUndefined()
   })
 
-  // `getAll` is the asymmetric half: the streak on a shared page is the
-  // player's real one, so every saved record still reaches the derivation.
   it('delegates getAll to the inner store and returns its value (R19, AC9)', async () => {
     const inner = fakeStore()
     const store = createReadOnlyStore(inner)
@@ -291,7 +266,6 @@ describe('createReadOnlyStore', () => {
     await store.save(resultB)
 
     expect(inner.save).not.toHaveBeenCalled()
-    // The reads still answer with what the inner store holds.
     expect(await store.getAll()).toEqual([resultA, resultB])
   })
 })

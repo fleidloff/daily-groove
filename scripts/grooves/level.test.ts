@@ -12,7 +12,6 @@ function constantPcm(value: number, frames = 1000): Pcm {
 
 describe('rmsDbfs', () => {
   it('measures a constant buffer at its own level', () => {
-    // A constant 0.5 is exactly half full scale, which is -6.02 dBFS.
     expect(rmsDbfs(constantPcm(0.5))).toBeCloseTo(-6.02, 2)
     expect(rmsDbfs(constantPcm(1))).toBeCloseTo(0, 6)
   })
@@ -57,8 +56,6 @@ describe('voiceLevels', () => {
   })
 
   it('reports a silent voice rather than omitting it', () => {
-    // A voice absent from the arrangement and a voice present but inaudible are
-    // different findings; the second is the one worth acting on.
     const levels = voiceLevels([{ voice: 'bongoHigh', pcm: constantPcm(0) }])
     expect(levels.has('bongoHigh')).toBe(true)
     expect(levels.get('bongoHigh')).toBe(Number.NEGATIVE_INFINITY)

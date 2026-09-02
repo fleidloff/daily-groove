@@ -12,20 +12,10 @@ describe('dateLine', () => {
   })
 
   it('is pinned to en-GB wording, not the runtime locale', () => {
-    // Day before month with no ordinal suffix is what distinguishes en-GB
-    // from en-US here; a US format would read "August 30".
     expect(dateLine(new Date(2026, 7, 30))).toMatch(/^\w+, \d{1,2} \w+$/)
   })
 })
 
-/**
- * The groove card's meta line (F12 E3 R1a, R4, AC11).
- *
- * It is composed here rather than in the card, so the two pages that render the
- * same card differ in *data* — the finished string — rather than in logic. The
- * card branches on nothing, and this function is the one place that knows a
- * shared groove belongs to no day.
- */
 describe('metaLine', () => {
   const GROOVE: Groove = {
     id: 'groove-01',
@@ -49,8 +39,6 @@ describe('metaLine', () => {
   })
 
   it('spells the day exactly as dateLine spells it', () => {
-    // The header writes the same day through `dateLine`. Asserting the shared
-    // output rather than a second literal is what stops the two drifting.
     const day = new Date(2026, 7, 31)
     expect(metaLine(GROOVE, day)).toBe(`96 bpm · ${dateLine(day)}`)
   })
@@ -60,8 +48,6 @@ describe('metaLine', () => {
   })
 
   it('shows no date at all on a shared groove', () => {
-    // The whole point of R1a: today's date here would be the exact confusion
-    // this line exists to prevent.
     const line = metaLine(GROOVE, null)
     expect(line).not.toMatch(/\d{1,2} [A-Z][a-z]+/)
     expect(line).not.toMatch(
@@ -69,15 +55,6 @@ describe('metaLine', () => {
     )
   })
 
-  /**
-   * Where the answer sits, once the day is over.
-   *
-   * This is `metaLine`'s subject rather than `GrooveCard`'s, because the card is
-   * handed one finished string and branches on nothing. It sits between the
-   * tempo and the day — where feature-11 put it — and it must keep sitting
-   * there: the daily page's copy is not allowed to move to make room for the
-   * shared page's (F12 E3, "Out of scope: any change to /").
-   */
   const ANSWER = { root: 'C' as const, flavour: 'Mixolydian' }
 
   it('puts the answer between the tempo and the day, once there is one', () => {
@@ -94,8 +71,6 @@ describe('metaLine', () => {
 
   it('omits it entirely while the day is still on', () => {
     const day = new Date(2026, 7, 30)
-    // `null` and no argument at all must read the same: the root and the mode
-    // are the puzzle until the day ends.
     expect(metaLine(GROOVE, day, null)).toBe('96 bpm · Sunday, 30 August')
     expect(metaLine(GROOVE, day)).toBe('96 bpm · Sunday, 30 August')
     expect(metaLine(GROOVE, null)).toBe('96 bpm · shared groove')

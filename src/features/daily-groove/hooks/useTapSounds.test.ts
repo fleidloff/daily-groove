@@ -3,7 +3,6 @@ import { renderHook, act, waitFor } from '@testing-library/react'
 import type { PreferenceStore, Preferences } from '../lib/persistence/preferences'
 import { useTapSounds } from './useTapSounds'
 
-/** An in-memory `PreferenceStore` whose saved value the test can read back. */
 function makeStore(
   initial: Preferences = { simpleMode: false, tapSounds: true },
 ) {

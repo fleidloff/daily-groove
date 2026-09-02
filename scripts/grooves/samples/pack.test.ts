@@ -16,12 +16,10 @@ const provenance = JSON.parse(readFileSync(join(HERE, 'provenance.json'), 'utf8'
     sourceFile: string
     url: string
     licence: string
-    /** Required on every non-CC0 row: the credit its licence obliges us to carry. */
     attribution?: string
   }[]
 }
 
-/** Every audio file physically present in the pack, relative to samples/. */
 function audioFiles(dir = HERE, prefix = ''): string[] {
   const out: string[] = []
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
@@ -32,7 +30,6 @@ function audioFiles(dir = HERE, prefix = ''): string[] {
   return out
 }
 
-/** Every file the declaration references. */
 function declaredFiles(): string[] {
   const out: string[] = []
   for (const voice of Object.values(decl.voices)) {
@@ -50,16 +47,11 @@ const DRUM_VOICES: VoiceName[] = [
   'hatClosed',
   'hatOpen',
   'rim',
-  // Epic 5's toms play only in a fill, but they are stocked, layered and
-  // round-robined under exactly the same rules as the voices that play in
-  // every bar — a fill that repeats one sample three times is the machine-gun
-  // artefact these rules exist to prevent.
   'tomHigh',
   'tomLow',
 ]
 const PITCHED_VOICES: VoiceName[] = ['bass', 'comp']
 
-// Step D1
 describe('the pack declares itself', () => {
   it('parses as a PackDeclaration with an id and a sample rate', () => {
     expect(typeof decl.id).toBe('string')
@@ -114,7 +106,6 @@ describe('the pack declares itself', () => {
   })
 })
 
-// Step D2 — AC11
 describe('every sample is CC0 and accounted for', () => {
   const ALLOWED = ['CC0', 'public-domain', 'CC-BY-4.0']
 
@@ -148,13 +139,6 @@ describe('every sample is CC0 and accounted for', () => {
     expect(provenance.licence).toContain('CC-BY-4.0')
   })
 
-  /**
-   * The drums are CC-BY, which unlike CC0 is a licence with an obligation
-   * attached — and the obligation follows the *rendered grooves*, not just the
-   * source files, because a groove is a derivative work of the samples it is
-   * built from. So a CC-BY row without the attribution text is a row that
-   * cannot legally ship, and that is worth a test rather than a convention.
-   */
   it('records the required attribution for every sample that is not CC0', () => {
     const attributed = provenance.samples.filter((s) => s.licence !== 'CC0')
     expect(attributed.length, 'no non-CC0 samples to check').toBeGreaterThan(0)
@@ -176,7 +160,6 @@ describe('every sample is CC0 and accounted for', () => {
   })
 })
 
-// Step D3 — AC15
 describe('the pack is stocked for Epic 2', () => {
   it('gives every drum voice either multiple velocity layers or multiple alternates', () => {
     for (const voice of DRUM_VOICES) {
@@ -215,7 +198,6 @@ describe('the pack is stocked for Epic 2', () => {
       const midi = notes.map((n) => n.midi).sort((a, b) => a - b)
       for (let i = 1; i < midi.length; i++) {
         const gap = midi[i] - midi[i - 1]
-        // Nearest-note selection means a gap of g leaves a worst-case shift of floor(g/2).
         expect(
           Math.floor(gap / 2),
           `${voice} has a ${gap}-semitone gap at MIDI ${midi[i - 1]}`,
@@ -224,21 +206,6 @@ describe('the pack is stocked for Epic 2', () => {
     }
   })
 
-  /**
-   * The sampled notes a source records at one velocity only, and which
-   * therefore cannot carry a second layer without one being fabricated.
-   *
-   * VSCO 2 CE recorded the solo contrabass at two velocity groups (`v1`, `v3`)
-   * only below MIDI 41; above it there is a single group. The honest options
-   * were to invent a second layer — by re-levelling a take, or by promoting a
-   * round-robin alternate whose level differs by a take-to-take 0.3–1.8 dB —
-   * or to declare what the library holds. Inventing one would erase exactly
-   * the dynamic information the un-normalised pack exists to carry, so these
-   * three notes are declared with one layer and two round-robin alternates.
-   *
-   * The list is exhaustive on purpose: adding a note here is a decision, and a
-   * new single-velocity note that nobody decided on still fails.
-   */
   const SINGLE_VELOCITY_IN_SOURCE: Partial<Record<VoiceName, number[]>> = {
     bass: [42, 45, 49],
   }

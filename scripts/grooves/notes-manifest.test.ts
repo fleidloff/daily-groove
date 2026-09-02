@@ -15,7 +15,6 @@ afterAll(() => {
   rmSync(dir, { recursive: true, force: true })
 })
 
-/** The source with its block comments removed, so quoting is judged on code. */
 function code(source: string): string {
   return source.replace(/\/\*[\s\S]*?\*\//g, '')
 }
@@ -38,14 +37,6 @@ describe('renderNotesManifest', () => {
     expect(source).toContain('export const PITCHES: PitchSample[] = [')
   })
 
-  /**
-   * `NOTES` is the root row's twelve and `PITCHES` is the sequencer's
-   * twenty-four, and the order matters twice over: `NOTES` must stay first so a
-   * reader meets the row before the range, and — the load-bearing half — it
-   * must stay exactly twelve entries. `lib/audio/reference.ts` builds
-   * `new Map(notes.map((n) => [n.root, n.audioSrc]))`, so a twenty-four-entry
-   * `NOTES` would silently re-key every root to the octave above.
-   */
   it('writes the row twelve first, then the range twenty-four', () => {
     const source = renderNotesManifest(noteSpecs())
     const split = source.indexOf('export const PITCHES: PitchSample[] = [')

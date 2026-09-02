@@ -8,15 +8,12 @@ import type { ChipColumns } from './ChipGroup'
 
 const OPTIONS = ['One', 'Two', 'Three']
 
-// Arbitrary strings on purpose: a primitive is exercised with labels that mean
-// nothing, so the test cannot quietly teach it a domain concept.
 const TWELVE = [
   'One', 'Two', 'Three', 'Four', 'Five', 'Six',
   'Seven', 'Eight', 'Nine', 'Ten', 'Eleven', 'Twelve',
 ]
 const FOUR = ['Alpha', 'Beta', 'Gamma', 'a considerably longer label']
 
-// An arbitrary decorative glyph. What it means is the caller's business.
 const NOTE = '♪'
 
 function renderGroup(overrides: Partial<Parameters<typeof ChipGroup>[0]> = {}) {
@@ -33,7 +30,6 @@ function renderGroup(overrides: Partial<Parameters<typeof ChipGroup>[0]> = {}) {
   return render(<ChipGroup {...props} />)
 }
 
-/** The element the chips are laid out on, by the id the group gives it. */
 function chipList(label = 'Group'): HTMLElement {
   const group = screen.getByRole('radiogroup', { name: label })
   const list = group.querySelector('[data-testid="chip-list"]')
@@ -128,8 +124,6 @@ describe('ChipGroup', () => {
     expect(onSelect).not.toHaveBeenCalled()
   })
 
-  // --- Step A1/A2 — the cell owns the width now (R6, AC7) -------------------
-
   it('passes no width to its chips (R6, AC7)', () => {
     const { container } = renderGroup({ options: TWELVE })
     const chips = [...container.querySelectorAll('button')] as HTMLElement[]
@@ -148,8 +142,6 @@ describe('ChipGroup', () => {
     expect(source).not.toMatch(/^\s*width\??:/m)
   })
 
-  // --- Step A2 — the row is a grid, not a wrapping flex row (R1, R3, AC1) ---
-
   it('lays its chips out on a grid at the base column count (R1, R3, AC1)', () => {
     renderGroup({ options: TWELVE, columns: { base: 4, wide: 6 } })
     const list = chipList()
@@ -162,7 +154,6 @@ describe('ChipGroup', () => {
   it('lets each chip fill its cell rather than hug its label (R3, AC1)', () => {
     const { container } = renderGroup({ options: TWELVE })
 
-    // Nothing on the chip constrains it, so the cell it sits in sets its width.
     for (const chip of [...container.querySelectorAll('button')]) {
       expect(chip.className).not.toMatch(/\bw-\[/)
       expect(chip.className).not.toMatch(/\bmax-w-/)
@@ -177,8 +168,6 @@ describe('ChipGroup', () => {
     expect(list.className).not.toMatch(/\bmin-w-/)
     expect(list.className).not.toMatch(/overflow-x/)
   })
-
-  // --- Step A3 — the count rises above the breakpoint (R2a, AC2, AC3) -------
 
   it('gives a twelve-option group 4 columns, rising to 6 (R2a, AC2)', () => {
     renderGroup({ options: TWELVE, columns: { base: 4, wide: 6 } })
@@ -196,11 +185,6 @@ describe('ChipGroup', () => {
     expect(list.className).toContain('md:grid-cols-4')
   })
 
-  // --- Step A4 — no group leaves a partial row (R2, R2a, AC2, AC3) ---------
-  //
-  // A guard rather than a discovery: it passes as soon as A3 lands, and stands
-  // so a later column change cannot silently strand an orphan row.
-
   it.each([
     { options: 12, columns: { base: 4, wide: 6 } as ChipColumns },
     { options: 4, columns: { base: 2, wide: 4 } as ChipColumns },
@@ -212,8 +196,6 @@ describe('ChipGroup', () => {
     },
   )
 
-  // --- Step A5 — group semantics and tab order survive the grid (R7, AC8) ---
-
   it('renders its chips in the order it was given (R7, AC8)', () => {
     renderGroup({ options: TWELVE, columns: { base: 4, wide: 6 } })
 
@@ -223,11 +205,6 @@ describe('ChipGroup', () => {
     expect(labels).toEqual(TWELVE)
   })
 
-  // --- Step B1 — a group with no adornment is unchanged (R7, AC8) ----------
-  //
-  // The track's regression guard: it passes today, and it is what proves the
-  // pass-through acquired no default of its own.
-
   it('renders each chip as its bare label with no adornment (R7, AC8)', () => {
     renderGroup({ options: FOUR, columns: { base: 2, wide: 4 } })
     const chips = [...chipList().querySelectorAll('button')]
@@ -235,8 +212,6 @@ describe('ChipGroup', () => {
     expect(chips.map((chip) => chip.textContent)).toEqual(FOUR)
     for (const chip of chips) expect(chip.children).toHaveLength(0)
   })
-
-  // --- Step B2 — the group gives its adornment to every chip (R1, R3) ------
 
   it('gives every chip the same adornment (R1, R3)', () => {
     renderGroup({

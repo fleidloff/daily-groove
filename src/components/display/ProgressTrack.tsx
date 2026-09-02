@@ -6,13 +6,6 @@ type ProgressTrackProps = {
 
 const pct = (n: number) => `${Number(n.toFixed(3))}%`
 
-/**
- * A segmented progress bar.
- *
- * The fill and the marks are drawn as SVG rects rather than positioned boxes so
- * that a continuous, caller-supplied value can be expressed through geometry
- * attributes — the design system exposes no inline styling hook to do it with.
- */
 export function ProgressTrack({ value, segments, activeSegment }: ProgressTrackProps) {
   const clamped = Math.min(1, Math.max(0, Number.isFinite(value) ? value : 0))
   const percent = Math.round(clamped * 100)

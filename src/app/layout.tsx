@@ -16,9 +16,6 @@ const dmSans = DM_Sans({
   display: "swap",
 });
 
-// The hand-lettered jazz face the large headings are set in. Self-hosted from
-// the repository (see ./fonts/OFL.txt) so the page asks no third-party host for
-// it. One weight is enough: headings render at font-normal throughout.
 const jazzHand = localFont({
   src: "./fonts/PetalumaScript.woff2",
   variable: "--font-jazz-hand",

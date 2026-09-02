@@ -6,7 +6,6 @@ import type { FeelTemplate, Pcm, Track, VoiceName } from './types.ts'
 
 const SAMPLE_RATE = 44100
 
-/** Fast enough that a whole 5-bar buffer is 220_500 frames: one bar = one second. */
 const BPM = 240
 const BAR_FRAMES = SAMPLE_RATE
 const LOOP_BARS = 4
@@ -75,10 +74,6 @@ function energy(channel: Float32Array, from = 0, to = channel.length): number {
   return sum
 }
 
-/**
- * A voice that is struck three quarters of the way through the loop and is still
- * ringing when bar 5 ends - the cymbal case the overhang exists for.
- */
 function ringingTail(totalFrames: number, startFrame: number): Float32Array {
   const samples = new Float32Array(totalFrames)
   const partials = [
@@ -120,8 +115,6 @@ describe('mixTracks', () => {
 
     const mix = mixTracks(tracks, template())
 
-    // Epic 2 normalises the INTER-SAMPLE peak, so the highest stored sample sits
-    // just under the ceiling rather than exactly on it.
     expect(truePeak(mix)).toBeCloseTo(PEAK_CEILING, 5)
     expect(peak(mix)).toBeLessThanOrEqual(PEAK_CEILING + 1e-6)
   })
@@ -163,7 +156,6 @@ describe('mixTracks', () => {
     expect(Array.from(b.right)).toEqual(Array.from(a.right))
   })
 
-  // Step C1 - R11
   describe('panning', () => {
     it('pushes a hard-panned voice into one channel', () => {
       const tracks = [track('hatClosed', 4000, 3000)]
@@ -201,18 +193,15 @@ describe('mixTracks', () => {
 
       const mix = mixTracks(tracks, template({}, { hatClosed: 0.8, rim: -0.8 }))
 
-      // Both sides carry signal, but the two are no longer identical channels.
       expect(energy(mix.left)).toBeGreaterThan(0)
       expect(energy(mix.right)).toBeGreaterThan(0)
       expect(Array.from(mix.left)).not.toEqual(Array.from(mix.right))
     })
   })
 
-  // Step C2 - R14, R15, AC9
   describe('the overhang wraps onto the start', () => {
     it('folds the fifth bar onto the first and truncates to the loop', () => {
       const samples = new Float32Array(5 * BAR_FRAMES)
-      // Bar 4 is loud, so the ramp stays inside the bus stage's linear region.
       for (let i = 3 * BAR_FRAMES; i < 4 * BAR_FRAMES; i += 1) {
         samples[i] = Math.sin((2 * Math.PI * 100 * i) / SAMPLE_RATE)
       }
@@ -229,9 +218,6 @@ describe('mixTracks', () => {
       expect(mix.left.length).toBe(LOOP_FRAMES)
       expect(mix.right.length).toBe(LOOP_FRAMES)
 
-      // The bus that gets folded is the roomed one - Step D2 puts `applyRoom`
-      // before `wrap`, so bar 1 is what the room made of bar 5, not the dry
-      // bar 5. Fold the same arithmetic here and the two must agree.
       const roomed = Float32Array.from(samples)
       applyRoom(roomed, Float32Array.from(samples), SAMPLE_RATE)
       const folded = (i: number): number => roomed[i] + roomed[i + LOOP_FRAMES]
@@ -241,10 +227,6 @@ describe('mixTracks', () => {
       for (const i of [0, 1000, 10_000, 20_000, 30_000, BAR_FRAMES - 2]) {
         expect(mix.left[i]).toBeCloseTo(master * folded(i), 5)
       }
-      // And bar 5's ramp is still legible in bar 1: it rises across the bar,
-      // which is the assertion this test was written to make. (It no longer
-      // lands on `ramp` exactly, because the room is in the fold with it: a
-      // ramp is very nearly DC, and a comb filter has real gain at DC.)
       let previous = mix.left[0]
       for (const i of [1000, 10_000, 20_000, 30_000, BAR_FRAMES - 2]) {
         expect(mix.left[i]).toBeGreaterThan(previous)
@@ -268,7 +250,6 @@ describe('mixTracks', () => {
     })
   })
 
-  // Step C3 - R12, R13, AC7, AC8
   describe('normalisation', () => {
     it('holds an over-loud mix at the ceiling and below full scale', () => {
       const tracks = [
@@ -302,7 +283,6 @@ describe('mixTracks', () => {
     })
 
     it('measures true peak above the highest stored sample', () => {
-      // Six samples per cycle: no sample ever lands on the crest of this sine.
       const pcm = tone(4000, SAMPLE_RATE / 6, 0.5)
       let stored = 0
       for (let i = 0; i < pcm.left.length; i += 1) stored = Math.max(stored, Math.abs(pcm.left[i]))
@@ -317,12 +297,10 @@ describe('mixTracks', () => {
       const inputCrest = peak(input) / Math.sqrt(energy(input.left) / 4000)
       const outputCrest = peak(mix) / Math.sqrt(energy(mix.left) / mix.left.length)
 
-      // A pure gain change leaves the crest factor untouched; the bus stage does not.
       expect(outputCrest).toBeLessThan(inputCrest * 0.99)
     })
   })
 
-  // Step C4 - R15, AC9
   describe('the seam', () => {
     it('joins the last sample to the first below the seam threshold', () => {
       const samples = ringingTail(5 * BAR_FRAMES, LOOP_FRAMES - BAR_FRAMES / 2)
@@ -353,7 +331,6 @@ describe('mixTracks', () => {
   })
 })
 
-// Step D1 - R11, R12, AC12
 describe('the room', () => {
   function impulse(frames: number): Float32Array {
     const samples = new Float32Array(frames)
@@ -365,7 +342,6 @@ describe('the room', () => {
     return Math.sqrt(energy(channel, from, to) / (to - from))
   }
 
-  /** Four consecutive windows of the tail, 0.1 s to 0.4 s after the impulse. */
   function tailWindows(channel: Float32Array): number[] {
     const width = 0.075
     return [0, 1, 2, 3].map((n) =>
@@ -408,7 +384,6 @@ describe('the room', () => {
 
     applyRoom(left, right, SAMPLE_RATE)
 
-    // Every delay line is longer than this buffer, so nothing has come back yet.
     expect(left[0]).toBe(1)
     expect(right[0]).toBe(1)
     expect(left.length).toBe(64)
@@ -435,15 +410,11 @@ describe('the room', () => {
     const specifiers = [...source.matchAll(/\bfrom\s+['"]([^'"]+)['"]/g)].map((m) => m[1])
 
     expect(specifiers).toEqual(['./types.ts'])
-    // No impulse-response file, no audio library, and nothing that reads a
-    // clock or a random source: the room is arithmetic, so it is repeatable.
     expect(source).not.toMatch(/\.wav|\.aiff?|\.mp3|Math\.random|Date\.now|performance\.now/)
   })
 })
 
-// Step D2 - R13, R15, AC13
 describe('the room folds into the loop', () => {
-  /** A short decaying note, ending just inside the loop and nothing after it. */
   function lastNote(totalFrames: number, endFrame: number): Float32Array {
     const samples = new Float32Array(totalFrames)
     const length = Math.round(0.04 * SAMPLE_RATE)
@@ -457,8 +428,6 @@ describe('the room folds into the loop', () => {
 
   it('rings over bar one and keeps the seam closed', () => {
     const samples = lastNote(5 * BAR_FRAMES, LOOP_FRAMES - Math.round(0.03 * SAMPLE_RATE))
-    // The dry signal writes nothing past the loop end, so anything the fold
-    // brings back onto bar 1 can only be the room's own tail.
     expect(energy(samples, LOOP_FRAMES)).toBe(0)
 
     const mix = mixTracks([fromSamples('comp', samples)], template(), {

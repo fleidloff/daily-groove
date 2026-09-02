@@ -13,10 +13,6 @@ const TONE: Record<CardTone, string> = {
   inset: 'rounded-panel border border-border bg-surface-inset p-5 sm:p-6',
 }
 
-/**
- * A surface panel. `raised` is the cream card that floats off the paper;
- * `inset` is the recessed panel that sits inside one.
- */
 export function Card({ children, tone = 'raised' }: CardProps) {
   return <div className={TONE[tone]}>{children}</div>
 }

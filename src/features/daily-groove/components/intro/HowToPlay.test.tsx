@@ -3,9 +3,6 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { HowToPlay } from './HowToPlay'
 
-// The four items exactly as the epic writes them. Held here as the test's own
-// copy rather than imported from the component, so a silent edit to the words
-// fails rather than moving both sides at once (R4, AC5).
 const STEPS = [
   'Listen to the groove 🎧',
   'Jam along 🎸',
@@ -16,8 +13,6 @@ const STEPS = [
 const EMOJI = ['🎧', '🎸', '🎯', '⏭']
 
 describe('HowToPlay', () => {
-  // --- B1: the box lists the four steps (R4, R14, AC5) ---------------------
-
   it('carries a heading that names what the box explains (R4)', () => {
     render(<HowToPlay onClose={vi.fn()} />)
 
@@ -49,8 +44,6 @@ describe('HowToPlay', () => {
     }
   })
 
-  // --- B2: it is an aside, not a third card (R5a, AC6a) --------------------
-
   it('sits on the recessed inset surface (R5a, AC6a)', () => {
     const { container } = render(<HowToPlay onClose={vi.fn()} />)
     const root = container.firstElementChild
@@ -64,8 +57,6 @@ describe('HowToPlay', () => {
 
     expect(root?.className).not.toContain('bg-accent')
   })
-
-  // --- B3: closing is a real button (R6, AC10) -----------------------------
 
   it('carries a close control with an accessible name (R6, AC10)', () => {
     render(<HowToPlay onClose={vi.fn()} />)
@@ -108,16 +99,11 @@ describe('HowToPlay', () => {
   it('numbers the four items 1 to 4 (R4a)', () => {
     const { container } = render(<HowToPlay onClose={vi.fn()} />)
 
-    // An ordered list, so the position is in the document rather than typed
-    // into the copy — a screen reader announces it and it cannot drift from
-    // the order of `STEPS`.
     const list = container.querySelector('ol')
     expect(list).not.toBeNull()
     expect(container.querySelector('ul')).toBeNull()
     expect((list as HTMLElement).className).toContain('list-decimal')
 
-    // The numbers are the marker's, not the text's: each item still reads back
-    // exactly as written.
     for (const item of screen.getAllByRole('listitem')) {
       expect(item.textContent).not.toMatch(/^\s*\d/)
     }
@@ -126,8 +112,6 @@ describe('HowToPlay', () => {
   it('sets the items above body copy, with accent markers (R4b)', () => {
     const { container } = render(<HowToPlay onClose={vi.fn()} />)
 
-    // This is the first thing a new player reads and was the quietest thing on
-    // the page: full ink, a size above the 15px body, and accent numbers.
     for (const item of screen.getAllByRole('listitem')) {
       expect(item.className).toContain('text-[16px]')
       expect(item.className).toContain('text-text')
@@ -144,28 +128,9 @@ describe('HowToPlay', () => {
 
     await user.click(screen.getByRole('button', { name: 'Close how to play' }))
 
-    // Whether the box is on screen is the page's state, not the box's.
     expect(screen.getAllByRole('listitem')).toHaveLength(4)
   })
 
-  /**
-   * The drum samples are CC BY 4.0, which obliges a credit in the medium — and
-   * the obligation follows the rendered grooves, not just the source files. So
-   * these are not cosmetic assertions: if the credit is dropped or reworded, the
-   * app is out of licence, and that should break a test rather than pass review.
-   */
-  /**
-   * The drum samples are CC BY 4.0, which obliges a credit in the medium — and
-   * the obligation follows the rendered grooves, not just the source files. So
-   * these are not cosmetic assertions: if the credit is dropped or reworded, the
-   * app is out of licence, and that should break a test rather than pass review.
-   */
-  /**
-   * The drum samples are CC BY 4.0, which obliges a credit in the medium — and
-   * the obligation follows the rendered grooves, not just the source files. So
-   * these are not cosmetic assertions: if the credit is dropped or reworded, the
-   * app is out of licence, and that should break a test rather than pass review.
-   */
   describe('the drum samples credit', () => {
     const SOURCE = 'Drum samples provided by DrumGizmo.org'
 
@@ -186,8 +151,6 @@ describe('HowToPlay', () => {
     })
 
     it('leaves the site safely, and never navigates the app', () => {
-      // Both must be off-site: an in-app link here would break feature-12's
-      // rule that the daily page offers no way onward.
       render(<HowToPlay onClose={vi.fn()} />)
       for (const name of [SOURCE, 'CC BY 4.0']) {
         const link = screen.getByRole('link', { name })
@@ -198,8 +161,6 @@ describe('HowToPlay', () => {
     })
 
     it('is not a fifth step', () => {
-      // Inside the ordered list it would read as something to do, and it would
-      // break the "exactly four things to know" the box is built around.
       render(<HowToPlay onClose={vi.fn()} />)
       expect(screen.getAllByRole('listitem')).toHaveLength(4)
       expect(screen.getByRole('link', { name: SOURCE }).closest('ol')).toBeNull()

@@ -7,7 +7,6 @@ const NEUTRAL: Feedback = { message: 'Listen for the note that rests.', tone: 'n
 const WARM: Feedback = { message: 'Right home note, wrong colour.', tone: 'warm' }
 const SOLVED: Feedback = { message: 'That is it. The groove is yours.', tone: 'solved' }
 
-/** Renders one line in isolation and hands back the class it carried. */
 function classOf(feedback: Feedback): string {
   const { unmount } = render(<FeedbackLine feedback={feedback} />)
   const className = screen.getByRole('status').className
@@ -53,8 +52,6 @@ describe('FeedbackLine', () => {
   })
 
   it('carries the whole message in text, never in colour alone (R10, AC14)', () => {
-    // The class differs per tone, but stripping it must lose nothing: each
-    // message reads on its own.
     for (const feedback of [NEUTRAL, WARM, SOLVED]) {
       const { unmount } = render(<FeedbackLine feedback={feedback} />)
       expect(screen.getByRole('status')).toHaveTextContent(feedback.message)

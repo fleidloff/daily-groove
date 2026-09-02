@@ -17,7 +17,6 @@ import { placeholderPack } from './testing/placeholderPack.ts'
 import type { GrooveSpec } from './types.ts'
 
 const REAL_LOCK = join(process.cwd(), 'scripts', 'grooves', 'grooves.lock.json')
-/** A committed mp3, used where a test needs a file with a real head delay. */
 const REAL_MP3 = join(process.cwd(), 'public', 'grooves', 'groove-01.mp3')
 
 const SPECS: GrooveSpec[] = [
@@ -27,8 +26,6 @@ const SPECS: GrooveSpec[] = [
 
 function tempRun() {
   const dir = mkdtempSync(join(tmpdir(), 'grooves-'))
-  // Every path generate() writes to must land in the temp dir. Miss one — the
-  // lock especially — and the tests silently overwrite the committed artifacts.
   return {
     catalogue: SPECS,
     pack: placeholderPack(),
@@ -39,15 +36,6 @@ function tempRun() {
   }
 }
 
-/**
- * A render is not a unit of work you can do in five seconds any more.
- *
- * Every candidate now carries per-pass humanization, a tempo drift, note-offs, a
- * hi-hat choke, a Schroeder reverb and a fill, over a catalogue four times the
- * length it was — and these tests shell out to the real CLI. Vitest's 5 s
- * default was written against a much lighter pipeline; under parallel load these
- * time out and read as flaky when nothing is flaky but the clock.
- */
 const RENDER_TIMEOUT_MS = 60_000
 
 describe('generate', () => {
@@ -74,8 +62,6 @@ describe('generate', () => {
     const manifest = readFileSync(opts.manifestPath, 'utf8')
     expect(manifest).toContain('export const GROOVES')
     for (const e of entries) expect(manifest).toContain(e.name)
-    // AC8: the app reads the loop length out of the module, so it has to be in
-    // the text, not only on the in-memory entry.
     for (const e of entries) {
       expect(manifest).toMatch(new RegExp(`^ {4}loopBars: ${e.loopBars},$`, 'm'))
     }
@@ -87,15 +73,10 @@ describe('generate', () => {
     const { entries } = await generate(opts)
     for (const e of entries) {
       expect(e.audioSrc).toBe(`/grooves/${e.id}.mp3`)
-      // Feature 12, Epic 1 — R1, R5. Copied from the spec, never minted here:
-      // that is what keeps two runs of `generate` byte-identical.
       expect(e.uuid, `${e.id} carries no uuid`).toBe(
         SPECS.find((spec) => spec.id === e.id)?.uuid,
       )
       expect(e.bars).toBe(4)
-      // Feature 9, Step C2 — R7, AC8. The figure is always four bars; the file
-      // is whole passes of it, so the entry states both and the second is a
-      // multiple of the first.
       expect(e.loopBars, `${e.id} states no loop length`).toBeGreaterThanOrEqual(e.bars)
       expect(e.loopBars! % e.bars, `${e.id} is not whole passes`).toBe(0)
       expect(e.bpm).toBeGreaterThan(40)
@@ -104,15 +85,11 @@ describe('generate', () => {
       expect(e.scale.toLowerCase()).toContain(e.flavour.toLowerCase())
       expect(e.chord.length).toBeGreaterThan(0)
       expect(e.progression.length).toBeGreaterThan(0)
-      // Step E4: measured from the mp3 this run just encoded, not assumed.
       expect(e.headDelaySeconds).toBeGreaterThan(0)
       expect(e.headDelaySeconds).toBeCloseTo(0.025057, 6)
     }
   })
 
-  // Step E5: the manifest can be re-rendered without re-encoding a single
-  // groove. Encoders differ between ffmpeg builds, so re-encoding to pick up a
-  // metadata change would rewrite audio for reasons unrelated to the music.
   it('re-renders the manifest and the lock from existing audio, writing no mp3', async () => {
     const opts = tempRun()
     writeFileSync(opts.cataloguePath, JSON.stringify(SPECS))
@@ -124,7 +101,6 @@ describe('generate', () => {
 
     const { entries } = await generate({ ...opts, encode: false })
 
-    // Not one byte of audio was written.
     for (const spec of SPECS) {
       expect(
         readFileSync(join(opts.outDir, `${spec.id}.mp3`)).equals(before[spec.id]),
@@ -133,13 +109,11 @@ describe('generate', () => {
     }
     expect(readdirSync(opts.outDir).filter((f) => f.endsWith('.mp3'))).toHaveLength(SPECS.length)
 
-    // The manifest was rendered, carrying the delay measured from those files.
     const manifest = readFileSync(opts.manifestPath, 'utf8')
     expect(manifest).toContain('export const GROOVES')
     for (const e of entries) expect(e.headDelaySeconds).toBeCloseTo(0.025057, 6)
     expect(manifest).toMatch(/^ {4}headDelaySeconds: 0\.025057,$/m)
 
-    // And the lock was written from the files already on disk.
     const lock = readLock(opts.lockPath)
     expect(lock).not.toBeNull()
     expect(lock!.grooves.map((g) => g.id)).toEqual(SPECS.map((s) => s.id))
@@ -148,18 +122,12 @@ describe('generate', () => {
     }
   })
 
-  // Feature-10, Step B5a — R23. The notes and the grooves are rendered by two
-  // commands into one lock. `npm run grooves` has rendered no note and cannot
-  // vouch for one, so it must carry through what `npm run notes` recorded
-  // rather than overwrite the file with what it happens to know.
   it('preserves the note fields another command recorded in the lock', async () => {
     const opts = tempRun()
     writeFileSync(opts.cataloguePath, JSON.stringify(SPECS))
     mkdirSync(opts.outDir, { recursive: true })
     for (const spec of SPECS) copyFileSync(REAL_MP3, join(opts.outDir, `${spec.id}.mp3`))
 
-    // A lock as `npm run notes` would leave it: the note family filled in, the
-    // groove family whatever was there before.
     const notes = [
       { id: 'C', sha256: 'a'.repeat(64), bytes: 11 },
       { id: 'E\u266d', sha256: 'b'.repeat(64), bytes: 22 },
@@ -182,7 +150,6 @@ describe('generate', () => {
     expect(after.notes).toEqual(notes)
     expect(after.notesManifestSha256).toBe('e'.repeat(64))
     expect(after.packSha256).toBe('f'.repeat(64))
-    // ...while the groove family is the one this run actually rendered.
     expect(after.grooves.map((g) => g.id)).toEqual(SPECS.map((s) => s.id))
     expect(after.catalogueSha256).toBe(sha256File(opts.cataloguePath))
   }, RENDER_TIMEOUT_MS)
@@ -192,11 +159,6 @@ describe('generate', () => {
     const b = await generate({ ...tempRun(), encode: false })
 
     expect(a.entries).toEqual(b.entries)
-    // Feature-12, Epic 1, Step A5 — R2, R5, AC2. The uuid is input, not output:
-    // it is copied out of the catalogue, so two runs agree on it. If the
-    // renderer ever minted one, this is the assertion that would catch it —
-    // `toEqual` above would too, but only by accident, and only until someone
-    // narrowed it.
     expect(a.entries.map((e) => e.uuid)).toEqual(SPECS.map((s) => s.uuid))
     expect(a.entries.map((e) => e.uuid)).toEqual(b.entries.map((e) => e.uuid))
     for (const spec of SPECS) {
@@ -208,9 +170,6 @@ describe('generate', () => {
     }
   })
 
-  // Feature 9, Step C2 — R15, AC15. What is rendered is the whole loop, not the
-  // four-bar figure it repeats: the pipeline hands the renderers `loopBars`, so
-  // the audio is as long as the entry says the loop is.
   it('renders a loop as long as the entry says it is, at its stated tempo', async () => {
     const { entries, pcm } = await generate({ ...tempRun(), encode: false })
     for (const e of entries) {
@@ -232,15 +191,12 @@ describe('generate', () => {
 })
 
 describe('the committed render', () => {
-  // Step I3: what ships must come from the real CC0 pack, never the placeholder.
   it('defaults to the real sample pack, not the placeholder', () => {
     expect(DEFAULT_PACK_DIR.endsWith('samples')).toBe(true)
     expect(existsSync(join(DEFAULT_PACK_DIR, 'pack.json'))).toBe(true)
     expect(existsSync(join(DEFAULT_PACK_DIR, 'provenance.json'))).toBe(true)
   })
 
-  // Epic 2, Step B3: generated data lives in the feature's data/ folder, never
-  // in lib/. The generator is the one place that names where the manifest lands.
   it('writes the manifest into the feature data/ folder, not lib/', () => {
     expect(DEFAULT_MANIFEST_PATH).toBe(
       join(import.meta.dirname, '../../src/features/daily-groove/data/grooves.generated.ts'),
@@ -256,7 +212,6 @@ describe('the committed render', () => {
   })
 })
 
-// Step E4: the entry carries the number it was measured with, untouched.
 describe('toGroove', () => {
   it('carries the head delay it was measured with onto the entry', () => {
     const music = {
@@ -271,14 +226,9 @@ describe('toGroove', () => {
       progressionDegrees: [0, 3, 4] as number[],
     } as const
     expect(toGroove(SPECS[0], music, 0.025057).headDelaySeconds).toBe(0.025057)
-    // A different file, a different number: nothing here is shared.
     expect(toGroove(SPECS[1], music, 0.031111).headDelaySeconds).toBe(0.031111)
   })
 
-  // Feature-12, Epic 1, Step A5 — R1, R4, AC1. The entry carries the catalogue's
-  // uuid, byte for byte. `toGroove` is the one place the field crosses from the
-  // generator's input to the app's contract, so it is the one place that could
-  // silently substitute a fresh one.
   it("carries the spec's uuid onto the entry, unchanged", () => {
     const music = {
       bpm: 96,
@@ -292,14 +242,10 @@ describe('toGroove', () => {
       progressionDegrees: [0, 3, 4] as number[],
     } as const
     expect(toGroove(SPECS[0], music, 0).uuid).toBe(SPECS[0].uuid)
-    // A different groove, a different uuid: nothing here is shared or derived.
     expect(toGroove(SPECS[1], music, 0).uuid).toBe(SPECS[1].uuid)
     expect(toGroove(SPECS[0], music, 0).uuid).not.toBe(SPECS[1].uuid)
   })
 
-  // Feature 15, Epic 3, Step A3 — R4, AC5. `toGroove` is the one place the
-  // degrees cross from the generator's `MusicMeta` onto the app's contract, so
-  // it is the one place that could drop them or invent them.
   it('carries the degrees the music was built from onto the entry — R4, AC5', () => {
     const music = {
       bpm: 96,
@@ -310,21 +256,15 @@ describe('toGroove', () => {
       scale: 'A harmonic minor',
       chord: 'AmMaj7',
       progression: 'Am–Dm–E7',
-      // A harmonic minor is [0, 2, 3, 5, 7, 8, 11]: D is +5, index 3; E is +7,
-      // index 4.
       progressionDegrees: [0, 3, 4] as number[],
     } as const
     expect(toGroove(SPECS[0], music, 0).progressionDegrees).toEqual([0, 3, 4])
-    // A different array, a different entry: nothing here is shared or derived.
     expect(
       toGroove(SPECS[0], { ...music, progressionDegrees: [0, 4, 3] }, 0)
         .progressionDegrees,
     ).toEqual([0, 4, 3])
   })
 
-  // Feature 9, Step C2 — R7, AC8. The figure and the file are two numbers, and
-  // the entry carries both: `bars` is what a player counts, `loopBars` is what
-  // the mp3 actually contains.
   it('carries both lengths: the four-bar figure and the rendered loop', () => {
     const music = {
       bpm: 96,
@@ -340,8 +280,6 @@ describe('toGroove', () => {
     const entry = toGroove(SPECS[0], music, 0.025057)
     expect(entry.bars).toBe(4)
     expect(entry.loopBars).toBe(8)
-    // A longer feel is a bigger number on the same entry shape; nothing here is
-    // derived from a constant.
     expect(toGroove(SPECS[0], { ...music, loopBars: 16 }, 0.025057).loopBars).toBe(16)
   })
 })
@@ -353,7 +291,6 @@ describe('displayFlavour', () => {
     expect(displayFlavour('blues')).toBe('Blues')
   })
 
-  // Epic 4, AC3 — the vocabulary the app is handed is modal end to end.
   it('spells the whole vocabulary modally, with no Major or Minor in it', () => {
     const displayed = FLAVOURS.map(displayFlavour)
     expect(displayed).toContain('Ionian')
@@ -374,14 +311,11 @@ describe('displayFlavour', () => {
       progression: 'Am–Dm–E7',
       progressionDegrees: [0, 3, 4] as number[],
     }, 0.025057)
-    // The app's parseScale() splits on the first space and title-cases the rest.
     const rest = groove.scale.slice(groove.scale.indexOf(' ') + 1)
     expect(groove.flavour).toBe(rest.charAt(0).toUpperCase() + rest.slice(1))
   })
 })
 
-// Step I2 — everything the finished pipeline must be true of, asserted on one
-// render through the real pack rather than the placeholder.
 describe('the finished pipeline, through the real pack', () => {
   it('renders the whole loop, peaks on the ceiling, and closes its seam', async () => {
     const pack = await loadPack(DEFAULT_PACK_DIR)
@@ -415,7 +349,6 @@ describe('the finished pipeline, through the real pack', () => {
   }, 60_000)
 })
 
-// AC10 — the committed mp3s are what actually ship, so assert on them.
 describe('the committed mp3s', () => {
   it('carry no silent padding at either end beyond the music itself', async () => {
     const entries = readCatalogue().slice(0, 3)

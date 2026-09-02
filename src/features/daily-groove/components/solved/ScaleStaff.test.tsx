@@ -5,17 +5,10 @@ import { cleanup, render, screen } from '@testing-library/react'
 import { ScaleStaff } from './ScaleStaff'
 import type { StaffNote } from '../../lib/theory/staff'
 
-/**
- * Hand-written positions, not `staffNotes` output. The drawing's contract is
- * `StaffNote[]`, so it is tested against the contract — a change to the mapping
- * cannot make this file go red, and a change to the drawing cannot hide behind
- * the mapping being right.
- */
 function fixture(...pairs: [step: number, accidental: string][]): StaffNote[] {
   return pairs.map(([step, accidental]) => ({ step, accidental }))
 }
 
-/** E Dorian: E F♯ G A B C♯ D, ascending from E4. */
 const E_DORIAN = fixture(
   [2, ''],
   [3, '♯'],
@@ -28,19 +21,12 @@ const E_DORIAN = fixture(
 
 const E_DORIAN_LABEL = 'E F♯ G A B C♯ D'
 
-/** C Blues: C E♭ F G♭ G B♭ — the G♭ and the G share step 4. */
 const C_BLUES = fixture([0, ''], [2, '♭'], [3, ''], [4, '♭'], [4, '♮'], [6, '♭'])
 
 const C_BLUES_DEGREES = ['1', '♭3', '4', '♭5', '5', '♭7']
 
-/** Inside the five lines: E4 (step 2) to F5 (step 10) inclusive. */
 const INSIDE_THE_STAFF = fixture([2, ''], [4, ''], [6, ''], [8, ''], [10, ''])
 
-/**
- * C Mixolydian: C D E F G A B♭, ascending from C4. Step 0 is the floor of the
- * whole rotation — one ledger line below the bottom line — so this is the
- * scale the degree row has to clear.
- */
 const ON_THE_FLOOR = fixture(
   [0, ''],
   [1, ''],
@@ -51,7 +37,6 @@ const ON_THE_FLOOR = fixture(
   [6, ''],
 )
 
-/** G Mixolydian: G A B C D E F, ascending from G4 — nothing below the staff. */
 const ABOVE_THE_FLOOR = fixture(
   [4, ''],
   [5, ''],
@@ -78,15 +63,8 @@ function stems(): SVGLineElement[] {
   return screen.queryAllByTestId('stem') as unknown as SVGLineElement[]
 }
 
-/** The middle line, above which a stem turns over. */
 const MIDDLE_LINE_STEP = 6
 
-/**
- * Placeholder labels of the right length, for the cases that are about the
- * notation rather than about the numbers. `degrees` is a required prop, so
- * every render needs one — but only the cases below that name a real degree
- * list care what it says.
- */
 function degreesFor(notes: StaffNote[]): string[] {
   return notes.map((_, i) => String(i + 1))
 }
@@ -97,24 +75,12 @@ function num(element: Element, attribute: string): number {
   return Number(raw)
 }
 
-/**
- * The horizontal box an accidental can occupy, read off the element rather
- * than off the component's constants. The glyphs are end-anchored at their `x`,
- * and no accidental is wider than its own em box, so `font-size` per character
- * is the bound that holds whatever face the browser resolves — which is the
- * safe direction for an assertion that two glyphs do not touch.
- */
 function span(element: Element): [left: number, right: number] {
   const right = num(element, 'x')
   const em = num(element, 'font-size') * (element.textContent ?? '').length
   return [right - em, right]
 }
 
-/**
- * The same bound for a middle-anchored glyph: a degree numeral straddles its
- * `x` rather than ending at it, so its em box is centred on the notehead's own
- * centre.
- */
 function centredSpan(element: Element): [left: number, right: number] {
   const centre = num(element, 'x')
   const em = num(element, 'font-size') * (element.textContent ?? '').length
@@ -153,17 +119,10 @@ describe('ScaleStaff', () => {
     it('draws the clef as path data, not as text a font renders (R1b)', () => {
       render(<ScaleStaff notes={[]} label="" degrees={degreesFor([])} />)
 
-      // The shape is Bravura's G clef, but it ships as coordinates: one filled
-      // path, no glyph and no face to load. That is the claim — not that the
-      // outline was drawn by hand, which it no longer is. A `<text>` element
-      // with a SMuFL codepoint in it would pass a "there is a clef" assertion
-      // and fail this one, and it would also render as a missing-glyph box on
-      // any machine without the font.
       const clef = screen.getByTestId('clef')
       expect(clef.tagName.toLowerCase()).toBe('path')
       expect(clef.getAttribute('d')).toMatch(/^M/)
       expect(clef.textContent).toBe('')
-      // Filled, not stroked: an engraved glyph carries its own weight.
       expect(clef.getAttribute('fill')).toBe('currentColor')
       expect(clef.getAttribute('stroke')).toBeNull()
     })
@@ -225,7 +184,6 @@ describe('ScaleStaff', () => {
       const space = Math.abs(num(lines[1], 'y1') - num(lines[0], 'y1'))
       const ys = noteheads().map((note) => num(note, 'cy'))
 
-      // The fixture steps two at a time — line to line.
       ys.slice(1).forEach((y, i) => expect(ys[i] - y).toBe(space))
     })
 
@@ -256,8 +214,6 @@ describe('ScaleStaff', () => {
     it('draws a stem for every note, meeting its head (F15 drawing)', () => {
     render(<ScaleStaff notes={ON_THE_FLOOR} label="" degrees={degreesFor(ON_THE_FLOOR)} />)
 
-    // A quarter note is a head *and* a stem: one per note, and each attached to
-    // its own head rather than floating beside it.
     expect(stems()).toHaveLength(ON_THE_FLOOR.length)
     stems().forEach((stem, i) => {
       const head = noteheads()[i]
@@ -265,7 +221,6 @@ describe('ScaleStaff', () => {
       expect(Math.abs(num(stem, 'x1') - num(head, 'cx'))).toBeLessThanOrEqual(
         num(head, 'rx'),
       )
-      // Vertical: a stem that leaned would be a different mark entirely.
       expect(num(stem, 'x1')).toBe(num(stem, 'x2'))
       expect(num(stem, 'y2')).not.toBe(num(stem, 'y1'))
     })
@@ -274,7 +229,6 @@ describe('ScaleStaff', () => {
   it('turns the stem over at the middle line, and hangs it on the correct side (F15 drawing)', () => {
     const below = fixture([MIDDLE_LINE_STEP - 1, ''])
     render(<ScaleStaff notes={below} label="" degrees={degreesFor(below)} />)
-    // Below the middle line the stem rises, on the right of the head.
     expect(num(stems()[0], 'y2')).toBeLessThan(num(stems()[0], 'y1'))
     expect(num(stems()[0], 'x1')).toBeGreaterThan(num(noteheads()[0], 'cx'))
 
@@ -282,17 +236,11 @@ describe('ScaleStaff', () => {
 
     const on = fixture([MIDDLE_LINE_STEP, ''])
     render(<ScaleStaff notes={on} label="" degrees={degreesFor(on)} />)
-    // On it — and above — the stem falls, on the left. A note *on* the middle
-    // line turns over: that is the convention, and it is the boundary case.
     expect(num(stems()[0], 'y2')).toBeGreaterThan(num(stems()[0], 'y1'))
     expect(num(stems()[0], 'x1')).toBeLessThan(num(noteheads()[0], 'cx'))
   })
 
   it('keeps the deepest stem clear of the degree row (F15 drawing, E2 R1d)', () => {
-    // The lowest stem is NOT the lowest note's: a note below the middle line
-    // stems upward, so the deepest mark belongs to the note *on* the middle
-    // line, stemming down. That is the one that can reach the numerals, and it
-    // is why this case renders it rather than the floor note.
     const turning = fixture([MIDDLE_LINE_STEP, ''])
     render(<ScaleStaff notes={turning} label="" degrees={['5']} />)
 
@@ -310,7 +258,6 @@ describe('ScaleStaff', () => {
     const thin = bar.querySelector('line') as unknown as SVGLineElement
     const thick = bar.querySelector('rect') as unknown as SVGRectElement
 
-    // Two rules, the thick one last and outermost — a final bar, not a repeat.
     expect(thin).not.toBeNull()
     expect(thick).not.toBeNull()
     expect(num(thin, 'x1')).toBeLessThan(Number(thick.getAttribute('x')))
@@ -318,8 +265,6 @@ describe('ScaleStaff', () => {
       Number(thin.getAttribute('stroke-width')),
     )
 
-    // Ruled between the outer staff lines only: a barline belongs to the staff,
-    // never to the ledger lines a high or low note needs.
     const lineYs = screen
       .getAllByTestId('staff-line')
       .map((line) => num(line as unknown as SVGLineElement, 'y1'))
@@ -327,7 +272,6 @@ describe('ScaleStaff', () => {
     expect(num(thin, 'y2')).toBe(Math.max(...lineYs))
     expect(Number(thick.getAttribute('y'))).toBe(Math.min(...lineYs))
 
-    // It stands clear of the last notehead rather than crowding it.
     const last = noteheads()[noteheads().length - 1]
     expect(num(thin, 'x1')).toBeGreaterThan(num(last, 'cx') + num(last, 'rx'))
   })
@@ -335,7 +279,6 @@ describe('ScaleStaff', () => {
   it('draws no final bar on an empty staff (F15 drawing)', () => {
     render(<ScaleStaff notes={[]} label="" degrees={degreesFor([])} />)
 
-    // Nothing has been stated, so there is nothing to close.
     expect(screen.queryByTestId('final-bar')).not.toBeInTheDocument()
   })
 
@@ -362,7 +305,6 @@ describe('ScaleStaff', () => {
 
       const notes = noteheads()
       const glyphs = accidentals()
-      // The unaltered note is the second of four; the glyphs belong to 0, 2, 3.
       const owners = [notes[0], notes[2], notes[3]]
 
       glyphs.forEach((glyph, i) => {
@@ -471,7 +413,6 @@ describe('ScaleStaff', () => {
       )
 
       const glyphs = accidentals()
-      // C E♭ F G♭ G B♭ — four altered notes, the middle two on one line.
       expect(glyphs.map((glyph) => glyph.textContent)).toEqual([
         '♭',
         '♭',
@@ -501,8 +442,6 @@ describe('ScaleStaff', () => {
       expect(overlaps(span(natural), flatBox)).toBe(false)
     })
 
-    // The blues scale is the whole test of the numbered row: six notes, not
-    // seven, and the fourth and fifth on one step (F15 E2 C2).
     it('numbers six notes, the ♭5 and 5 each under its own head (R2, R1a, AC2, AC3)', () => {
       render(
         <ScaleStaff
@@ -516,19 +455,15 @@ describe('ScaleStaff', () => {
       expect(labels).toHaveLength(6)
       expect(labels.map((label) => label.textContent)).toEqual(C_BLUES_DEGREES)
 
-      // The fifth note is the one that received `SHARED_STEP_EXTRA`.
       const xs = labels.map((label) => num(label, 'x'))
       expect(xs[4]).toBe(num(noteheads()[4], 'cx'))
 
-      // …and the row inherits that extra advance rather than being laid out
-      // evenly on a grid of its own.
       expect(xs[4] - xs[3]).toBeGreaterThan(xs[3] - xs[2])
     })
   })
 
   describe('ledger lines (B5)', () => {
     it('rules a ledger under a note above the staff (R5, AC4)', () => {
-      // A5 is step 12: the top line, F5, is step 10.
       render(<ScaleStaff notes={fixture([12, ''])} label="A" degrees={['1']} />)
 
       const note = noteheads()[0]
@@ -549,7 +484,6 @@ describe('ScaleStaff', () => {
     })
 
     it('rules a ledger over a note below the staff (R5, AC4)', () => {
-      // C4 is step 0: the bottom line, E4, is step 2.
       render(<ScaleStaff notes={fixture([0, ''])} label="C" degrees={['1']} />)
 
       const note = noteheads()[0]
@@ -561,7 +495,6 @@ describe('ScaleStaff', () => {
     })
 
     it('rules every line between the staff and a far note (R5, AC4)', () => {
-      // C6 is step 14: two ledgers, A5 (12) and C6 (14).
       render(<ScaleStaff notes={fixture([14, ''])} label="C" degrees={['1']} />)
 
       expect(screen.getAllByTestId('ledger')).toHaveLength(2)
@@ -630,9 +563,6 @@ describe('ScaleStaff', () => {
         const stroke = element.getAttribute('stroke')
         const fill = element.getAttribute('fill')
 
-        // `none` switches a channel off — an open notehead is drawn, not
-        // filled — which is not the same as naming a colour. Whatever ink an
-        // element does use has to be the surface's.
         const inks = [stroke, fill].filter((v) => v !== null && v !== 'none')
         expect(inks.length, `${element.tagName} sets no ink`).toBeGreaterThan(0)
         for (const ink of inks) expect(ink).toBe('currentColor')
@@ -667,19 +597,14 @@ describe('ScaleStaff', () => {
       const svg = container.querySelector('svg')
       expect(svg).not.toBeNull()
 
-      // One viewBox unit is one pixel, so a staff space is the same size on
-      // every day's scale. Stretched to the panel's width it would read as a
-      // diagram of a staff rather than as notation.
       const viewBox = svg!.getAttribute('viewBox')
       expect(viewBox).toMatch(/^0 0 \d+(\.\d+)? \d+/)
       const [, , vbWidth, vbHeight] = viewBox!.split(' ')
       expect(svg!.getAttribute('width')).toBe(vbWidth)
       expect(svg!.getAttribute('height')).toBe(vbHeight)
 
-      // …but it still fits a narrower column, by scaling down as a whole.
       expect(svg!.getAttribute('class') ?? '').toMatch(/\bmax-w-full\b/)
       expect(svg!.getAttribute('class') ?? '').toMatch(/\bh-auto\b/)
-      // Anchored on a space: `\b` would match inside `max-w-full`.
       expect(svg!.getAttribute('class') ?? '').not.toMatch(/(^|\s)w-full\b/)
     })
 
@@ -699,8 +624,6 @@ describe('ScaleStaff', () => {
         />,
       ).container.querySelector('svg')!
 
-      // Same height in the same units: only the width follows the note count,
-      // so a six-note blues scale is not drawn larger than a seven-note mode.
       expect(six.getAttribute('height')).toBe(seven.getAttribute('height'))
       expect(Number(six.getAttribute('width'))).toBeLessThan(
         Number(seven.getAttribute('width')),
@@ -754,13 +677,10 @@ describe('ScaleStaff', () => {
         expect(label.getAttribute('class') ?? '').not.toMatch(
           /(^|\s)(text-(?!\[)|bg-|fill-|stroke-|border-)/,
         )
-        // No extra weight either: the row is smaller than the notation, not
-        // louder than it.
         expect(label.getAttribute('font-weight')).toBeNull()
         expect(label.getAttribute('class') ?? '').not.toMatch(
           /font-(bold|semibold|medium)/,
         )
-        // And it stays inside the one image the whole drawing is.
         expect(label.getAttribute('role')).toBeNull()
         expect(label.getAttribute('aria-label')).toBeNull()
       })
@@ -822,15 +742,10 @@ describe('ScaleStaff', () => {
         const y = num(label, 'y')
         const half = num(label, 'font-size') / 2
 
-        // (a) below the staff, not inside it or above it.
         expect(y).toBeGreaterThan(bottomLine)
 
-        // (b) clear of every notehead, including the one on the floor.
         expect(y - half).toBeGreaterThan(lowestNote)
 
-        // (c) still part of the drawing: less than a staff space of air under
-        // it, so the row reads as belonging to the staff rather than floating
-        // under the box.
         expect(height - (y + half)).toBeLessThan(space)
       })
     })
@@ -866,13 +781,10 @@ describe('ScaleStaff', () => {
       expect(lowYs).toHaveLength(7)
       expect(highYs).toHaveLength(7)
 
-      // One row, one baseline — within each day…
       expect(new Set(lowYs).size).toBe(1)
       expect(new Set(highYs).size).toBe(1)
-      // …and between a scale that hangs below the staff and one that does not.
       expect(highYs[0]).toBe(lowYs[0])
 
-      // So the box is the same height every day, notes or no notes.
       expect(heightOf(high)).toBe(heightOf(low))
       expect(heightOf(empty)).toBe(heightOf(low))
     })
@@ -891,7 +803,6 @@ describe('ScaleStaff', () => {
       expect(ledgers.length).toBeGreaterThan(0)
       expect(labels.length).toBeGreaterThan(0)
 
-      // In SVG the last sibling paints last, so "over" is "later".
       ledgers.forEach((ledger) => {
         labels.forEach((label) => {
           expect(
@@ -901,7 +812,6 @@ describe('ScaleStaff', () => {
         })
       })
 
-      // The same claim, read straight off the tree.
       const order = Array.from(container.querySelectorAll('*'))
       const lastLedger = Math.max(...ledgers.map((el) => order.indexOf(el)))
       const firstLabel = Math.min(...labels.map((el) => order.indexOf(el)))
@@ -924,9 +834,6 @@ describe('ScaleStaff', () => {
         />,
       )
 
-      // `♭3` and `♭7` are the wide ones. jsdom cannot measure a wrap, and the
-      // drawing scales down as a whole, so non-overlap in viewBox units is the
-      // assertion that transfers to 360px.
       const boxes = degrees().map(centredSpan)
       boxes.slice(1).forEach((box, i) => {
         expect(overlaps(boxes[i], box)).toBe(false)
@@ -953,8 +860,6 @@ describe('ScaleStaff', () => {
       expect(className).not.toMatch(/(^|\s)w-full\b/)
     })
 
-    // The tripwire for the shortcut where the drawing starts working the row
-    // out from the answer instead of being handed it (R3, AC4).
     it('derives nothing: the degrees arrive as a prop (R3, AC4)', () => {
       const source = readFileSync(
         resolve(
@@ -970,8 +875,6 @@ describe('ScaleStaff', () => {
       )
       expect(specifiers).toEqual(['../../lib/theory/staff'])
 
-      // Named, so a future import is rejected by name and not only by the
-      // list above: no degree namer, no note speller, no changes, no `Answer`.
       for (const forbidden of [
         'degrees',
         'notes',
@@ -981,7 +884,6 @@ describe('ScaleStaff', () => {
         expect(specifiers).not.toContain(forbidden)
       }
 
-      // And nothing that knows what a scale is, by any route at all.
       expect(source).not.toMatch(/FLAVOUR_/)
       expect(source).not.toMatch(/\bAnswer\b/)
     })

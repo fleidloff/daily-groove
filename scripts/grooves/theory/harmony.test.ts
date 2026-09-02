@@ -7,7 +7,6 @@ import { FLAVOURS, intervalsFor, pitchesOf, scaleName } from './scales.ts'
 import { ROOTS, pitchClassOf } from './notes.ts'
 import { VALIDITY, isValidHarmony, scaleDegreePitchClasses } from './validity.ts'
 
-/** The pitch classes a chord's MIDI notes sound, ascending and deduplicated. */
 function pitchClassesOfMidi(midi: number[]): number[] {
   return [...new Set(midi.map((m) => m % 12))].sort((a, b) => a - b)
 }
@@ -64,10 +63,6 @@ describe('buildHarmony', () => {
     }
   })
 
-  // Epic 1 asserted every progression chord was strictly inside the scale. Epic
-  // 3 supersedes that for blues, whose I7, IV7 and V7 carry a major third the
-  // six-note blues scale does not: the chord is now checked against its
-  // flavour's rule, which is strict membership for the other seven.
   it('returns a progression of three or four chords valid for its flavour, starting on the tonic', () => {
     for (const flavour of FLAVOURS) {
       for (const root of ['C', 'F♯', 'A'] as Root[]) {
@@ -77,7 +72,6 @@ describe('buildHarmony', () => {
         expect(h.progressionDegrees.length).toBeLessThanOrEqual(4)
         expect(h.progressionMidi.length).toBe(h.progressionDegrees.length)
         expect(h.progressionDegrees[0]).toBe(0)
-        // The first chord of the progression IS the named chord.
         expect(h.progressionMidi[0]).toEqual(h.chordMidi)
         h.progressionMidi.forEach((chord, i) => {
           expect(chord.length).toBeGreaterThanOrEqual(2)
@@ -92,7 +86,6 @@ describe('buildHarmony', () => {
         const names = h.progressionName.split('–')
         expect(names.length).toBe(h.progressionDegrees.length)
         expect(names[0]).toBe(h.chordName)
-        // Every progression chord name round-trips to the pitches played.
         names.forEach((name, i) => {
           expect(pitchClassesOf(name)).toEqual(
             [...new Set(h.progressionMidi[i].map((m) => m % 12))].sort((a, b) => a - b),
@@ -168,7 +161,6 @@ describe('every flavour', () => {
   })
 })
 
-// Step B5 — the harmony builder produces valid harmony for all eight flavours.
 describe('buildHarmony — valid for every flavour and every root', () => {
   it('passes its flavour’s validity rule for all 96 combinations', () => {
     for (const flavour of FLAVOURS) {
@@ -184,21 +176,6 @@ describe('buildHarmony — valid for every flavour and every root', () => {
     }
   })
 
-  // Feature 15, Epic 3, Step A5 — R4, AC8. Every degree the generator can draw
-  // is a degree the flavour's interval table actually has, AND it names the
-  // chord that is really sounding.
-  //
-  // A range check alone is nearly vacuous here: the derived branch's index comes
-  // from `forEach`, and the idiom branch already skips `degrees.indexOf(offset)
-  // === -1`. A future idiom pointing at a note outside the scale would silently
-  // *drop* that chord rather than emit an out-of-range index, so the range check
-  // stays green through exactly the failure it was written for. What must also
-  // hold is the tie to the audio: the chord on index `d` is rooted on
-  // `(pitchClassOf(root) + intervalsFor(flavour)[d]) % 12`. The app looks each
-  // index up in its own interval table and derives an accidental from the
-  // semitone, so an index that does not name the sounding chord would print a
-  // numeral for a chord nobody plays — and nothing else in the suite would say
-  // so.
   it('draws only degrees its flavour has, and each names the chord sounding — R4, AC8', () => {
     for (const flavour of FLAVOURS) {
       const intervals = intervalsFor(flavour)
@@ -209,7 +186,6 @@ describe('buildHarmony — valid for every flavour and every root', () => {
           expect(Number.isInteger(degree), where).toBe(true)
           expect(degree, where).toBeGreaterThanOrEqual(0)
           expect(degree, where).toBeLessThan(intervals.length)
-          // The chord's own root, as rendered, against the one the index names.
           expect(h.progressionMidi[i][0] % 12, where).toBe(
             (pitchClassOf(root) + intervals[degree]) % 12,
           )
@@ -242,7 +218,6 @@ describe('buildHarmony — the blues idiom', () => {
       for (const degree of h.progressionDegrees) {
         expect(allowed).toContain(degree)
       }
-      // Every chord of the progression is a dominant seventh on its own root.
       const scale = scaleDegreePitchClasses(root, 'blues')
       h.progressionMidi.forEach((chord, i) => {
         const chordRoot = scale[h.progressionDegrees[i]]
@@ -257,18 +232,10 @@ describe('buildHarmony — the blues idiom', () => {
     const degrees = new Set(
       ROOTS.flatMap((root) => buildHarmony(root, 'blues', rngFor(`b:${root}`)).progressionDegrees),
     )
-    // Exactly the three the idiom states — offsets 0, 5 and 7, which are indices
-    // 0, 2 and 4 of the blues scale [0, 3, 5, 6, 7, 10]. Named rather than
-    // counted: `size > 1` stays green when an idiom offset is silently dropped
-    // by `degrees.indexOf(offset) === -1`, and this is what fires instead.
     expect([...degrees].sort((a, b) => a - b)).toEqual([0, 2, 4])
   })
 })
 
-// Epic 6 — the four modes added on top of the original eight. The sweeps above
-// already cover them by iterating FLAVOURS; this states the property those
-// modes were chosen for, so a candidate that could not name its own tonic
-// could never have been adopted quietly.
 describe('buildHarmony — the modes Epic 6 added', () => {
   const ADDED: Flavour[] = [
     'melodic-minor',
@@ -314,8 +281,6 @@ describe('buildHarmony — the harmonic-minor idiom', () => {
     for (const root of ROOTS) {
       const h = buildHarmony(root, 'harmonic-minor', rngFor(`hm:${root}`))
       expect(h.chordName).toBe(`${root}mMaj7`)
-      // The raised seventh is a scale tone, so the dominant on degree 4 is a
-      // dominant seventh — the chord the flavour is recognised by.
       const scale = scaleDegreePitchClasses(root, 'harmonic-minor')
       const v7 = [0, 4, 7, 10].map((n) => (scale[4] + n) % 12).sort((a, b) => a - b)
       expect(v7).toContain((scale[0] + 11) % 12)

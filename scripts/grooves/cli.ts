@@ -26,25 +26,13 @@ export const DEFAULT_MANIFEST_PATH = join(
 )
 export const DEFAULT_LOCK_PATH = join(HERE, 'grooves.lock.json')
 export const SAMPLE_RATE = 44100
-/** Rendered past the loop end so instrument tails can wrap onto the start. */
 export const OVERHANG_BARS = 1
 
-/**
- * The generator's internal flavour is a lowercase union ('harmonic-minor');
- * the app displays a title-cased string ('Harmonic minor'). Converting here,
- * once, keeps the two spellings from ever drifting — and matches exactly what
- * the app's own parseScale() derives from the scale string.
- */
 export function displayFlavour(flavour: string): string {
   const words = flavour.replace(/-/g, ' ')
   return words.charAt(0).toUpperCase() + words.slice(1)
 }
 
-/**
- * The manifest entry describing a rendered groove. `headDelaySeconds` is
- * measured from the groove's own mp3 — see `probe.ts` — and passed in rather
- * than derived here, because only the caller knows when that file exists.
- */
 export function toGroove(
   spec: GrooveSpec,
   music: MusicMeta,
@@ -52,8 +40,6 @@ export function toGroove(
 ): Groove {
   return {
     id: spec.id,
-    // Copied, never minted. The uuid is catalogue input, so a render carries it
-    // outward unchanged and two runs agree on it (F12 E1 R2, R5).
     uuid: spec.uuid,
     audioSrc: `/grooves/${spec.id}.mp3`,
     name: nameFor(spec.id),
@@ -75,14 +61,7 @@ export type GenerateOptions = {
   packDir?: string
   outDir?: string
   manifestPath?: string
-  /** Injected by tests so they never load the real pack. */
   pack?: SamplePack
-  /**
-   * When false, no mp3 is written: the manifest and the lock are re-rendered
-   * from the audio already on disk. `npm run grooves -- --manifest-only` uses
-   * it to pick up a metadata change without re-encoding the catalogue, and the
-   * determinism test uses it to render PCM and nothing else.
-   */
   encode?: boolean
   cataloguePath?: string
   lockPath?: string
@@ -90,15 +69,9 @@ export type GenerateOptions = {
 
 export type GenerateResult = {
   entries: Groove[]
-  /** Pre-encode PCM, keyed by groove id. Determinism is asserted on this. */
   pcm: Map<string, Pcm>
 }
 
-/**
- * The committed lock, or `null` when there is none — and also when there is one
- * that will not parse, which a render is entitled to overwrite rather than die
- * on.
- */
 function existingLock(path: string): Lock | null {
   try {
     return readLock(path)
@@ -115,20 +88,12 @@ export async function generate(options: GenerateOptions = {}): Promise<GenerateR
 
   mkdirSync(outDir, { recursive: true })
 
-  // Rendered first, described second: a groove's head delay is a property of
-  // the mp3 the encoder writes, so it cannot be measured until that file is on
-  // disk — and the loop below pushes each groove before encoding it.
   const rendered: { spec: GrooveSpec; music: MusicMeta }[] = []
   const pcm = new Map<string, Pcm>()
 
   for (const spec of specs) {
     const template = templateById(spec.template)
     const { events, music } = buildEvents(spec, template)
-    // Render past the loop end, then fold the overhang back onto the start, so a
-    // cymbal ringing at the last bar rings over bar 1 the way a real repeat
-    // would. What is rendered is `loopBars` — every pass of the figure, not the
-    // four bars it repeats — so both renderers are given the file's length,
-    // never the figure's.
     const tracks = renderVoices(events, pack, SAMPLE_RATE, {
       id: spec.id,
       bars: music.loopBars,
@@ -147,27 +112,16 @@ export async function generate(options: GenerateOptions = {}): Promise<GenerateR
     if (shouldEncode) await encodeMp3(master, join(outDir, `${spec.id}.mp3`))
   }
 
-  // Every artifact below is derived from the files in `outDir`, so both the
-  // probe and the lock ask the same question first: is the audio there?
   const files = rendered.map(({ spec }) => join(outDir, `${spec.id}.mp3`))
   const audioOnDisk = files.every((file) => existsSync(file))
-  // Nothing to measure when there is no audio — a PCM-only run renders a
-  // manifest it never uses, and a made-up delay would be worse than a zero.
   const delays = audioOnDisk
     ? await Promise.all(files.map((file) => probeHeadDelaySeconds(file)))
     : files.map(() => 0)
   const entries = rendered.map(({ spec, music }, i) => toGroove(spec, music, delays[i]))
 
   const manifestPath = options.manifestPath ?? DEFAULT_MANIFEST_PATH
-  // Pools are emitted from the catalogue's own values, so a distractor can never
-  // drift from the answers it is meant to sit beside.
   writeManifest(entries, manifestPath, buildPools(entries))
 
-  // The lock records what this run produced, so the build can later prove the
-  // committed artifacts still match their inputs without re-rendering anything.
-  // `buildLock` hashes the files on disk rather than the PCM just rendered, so
-  // what it needs is audio to hash, not an encode of its own: a manifest-only
-  // run locks the existing mp3s, and a PCM-only run has none to lock.
   if (audioOnDisk) {
     const lockPath = options.lockPath ?? DEFAULT_LOCK_PATH
     const grooves = buildLock(
@@ -178,10 +132,6 @@ export async function generate(options: GenerateOptions = {}): Promise<GenerateR
       },
       entries.map((e) => e.id),
     )
-    // One lock, two writers. This run rendered no reference note, so it records
-    // the groove family and hands back whatever `npm run notes` left behind —
-    // without the merge, a catalogue edit would silently drop the note hashes
-    // and the build guard would quietly stop guarding them.
     writeLock(mergeLock(existingLock(lockPath), grooves), lockPath)
   }
 
@@ -190,9 +140,6 @@ export async function generate(options: GenerateOptions = {}): Promise<GenerateR
 
 const invokedDirectly = process.argv[1] === fileURLToPath(import.meta.url)
 if (invokedDirectly) {
-  // `--manifest-only` re-renders the manifest and the lock from the committed
-  // audio. It is how a change to what a Groove carries ships without rewriting
-  // sixteen mp3s that no one asked to change.
   const manifestOnly = process.argv.slice(2).includes('--manifest-only')
   const { entries } = await generate({ encode: !manifestOnly })
   if (manifestOnly) console.log('manifest-only: no audio was encoded')

@@ -76,20 +76,11 @@ describe('TransportPanel', () => {
   })
 })
 
-/**
- * Feature-9, Epic 1, Step D2 (R9, R9a, R11, R12). The file is now several
- * passes of the same four-bar figure, but the track still draws four bars. The
- * panel is told the pass count and derives both the fill and the highlight from
- * one scaled value, so they cannot disagree at a boundary. `ProgressTrack`
- * learns nothing about any of it — it is handed a plain 0..1 fill (R12).
- */
 describe('TransportPanel across passes', () => {
-  /** The `progress-fill` rect's width, as ProgressTrack renders it. */
   const fillWidth = () =>
     screen.getByTestId('progress-fill').getAttribute('width')
 
   it('fills across one pass of four, not across the file (R9, AC9)', () => {
-    // Five sixteenths through a sixteen-bar loop: bar 2 of pass 2.
     render(<TransportPanel position={0.3125} isPlaying passes={4} />)
 
     expect(screen.getByTestId('progress-active')).toHaveAttribute(
@@ -100,7 +91,6 @@ describe('TransportPanel across passes', () => {
   })
 
   it('does the same arithmetic for a two-pass groove (R9a, AC9)', () => {
-    // Five eighths through an eight-bar loop is the same point of a pass.
     render(<TransportPanel position={0.625} isPlaying passes={2} />)
 
     expect(screen.getByTestId('progress-active')).toHaveAttribute(
@@ -139,7 +129,6 @@ describe('TransportPanel across passes', () => {
       '3',
     )
 
-    // The first frame of pass 2: the fill is empty again and bar 1 is lit.
     rerender(<TransportPanel position={0.25} isPlaying passes={4} />)
     expect(screen.getByTestId('progress-active')).toHaveAttribute(
       'data-segment',
@@ -175,11 +164,6 @@ describe('TransportPanel across passes', () => {
   })
 })
 
-/**
- * Relocated from `src/app/page.test.tsx` (Epic 3, Step C2). The panel's own
- * tests hand it a position; this one asserts that the page composes a transport
- * at all, which only holds with the whole feature rendered.
- */
 describe('through the composed page', () => {
   it("shows today's transport", async () => {
     await renderFeature();
@@ -188,32 +172,18 @@ describe('through the composed page', () => {
   })
 })
 
-/**
- * Feature-11, Epic 3 — the chord symbols over the playing bars. The panel is
- * handed the four symbols or nothing; it never works out which chords a groove
- * has, and it never decides whether the day is over. Both of those belong to
- * the card above it.
- */
 describe('TransportPanel chord row', () => {
-  /** The day's changes as `barChords` hands them over: four symbols, in order. */
   const CHORDS = ['Em7', 'Bm7', 'C♯m7♭5', 'Em7']
 
-  /** The four cells of the chord row, in document order. */
   const cells = () =>
     Array.from(
       screen.getByTestId('chord-row').querySelectorAll<HTMLElement>('[data-bar]'),
     )
 
-  /** What each cell reads. */
   const symbols = () => cells().map((cell) => cell.textContent)
 
-  /**
-   * Which cells are dimmed, as booleans in bar order. Dimming is an opacity
-   * class on the cell, so "full ink" is the absence of one.
-   */
   const dimmed = () => cells().map((cell) => /\bopacity-/.test(cell.className))
 
-  /** The bar the track itself is highlighting, or null when it highlights none. */
   const litSegment = () => {
     const rect = screen.queryByTestId('progress-active')
     return rect === null ? null : Number(rect.getAttribute('data-segment'))
@@ -252,7 +222,6 @@ describe('TransportPanel chord row', () => {
   })
 
   it('inks the sounding bar’s symbol and dims the other three (R4, R5, AC4)', () => {
-    // Six tenths through a single pass is bar three of four.
     const { rerender } = render(
       <TransportPanel position={0.6} isPlaying passes={1} chords={CHORDS} />,
     )
@@ -273,7 +242,6 @@ describe('TransportPanel chord row', () => {
     expect(symbols()).toEqual(CHORDS)
     expect(dimmed()).toEqual([false, false, false, false])
     expect(litSegment()).toBeNull()
-    // All four carry the same treatment, not merely no dimming.
     expect(new Set(cells().map((cell) => cell.className)).size).toBe(1)
   })
 
@@ -282,14 +250,12 @@ describe('TransportPanel chord row', () => {
       <TransportPanel position={0} isPlaying passes={4} chords={CHORDS} />,
     )
 
-    // Bar boundaries inside a pass, the top of a bar, and the pass boundary.
     for (const position of [0, 0.0624, 0.0625, 0.124, 0.1875, 0.2499, 0.25, 0.9999]) {
       rerender(
         <TransportPanel position={position} isPlaying passes={4} chords={CHORDS} />,
       )
       const lit = dimmed().indexOf(false)
       expect(lit, `position ${position}`).toBe(litSegment())
-      // Exactly one symbol is at full ink while something is sounding.
       expect(dimmed().filter((d) => !d), `position ${position}`).toHaveLength(1)
     }
   })
@@ -302,7 +268,6 @@ describe('TransportPanel chord row', () => {
     expect(row).not.toHaveAttribute('role')
     expect(row.querySelectorAll('[aria-live], [role]')).toHaveLength(0)
 
-    // The track exposes exactly what it exposes without the row.
     const track = screen.getByRole('progressbar')
     expect(track).toHaveAttribute('aria-valuenow', '60')
     expect(track).toHaveAttribute('aria-valuemin', '0')
@@ -320,7 +285,6 @@ describe('TransportPanel chord row', () => {
     expect(card).toContainElement(row)
     expect(row.nextElementSibling).toBe(screen.getByRole('progressbar'))
 
-    // The ink is the card's: no colour is named on a symbol, in either palette.
     for (const cell of cells()) {
       expect(cell.className).not.toMatch(/\b(text|bg|fill)-/)
       expect(cell.className).not.toMatch(/\bdark:/)

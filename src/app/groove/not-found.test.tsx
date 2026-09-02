@@ -4,15 +4,6 @@ import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
 import NotFound from "./not-found";
 
-/**
- * The not-found page's own tests.
- *
- * Next renders `src/app/groove/not-found.tsx` for the `notFound()` thrown in
- * `src/app/groove/[uuid]/page.tsx`, so this page is what a dead share link
- * shows. It has no puzzle, no audio and no groove to know about, and the
- * assertions below are as much about what it does *not* hold as about what it
- * says (F12 E3 R8, R9, R10, R12, AC6, AC7, AC9).
- */
 describe("the not-found page a dead share link lands on", () => {
   it("says the groove could not be found", () => {
     render(<NotFound />);
@@ -34,12 +25,8 @@ describe("the not-found page a dead share link lands on", () => {
   it("holds no puzzle, no attempt row, no answer and no audio", () => {
     const { container } = render(<NotFound />);
 
-    // No play control, no root or mode chips, no check control: the page has no
-    // controls at all, only the link out.
     expect(screen.queryAllByRole("button")).toEqual([]);
-    // No attempt dots and no transport track.
     expect(screen.queryByRole("progressbar")).toBeNull();
-    // No answer panel — SolvedPanel announces itself as a status region.
     expect(screen.queryByRole("status")).toBeNull();
     expect(container.querySelector("audio")).toBeNull();
   });
@@ -50,7 +37,6 @@ const source = readFileSync(
   "utf8",
 );
 
-/** Every module specifier the file imports from, as written. */
 function importSpecifiers(code: string): string[] {
   return [...code.matchAll(/from\s+["']([^"']+)["']/g)].map((match) => match[1]);
 }

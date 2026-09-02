@@ -24,16 +24,10 @@ type Fixture = {
   lockPath: string
 }
 
-/**
- * One canonical v4 uuid per fixture groove, derived from its position so the
- * fixture stays deterministic. The guard checks the catalogue's uuids, so a
- * fixture catalogue without them is not one an intact tree would hold.
- */
 function fixtureUuid(i: number): string {
   return `a0000000-0000-4000-8000-${String(i + 1).padStart(12, '0')}`
 }
 
-/** An intact tree plus a lock that describes it. */
 function fixture(ids: string[] = ['groove-01', 'groove-02']): Fixture {
   const dir = mkdtempSync(join(tmpdir(), 'grooves-verify-'))
   const grooveDir = join(dir, 'public', 'grooves')
@@ -59,15 +53,6 @@ function fixture(ids: string[] = ['groove-01', 'groove-02']): Fixture {
   return { grooveDir, cataloguePath, manifestPath, lockPath }
 }
 
-/**
- * Feature-10, Track B. The same tree with the reference notes beside it: three
- * note mp3s named by root slug, their generated manifest, and the pack
- * declaration they were rendered from.
- *
- * Its ids carry no octave, which is what today's committed lock records — so
- * this fixture is also the transition case, run through the real command: a
- * pre-widening lock still resolves to the twelve committed files (R27).
- */
 const NOTE_FILES: Record<string, string> = {
   C: 'note-c.mp3',
   'C\u266f': 'note-c-sharp.mp3',
@@ -108,15 +93,6 @@ function notesFixture(ids: string[] = ['groove-01', 'groove-02']): NotesFixture 
   return { ...f, notesDir, notesManifestPath, packDeclarationPath }
 }
 
-/**
- * Feature-16, Epic 1, Step B3 — R30, R31, AC19. The widened family: twenty-four
- * pitches across two octaves, keyed by scientific pitch, the base octave
- * keeping its historical bare names (R27).
- *
- * A literal table rather than a derivation. A fixture that built each file name
- * the way `noteFile` builds it could not catch `noteFile` building it wrongly —
- * both sides would be wrong together and the guard would pass.
- */
 const PITCH_FILES: Record<string, string> = {
   C4: 'note-c.mp3',
   'C\u266f4': 'note-c-sharp.mp3',
@@ -147,7 +123,6 @@ const PITCH_FILES: Record<string, string> = {
 const ALL_PITCHES = Object.keys(PITCH_FILES)
 const BASE_OCTAVE_PITCHES = ALL_PITCHES.slice(0, 12)
 
-/** The intact tree with `pitches` rendered beside the grooves. */
 function pitchesFixture(pitches: string[] = ALL_PITCHES): NotesFixture {
   const f = fixture()
   const dir = join(f.lockPath, '..')
@@ -228,9 +203,6 @@ describe('verify-cli main — Step B4', () => {
     expect(output).toContain('checksum')
   })
 
-  // Feature-12, Epic 1, Step A7 — R8, R9, R10, AC3, AC4. Each of the three uuid
-  // faults, through the real command, reported by the name of the groove that
-  // holds it: "a uuid is wrong somewhere in thirty entries" is not fixable.
   for (const [what, mangle] of [
     ['missing', (specs: { id: string; uuid?: string }[]) => delete specs[1].uuid],
     ['duplicated', (specs: { id: string; uuid?: string }[]) => (specs[1].uuid = specs[0].uuid)],
@@ -294,16 +266,12 @@ describe('verify-cli main — Step B4', () => {
     expect(output).toContain('groove-03')
   })
 
-  // Epic 2, Step B4: the build guard reads the manifest from the feature's
-  // data/ folder, and must name the same file the generator writes.
   it('guards the manifest in the feature data/ folder, not lib/', () => {
     expect(DEFAULT_MANIFEST_PATH).toBe(
       join(import.meta.dirname, '../../src/features/daily-groove/data/grooves.generated.ts'),
     )
   })
 
-  // Feature-10, Step B7 — R23, R24. The notes are a second family in the same
-  // lock, checked by the same command.
   it('exits zero and names both counts when the notes are intact', async () => {
     const r = run(notesFixture())
     await expect(r.code).resolves.toBe(0)
@@ -346,7 +314,6 @@ describe('verify-cli main — Step B4', () => {
     expect(output).toContain('npm run notes')
   })
 
-  // AC19: the guard runs where there is no sample pack and no rendered note.
   it('still reports on a lock that predates the notes', async () => {
     const r = run(fixture())
     await expect(r.code).resolves.toBe(0)
@@ -363,10 +330,6 @@ describe('verify-cli main — Step B4', () => {
     expect(DEFAULT_PACK_DECLARATION_PATH).toBe(join(import.meta.dirname, 'samples/pack.json'))
   })
 
-  // Feature-16, Epic 1, Step B3 — R30, R31, AC19. Twenty-four notes across two
-  // octaves, checked by the same command, with no new machinery: `verifyLock`
-  // already walks `lock.notes` through `noteFile`, so the count and every
-  // failure follow from the id.
   it('exits zero and reports twenty-four notes when both octaves are intact', async () => {
     const r = run(pitchesFixture())
     await expect(r.code).resolves.toBe(0)
@@ -376,11 +339,6 @@ describe('verify-cli main — Step B4', () => {
   })
 
   it('reports the count it actually finds, not the count it expects', async () => {
-    // The guard is a consistency check, never a completeness check: an
-    // interrupted render leaves twelve files, twelve lock entries and a
-    // twelve-entry manifest that all agree with each other, and nothing here
-    // can tell that from a finished render. The printed count is the only
-    // signal a human gets, so it has to stay derived from the lock.
     const r = run(pitchesFixture(BASE_OCTAVE_PITCHES))
     await expect(r.code).resolves.toBe(0)
     expect(r.lines.join('\n')).toContain('12 notes')
@@ -412,8 +370,6 @@ describe('verify-cli main — Step B4', () => {
   })
 
   it('importing the module runs nothing — the top-level call is guarded', async () => {
-    // Reaching this line at all proves it: the import above did not exit the
-    // process, and no verification ran against the real tree.
     const source = readFileSync(join(import.meta.dirname, 'verify-cli.ts'), 'utf8')
     expect(source).toMatch(/process\.argv\[1\]/)
     expect(typeof main).toBe('function')

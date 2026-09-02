@@ -5,8 +5,6 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { Chip } from './Chip'
 
-// A decorative glyph, used as any caller's string would be. The primitive knows
-// nothing about what it means.
 const NOTE = '♪'
 
 describe('Chip', () => {
@@ -71,9 +69,6 @@ describe('Chip', () => {
     expect(selected.className).toContain('bg-accent')
   })
 
-  // Step A1 — R6, AC7. The grid cell the chip sits in owns the width now, so
-  // the chip carries neither the 60px cap nor the padding reset that came with
-  // it, and it can no longer be asked for either.
   it('leaves its width to the cell it sits in (R6, AC7)', () => {
     const chip = render(
       <Chip label="C" selected={false} disabled={false} onSelect={() => {}} />,
@@ -84,8 +79,6 @@ describe('Chip', () => {
     expect(chip.className).not.toMatch(/\bw-\[/)
   })
 
-  // AC7 is about the prop surface, not about a rendered class, so it is read
-  // off the module the way the structural tests read the tree.
   it('declares no width prop (R6, AC7)', () => {
     const source = readFileSync(
       resolve(process.cwd(), 'src/components/controls/Chip.tsx'),
@@ -153,12 +146,6 @@ describe('Chip', () => {
     expect(idle.className).not.toBe(selected.className)
   })
 
-  // --- Step A1 — a chip with no adornment is unchanged (R6, R7, AC7) -------
-  //
-  // The regression guard for the whole track: it passes today, and it is what
-  // proves the new prop acquired no default. `SolvedPanel` renders inverted
-  // chips with no adornment, which is why both tones are asserted.
-
   it.each(['default', 'inverted'] as const)(
     'renders nothing but its label with no adornment, in the %s tone (R6, R7, AC7)',
     (tone) => {
@@ -178,8 +165,6 @@ describe('Chip', () => {
       expect(chip).toHaveAccessibleName('C')
     },
   )
-
-  // --- Step A2 — the adornment renders before the label (R1, R8) -----------
 
   it('renders its adornment before its label (R1)', () => {
     render(
@@ -211,8 +196,6 @@ describe('Chip', () => {
 
     expect(adorned.className).toBe(plain.className)
   })
-
-  // --- Step A3 — the adornment is hidden from assistive tech (R4, AC5) -----
 
   it('keeps the accessible name to the label alone (R4, AC5)', () => {
     render(
@@ -248,8 +231,6 @@ describe('Chip', () => {
     expect(mark).toHaveAttribute('aria-hidden', 'true')
   })
 
-  // --- Step A4 — it survives every chip state (R3, R9) ---------------------
-
   it.each([
     { state: 'idle', props: { selected: false, disabled: false } },
     { state: 'selected', props: { selected: true, disabled: false } },
@@ -264,16 +245,6 @@ describe('Chip', () => {
     expect(screen.getByRole('button').textContent).toBe(`${NOTE}C`)
   })
 
-  /**
-   * R8/AC10: the root row must stay the same height as the unadorned mode row
-   * beside it. The two tests above prove the button and the grid are untouched,
-   * which leaves the span itself as the only thing that could grow the line box
-   * — and the colour test below cannot see that, because it exempts Tailwind's
-   * arbitrary-value syntax, so a `text-[20px]` would slip straight through it.
-   *
-   * An allowlist rather than a blocklist: anything that is not horizontal
-   * spacing is refused, so a metric nobody thought of is refused too.
-   */
   it('carries horizontal spacing and nothing else, so it cannot grow the row (R8, AC10)', () => {
     render(
       <Chip

@@ -59,13 +59,7 @@ function props(overrides: Partial<Props> = {}): Props {
 
 const rootGroup = () => screen.getByRole('radiogroup', { name: 'Root' })
 const flavourGroup = () => screen.getByRole('radiogroup', { name: 'Mode' })
-/** The note glyph the root row wears (F10 E2 R1). */
 const NOTE_GLYPH = '♪'
-/**
- * A chip's label with its decorative adornment left out. The glyph is
- * `aria-hidden`, so this is the chip's accessible name — which is what every
- * assertion about *which* chips a row offers has always been about (F10 E2 R4).
- */
 const chipLabel = (chip: Element) =>
   Array.from(chip.childNodes)
     .filter(
@@ -77,18 +71,14 @@ const chipLabel = (chip: Element) =>
     )
     .map((node) => node.textContent ?? '')
     .join('')
-/** The adornment a chip carries, or `null` when it carries none. */
 const chipAdornment = (chip: Element) =>
   chip.querySelector('[aria-hidden="true"]')?.textContent ?? null
-/** The element a chip group lays its chips out on. */
 const chipList = (group: HTMLElement) =>
   group.querySelector('[data-testid="chip-list"]') as HTMLElement
 const modeSwitch = () => screen.getByRole('switch', { name: /simple mode/i })
 const soundSwitch = () => screen.getByRole('switch', { name: /tap sounds/i })
-/** True when `a` comes before `b` in document order. */
 const precedes = (a: Element, b: Element) =>
   Boolean(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING)
-/** The six modes Epic 4 leaves standing, plus the one it retired. */
 const MODE_NAME = /ionian|dorian|phrygian|lydian|mixolydian|aeolian|locrian/i
 const FAMILIES: Flavour[] = ['Major', 'Minor']
 const dotStates = () =>
@@ -97,11 +87,6 @@ const dotStates = () =>
   )
 
 describe('GuessCard', () => {
-  // --- C1: twelve roots, four flavours (R1, R2, R3, AC1) --------------------
-
-  // Epic 4, Step D1 (R1, AC1): the row holds modes, so it says so. The
-  // vocabulary on screen is one word, and "Flavour" is not it. `name="flavour"`
-  // stays as it is — a DOM grouping key, never read by a player.
   it('labels the second chip row "Mode", not "Flavour" (R1, AC1)', () => {
     render(<GuessCard {...props()} />)
 
@@ -160,8 +145,6 @@ describe('GuessCard', () => {
     expect(pressedFlavours.map(chipLabel)).toEqual(['Dorian'])
   })
 
-  // --- C2: the control names the pair (R7, R8, AC6) -------------------------
-
   it('prompts and stays disabled until both halves are chosen (R7, AC6)', () => {
     render(<GuessCard {...props()} />)
 
@@ -212,8 +195,6 @@ describe('GuessCard', () => {
     expect(onCheck).toHaveBeenCalledTimes(1)
   })
 
-  // --- Epic 3 C1: the card shows dots, feedback and the nudge ---------------
-
   it('renders the attempt dots it is given (R1, AC1)', () => {
     render(<GuessCard {...props()} />)
 
@@ -249,7 +230,6 @@ describe('GuessCard', () => {
     )
 
     expect(screen.getByRole('status')).toHaveTextContent(ROOT_MATCHED.message)
-    // Epic 2's throwaway verdict line is gone.
     expect(screen.queryByText(/^not quite\.$/i)).not.toBeInTheDocument()
     expect(screen.queryByText(/^correct\.$/i)).not.toBeInTheDocument()
   })
@@ -296,11 +276,8 @@ describe('GuessCard', () => {
 
     const nudge = screen.getByRole('complementary', { name: 'A nudge' })
     expect(nudge.textContent).toMatch(/root is G\./)
-    // The nudge is additional context, not a replacement message.
     expect(screen.getByRole('status')).toHaveTextContent(ROOT_MATCHED.message)
   })
-
-  // --- Epic 3 C2: the nudge does not touch the chips (R6, R7, AC10, AC11) ---
 
   it('leaves every root chip unpressed and enabled when the nudge appears (AC10, AC11)', () => {
     render(
@@ -316,13 +293,10 @@ describe('GuessCard', () => {
 
     const chips = within(rootGroup()).getAllByRole('button')
     expect(chips).toHaveLength(12)
-    // Nothing was auto-selected...
     expect(chips.filter((b) => b.getAttribute('aria-pressed') === 'true')).toEqual(
       [],
     )
-    // ...nothing was filtered away or locked...
     for (const chip of chips) expect(chip).toBeEnabled()
-    // ...and no chip is marked as already tried.
     expect(
       chips.filter((b) => b.getAttribute('aria-disabled') === 'true'),
     ).toEqual([])
@@ -347,8 +321,6 @@ describe('GuessCard', () => {
     expect(onSelectRoot).toHaveBeenCalledWith('G')
   })
 
-  // --- C4: a wrong check keeps the chips and disables the control (R11, AC9)
-
   it('keeps both chips pressed and disables the control after a wrong check (AC9)', () => {
     const { rerender } = render(
       <GuessCard
@@ -372,7 +344,6 @@ describe('GuessCard', () => {
       screen.getByRole('button', { name: 'Check G Mixolydian' }),
     ).toBeDisabled()
 
-    // Changing a half re-enables the control; the label follows the new pair.
     rerender(
       <GuessCard
         {...props({
@@ -386,8 +357,6 @@ describe('GuessCard', () => {
     )
     expect(screen.getByRole('button', { name: 'Check G Dorian' })).toBeEnabled()
   })
-
-  // --- C5: solving locks the chips (R12, AC10) ------------------------------
 
   it('stops accepting chip input once the day is solved (AC10)', async () => {
     const user = userEvent.setup()
@@ -415,7 +384,6 @@ describe('GuessCard', () => {
     )
     expect(onSelectFlavour).not.toHaveBeenCalled()
 
-    // The selection that solved the day is still the one on screen.
     expect(
       within(rootGroup()).getByRole('button', { name: 'G' }),
     ).toHaveAttribute('aria-pressed', 'true')
@@ -450,27 +418,12 @@ describe('GuessCard', () => {
 
     const control = screen.getByRole('button', { name: 'Solved' })
     expect(control).toBeDisabled()
-    // A distinct tone from the live "ready" control, not just a relabel.
     expect(control.className).not.toBe(readyClass)
   })
 
-  // --- feature-16 Epic 2, Steps C1-C3: Check comes up to Play's size -------
-
-  /**
-   * The size-bearing classes of a button, and nothing else. Vertical padding
-   * and type size are the two things `Button`'s `size` sets, so they are what
-   * "the same size" means here — sorted, so the comparison is order-free.
-   */
   const sizeOf = (el: HTMLElement) =>
     (el.className.match(/py-\[\d+px\]|text-\[\d+px\]/g) ?? []).sort()
 
-  // Step C1 — R15, R18, AC13. This reverses feature-8 Epic 2's Step B3, which
-  // pinned the check control at the default size while the play control grew.
-  // F16 E2 R15 makes them equals: the button that ends the puzzle stops
-  // looking like an afterthought beside the one that starts it. The literal
-  // the two are compared against comes from *rendering* the play control
-  // rather than from a copy of its classes, so R18 — the play control is
-  // unchanged — is proven here rather than assumed.
   it('renders the check control at the play control\u2019s size (R15, R18, AC13)', () => {
     render(
       <>
@@ -492,8 +445,6 @@ describe('GuessCard', () => {
     expect(sizeOf(check)).toEqual(['py-[22px]', 'text-[17px]'])
   })
 
-  // Step C1's other half. Nothing came down to meet it: the give-up control is
-  // not the call to action, so it keeps the default size (PRD *Out of scope*).
   it('leaves the give-up control at the default size (R18)', () => {
     render(<GuessCard {...props(REVEAL_READY)} />)
 
@@ -503,18 +454,6 @@ describe('GuessCard', () => {
     ])
   })
 
-  /**
-   * Step C2 — R16, AC14. Every label the control could ever show, derived from
-   * the data rather than written out: each distinct flavour the catalogue
-   * holds, crossed with every root the row offers, keeping the ones that come
-   * out longest. Five roots are two characters wide, so the longest is a set
-   * rather than a single string.
-   *
-   * That makes this the *budget* assertion, and 26 characters is the budget
-   * the tech spec's 360px sum was worked against. A future mode name longer
-   * than `Phrygian dominant` trips this case rather than a phone, and whoever
-   * adds it has to decide what the control says at the base breakpoint.
-   */
   const LONGEST_CHECK_LABELS = (() => {
     const flavours = [...new Set(GROOVES.map((groove) => groove.flavour))]
     const labels = ROOTS.flatMap((root) =>
@@ -524,15 +463,12 @@ describe('GuessCard', () => {
     return labels.filter((label) => label.length === longest)
   })()
 
-  /** The one of them the tech spec's 360px assumption is written against. */
   const LONGEST_CHECK_LABEL = 'Check E\u266D Phrygian dominant'
 
   it('has a longest possible label of 26 characters (R16, AC14)', () => {
     for (const label of LONGEST_CHECK_LABELS) {
       expect(label, label).toHaveLength(26)
     }
-    // The string the spec measured is genuinely one of the longest, so the
-    // budget below is measured against the real worst case.
     expect(LONGEST_CHECK_LABELS).toContain(LONGEST_CHECK_LABEL)
   })
 
@@ -551,12 +487,9 @@ describe('GuessCard', () => {
 
     const check = screen.getByRole('button', { name: LONGEST_CHECK_LABEL })
 
-    // The whole label, in one text node: nothing is split off or replaced.
     expect(check.textContent).toBe(LONGEST_CHECK_LABEL)
     expect(check.childNodes).toHaveLength(1)
 
-    // jsdom measures no text, so what is pinned here is that the control asks
-    // for no clipping. Whether it wraps at a given width is the demo's job.
     for (const cut of [
       /\btruncate\b/,
       /\btext-ellipsis\b/,
@@ -567,8 +500,6 @@ describe('GuessCard', () => {
     }
   })
 
-  // Step C3 — R17, AC15. Bigger type must not flatten the three states into
-  // one another: each keeps its own tone token, and all three keep the size.
   it('keeps the waiting, live and solved states apart at the larger size (R17, AC15)', () => {
     const states: { name: string; token: string; className: string }[] = []
 
@@ -596,17 +527,12 @@ describe('GuessCard', () => {
       feedback: SOLVED,
     })
 
-    // Three distinct treatments, not one relabelled three times...
     expect(new Set(states.map((state) => state.className)).size).toBe(3)
     for (const state of states) {
-      // ...each carrying its own tone...
       expect(state.className, state.name).toContain(state.token)
-      // ...and all three at the call-to-action size.
       expect(state.className, state.name).toContain('py-[22px]')
     }
   })
-
-  // --- Epic 1 C1-C3: the dots sit above the check button, alone -------------
 
   it('puts the attempt dots directly above the check button, not beside the heading (R7, AC7)', () => {
     render(<GuessCard {...props()} />)
@@ -616,13 +542,11 @@ describe('GuessCard', () => {
     })
     const dotsRow = control.previousElementSibling as HTMLElement
 
-    // The row immediately above the control is the dot row itself.
     expect(dotsRow.querySelectorAll('[data-dot-state]')).toHaveLength(3)
     expect(within(dotsRow).getByRole('img')).toHaveAccessibleName(
       expect.stringContaining('0 of 3 attempts spent'),
     )
 
-    // ...and it sits after the flavour chips, so it has left the heading row.
     expect(
       flavourGroup().compareDocumentPosition(dotsRow) &
         Node.DOCUMENT_POSITION_FOLLOWING,
@@ -651,10 +575,6 @@ describe('GuessCard', () => {
     ).toBeInTheDocument()
   })
 
-  // --- Epic 3 C1/C2: the card supplies each row's column count -------------
-
-  // Step C1 — R2a, R4, AC4. The counts live here because the caller is what
-  // knows how many options it has; `ChipGroup` only knows numbers.
   it('lays the twelve roots out on 4 columns, rising to 6 (R2a, R4, AC4)', () => {
     render(<GuessCard {...props()} />)
     const list = chipList(rootGroup())
@@ -681,8 +601,6 @@ describe('GuessCard', () => {
     }
   })
 
-  // Step C2 — R4, AC4. A guard: it passes once C1 has landed, and stands so
-  // the two rows cannot drift into different layouts.
   it('lays both rows out through the same component (R4, AC4)', () => {
     render(<GuessCard {...props()} />)
     const root = chipList(rootGroup())
@@ -695,13 +613,10 @@ describe('GuessCard', () => {
       expect(list.className).not.toContain('flex-wrap')
     }
 
-    // Same layout shape, differing only in the counts the card supplies.
     const shape = (list: HTMLElement) =>
       list.className.replace(/grid-cols-\d+/g, 'grid-cols-N')
     expect(shape(root)).toBe(shape(flavour))
   })
-
-  // --- feature-7 Epic 3, Steps C3-C6: the give-up control -------------------
 
   const GIVE_UP = 'Give up and show the answer'
   const CONFIRM = 'Yes — end the day and show the answer'
@@ -718,7 +633,6 @@ describe('GuessCard', () => {
     showReveal: true,
   }
 
-  // Step C3 — R6, R6a, AC6, AC8
   it('offers no way to give up until it is asked for (R6, AC6)', () => {
     render(<GuessCard {...props({ dots: ['spent', 'spent', 'unspent'] })} />)
 
@@ -742,16 +656,13 @@ describe('GuessCard', () => {
 
     expect(onReveal).not.toHaveBeenCalled()
     expect(giveUp()).not.toBeInTheDocument()
-    // The armed label names the consequence rather than asking a bare "Sure?".
     expect(confirm()).toBeInTheDocument()
 
-    // The day is still playable: the chips are live and the answer is not shown.
     for (const chip of within(rootGroup()).getAllByRole('button')) {
       expect(chip).toBeEnabled()
     }
   })
 
-  // Step C4 — R7, AC8a
   it('ends the day on the second press, exactly once (R7, AC8a)', async () => {
     const user = userEvent.setup()
     const onReveal = vi.fn()
@@ -763,7 +674,6 @@ describe('GuessCard', () => {
     expect(onReveal).toHaveBeenCalledTimes(1)
   })
 
-  // Step C5 — R6b, AC8c
   it('disarms when a root chip is selected instead (R6b, AC8c)', async () => {
     const user = userEvent.setup()
     const onReveal = vi.fn()
@@ -801,7 +711,6 @@ describe('GuessCard', () => {
     expect(giveUp()).toBeInTheDocument()
   })
 
-  // Step C5 — R6b, AC8b
   it('disarms when a guess is checked instead, and still scores it (R6b, AC8b)', async () => {
     const user = userEvent.setup()
     const onReveal = vi.fn()
@@ -823,7 +732,6 @@ describe('GuessCard', () => {
     expect(giveUp()).toBeInTheDocument()
   })
 
-  // Step C6 — R7, AC8a
   it('goes inert once the day is revealed (R7, AC8a)', async () => {
     const user = userEvent.setup()
     const onSelectRoot = vi.fn()
@@ -884,8 +792,6 @@ describe('GuessCard', () => {
     expect(screen.getByRole('button', { name: 'Check G Dorian' })).toBeDisabled()
   })
 
-  // --- feature-7 Epic 5, Steps C2/C3: the simple-mode switch ----------------
-
   it('carries a simple-mode switch, under the heading and above both rows (R1, AC1)', () => {
     render(<GuessCard {...props()} />)
 
@@ -919,11 +825,6 @@ describe('GuessCard', () => {
     expect(onToggleSimple).toHaveBeenCalledWith(false)
   })
 
-  // --- F11 E4: the switch settles once the day is over ----------------------
-
-  // Step B1. The half of feature-7's R8a that survives the narrowing, and the
-  // reason the rule was written: a player who finds the full row too hard may
-  // narrow it mid-puzzle, however many attempts they have already spent.
   it('keeps the switch live on a playable day with attempts spent (F11 E4 R3, AC3)', async () => {
     const user = userEvent.setup()
     const onToggleSimple = vi.fn()
@@ -943,10 +844,6 @@ describe('GuessCard', () => {
     expect(onToggleSimple).toHaveBeenCalledWith(true)
   })
 
-  // Step B2. Feature-7's R8a said the switch is never locked by having
-  // guessed, and that still holds — but the day ending is not "having
-  // guessed". Once the answer is on screen the switch has nothing left to do,
-  // so it settles with the chips it sits above (F11 E4 R8).
   it('settles the switch on a day that is already over (F11 E4 R1, AC1)', async () => {
     const user = userEvent.setup()
     const onToggleSimple = vi.fn()
@@ -962,15 +859,12 @@ describe('GuessCard', () => {
       />,
     )
 
-    // The chips lock on a finished day, and now so does the switch above them.
     expect(within(rootGroup()).getAllByRole('button')[0]).toBeDisabled()
     expect(modeSwitch()).toBeDisabled()
     await user.click(modeSwitch())
     expect(onToggleSimple).not.toHaveBeenCalled()
   })
 
-  // Step B3. One terminal state, both endings: the card computes
-  // `over = solved || revealed` and the switch reads that, not `solved`.
   it('settles the switch on a revealed day too (F11 E4 R2, AC2)', async () => {
     const user = userEvent.setup()
     const onToggleSimple = vi.fn()
@@ -1000,7 +894,6 @@ describe('GuessCard', () => {
     expect(modeSwitch()).toHaveAttribute('aria-checked', 'true')
   })
 
-  // Step B5. R1 makes this unreachable; the check exists so that it stays so.
   it('leaves the finished card untouched when its settled switch is clicked (F11 E4 R7, R7a)', async () => {
     const user = userEvent.setup()
     const onToggleSimple = vi.fn()
@@ -1074,7 +967,6 @@ describe('GuessCard', () => {
           .filter((b) => b.getAttribute('aria-pressed') === 'true')
           .map(chipLabel)
 
-      // Both rows still answer to their labels, and each holds one selection.
       expect(pressed(rootGroup())).toEqual(['G'])
       expect(pressed(flavourGroup())).toEqual([flavours[1]])
     })
@@ -1098,8 +990,6 @@ describe('GuessCard', () => {
       expect(visited).toContain(sounds)
       expect(visited).toContain(firstRoot)
       expect(visited).toContain(firstFlavour)
-      // And in that order: the two switches are the first things in the card,
-      // the sounds switch directly after the mode switch (F16 E2 R1, AC1).
       expect(visited.indexOf(toggle)).toBeLessThan(visited.indexOf(sounds))
       expect(visited.indexOf(sounds)).toBeLessThan(visited.indexOf(firstRoot))
       expect(visited.indexOf(firstRoot)).toBeLessThan(
@@ -1116,9 +1006,6 @@ describe('GuessCard', () => {
     ).toEqual(['Major', 'Minor'])
   })
 
-  // The label names the question, not the size of the answer set: "Major" and
-  // "Minor" are the mode question narrowed to its two families. A label that
-  // moved with the toggle would change the card's vocabulary mid-day.
   it('keeps the second row labelled "Mode" in either mode (R4, AC3)', () => {
     render(<GuessCard {...props({ simple: true, flavours: FAMILIES })} />)
 
@@ -1146,8 +1033,6 @@ describe('GuessCard', () => {
     expect(container.textContent).not.toMatch(MODE_NAME)
   })
 
-  // --- C6: chord and progression stay hidden --------------------------------
-
   it('never shows the chord or the progression while unsolved (Epic 4 guard)', () => {
     const { container } = render(
       <GuessCard
@@ -1159,17 +1044,10 @@ describe('GuessCard', () => {
       />,
     )
 
-    // The seeded groove behind this card is C minor / Cm7 / Cm-Fm-G7. Neither
-    // the chord nor the progression may leak before Epic 4 reveals them.
     expect(container.textContent).not.toContain('Cm7')
     expect(container.textContent).not.toContain('Cm–Fm–G7')
   })
 
-  // --- feature-10 Epic 1, Steps D2-D6: the root row sounds ------------------
-
-  // Step D2 (R1, R2, AC1). One gesture, two things: the card reports the
-  // choice and asks for the note, in that order. Only the first is allowed to
-  // fail loudly, which is why selection goes first.
   it('reports the root and asks for its note on the same tap (R1, R2, AC1)', async () => {
     const user = userEvent.setup()
     const calls: string[] = []
@@ -1184,9 +1062,6 @@ describe('GuessCard', () => {
     expect(calls).toEqual(['select:E♭', 'hear:E♭'])
   })
 
-  // Step D3 (R1, AC2). "Tap again to hear it again" is not a feature the card
-  // adds; it is the guard on a feature it must not add. A handler that skipped
-  // an unchanged value would break this and nothing else.
   it('asks again when the root already selected is tapped again (R1, AC2)', async () => {
     const user = userEvent.setup()
     const onHearRoot = vi.fn()
@@ -1206,8 +1081,6 @@ describe('GuessCard', () => {
     expect(chip).toHaveAttribute('aria-pressed', 'true')
   })
 
-  // Step D5 (R12, AC10). The chips are already disabled once the day is over;
-  // this is the proof that the new call did not route around that lock.
   it('stays silent once the day is solved (R12, AC10)', async () => {
     const user = userEvent.setup()
     const onHearRoot = vi.fn()
@@ -1246,9 +1119,6 @@ describe('GuessCard', () => {
     expect(onHearRoot).not.toHaveBeenCalled()
   })
 
-  // Step D6 (R7, AC6). Simple mode narrows the row the card is handed; the
-  // card does the narrowing nowhere and special-cases the count nowhere, so
-  // six chips sound exactly as twelve do.
   it('sounds every root a narrowed row offers (R7, AC6)', async () => {
     const user = userEvent.setup()
     const onHearRoot = vi.fn()
@@ -1264,9 +1134,6 @@ describe('GuessCard', () => {
     expect(onHearRoot.mock.calls.map(([r]) => r)).toEqual(six)
   })
 
-  // The two rows are wired to two handlers and never to each other's. The
-  // mode row sounds now (F16 E1 R1), but it asks `onHearMode`; a mode tap that
-  // reached `onHearRoot` would play a bare reference note instead of a lick.
   it('never asks for a note when a mode chip is tapped (R1)', async () => {
     const user = userEvent.setup()
     const onHearRoot = vi.fn()
@@ -1279,8 +1146,6 @@ describe('GuessCard', () => {
     expect(onHearRoot).not.toHaveBeenCalled()
   })
 
-  // Step D2, second half: the new call sits *inside* the disarming wrapper, so
-  // a root tap still cancels an armed give-up exactly as it did before.
   it('still disarms the give-up control when a root is tapped (F7 E3 R6b)', async () => {
     const user = userEvent.setup()
     const onReveal = vi.fn()
@@ -1291,7 +1156,6 @@ describe('GuessCard', () => {
     )
     await user.click(within(rootGroup()).getByRole('button', { name: 'C' }))
 
-    // Back to the first-press label, and the next press does not end the day.
     const give = screen.getByRole('button', {
       name: /give up and show the answer/i,
     })
@@ -1299,12 +1163,6 @@ describe('GuessCard', () => {
     expect(onReveal).not.toHaveBeenCalled()
   })
 
-  // --- feature-16 Epic 1, Steps G1-G2: the mode row sounds ------------------
-
-  // Step G1 (R1, R2, AC1). One gesture, two things, exactly as the root row
-  // already does it: the card reports the choice and asks for the lick, in
-  // that order. Selection goes first because it is the half allowed to fail
-  // loudly.
   it('reports the mode and asks for its lick on the same tap (R1, R2, AC1)', async () => {
     const user = userEvent.setup()
     const calls: string[] = []
@@ -1323,9 +1181,6 @@ describe('GuessCard', () => {
     expect(calls).toEqual(['select:Lydian', 'hear:Lydian'])
   })
 
-  // Step G1 (R1, AC2). "Tap again to hear it again" is the guard on a feature
-  // the card must not add: a handler that skipped an unchanged value would
-  // break this and nothing else.
   it('asks again when the mode already selected is tapped again (R1, AC2)', async () => {
     const user = userEvent.setup()
     const onSelectFlavour = vi.fn()
@@ -1347,9 +1202,6 @@ describe('GuessCard', () => {
     expect(chip).toHaveAttribute('aria-pressed', 'true')
   })
 
-  // Step G1 (R3, AC3). Hearing is not guessing. Tapping modes spends no
-  // attempt, fills no dot and scores nothing: the dots, the line and the
-  // control read exactly as they did before the taps.
   it('leaves the dots, the line and the control untouched by mode taps (R3, AC3)', async () => {
     const user = userEvent.setup()
     const onCheck = vi.fn()
@@ -1381,8 +1233,6 @@ describe('GuessCard', () => {
     expect(onCheck).not.toHaveBeenCalled()
   })
 
-  // Step G1 (R22, AC15). The chips are already disabled once the day is over;
-  // this is the proof that the new call did not route around that lock.
   it.each([
     ['solved', { solved: true, dots: ['solved', 'solved', 'solved'] as DotState[], feedback: SOLVED }],
     ['revealed', { revealed: true }],
@@ -1410,9 +1260,6 @@ describe('GuessCard', () => {
     expect(onSelectFlavour).not.toHaveBeenCalled()
   })
 
-  // Step G1 (R15, AC11). Simple mode narrows the row the card is handed; the
-  // card narrows nothing and special-cases no count, so two chips sound
-  // exactly as four do.
   it('sounds every option a narrowed mode row offers (R15, AC11)', async () => {
     const user = userEvent.setup()
     const onHearMode = vi.fn()
@@ -1429,8 +1276,6 @@ describe('GuessCard', () => {
     expect(onHearMode.mock.calls.map(([f]) => f)).toEqual(FAMILIES)
   })
 
-  // Step G1, second half: the new call sits *inside* the disarming wrapper, so
-  // a mode tap still cancels an armed give-up exactly as it did before.
   it('still disarms the give-up control when a mode is tapped (F7 E3 R6b)', async () => {
     const user = userEvent.setup()
     const onReveal = vi.fn()
@@ -1443,14 +1288,12 @@ describe('GuessCard', () => {
       within(flavourGroup()).getByRole('button', { name: 'Dorian' }),
     )
 
-    // Back to the first-press label, and the next press does not end the day.
     await user.click(
       screen.getByRole('button', { name: /give up and show the answer/i }),
     )
     expect(onReveal).not.toHaveBeenCalled()
   })
 
-  // The root row keeps its own handler: a root tap is not a lick.
   it('never asks for a lick when a root chip is tapped (R1)', async () => {
     const user = userEvent.setup()
     const onHearMode = vi.fn()
@@ -1461,23 +1304,7 @@ describe('GuessCard', () => {
     expect(onHearMode).not.toHaveBeenCalled()
   })
 
-  // --- feature-10 Epic 2, Steps C1-C2: the row looks audible ---------------
-
-  /**
-   * The glyph is the card's decision, not the chip's: `Chip` takes a generic
-   * adornment and this card is what hands one to the root row and nothing to
-   * the mode row. Asserted on rendered output, so it is indifferent to how the
-   * design system spells the prop.
-   */
   describe('the note glyph on the root row (F10 E2)', () => {
-    // Step C1 — R1, R2, AC1, AC2.
-    //
-    // F10 E2 R2 also asserted here that *no* mode chip carried the glyph,
-    // because the mode row was silent. F16 E1 R23 reverses that half: the mode
-    // row sounds now, so it wears the same mark, and the assertion moved to
-    // `the note glyph on the mode row (F16 E1)` below rather than being
-    // dropped. What survives unchanged is this row's own contract — every root
-    // chip marked, and marked leading.
     it('marks every root chip with the glyph (R1, R2, AC1)', () => {
       render(<GuessCard {...props()} />)
 
@@ -1485,15 +1312,12 @@ describe('GuessCard', () => {
       expect(roots).toHaveLength(12)
       for (const chip of roots) {
         expect(chipAdornment(chip), chipLabel(chip)).toBe(NOTE_GLYPH)
-        // Leading, so the row's glyphs line up in a column (R1).
         expect(chip.textContent, chipLabel(chip)).toBe(
           `${NOTE_GLYPH}${chipLabel(chip)}`,
         )
       }
     })
 
-    // Step C1's other half — R4, AC5. The glyph is decorative, so the name a
-    // screen reader announces is the root alone, exactly as it was before.
     it('leaves a root chip’s accessible name its label alone (R4, AC5)', () => {
       render(<GuessCard {...props()} />)
 
@@ -1506,18 +1330,6 @@ describe('GuessCard', () => {
       ).toBeNull()
     })
 
-    // Step C2 — R3, AC3. Simple mode narrows the row; it does not unmark it.
-    /**
-     * AC10, as directly as this stack allows. The criterion is that the marked
-     * root row and the unmarked mode row are the same height, and jsdom has no
-     * layout engine — `offsetHeight` is 0 for everything, so a literal
-     * comparison would assert nothing at all.
-     *
-     * What decides the height here is the chip's classes, so that is what is
-     * compared: every chip in both rows must carry the identical class string,
-     * marked or not. Paired with `Chip`'s own guard that the adornment span
-     * carries only horizontal margin, the two together say what AC10 says.
-     */
     it('gives the marked row and the unmarked row identical chips (R8, AC10)', () => {
       render(<GuessCard {...props()} />)
 
@@ -1529,7 +1341,6 @@ describe('GuessCard', () => {
       const roots = classesOf(rootGroup())
       const modes = classesOf(flavourGroup())
 
-      // Every chip in a row is drawn the same, and both rows agree.
       expect(new Set([...roots, ...modes]).size).toBe(1)
     })
 
@@ -1543,8 +1354,6 @@ describe('GuessCard', () => {
       for (const chip of chips) expect(chipAdornment(chip)).toBe(NOTE_GLYPH)
     })
 
-    // Step C2's second half — R3, AC4. Both terminal states lock the row;
-    // neither takes the glyph off it.
     it.each([
       ['solved', { solved: true }],
       ['revealed', { revealed: true }],
@@ -1556,14 +1365,11 @@ describe('GuessCard', () => {
         expect(chip).toBeDisabled()
         expect(chipAdornment(chip), chipLabel(chip)).toBe(NOTE_GLYPH)
       }
-      // The selected chip wears it too, on its accent treatment (R3, R9).
       const selected = within(rootGroup()).getByRole('button', { name: 'G' })
       expect(selected).toHaveAttribute('aria-pressed', 'true')
       expect(chipAdornment(selected)).toBe(NOTE_GLYPH)
     })
 
-    // R8, AC10. The glyph is spacing and nothing else: it may not give the
-    // root row a class the mode row does not have.
     it('leaves the two rows built the same way (R8, AC10)', () => {
       render(<GuessCard {...props()} />)
 
@@ -1573,15 +1379,7 @@ describe('GuessCard', () => {
     })
   })
 
-  /**
-   * The mode row sounds now, so it says so (F16 E1 R23, R24, AC16). The glyph
-   * is the card's decision and not the chip's: `Chip` takes a generic
-   * adornment, and this card is what hands the same one to both rows. Asserted
-   * on rendered output, so it is indifferent to how the design system spells
-   * the prop.
-   */
   describe('the note glyph on the mode row (F16 E1)', () => {
-    // Step G2 — R23, AC16.
     it('marks every mode chip with the same glyph the roots wear (R23, AC16)', () => {
       render(<GuessCard {...props()} />)
 
@@ -1589,21 +1387,17 @@ describe('GuessCard', () => {
       expect(modes).toHaveLength(FLAVOURS.length)
       for (const chip of modes) {
         expect(chipAdornment(chip), chipLabel(chip)).toBe(NOTE_GLYPH)
-        // Leading, like the root row's, so both rows read the same way.
         expect(chip.textContent, chipLabel(chip)).toBe(
           `${NOTE_GLYPH}${chipLabel(chip)}`,
         )
       }
 
-      // The same mark, not a second vocabulary of marks.
       const rootMarks = within(rootGroup())
         .getAllByRole('button')
         .map(chipAdornment)
       expect(new Set([...rootMarks, ...modes.map(chipAdornment)]).size).toBe(1)
     })
 
-    // Step G2's other half — R24, AC16. The glyph is decoration, so the name a
-    // screen reader announces is the mode alone, exactly as it was before.
     it('leaves a mode chip’s accessible name its label alone (R24, AC16)', () => {
       render(<GuessCard {...props()} />)
 
@@ -1621,7 +1415,6 @@ describe('GuessCard', () => {
       ).toBeNull()
     })
 
-    // Simple mode narrows the row; it does not unmark it (R23, AC16).
     it('marks both options in simple mode (R23, AC16)', () => {
       render(<GuessCard {...props({ simple: true, flavours: FAMILIES })} />)
 
@@ -1633,8 +1426,6 @@ describe('GuessCard', () => {
       }
     })
 
-    // Both terminal states lock the row; neither takes the glyph off it, and
-    // neither changes what a chip is called.
     it.each([
       ['solved', { solved: true }],
       ['revealed', { revealed: true }],
@@ -1647,7 +1438,6 @@ describe('GuessCard', () => {
         expect(chip).toBeDisabled()
         expect(chipAdornment(chip), chipLabel(chip)).toBe(NOTE_GLYPH)
       }
-      // The selected chip wears it too, on its accent treatment.
       const selected = within(flavourGroup()).getByRole('button', {
         name: 'Dorian',
       })
@@ -1656,16 +1446,7 @@ describe('GuessCard', () => {
     })
   })
 
-  // --- feature-16 Epic 2, Steps D4-D7: the tap-sounds switch ---------------
-
-  /**
-   * The second preference on the card. It is the same control as the
-   * simple-mode toggle with different words (R14), it sits directly under it
-   * (R1), and it is the one thing on this card that does *not* settle when the
-   * day does (R5a).
-   */
   describe('the tap-sounds switch (F16 E2)', () => {
-    // Step D4 — R1, R14, AC1.
     it('sits directly below the simple-mode toggle, above both rows (R1, AC1)', () => {
       render(<GuessCard {...props()} />)
 
@@ -1674,9 +1455,6 @@ describe('GuessCard', () => {
       expect(precedes(soundSwitch(), flavourGroup())).toBe(true)
     })
 
-    // One stack, not two things that happen to be adjacent: the pair reads as
-    // the card's preferences, so a later insertion between them is a change
-    // someone has to make on purpose.
     it('shares its stack with the simple-mode toggle (R1, R14, AC1)', () => {
       render(<GuessCard {...props()} />)
 
@@ -1705,9 +1483,6 @@ describe('GuessCard', () => {
       expect(onToggleTapSounds).toHaveBeenCalledWith(true)
     })
 
-    // Step D5 — R5a, AC11b. The asymmetry with the row above it is the point:
-    // the mode is a record of how the day was played and settles with the
-    // card; the sounds are a setting, and this card is their only home.
     it.each([
       ['solved', { solved: true, dots: ['solved', 'solved', 'solved'] as DotState[], feedback: SOLVED }],
       ['revealed', { revealed: true }],
@@ -1732,10 +1507,6 @@ describe('GuessCard', () => {
       expect(onToggleTapSounds).toHaveBeenCalledWith(false)
     })
 
-    // Step D6 — R12, AC11. The mark is the promise that a chip sounds, so it
-    // follows the preference: no sounds, no promise. Both rows, one flag —
-    // Epic 1 marked the mode row and left routing it through this condition
-    // to this epic, which is the seam the two agreed on.
     it('marks both rows while the sounds are on (R12, AC11)', () => {
       render(<GuessCard {...props({ tapSounds: true })} />)
 
@@ -1756,7 +1527,6 @@ describe('GuessCard', () => {
       }
     })
 
-    // The mark going away must not change what either row *offers*.
     it('leaves both rows offering exactly what they offered (R12, AC11)', () => {
       const { unmount } = render(<GuessCard {...props({ tapSounds: true })} />)
       const marked = {
@@ -1780,7 +1550,6 @@ describe('GuessCard', () => {
       }
     })
 
-    // Step D7 — R5, AC5. Flipping a preference is not an attempt.
     it('changes nothing else on the card when it is flipped (R5, AC5)', async () => {
       const user = userEvent.setup()
       const onSelectRoot = vi.fn()
@@ -1829,9 +1598,6 @@ describe('GuessCard', () => {
       expect(onCheck).not.toHaveBeenCalled()
     })
 
-    // Step D4's other half: every interactive handler on this card goes
-    // through `disarming`, and flipping a preference is doing something else
-    // with the card — the documented way back out of an armed give-up (R6b).
     it('disarms an armed give-up when the sounds are switched instead (F7 E3 R6b)', async () => {
       const user = userEvent.setup()
       const onReveal = vi.fn()
@@ -1849,13 +1615,6 @@ describe('GuessCard', () => {
   })
 })
 
-/**
- * Relocated from `src/app/page.test.tsx` (Epic 3, Step C2). Each of these
- * asserts what the card offers on the real day — the day's chips, the day's
- * ordering, the day's check control — which is only true of a card the page
- * built, so they keep the composed render they were written against rather
- * than the hand-made props above.
- */
 describe('through the composed page', () => {
   it("offers today's deterministic flavour options", async () => {
     await renderFeature();

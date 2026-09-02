@@ -3,26 +3,10 @@ import type { Flavour } from '../types.ts'
 import { ROOTS, pitchClassOf } from './notes.ts'
 import { intervalsFor, pitchesOf } from './scales.ts'
 
-/**
- * The octave the comp chords are voiced in. C4 = 60 sits comfortably inside the
- * pitched samples' range, and the widest chord from the highest root still lands
- * below the top sampled note.
- */
 const CHORD_OCTAVE = 4
 
-/** The en-dash the app uses between progression chords (U+2013), not a hyphen. */
 const PROGRESSION_SEPARATOR = '–'
 
-/**
- * Chord qualities, richest first. Building a chord on a scale degree means
- * taking the first quality whose every interval is already in the scale, which
- * is what guarantees an in-scale chord for a six-note blues scale as well as for
- * the seven-note modes — stacking thirds by index does not.
- *
- * The list doubles as the parser's table: a name is a root plus exactly one of
- * these suffixes, so `chordNameFor` and `pitchClassesOf` are inverses and the
- * manifest's `chord` can never name pitches the events do not play.
- */
 const QUALITIES: { suffix: string; intervals: number[] }[] = [
   { suffix: 'maj7', intervals: [0, 4, 7, 11] },
   { suffix: 'm7', intervals: [0, 3, 7, 10] },
@@ -44,30 +28,10 @@ const QUALITIES: { suffix: string; intervals: number[] }[] = [
 ]
 
 export type Harmony = {
-  /** The tonic chord, as absolute MIDI pitches. */
   chordMidi: number[]
-  /** Its display name, e.g. "Cm7". */
   chordName: string
-  /**
-   * One index per progression chord, in the same order, always starting at 0
-   * (the tonic).
-   *
-   * These are indices into `intervalsFor(flavour)` and **not** diatonic degree
-   * numbers: the blues scale is `[0, 3, 5, 6, 7, 10]`, so its index 2 is the
-   * fourth degree of the scale, not the third. Only for a seven-note flavour do
-   * index + 1 and the degree number coincide.
-   *
-   * The chord on index `d` is rooted on
-   * `(pitchClassOf(root) + intervalsFor(flavour)[d]) % 12` — in both branches of
-   * `chordsForScale`, the derived one (`degrees.forEach((offset, degree) => …)`)
-   * and the idiom one (`degrees.indexOf(offset)`, with `-1` skipped). Anything
-   * naming a degree from this index must look the interval up rather than add
-   * one.
-   */
   progressionDegrees: number[]
-  /** Display string, chords joined with en-dashes, e.g. "Cm7–Fm7–B♭7". */
   progressionName: string
-  /** One chord per progression degree, as absolute MIDI pitches. */
   progressionMidi: number[][]
 }
 
@@ -75,11 +39,6 @@ function normalise(intervals: number[]): number[] {
   return [...new Set(intervals.map((i) => ((i % 12) + 12) % 12))].sort((a, b) => a - b)
 }
 
-/**
- * Name a chord from its root and its intervals above that root. Returns null
- * when no quality in the table matches exactly, so callers can skip a degree
- * rather than invent a name for pitches they would then have to play.
- */
 export function chordNameFor(root: Root, intervals: number[]): string | null {
   const wanted = normalise(intervals)
   for (const quality of QUALITIES) {
@@ -91,7 +50,6 @@ export function chordNameFor(root: Root, intervals: number[]): string | null {
   return null
 }
 
-/** Split a chord name into its root and its quality suffix. */
 function parseChordName(name: string): { root: Root; suffix: string } {
   const letter = name.slice(0, 1)
   const accidental = name.slice(1, 2)
@@ -103,11 +61,6 @@ function parseChordName(name: string): { root: Root; suffix: string } {
   return { root, suffix: name.slice(root.length) }
 }
 
-/**
- * The pitch classes a chord name claims, ascending. The inverse of
- * `chordNameFor`: this is what lets a test assert the audio plays exactly the
- * chord the manifest names.
- */
 export function pitchClassesOf(name: string): number[] {
   const { root, suffix } = parseChordName(name)
   const quality = QUALITIES.find((q) => q.suffix === suffix)
@@ -118,22 +71,6 @@ export function pitchClassesOf(name: string): number[] {
   return normalise(quality.intervals.map((i) => base + i))
 }
 
-/**
- * Flavours whose harmony is not "the richest chord on each degree that the
- * scale already contains". Blues is the only one: its I, IV and V are dominant
- * sevenths whose major third no strict reading of the six-note blues scale
- * holds, so those chords have to be stated rather than derived — deriving them
- * would produce the m7 and sus4 shapes that are in the scale but are not a
- * blues. `theory/validity.ts` admits exactly these three chords for the
- * flavour, so the words and the audio still agree.
- *
- * Harmonic minor needs no entry: its raised seventh is a scale tone, so the V7
- * and the vii°7 that make the flavour recognisable fall straight out of the
- * derivation.
- *
- * `offset` is semitones above the tonic, not an index, because the blues
- * scale's degree numbering is not the diatonic one.
- */
 const IDIOMS: Partial<Record<Flavour, { offset: number; intervals: number[] }[]>> = {
   blues: [
     { offset: 0, intervals: [0, 4, 7, 10] },
@@ -144,12 +81,6 @@ const IDIOMS: Partial<Record<Flavour, { offset: number; intervals: number[] }[]>
 
 type DegreeChord = { degree: number; midi: number[]; name: string }
 
-/**
- * Every scale degree that carries a nameable, entirely in-scale chord. Degrees
- * that do not (the ♭5 and the 5th of a blues scale, for instance) are simply
- * absent, so a progression can only ever be drawn from chords the scale
- * actually supports.
- */
 function chordsForScale(root: Root, flavour: Flavour): DegreeChord[] {
   const scale = new Set(pitchesOf(root, flavour))
   const base = pitchClassOf(root)
@@ -188,11 +119,6 @@ function chordsForScale(root: Root, flavour: Flavour): DegreeChord[] {
   return chords
 }
 
-/**
- * The harmony of one groove: a tonic chord and a short progression that starts
- * on it. Every pitch returned is a member of the scale, which is the property
- * that keeps the manifest's words honest about the audio.
- */
 export function buildHarmony(root: Root, flavour: Flavour, rng: () => number): Harmony {
   const chords = chordsForScale(root, flavour)
   const tonic = chords.find((c) => c.degree === 0)

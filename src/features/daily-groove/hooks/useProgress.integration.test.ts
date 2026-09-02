@@ -5,13 +5,8 @@ import { createLocalStore } from '../lib/persistence/storage'
 import { isoDate } from '../lib/puzzle/selectGroove'
 import { useProgress } from './useProgress'
 
-// Integration: exercise useProgress against the REAL createLocalStore over the
-// shimmed jsdom localStorage (cleared before each test by vitest.setup.ts). An
-// attempt recorded in one "session" must survive a reload — a brand-new store
-// instance over the same storage (R2, R3, AC1).
 describe('useProgress + createLocalStore (real storage)', () => {
   const ANSWER: Answer = { root: 'C', flavour: 'Minor' }
-  /** The groove the day was played against — persisted with the record (R7). */
   const GROOVE_ID = 'groove-05'
 
   const miss: Attempt = {
@@ -25,7 +20,6 @@ describe('useProgress + createLocalStore (real storage)', () => {
   it('an attempt recorded mid-game survives a remount with a fresh store (R2, R3, AC1)', async () => {
     const today = isoDate(new Date())
 
-    // First session: one wrong guess, recorded as it happens.
     const firstStore = createLocalStore()
     const first = renderHook(() => useProgress(today, firstStore))
     await waitFor(() => expect(first.result.current.loaded).toBe(true))
@@ -39,7 +33,6 @@ describe('useProgress + createLocalStore (real storage)', () => {
     })
     first.unmount()
 
-    // Second session: a brand-new store over the same localStorage ("reload").
     const secondStore = createLocalStore()
     const second = renderHook(() => useProgress(today, secondStore))
     await waitFor(() => expect(second.result.current.loaded).toBe(true))
@@ -52,12 +45,7 @@ describe('useProgress + createLocalStore (real storage)', () => {
       grooveId: GROOVE_ID,
     }
     expect(second.result.current.todayResult).toEqual(expected)
-    // Unsolved, so it does not build the streak. Still 0 under the anchor-shift
-    // rule (Epic 3): an unsolved today moves the anchor to yesterday, and this
-    // fixture has no yesterday record for the walk to find.
     expect(second.result.current.streak).toBe(0)
-    // The record itself is still in storage, complete — the hook stops handing
-    // the list out (E6 R3a), the store keeps every row the streak reads (AC5b).
     await expect(secondStore.getAll()).resolves.toEqual([expected])
   })
 
@@ -81,10 +69,7 @@ describe('useProgress + createLocalStore (real storage)', () => {
     const second = renderHook(() => useProgress(today, secondStore))
     await waitFor(() => expect(second.result.current.loaded).toBe(true))
 
-    // The id is what makes the day replayable after the catalogue grows: the
-    // date alone would re-resolve to some other groove (E5 AC10).
     expect(second.result.current.todayResult?.grooveId).toBe('groove-09')
-    // And on the stored row the streak is derived from, not only on today's.
     expect((await secondStore.getAll()).map((r) => r.grooveId)).toEqual([
       'groove-09',
     ])
@@ -93,7 +78,6 @@ describe('useProgress + createLocalStore (real storage)', () => {
 
   it('a record already in storage without a groove id still loads (E5 R8, AC8)', async () => {
     const today = isoDate(new Date())
-    // Written the way a pre-Epic-5 session left it: no groove id at all.
     localStorage.setItem(
       'daily-groove:v2:results',
       JSON.stringify({
@@ -159,8 +143,6 @@ describe('useProgress + createLocalStore (real storage)', () => {
 
     expect(second.result.current.todayResult?.solved).toBe(true)
     expect(second.result.current.todayResult?.attempts).toEqual([miss, winner])
-    // Unchanged by the anchor-shift rule (Epic 3): today is solved, so the
-    // anchor stays on today; nothing precedes it, so the run is just today.
     expect(second.result.current.streak).toBe(1)
   })
 })

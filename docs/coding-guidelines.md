@@ -342,6 +342,33 @@ this particular function's output decides which puzzle every past date showed.
 
 ---
 
+## Comments
+
+**Code should explain itself, so avoid comments.** Don't narrate the code or the
+change you just made. Leave a comment only for something genuinely non-obvious —
+a workaround, a platform quirk, a ticket reference. Never write prose in a
+comment.
+
+`src/features/daily-groove/components/GroovePuzzle.tsx` is what the rule is
+aimed at: 85 of its 750 lines are comments, and most of them either restate the
+line below (`// The player's own preference, not the day's`) or narrate which
+feature put it there (`(F16 E2 R1, R2, R3)`). Neither survives contact with the
+next change — the code moves, the comment stays, and a reader now has two
+sources of truth. A name is the cheaper fix: a `soundEnabled` flag read from its
+own store does not need a paragraph saying so.
+
+Reasoning worth keeping outlives the file it would sit in, so it goes where a
+reader will look for it — [architecture.md](architecture.md) for shape,
+[music.md](music.md) for musical decisions, `specs/feature-N/` for why a
+requirement exists. A block comment is the worst place to leave it: nothing
+points at it and nothing keeps it true.
+
+*human-checked* — motivated by
+`src/features/daily-groove/components/GroovePuzzle.tsx`. No linter can tell a
+comment that earns its place from one that restates the code.
+
+---
+
 ## Anti-patterns and their fixes
 
 Three shapes this repository has actually grown, each with the file it grew in
@@ -498,7 +525,7 @@ covered.
 
 The *human-checked* tag is not a softer version of *lint-enforced*; it means the
 rule is about meaning rather than about the import graph, so no configuration
-would catch it. Five of them in particular are conventions a reviewer owns:
+would catch it. Six of them in particular are conventions a reviewer owns:
 
 | Convention | Where it is stated | Why no linter |
 | :-- | :-- | :-- |
@@ -506,6 +533,7 @@ would catch it. Five of them in particular are conventions a reviewer owns:
 | No I/O adapter is constructed in a component file | [Anti-patterns](#anti-patterns-and-their-fixes) | `new Audio(...)` is a constructor call, not an import |
 | Generated data lives in `data/`, never `lib/` | [Feature slices](#feature-slices) | nothing in a file's text says it was generated |
 | Feature components are grouped by screen region | [Feature slices](#feature-slices) | which region a component belongs to is a judgement about the screen |
+| Comments are avoided unless genuinely non-obvious | [Comments](#comments) | whether a comment restates its code is a judgement about meaning |
 | `src/lib/hash.ts` is frozen | [Shared code](#shared-code-srclib) | a linter cannot know this function's output decides which puzzle every past date showed |
 
 Several human-checked rules do have a test standing behind them —

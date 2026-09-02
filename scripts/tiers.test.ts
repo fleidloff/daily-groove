@@ -5,11 +5,6 @@ import { describe, expect, it } from 'vitest'
 
 import { tierReason, tiersFor } from './tiers.ts'
 
-/**
- * `fs.globSync` has shipped in Node since 22 and is what this repo runs on,
- * but the pinned `@types/node` (^20) predates it. Declaring the one call
- * signature used here is narrower than loosening the whole dependency.
- */
 const globSync = (
   fs as unknown as {
     globSync: (
@@ -18,14 +13,6 @@ const globSync = (
     ) => string[]
   }
 ).globSync
-
-/**
- * The app-scope fixtures below name `src/components/` and `src/app/` rather
- * than the feature folder. `scripts/grooves/boundary.test.ts` forbids the
- * literal feature path anywhere under `scripts/`, and the rule under test does
- * not distinguish between app subtrees: every path under `src/` that is not
- * under `src/lib/` takes the same arm.
- */
 
 describe('tiersFor', () => {
   it('always runs the fast tiers for an app-only scope', () => {
@@ -105,15 +92,9 @@ describe('tierReason', () => {
   })
 })
 
-/**
- * The tiers are only real if the config draws them. These read the config from
- * disk rather than importing it, so a hand edit that drifts from the rule is
- * caught by the same suite the rule lives in.
- */
 describe('the config matches the rule', () => {
   const config = readFileSync('vitest.config.ts', 'utf8')
 
-  /** Each project block writes `name` before `include`. */
   const projects = [
     ...config.matchAll(/name:\s*'([^']+)'[\s\S]*?include:\s*\[\s*'([^']+)'\s*\]/g),
   ].map(([, name, include]) => ({ name, include }))
@@ -148,8 +129,6 @@ describe('the config matches the rule', () => {
   })
 
   it('partitions every test file in the repo across the three projects', () => {
-    // A guard on the guard: without a working walk every assertion below is
-    // vacuously true.
     expect(typeof globSync).toBe('function')
 
     const everyTestFile = globSync('**/*.{test,spec}.*', {
@@ -182,10 +161,6 @@ describe('the config matches the rule', () => {
   })
 
   it('keeps the committed audio guarded once the render tests leave the gate', () => {
-    // R11/AC12. The render tests moved off the default gate, so `grooves:verify`
-    // on `prebuild` is what still checks the committed mp3s — and nothing
-    // asserted that wiring, so deleting the script left every check green.
-    // Graded `done` on "the build compiles", which is not a test; this is.
     const { scripts } = JSON.parse(readFileSync('package.json', 'utf8')) as {
       scripts: Record<string, string>
     }
@@ -195,19 +170,6 @@ describe('the config matches the rule', () => {
   })
 
   it('confines any timeout override to the slow tier', () => {
-    // Feature-14 R10 wanted NO override anywhere. That requirement rested on a
-    // false premise — that the 30s budget papered over contention between the
-    // app and generator projects — and the measurements in `vitest.config.ts`
-    // disprove it: 25 of the generator's 811 cases exceed half the 5s default
-    // with the app project not running at all. The override is back, documented.
-    //
-    // What is still worth guarding, and is the honest version of R10, is that
-    // the override stays where the slowness is. A `testTimeout` on `app` or
-    // `tooling` would mean the fast tiers had grown something slow enough to
-    // need one, and that is exactly the drift this feature exists to prevent.
-    //
-    // Matched as a SETTING, not a substring: the config's comment explains the
-    // override at length and a scan for the word would forbid the explanation.
     const projectBlocks = config.split(/name:\s*'/).slice(1)
     const withTimeout = projectBlocks
       .map((block) => ({
@@ -221,9 +183,6 @@ describe('the config matches the rule', () => {
   })
 
   it('lets a tier that matches nothing exit zero', () => {
-    // R12: a scope-driven selection must never fail merely for having selected
-    // a tier with no files in it. Vitest's default is the opposite — it exits 1
-    // with "No test files found" — so the config has to say otherwise.
     expect(config).toMatch(/passWithNoTests:\s*true/)
   })
 })
