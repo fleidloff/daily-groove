@@ -24,6 +24,18 @@ export type AudioPlayer = {
   isPlaying(): boolean
   /** Latency-corrected seconds since the source started. 0 when stopped. */
   getElapsed(): number
+  /**
+   * Graph time at which the groove's first sample was emitted, or null when
+   * stopped.
+   *
+   * Deliberately *not* latency-corrected, and that is the whole reason it
+   * exists beside `getElapsed()`: a sample handed to the graph at time `T`
+   * reaches the ear at `T + latency`, so anything scheduled against the groove
+   * has to be placed on the same emission clock the groove was placed on, or
+   * it lands exactly one output latency late — 10-40ms wired, 150-300ms over
+   * Bluetooth. `getElapsed()` stays the heard timeline the progress bar draws.
+   */
+  getStartTime(): number | null
   subscribe(fn: () => void): () => void
   dispose(): void
 }
@@ -222,6 +234,12 @@ export function createAudioPlayer(source: PlayableSource): AudioPlayer {
       if (!context || startedAt === null) return 0
       const elapsed = context.currentTime - startedAt - latencyOf(context)
       return Number.isFinite(elapsed) && elapsed > 0 ? elapsed : 0
+    },
+
+    getStartTime() {
+      // The field the play/stop/dispose paths already maintain — no second
+      // piece of state to keep in step, and no latency subtracted.
+      return startedAt
     },
 
     subscribe(fn: () => void) {

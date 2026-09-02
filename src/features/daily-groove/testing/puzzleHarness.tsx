@@ -235,10 +235,25 @@ export const NOTE_GLYPH = '♪'
 
 /**
  * The caption under the play control, verbatim (F10 E2 R1a, AC6). Feature-4
- * Epic 2 put it below the control; this is the wording that replaced its own.
+ * Epic 2 put it below the control; feature-10 Epic 2 gave it this shape, and
+ * feature-16 Epic 1 widened its second half to name both rows: the mode chips
+ * sound too now, so a sentence that offered only the root row was describing
+ * half the instrument (F16 E1 R25).
  */
 export const CAPTION =
-  'Find the note that feels like home — Play along with your instrument or tap a root to hear it.'
+  'Find the note that feels like home — Play along with your instrument, or tap a root or a mode to hear it.'
+
+/**
+ * What that same caption reads while the tap sounds are switched off, verbatim
+ * (F16 E2 R12a, AC11a). One line: it names the state and points at the switch
+ * two rows above it, and it does not explain what the sounds are for.
+ *
+ * Two constants rather than one with a hole in it, because the two epics own
+ * one half each — feature-16 Epic 1 owns the sounds-on wording above, Epic 2
+ * owns this one — and `GroovePuzzle` puts a ternary between them.
+ */
+export const CAPTION_SOUNDS_OFF =
+  'Tap sounds are off — switch them back on under Simple mode.'
 
 /**
  * A chip's label with its decorative adornment left out. The glyph is

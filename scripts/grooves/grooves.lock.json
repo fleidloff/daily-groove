@@ -155,66 +155,126 @@
   ],
   "notes": [
     {
-      "id": "A",
+      "id": "A4",
       "sha256": "85a4197bf4e821e7033dce25ea4297de6d0e3b681348840c551538318de96f73",
       "bytes": 49571
     },
     {
-      "id": "A♭",
+      "id": "A5",
+      "sha256": "e59f13abd430560aba8b5b60af15b59d860216ad66abbfe9199ab7ce81081282",
+      "bytes": 49571
+    },
+    {
+      "id": "A♭4",
       "sha256": "1d579343f3a237d636808b6e72f850af299d2e239709fea6e2a98668e74a04e3",
       "bytes": 49571
     },
     {
-      "id": "B",
+      "id": "A♭5",
+      "sha256": "58aefb7c00ba831d89420309ed0cd509901f2f92e16dc6b52250aa08e4e3fd43",
+      "bytes": 49571
+    },
+    {
+      "id": "B4",
       "sha256": "d3389b24162642c278e49241379e39f5b973ff58bd00fd65151d7afe575b55cc",
       "bytes": 49571
     },
     {
-      "id": "B♭",
+      "id": "B5",
+      "sha256": "5057e8acedef78d9b5173dd999f9cea42374f003b504e13c22591d1725836983",
+      "bytes": 49571
+    },
+    {
+      "id": "B♭4",
       "sha256": "42e47e0c746ca23a9952a00a4179ce84cce5232791f699a0a56cd6baf8c1b4bf",
       "bytes": 49571
     },
     {
-      "id": "C",
+      "id": "B♭5",
+      "sha256": "0f1c4c95940fa9a2f16410de73ddd553b796f7435dcb9802efa0b5b3df7e0559",
+      "bytes": 49571
+    },
+    {
+      "id": "C4",
       "sha256": "b303124ba77b15fcd75166fec8ec3fa9f65c7717b6b3de0c68ac9b7f05ecd624",
       "bytes": 49571
     },
     {
-      "id": "C♯",
+      "id": "C5",
+      "sha256": "8027807eb4a657226c21ffa78f1a807d0fc974805ba452d80d5a0839a25611c5",
+      "bytes": 49571
+    },
+    {
+      "id": "C♯4",
       "sha256": "481329788d9a1501b8857ebe93ed42903e7d047c0ac1199a52e7d3ca5d6b1204",
       "bytes": 49571
     },
     {
-      "id": "D",
+      "id": "C♯5",
+      "sha256": "9e338d0e0e3e0c806fbd4dcb69fb34bdd7c744c549672c32e7978de67a19a7f1",
+      "bytes": 49571
+    },
+    {
+      "id": "D4",
       "sha256": "f0600861bcf2c1ddd98b00abe0964be98da9da178ff58cd5eb5c1685c9016f0b",
       "bytes": 49571
     },
     {
-      "id": "E",
+      "id": "D5",
+      "sha256": "72f8e31ef44c083e03412b58f6c4fce81b2893ce832d94e9da4249d28c4647f7",
+      "bytes": 49571
+    },
+    {
+      "id": "E4",
       "sha256": "31ad6578e40c3df8f2c1980a8b5f9857cbee38eee5d08c387b2be7ee4b6d840f",
       "bytes": 49571
     },
     {
-      "id": "E♭",
+      "id": "E5",
+      "sha256": "a197db60704bacceb1f459d9e9c85db4fdd5ef94091bfc84cb0a4b9ef5236362",
+      "bytes": 49571
+    },
+    {
+      "id": "E♭4",
       "sha256": "ec318e2205c5ea409deaaf6074dfac4e63dfc49592022f90ce7613d7d6aaa64d",
       "bytes": 49571
     },
     {
-      "id": "F",
+      "id": "E♭5",
+      "sha256": "ca274c1caf26b2c0c7bf8deb0dcdd125e9e2944840feac76b1d6e0eded25d63c",
+      "bytes": 49571
+    },
+    {
+      "id": "F4",
       "sha256": "5031f3d978e9ae995d930feacc9cf8c03e983cc2b0b04a79b0c36973baddcc43",
       "bytes": 49571
     },
     {
-      "id": "F♯",
+      "id": "F5",
+      "sha256": "d47e7b7b9584284d27735039c9c0f92aa773c28a26f212c45e37d803a833880e",
+      "bytes": 49571
+    },
+    {
+      "id": "F♯4",
       "sha256": "7bbd3ac3518c87202762cffecf6753cd1db8abead634cb2134f7e5604a68b75d",
       "bytes": 49571
     },
     {
-      "id": "G",
+      "id": "F♯5",
+      "sha256": "08af05fdaa6130499b29ef161fa9e047f41184ee209c178bfa2fcf06a5df1a2b",
+      "bytes": 49571
+    },
+    {
+      "id": "G4",
       "sha256": "e81e789e1036333f91c105f0073a4789892eea404bd878c4e4c6cbd916184ba6",
+      "bytes": 49571
+    },
+    {
+      "id": "G5",
+      "sha256": "63d93df848c91e2b497fa7a2103b27c8a725ff550a5017370e1074c00e3e0719",
       "bytes": 49571
     }
   ],
-  "notesManifestSha256": "95362655e25a80b0311022450ae8583dc55be53888b5e26405de2ffa63bf3df8",
+  "notesManifestSha256": "ed63a057f7658fee2758b9b33d73aa77e111d0818c85f80462ace167dad60c21",
   "packSha256": "04bb9096b4d29f459ed6bbf9682a4a65d89832a42ebe68c7d5de609864193b07"
 }

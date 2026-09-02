@@ -1,6 +1,11 @@
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createReferenceVoice } from './reference'
 import { createAudioPlayer } from './audio'
+import { secondsToNextBeat, type GrooveClock } from './beat'
+import { REFERENCE_FADE_SECONDS, REFERENCE_LEVEL } from './level'
+import { referenceOutput } from './output'
 import {
   hasAudioContext,
   releaseAudioContext,
@@ -48,6 +53,54 @@ afterEach(async () => {
   vi.restoreAllMocks()
 })
 
+/**
+ * A hand-made `GrooveClock`, built over `beat.ts`'s own arithmetic so these
+ * tests state the wiring rather than restating the maths. It is never a real
+ * transport: this file proves the voice consults a clock, and `beat.test.ts`
+ * proves the clock is right.
+ */
+function makeClock(started: number | null = 0, beat = 0.5) {
+  const listeners = new Set<() => void>()
+  const state = { started }
+
+  const clock: GrooveClock = {
+    nextBeat: (now) =>
+      state.started === null
+        ? null
+        : now + secondsToNextBeat(now - state.started, beat),
+    isRunning: () => state.started !== null,
+    subscribe: (listener) => {
+      listeners.add(listener)
+      return () => {
+        listeners.delete(listener)
+      }
+    },
+  }
+
+  return {
+    clock,
+    /** The groove stopped. */
+    stop() {
+      state.started = null
+    },
+    /** What the transport does on every frame, and on start and stop. */
+    fire() {
+      for (const listener of [...listeners]) listener()
+    },
+    listenerCount: () => listeners.size,
+  }
+}
+
+/** The graph time a node was told to start at. */
+function startedAt(node: { start: { mock: { calls: unknown[][] } } }): number {
+  return node.start.mock.calls[0][0] as number
+}
+
+/** The graph time a node was told to stop at. */
+function stoppedAt(node: { stop: { mock: { calls: unknown[][] } } }): number {
+  return node.stop.mock.calls[0][0] as number
+}
+
 // Step C3 — R1, R17, AC1: a tap fetches, decodes and starts one node.
 describe('playing a root (R1, AC1)', () => {
   it('fetches that root’s file and starts a one-shot node', async () => {
@@ -63,7 +116,14 @@ describe('playing a root (R1, AC1)', () => {
     const [node] = fake.sources
     expect(node.loop).toBe(false)
     expect(node.start).toHaveBeenCalledTimes(1)
-    expect(node.connect).toHaveBeenCalledWith(fake.contexts[0].destination)
+    // Step D1 — the note still reaches the output, now by way of a gain.
+    expect(fake.gains).toHaveLength(1)
+    expect(node.connect).toHaveBeenCalledWith(fake.gains[0])
+    expect(fake.gains[0].connect).toHaveBeenCalledWith(
+      fake.contexts[0].destination,
+    )
+    expect(fake.gains[0].gain.value).toBe(REFERENCE_LEVEL)
+    expect(fake.gains[0].gain.value).toBeLessThan(1)
     expect(node.buffer).toBe(fake.contexts[0].decodedBuffer)
     voice.dispose()
   })
@@ -130,17 +190,33 @@ describe('a root is fetched once per session (R17, AC14)', () => {
 
 // Step C5 — R5, AC4: at most one reference note sounds at a time.
 describe('a new note takes the voice from the ringing one (R5, AC4)', () => {
-  it('stops the previous node and leaves the new one ringing', async () => {
+  it('fades the previous node out and leaves the new one ringing', async () => {
     const fake = installFakeAudioContext()
     const voice = createReferenceVoice(TWO)
 
+    fake.advance(1)
     await voice.play('C')
+    fake.advance(1)
     await voice.play('D')
 
     expect(fake.sources).toHaveLength(2)
-    expect(fake.sources[0].stop).toHaveBeenCalledTimes(1)
-    expect(fake.sources[0].disconnect).toHaveBeenCalledTimes(1)
+
+    // Ramped down over the declared fade rather than cut, which is what stops
+    // a retrigger clicking (R5, AC3).
+    const [first] = fake.gains
+    expect(first.gain.cancelScheduledValues).toHaveBeenCalledWith(2)
+    expect(first.gain.linearRampToValueAtTime).toHaveBeenCalledWith(
+      0,
+      2 + REFERENCE_FADE_SECONDS,
+    )
+    expect(fake.sources[0].stop).toHaveBeenCalledWith(2 + REFERENCE_FADE_SECONDS)
     expect(fake.sources[1].stop).not.toHaveBeenCalled()
+
+    // The disconnect moved to the end of the ramp: disconnecting at takeover
+    // time would cut the fade it exists to allow.
+    fake.sources[0].onended?.()
+    expect(fake.sources[0].disconnect).toHaveBeenCalledTimes(1)
+    expect(first.disconnect).toHaveBeenCalledTimes(1)
     voice.dispose()
   })
 
@@ -343,6 +419,286 @@ describe('a note after the groove’s player is gone', () => {
     expect(fake.contexts).toHaveLength(1)
     expect(fake.contexts[0].state).not.toBe('closed')
 
+    voice.dispose()
+  })
+})
+
+// Step D0 — R1, R5: the fake context makes gain nodes.
+describe('the fake context’s gain support', () => {
+  it('makes a gain node the tests can read', () => {
+    const fake = installFakeAudioContext()
+    sharedAudioContext()
+
+    const gain = fake.contexts[0].createGain()
+
+    expect(gain.gain.value).toBe(1)
+    gain.gain.setValueAtTime(0.5, 0)
+    expect(gain.gain.value).toBe(0.5)
+    gain.gain.linearRampToValueAtTime(0, 0.03)
+    expect(gain.gain.linearRampToValueAtTime).toHaveBeenCalledWith(0, 0.03)
+    // The fake runs no automation curve: the ramp is recorded, not applied.
+    expect(gain.gain.value).toBe(0.5)
+    expect(fake.gains).toContain(gain)
+  })
+})
+
+// Step D3 — R7, AC5: with no beat to wait for, the note is immediate.
+describe('with no groove running the note is immediate (R7, AC5)', () => {
+  it('starts at the graph clock’s now when the voice has no clock', async () => {
+    const fake = installFakeAudioContext()
+    const voice = createReferenceVoice(TWO)
+
+    fake.advance(4)
+    await voice.play('C')
+
+    expect(fake.sources[0].start).toHaveBeenCalledWith(4)
+    voice.dispose()
+  })
+
+  it('starts at once when the clock reports no beat', async () => {
+    const fake = installFakeAudioContext()
+    const { clock } = makeClock(null)
+    const voice = createReferenceVoice(TWO, clock)
+
+    fake.advance(4)
+    await voice.play('C')
+
+    expect(fake.sources[0].start).toHaveBeenCalledWith(4)
+    voice.dispose()
+  })
+})
+
+// Step D4 — R6, AC4: a running groove puts the note on the next beat.
+describe('the note lands on the groove’s next beat (R6, AC4)', () => {
+  it('schedules the note for the beat boundary, not for the tap', async () => {
+    const fake = installFakeAudioContext()
+    const { clock } = makeClock(0)
+    const voice = createReferenceVoice(TWO, clock)
+
+    fake.advance(1.2)
+    await voice.play('C')
+
+    expect(startedAt(fake.sources[0])).toBeCloseTo(1.5, 6)
+    expect(startedAt(fake.sources[0])).toBeGreaterThan(1.2)
+    voice.dispose()
+  })
+})
+
+// Step D5 — R6a, R6b, AC8a, AC8b: the tolerance, from both sides.
+describe('just before a beat sounds now, just after waits (R6a, R6b)', () => {
+  it('sounds at once for a tap inside the tolerance before a beat', async () => {
+    const fake = installFakeAudioContext()
+    const { clock } = makeClock(0)
+    const voice = createReferenceVoice(TWO, clock)
+
+    // 20ms before the beat at 0.5s, inside the 60ms tolerance.
+    fake.advance(0.5 - 0.02)
+    await voice.play('C')
+
+    expect(fake.sources[0].start).toHaveBeenCalledWith(fake.currentTime)
+    voice.dispose()
+  })
+
+  it('waits for the following beat for a tap just after one', async () => {
+    const fake = installFakeAudioContext()
+    const { clock } = makeClock(0)
+    const voice = createReferenceVoice(TWO, clock)
+
+    // 20ms after the beat at 0.5s: forward to 1.0, never back to 0.5.
+    fake.advance(0.52)
+    await voice.play('D')
+
+    expect(startedAt(fake.sources[0])).toBeCloseTo(1.0, 6)
+    voice.dispose()
+  })
+})
+
+// Step D6 — R10, AC8: a second tap cancels a note that has not sounded.
+describe('a second tap replaces a pending note (R10, AC8)', () => {
+  it('leaves exactly one note to arrive', async () => {
+    const fake = installFakeAudioContext()
+    const { clock } = makeClock(0)
+    const voice = createReferenceVoice(TWO, clock)
+
+    fake.advance(1.2)
+    await voice.play('C')
+    await voice.play('D')
+
+    // Stopped at or before its own start time, so it never sounds.
+    expect(fake.sources[0].stop).toHaveBeenCalledTimes(1)
+    expect(stoppedAt(fake.sources[0])).toBeLessThanOrEqual(
+      startedAt(fake.sources[0]),
+    )
+    expect(fake.gains[0].gain.linearRampToValueAtTime).toHaveBeenCalledWith(
+      0,
+      expect.any(Number),
+    )
+    expect(startedAt(fake.sources[1])).toBeCloseTo(1.5, 6)
+    expect(fake.sources[1].stop).not.toHaveBeenCalled()
+    voice.dispose()
+  })
+})
+
+// Step D7 — R10a, R10b, AC8c: one reference sound across both chip rows.
+describe('the shared output arbitrates both rows (R10a, R10b, AC8c)', () => {
+  it('gets out of the way when another voice claims the output', async () => {
+    const fake = installFakeAudioContext()
+    const voice = createReferenceVoice(TWO)
+
+    await voice.play('C')
+    // Standing in for Epic 1's lick voice, which this module never names.
+    referenceOutput().claim(() => {})
+
+    expect(fake.gains[0].gain.linearRampToValueAtTime).toHaveBeenCalledWith(
+      0,
+      expect.any(Number),
+    )
+    expect(fake.sources[0].stop).toHaveBeenCalledTimes(1)
+    voice.dispose()
+  })
+
+  it('silences the other voice when a root is tapped', async () => {
+    installFakeAudioContext()
+    const voice = createReferenceVoice(TWO)
+    const cancel = vi.fn()
+
+    referenceOutput().claim(cancel)
+    await voice.play('D')
+
+    expect(cancel).toHaveBeenCalledTimes(1)
+    voice.dispose()
+  })
+})
+
+// Step D8 — R12, AC10: a beat the groove never reaches drops the note.
+describe('a pending note is dropped when the groove stops (R12, AC10)', () => {
+  it('never sounds, and stops watching once it is gone', async () => {
+    const fake = installFakeAudioContext()
+    const groove = makeClock(0)
+    const voice = createReferenceVoice(TWO, groove.clock)
+
+    fake.advance(1.2)
+    await voice.play('C')
+    expect(groove.listenerCount()).toBe(1)
+
+    groove.stop()
+    groove.fire()
+
+    expect(fake.sources[0].stop).toHaveBeenCalledTimes(1)
+    expect(stoppedAt(fake.sources[0])).toBeLessThan(1.5)
+    expect(fake.gains[0].gain.linearRampToValueAtTime).toHaveBeenCalledWith(
+      0,
+      expect.any(Number),
+    )
+
+    groove.fire()
+    expect(fake.sources[0].stop).toHaveBeenCalledTimes(1)
+    expect(groove.listenerCount()).toBe(0)
+    voice.dispose()
+  })
+})
+
+// Step D9 — R11, AC9: a sounding note rings on past the stop.
+describe('a sounding note rings on when the groove stops (R11, AC9)', () => {
+  it('is left alone once it has reached its start time', async () => {
+    const fake = installFakeAudioContext()
+    const groove = makeClock(0)
+    const voice = createReferenceVoice(TWO, groove.clock)
+
+    fake.advance(1.2)
+    await voice.play('C')
+    // Past the scheduled start: the note is genuinely sounding now.
+    fake.advance(0.5)
+
+    groove.stop()
+    groove.fire()
+
+    expect(fake.sources[0].stop).not.toHaveBeenCalled()
+    expect(fake.gains[0].gain.linearRampToValueAtTime).not.toHaveBeenCalled()
+    voice.dispose()
+  })
+})
+
+// Step D10 — R9, AC7: the voice reads the clock and writes to nothing.
+describe('reading the groove’s clock is one-way (R9, AC7)', () => {
+  it('touches only the clock’s three read-only members', async () => {
+    const fake = installFakeAudioContext()
+    const { clock } = makeClock(0)
+    const reads = new Set<string>()
+    const watched = new Proxy(clock, {
+      get(target, property, receiver) {
+        reads.add(String(property))
+        return Reflect.get(target, property, receiver)
+      },
+    })
+    const voice = createReferenceVoice(TWO, watched)
+
+    fake.advance(1.2)
+    await voice.play('C')
+
+    const allowed = ['nextBeat', 'isRunning', 'subscribe']
+    expect([...reads].filter((key) => !allowed.includes(key))).toEqual([])
+    voice.dispose()
+  })
+
+  it('cannot see the transport from its own source', () => {
+    const source = readFileSync(
+      join(
+        process.cwd(),
+        'src',
+        'features',
+        'daily-groove',
+        'lib',
+        'audio',
+        'reference.ts',
+      ),
+      'utf8',
+    )
+
+    for (const forbidden of [
+      "'./transport'",
+      "'./audio'",
+      'createPageTransport',
+      'createAudioPlayer',
+      '.toggle(',
+    ]) {
+      expect(source).not.toContain(forbidden)
+    }
+  })
+})
+
+// Step D11 — R14, AC12: every failure is still silence.
+describe('every failure is still silence (R14, AC12)', () => {
+  it('resolves and claims nothing when the gain node cannot be built', async () => {
+    const fake = installFakeAudioContext()
+    sharedAudioContext()
+    vi.spyOn(fake.contexts[0], 'createGain').mockImplementation(() => {
+      throw new Error('no gain')
+    })
+    const voice = createReferenceVoice(TWO)
+
+    await expect(voice.play('C')).resolves.toBeUndefined()
+
+    expect(fake.sources).toHaveLength(0)
+    expect(referenceOutput().isClaimed()).toBe(false)
+    voice.dispose()
+  })
+
+  it('still sounds the note, immediately, when the clock throws', async () => {
+    const fake = installFakeAudioContext()
+    const broken: GrooveClock = {
+      nextBeat: () => {
+        throw new Error('no clock')
+      },
+      isRunning: () => true,
+      subscribe: () => () => {},
+    }
+    const voice = createReferenceVoice(TWO, broken)
+
+    fake.advance(2)
+    await expect(voice.play('C')).resolves.toBeUndefined()
+
+    expect(fake.sources[0].start).toHaveBeenCalledWith(2)
     voice.dispose()
   })
 })

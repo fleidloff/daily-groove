@@ -4,12 +4,14 @@ import type { PreferenceStore, Preferences } from '../lib/persistence/preference
 import { useSimpleMode } from './useSimpleMode'
 
 /** An in-memory `PreferenceStore` whose saved value the test can read back. */
-function makeStore(initial: Preferences = { simpleMode: false }) {
+function makeStore(
+  initial: Preferences = { simpleMode: false, tapSounds: true },
+) {
   let saved: Preferences = initial
   const store: PreferenceStore = {
     get: vi.fn(async () => saved),
-    set: vi.fn(async (prefs: Preferences) => {
-      saved = prefs
+    update: vi.fn(async (patch: Partial<Preferences>) => {
+      saved = { ...saved, ...patch }
     }),
   }
   return { store, saved: () => saved }
@@ -35,12 +37,25 @@ describe('useSimpleMode', () => {
     })
 
     expect(result.current.simple).toBe(true)
-    expect(store.set).toHaveBeenCalledWith({ simpleMode: true })
-    expect(saved()).toEqual({ simpleMode: true })
+    expect(store.update).toHaveBeenCalledWith({ simpleMode: true })
+    expect(saved()).toEqual({ simpleMode: true, tapSounds: true })
+  })
+
+  it('writes a patch, so the preference beside it is left alone (F16 E2 R7)', async () => {
+    const { store, saved } = makeStore({ simpleMode: false, tapSounds: false })
+    const { result } = renderHook(() => useSimpleMode(store))
+    await waitFor(() => expect(result.current.loaded).toBe(true))
+
+    await act(async () => {
+      result.current.setSimple(true)
+    })
+
+    expect(saved().tapSounds).toBe(false)
+    expect(saved()).toEqual({ simpleMode: true, tapSounds: false })
   })
 
   it('adopts a preference the store already holds (E5 R7, AC7)', async () => {
-    const { store } = makeStore({ simpleMode: true })
+    const { store } = makeStore({ simpleMode: true, tapSounds: true })
     const { result } = renderHook(() => useSimpleMode(store))
 
     await waitFor(() => expect(result.current.loaded).toBe(true))
@@ -48,7 +63,7 @@ describe('useSimpleMode', () => {
   })
 
   it('switches back off and writes that through too (E5 R8a)', async () => {
-    const { store, saved } = makeStore({ simpleMode: true })
+    const { store, saved } = makeStore({ simpleMode: true, tapSounds: true })
     const { result } = renderHook(() => useSimpleMode(store))
     await waitFor(() => expect(result.current.simple).toBe(true))
 
@@ -57,13 +72,14 @@ describe('useSimpleMode', () => {
     })
 
     expect(result.current.simple).toBe(false)
-    expect(saved()).toEqual({ simpleMode: false })
+    expect(store.update).toHaveBeenCalledWith({ simpleMode: false })
+    expect(saved()).toEqual({ simpleMode: false, tapSounds: true })
   })
 
   it('a store that rejects on write does not cost the player the switch (E5 R8a)', async () => {
     const store: PreferenceStore = {
-      get: vi.fn(async () => ({ simpleMode: false })),
-      set: vi.fn(async () => {
+      get: vi.fn(async () => ({ simpleMode: false, tapSounds: true })),
+      update: vi.fn(async () => {
         throw new Error('QuotaExceededError')
       }),
     }
@@ -86,13 +102,13 @@ describe('useSimpleMode', () => {
             release = resolve
           }),
       ),
-      set: vi.fn(async () => {}),
+      update: vi.fn(async () => {}),
     }
     const { result, unmount } = renderHook(() => useSimpleMode(store))
     unmount()
 
     await act(async () => {
-      release({ simpleMode: true })
+      release({ simpleMode: true, tapSounds: true })
     })
 
     expect(result.current.loaded).toBe(false)

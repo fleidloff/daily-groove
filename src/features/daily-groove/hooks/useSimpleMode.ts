@@ -59,7 +59,7 @@ export function useSimpleMode(
     (next: boolean) => {
       // Session state first, persistence second — see above.
       setSimpleState(next)
-      void Promise.resolve(store.set({ simpleMode: next })).catch(() => {
+      void Promise.resolve(store.update({ simpleMode: next })).catch(() => {
         // Deliberately ignored. `createLocalPreferenceStore` already swallows
         // its own write failures; this guards an injected store that does not.
       })

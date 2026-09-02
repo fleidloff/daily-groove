@@ -8,7 +8,7 @@ import {
   useState,
   useSyncExternalStore,
 } from 'react'
-import type { Groove } from '../types'
+import type { Flavour, Groove, Root } from '../types'
 import type { PlayableSource } from '../lib/audio/transport'
 import {
   dotStates,
@@ -18,23 +18,32 @@ import {
 } from '../lib/presentation/feedback'
 import {
   flavourOptions,
+  flavourPool,
   ROOTS,
   loopSecondsOf,
   simpleRootOptions,
 } from '../lib/theory/music'
-import { FAMILIES } from '../lib/theory/families'
+import { FAMILIES, type Family } from '../lib/theory/families'
+import { simpleLickMode } from '../lib/theory/simpleModes'
 import { barChords } from '../lib/theory/changes'
 import { metaLine } from '../lib/presentation/date'
 import { selectGrooveForDate } from '../lib/puzzle/selectGroove'
 import { GROOVES } from '../data/grooves.generated'
-import { NOTES } from '../data/notes.generated'
+import { NOTES, PITCHES } from '../data/notes.generated'
+import {
+  REFERENCE_FADE_SECONDS,
+  REFERENCE_LEVEL,
+} from '../lib/audio/level'
+import { referenceOutput } from '../lib/audio/output'
 import {
   createLocalStore,
   createReadOnlyStore,
 } from '../lib/persistence/storage'
+import { useModeLick } from '../hooks/useModeLick'
 import { usePuzzleSession } from '../hooks/usePuzzleSession'
 import { useReferenceNote } from '../hooks/useReferenceNote'
 import { useSimpleMode } from '../hooks/useSimpleMode'
+import { useTapSounds } from '../hooks/useTapSounds'
 import { useTransport } from '../hooks/useTransport'
 import { GrooveCard } from './puzzle/GrooveCard'
 import { PlayTodayLink } from './puzzle/PlayTodayLink'
@@ -77,6 +86,44 @@ const REGION_LABEL = APP_NAME
 // A no-op subscription: today's groove never changes within a session, so the
 // external store never notifies. Defined once so the subscription is stable.
 const subscribeNoop = () => () => {}
+
+/**
+ * Every mode the catalogue can play — what simple mode's two chips draw their
+ * licks from (F16 E1 R16).
+ *
+ * Derived once at module scope rather than per render: it is a pure function of
+ * a generated constant, so a memo would be a hook's worth of ceremony around a
+ * value that cannot change while the page is open.
+ */
+const FLAVOUR_POOL = flavourPool(GROOVES)
+
+/**
+ * The line under the play control while the chip sounds are on (F10 E2 R1a,
+ * R5, AC6). The `♪` on the chips marks *where*; this sentence is what names
+ * the behaviour, and it offers the player's own instrument first rather than
+ * only. Both rows sound since F16 E1, so it offers both — still one sentence,
+ * still one dash, and it names no mode, because naming one here would answer
+ * the question the row below is asking (F16 E1 R25).
+ */
+const CAPTION_SOUNDS_ON =
+  'Find the note that feels like home — Play along with your instrument, or tap a root or a mode to hear it.'
+
+/**
+ * And what it reads while they are off (F16 E2 R12a, AC11a). It names the
+ * state and points at the switch two rows above it; it does not explain what
+ * the sounds are for, because a player who flipped the switch by accident
+ * needs the way back, not the rationale.
+ *
+ * Two module constants with a ternary between them rather than a
+ * `lib/presentation/` selector: the caption is one sentence with two states,
+ * and a module for it would be a third place for the two epics that own one
+ * wording each to disagree. Both strings are mirrored in
+ * `testing/puzzleHarness.tsx`, which is where every assertion about them
+ * reads them from.
+ */
+const CAPTION_SOUNDS_OFF =
+  'Tap sounds are off — switch them back on under Simple mode.'
+
 /**
  * What the page shows before it knows enough to show a game: while today's
  * groove is resolving on the client, and again while the day's saved record is
@@ -164,13 +211,57 @@ function GroovePuzzleView({
   // below — two option sets and one comparison. The day itself never sees it.
   const { simple, setSimple } = useSimpleMode()
 
+  // The player's second preference, read the same way and from the same key:
+  // whether tapping a chip sounds at all (F16 E2 R1, R2, R3). It is on unless
+  // it was turned off, so a player who never touches the switch gets the app
+  // as it behaved before the switch existed.
+  //
+  // Called unconditionally and above every early return, like the line above
+  // it. The two flags meet in three places below — one gate per chip row, the
+  // warm behind them, and the caption — and nowhere else: the day itself never
+  // sees either of them.
+  const { tapSounds, setTapSounds } = useTapSounds()
+
+  // What the page plays: today's groove, its musical loop length, and where
+  // inside its own file the music starts. The head delay is per-groove data,
+  // measured from that mp3 at mint time — no constant is shared across the
+  // catalogue (R4). Memoised on the groove so the transport, which captures
+  // its source at construction, is handed a stable value.
+  const source = useMemo<PlayableSource>(
+    () => ({
+      src: groove.audioSrc,
+      loopSeconds: loopSecondsOf(groove),
+      headDelaySeconds: groove.headDelaySeconds,
+    }),
+    [groove],
+  )
+
+  // One groove on the page, so the transport's own boolean is the answer — no
+  // control has to ask whether the sounding groove is the one it belongs to.
+  //
+  // It is built before the voice below because the voice reads its `clock`: the
+  // day's tempo goes in, and what comes back out is the groove's quarter-note
+  // grid placed on the graph's own timeline (F16 E3 R6, R8).
+  const {
+    isPlaying,
+    loading,
+    position,
+    error: audioError,
+    toggle,
+    clock,
+  } = useTransport(source, groove.bpm)
+
   // The row's second voice. It is built here, beside the transport, because
-  // both belong to the page rather than to a card — but the two share nothing
-  // except the `AudioContext` that `lib/audio/context.ts` owns, so a tap
-  // cannot move the groove and stopping the groove cannot cut a note (R6, R13).
+  // both belong to the page rather than to a card — and the two now share the
+  // `AudioContext` that `lib/audio/context.ts` owns *and* the groove's clock,
+  // read one way. A tapped note lands on the groove's next beat instead of
+  // wherever the thumb fell (F16 E3 R6, AC4); nothing the voice can reach
+  // stops, moves or reschedules the groove, so a tap still cannot touch
+  // playback and stopping the groove still cannot cut a note that is already
+  // sounding (R6, R13; F16 E3 R9, R11).
   // The whole chromatic set is handed over whatever mode is on: simple mode's
   // six are a subset, so switching costs no fetch (R7, R18).
-  const { playRoot, warm } = useReferenceNote(NOTES)
+  const { playRoot, warm } = useReferenceNote(NOTES, { clock })
 
   const {
     selectedRoot,
@@ -189,6 +280,32 @@ function GroovePuzzleView({
     newOrLapsed,
   } = usePuzzleSession(groove, today, simple, resultStore)
 
+  /**
+   * The mode row's voice, beside the root row's (F16 E1 R1, R7, R32).
+   *
+   * It sits *below* the transport because it reads the same `clock`: a phrase
+   * lands on the groove's next beat while the loop runs and immediately when it
+   * does not, and the grid can only come from the thing that knows when the
+   * groove started (F16 E3 R6, R8). It sits below `usePuzzleSession` because
+   * every lick is transposed to the day's root, which is what that hook derives.
+   *
+   * Nothing here builds an adapter and nothing here computes a time: the level,
+   * the fade and the shared output are the single declarations Epic 3 owns, and
+   * where a phrase begins is the voice's question to the clock, asked after the
+   * buffers land. The whole set of rendered pitches goes over whatever mode is
+   * on, for the same reason the root row is handed all twelve notes: the row is
+   * what narrows, so switching modes costs no fetch.
+   */
+  const { playMode, warm: warmLicks } = useModeLick({
+    pitches: PITCHES,
+    root: answer.root,
+    bpm: groove.bpm,
+    clock,
+    level: REFERENCE_LEVEL,
+    fadeSeconds: REFERENCE_FADE_SECONDS,
+    output: referenceOutput(),
+  })
+
   // Whether the how-to-play box is on screen. `null` means "follow the rule";
   // the box's close control and the header's question mark are the only two
   // things that set it, and nothing about it is persisted (F8 E3 R6, R7, R8).
@@ -200,20 +317,6 @@ function GroovePuzzleView({
   const handleShowHelp = useCallback(() => setHelpOverride(true), [])
   const handleCloseHelp = useCallback(() => setHelpOverride(false), [])
 
-  // What the page plays: today's groove, its musical loop length, and where
-  // inside its own file the music starts. The head delay is per-groove data,
-  // measured from that mp3 at mint time — no constant is shared across the
-  // catalogue (R4). Memoised on the groove so the transport, which captures
-  // its source at construction, is handed a stable value.
-  const source = useMemo<PlayableSource>(
-    () => ({
-      src: groove.audioSrc,
-      loopSeconds: loopSecondsOf(groove),
-      headDelaySeconds: groove.headDelaySeconds,
-    }),
-    [groove],
-  )
-
   // How many passes of the four-bar figure this groove's file is. The panel
   // draws four bars whatever the file's length, so it needs this to turn a
   // position over the whole loop into a position within a pass (F9 E1 R9a).
@@ -224,16 +327,6 @@ function GroovePuzzleView({
     () => Math.max(1, Math.round((groove.loopBars ?? groove.bars) / groove.bars)),
     [groove],
   )
-
-  // One groove on the page, so the transport's own boolean is the answer — no
-  // control has to ask whether the sounding groove is the one it belongs to.
-  const {
-    isPlaying,
-    loading,
-    position,
-    error: audioError,
-    toggle,
-  } = useTransport(source)
 
   // Epic 3's derivations, and feature-7's fourth beside them. All pure
   // functions of the attempt list and the day's outcome, so nothing about
@@ -296,6 +389,77 @@ function GroovePuzzleView({
   }, [toggle])
 
   /**
+   * What a root chip sounds — or, with the sounds switched off, what it does
+   * not (F16 E2 R9, R11, AC4, AC9, AC10).
+   *
+   * The gate is here, where the handler is built, and deliberately not inside
+   * `useReferenceNote` or `lib/audio/reference.ts`. A gate in the voice would
+   * be a mute over audio that still fetches and decodes on the way to being
+   * thrown away, which is the mute-pretending-to-be-a-setting R11 forbids —
+   * and it would be two gates, one per voice, once the mode row sounds too.
+   * One early return above the only audible call, in the one place both
+   * handlers are built, is what makes R11 true by construction.
+   *
+   * Rebuilt from the current preference on every render, which is what makes
+   * both directions immediate: the next tap after a flip obeys the flip
+   * (R4, AC4).
+   */
+  const hearRoot = useCallback(
+    (root: Root) => {
+      if (!tapSounds) return
+      playRoot(root)
+    },
+    [tapSounds, playRoot],
+  )
+
+  /**
+   * What a mode chip sounds — the one place the label on a chip is turned into
+   * a real mode (F16 E1 R15, R16, R17).
+   *
+   * In the full row the chip *is* a mode and it plays itself. In simple mode
+   * the row offers families, and a lick has to be in something: the chip whose
+   * family matches the day plays the day's actual mode, and the other plays a
+   * mode of its own family picked by the date's own seed, so every player hears
+   * the same pair all day. Neither is ever written down — this decides what
+   * sounds, not what is printed (R18).
+   *
+   * `simpleLickMode` is asked here rather than inside the voice because it is a
+   * fact about *this page's* day, and the resolution is deliberately invisible
+   * to the card: `GuessCard` hands over the label it drew and learns nothing
+   * about what came back.
+   *
+   * Wrapped, because the card calls this from a click handler and
+   * `onSelectFlavour` has already run: no audio failure may undo a selection,
+   * and a mode the families table cannot grade is silence rather than a broken
+   * page (R19, R20, R21).
+   */
+  const handleHearMode = useCallback(
+    (option: Flavour) => {
+      let mode: Flavour | null = option
+      if (simple) {
+        try {
+          mode = simpleLickMode({
+            family: option as Family,
+            answer,
+            pool: FLAVOUR_POOL,
+            date: today,
+          })
+        } catch {
+          mode = null
+        }
+      }
+      // The same gate the root row's handler carries, around the one audible
+      // line and *not* around the resolution above it (F16 E2 R10, R11).
+      // `simpleLickMode` is pure, so leaving it unconditional costs nothing
+      // and keeps the two halves honest: a silenced tap still resolves to
+      // nothing fetched and nothing decoded.
+      if (!tapSounds) return
+      if (mode !== null) playMode(mode)
+    },
+    [simple, answer, today, playMode, tapSounds],
+  )
+
+  /**
    * Fetch and decode the twelve reference notes in the background, once, after
    * the groove the player pressed for has finished loading (R18, R19).
    *
@@ -314,9 +478,20 @@ function GroovePuzzleView({
   useEffect(() => {
     if (warmed.current) return
     if (!isPlaying || loading) return
+    // Both rows are silent, so there is nothing to prefetch for: twelve notes
+    // and twenty-four pitches for rows that cannot sound is the same fetch R11
+    // forbids on a tap, only earlier (F16 E2 R11). The `warmed` ref is what
+    // makes flipping the switch back on mid-groove warm them then — the effect
+    // re-runs on the flag and finds the work still undone.
+    if (!tapSounds) return
     warmed.current = true
     warm()
-  }, [isPlaying, loading, warm])
+    // Both voices, one gate, one ref: the mode row's pitches are warmed on the
+    // same terms and behind the same groove, and a second effect would only be
+    // a second chance for the two rows to disagree about when it is safe to
+    // fetch (F16 E1 R33, R34).
+    warmLicks()
+  }, [isPlaying, loading, tapSounds, warm, warmLicks])
 
   // No fresh-game frame may paint before the saved day is in the store: a day
   // already in progress would flash as untouched, and a solved day as unplayed.
@@ -338,8 +513,9 @@ function GroovePuzzleView({
       selectedRoot={offeredRoot}
       selectedFlavour={offeredFlavour}
       onSelectRoot={selectRoot}
-      onHearRoot={playRoot}
+      onHearRoot={hearRoot}
       onSelectFlavour={selectFlavour}
+      onHearMode={handleHearMode}
       canCheck={canCheckOffered}
       onCheck={check}
       solved={solved}
@@ -352,6 +528,8 @@ function GroovePuzzleView({
       onReveal={reveal}
       simple={simple}
       onToggleSimple={setSimple}
+      tapSounds={tapSounds}
+      onToggleTapSounds={setTapSounds}
     />
   )
 
@@ -460,14 +638,17 @@ function GroovePuzzleView({
                     }}
                   />
                   {/* The line that sets the task is where the answer belongs
-                      (F10 E2 R1a, R5, AC6). `♪` on the root chips marks
-                      where; this sentence is what names the behaviour, and it
-                      offers your own instrument first rather than only. Its
-                      tone, its size and its place under the control are
-                      feature-4 E2 R4's and are unchanged. */}
+                      (F10 E2 R1a, R5, AC6). Its tone, its size and its place
+                      under the control are feature-4 E2 R4's and are
+                      unchanged; the two wordings are the module constants at
+                      the top of this file, one per state of the switch.
+
+                      With the sounds off it says so, and says how to put them
+                      back, rather than going on describing an instrument the
+                      row no longer is (F16 E2 R12a, AC11a). One element and
+                      one ternary, so the swap cannot move the caption. */}
                   <Text tone="muted" size="sm">
-                    Find the note that feels like home — Play along with
-                    your instrument or tap a root to hear it.
+                    {tapSounds ? CAPTION_SOUNDS_ON : CAPTION_SOUNDS_OFF}
                   </Text>
                 </Stack>
               </Stack>

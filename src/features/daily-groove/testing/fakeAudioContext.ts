@@ -1,5 +1,6 @@
 import { vi, type Mock } from 'vitest'
 import { releaseAudioContext } from '../lib/audio/context'
+import { resetReferenceOutput } from '../lib/audio/output'
 
 /**
  * A driveable stand-in for the Web Audio API.
@@ -33,6 +34,28 @@ export type FakeSourceNode = {
   disconnect: Mock<() => void>
 }
 
+/**
+ * One `AudioParam`, recorded rather than automated.
+ *
+ * The fake runs no curve: `setValueAtTime` and direct assignment both move
+ * `value`, and a ramp is remembered as a call so a test can assert the shape of
+ * the fade without simulating it sample by sample.
+ */
+export type FakeAudioParam = {
+  /** Set by `setValueAtTime` and by direct assignment. No automation curve. */
+  value: number
+  setValueAtTime: Mock<(value: number, when: number) => void>
+  linearRampToValueAtTime: Mock<(value: number, when: number) => void>
+  cancelScheduledValues: Mock<(when: number) => void>
+}
+
+/** One `GainNode` — the stage every reference sound is routed through. */
+export type FakeGainNode = {
+  gain: FakeAudioParam
+  connect: Mock<(destination: unknown) => unknown>
+  disconnect: Mock<() => void>
+}
+
 /** One constructed context. */
 export type FakeAudioContextHandle = {
   readonly currentTime: number
@@ -46,6 +69,7 @@ export type FakeAudioContextHandle = {
   close: Mock<() => Promise<void>>
   decodeAudioData(bytes: ArrayBuffer): Promise<FakeAudioBuffer>
   createBufferSource(): FakeSourceNode
+  createGain(): FakeGainNode
 }
 
 export type FakeContext = {
@@ -53,6 +77,8 @@ export type FakeContext = {
   advance(seconds: number): void
   /** Every source node the context created, in creation order. */
   sources: FakeSourceNode[]
+  /** Every gain node the context created, in creation order, like `sources`. */
+  gains: FakeGainNode[]
   /** Every context constructed since the fake was installed. */
   contexts: FakeAudioContextHandle[]
   /** The clock the constructed contexts read. */
@@ -108,6 +134,12 @@ export function installFakeAudioContext(opts: InstallOptions = {}): FakeContext 
   // context synchronously, which is the half that has to happen before the
   // caller's first `sharedAudioContext()`.
   void releaseAudioContext()
+  // Same reasoning, one layer up: a claim on the reference output taken by a
+  // voice built over the *previous* stub is stale the moment this one is
+  // installed, and cancelling it would reach into a torn-down context. Doing it
+  // here is what keeps every test file isolated without any of them having to
+  // learn that an output owner exists.
+  resetReferenceOutput()
 
   const bufferSeconds = opts.bufferSeconds ?? 10
 
@@ -122,6 +154,7 @@ export function installFakeAudioContext(opts: InstallOptions = {}): FakeContext 
   }
 
   const sources: FakeSourceNode[] = []
+  const gains: FakeGainNode[] = []
   const failingUrls = new Set<string>()
   const contexts: FakeAudioContextHandle[] = []
   const held: Array<() => void> = []
@@ -208,6 +241,26 @@ export function installFakeAudioContext(opts: InstallOptions = {}): FakeContext 
       sources.push(node)
       return node
     }
+
+    createGain(): FakeGainNode {
+      const gain: FakeAudioParam = {
+        value: 1,
+        setValueAtTime: vi.fn<(value: number, when: number) => void>(
+          (value) => {
+            gain.value = value
+          },
+        ),
+        linearRampToValueAtTime: vi.fn<(value: number, when: number) => void>(),
+        cancelScheduledValues: vi.fn<(when: number) => void>(),
+      }
+      const node: FakeGainNode = {
+        gain,
+        connect: vi.fn(),
+        disconnect: vi.fn(),
+      }
+      gains.push(node)
+      return node
+    }
   }
 
   vi.stubGlobal('AudioContext', FakeAudioContext)
@@ -229,6 +282,7 @@ export function installFakeAudioContext(opts: InstallOptions = {}): FakeContext 
       state.currentTime += seconds
     },
     sources,
+    gains,
     contexts,
     get currentTime() {
       return state.currentTime

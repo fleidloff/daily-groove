@@ -425,8 +425,25 @@ describe('the rotation is the generated catalogue (Epic 4)', () => {
     // Two shapes of the same mistake: narrowing `GROOVES` at a call site, and a
     // predicate that decides on a groove's flavour.
     expect(hits(/\bGROOVES\b[^\n]*\.\s*(?:filter|slice|splice)\s*\(/)).toEqual([])
+
+    // The predicate half looks for the flavour being read *off an item* — the
+    // shape a groove-shaped predicate has, whether the field is reached with a
+    // dot or destructured out of the parameter. It deliberately does not match
+    // a predicate whose parameter *is* a flavour: `pool.filter((flavour) =>
+    // familyOf(flavour) === family)` narrows a mode pool, not the rotation,
+    // and feature-16's `simpleModes.ts` does exactly that to decide which lick
+    // a simple-mode chip sounds. An earlier version of this pattern matched
+    // any predicate mentioning the word at all, which is wider than the rule
+    // it stands behind.
     expect(
-      hits(/\.\s*filter\s*\([^)\n]*\)?\s*=>[^\n]*\b(?:flavour|mode)\b/i),
+      hits(
+        /\.\s*filter\s*\([^)\n]*\)?\s*=>[^\n]*\.\s*(?:flavour|mode)\b/i,
+      ),
+    ).toEqual([])
+    expect(
+      hits(
+        /\.\s*filter\s*\(\s*\(?\s*\{[^}\n]*\b(?:flavour|mode)\b[^}\n]*\}\s*\)?\s*=>/i,
+      ),
     ).toEqual([])
   })
 

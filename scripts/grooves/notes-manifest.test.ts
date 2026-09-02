@@ -28,21 +28,52 @@ describe('renderNotesManifest', () => {
     expect(source).toContain('npm run notes')
   })
 
-  it('imports Root from the app alias and declares the exported shape', () => {
+  it('imports Root from the app alias and declares both exported shapes', () => {
     const source = renderNotesManifest(noteSpecs())
 
     expect(source).toContain("import type { Root } from '@/lib/groove'")
     expect(source).toMatch(/export type ReferenceNote = \{/)
     expect(source).toContain('export const NOTES: ReferenceNote[] = [')
+    expect(source).toMatch(/export type PitchSample = \{/)
+    expect(source).toContain('export const PITCHES: PitchSample[] = [')
   })
 
-  it('writes one entry per root', () => {
+  /**
+   * `NOTES` is the root row's twelve and `PITCHES` is the sequencer's
+   * twenty-four, and the order matters twice over: `NOTES` must stay first so a
+   * reader meets the row before the range, and — the load-bearing half — it
+   * must stay exactly twelve entries. `lib/audio/reference.ts` builds
+   * `new Map(notes.map((n) => [n.root, n.audioSrc]))`, so a twenty-four-entry
+   * `NOTES` would silently re-key every root to the octave above.
+   */
+  it('writes the row twelve first, then the range twenty-four', () => {
+    const source = renderNotesManifest(noteSpecs())
+    const split = source.indexOf('export const PITCHES: PitchSample[] = [')
+
+    expect(split).toBeGreaterThan(source.indexOf('export const NOTES: ReferenceNote[] = ['))
+    expect([...source.slice(0, split).matchAll(/^ {4}root: /gm)]).toHaveLength(12)
+    expect([...source.matchAll(/^ {4}root: /gm)]).toHaveLength(36)
+  })
+
+  it('writes one NOTES entry per root', () => {
     const source = renderNotesManifest(noteSpecs())
 
-    expect([...source.matchAll(/^ {4}root: /gm)]).toHaveLength(12)
     expect(source).toContain("root: 'C♯',")
     expect(source).toContain("audioSrc: '/notes/note-c-sharp.mp3',")
     expect(source).toContain('midi: 61,')
+  })
+
+  it('writes every pitch into PITCHES, ascending from 60 to 83', () => {
+    const source = renderNotesManifest(noteSpecs())
+    const pitches = source.slice(source.indexOf('export const PITCHES: PitchSample[] = ['))
+
+    expect([...pitches.matchAll(/^ {4}midi: (\d+),/gm)].map((m) => Number(m[1]))).toEqual(
+      Array.from({ length: 24 }, (_, i) => 60 + i),
+    )
+    expect([...pitches.matchAll(/^ {4}id: /gm)]).toHaveLength(24)
+    expect(pitches).toContain("id: 'C♯5',")
+    expect(pitches).toContain("audioSrc: '/notes/note-c-sharp-5.mp3',")
+    expect(pitches).toContain('octave: 5,')
   })
 
   it('quotes every literal with single quotes', () => {

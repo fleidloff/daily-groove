@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { FAMILIES, UnknownFamilyError, familyOf } from './families'
 import { GROOVES } from '../../data/grooves.generated'
+import { flavourPool } from './music'
 
 /**
  * Every mode the table grades, in the display spelling the manifest uses —
@@ -87,5 +88,36 @@ describe('familyOf', () => {
 
   it('names the offending mode in the error it throws', () => {
     expect(() => familyOf('Locrian')).toThrow(/Locrian/)
+  })
+})
+
+/**
+ * The two properties simple mode's lick pick leans on, asserted rather than
+ * assumed. `simpleLickMode` picks the non-matching chip's mode from its own
+ * family with no filter against the day's answer — the guard is that the
+ * families partition the pool, so a Minor pick simply cannot be a Major day's
+ * mode. That guard is only real while these two cases pass.
+ */
+describe('the families partition the catalogue', () => {
+  const pool = flavourPool(GROOVES)
+
+  // The disjointness `simpleLickMode` relies on: a mode is in exactly one
+  // family, so picking from the other family can never collide with the day's
+  // mode. The day a thirteenth mode lands in both — or in neither — this fails
+  // before the pick silently starts offering the answer as the wrong chip.
+  it('sorts every mode in the pool into exactly one of the two families', () => {
+    const major = pool.filter((m) => familyOf(m) === 'Major')
+    const minor = pool.filter((m) => familyOf(m) === 'Minor')
+
+    expect(major.filter((m) => minor.includes(m))).toEqual([])
+    expect([...major, ...minor].sort()).toEqual([...pool].sort())
+    expect(major.length + minor.length).toBe(pool.length)
+  })
+
+  // The non-emptiness the pick relies on: whichever family the day's mode is
+  // not in still has something to offer, so the other chip is never silent.
+  it('gives each family exactly six members of the pool', () => {
+    expect(pool.filter((m) => familyOf(m) === 'Major')).toHaveLength(6)
+    expect(pool.filter((m) => familyOf(m) === 'Minor')).toHaveLength(6)
   })
 })

@@ -105,6 +105,7 @@ describe('createPageTransport', () => {
     expect(Object.keys(transport).sort()).toEqual([
       'dispose',
       'getPosition',
+      'getStartTime',
       'isLoading',
       'isPlaying',
       'subscribe',
@@ -484,6 +485,108 @@ describe('a failed press (R7, AC8, AC8d)', () => {
     // The failed press did not cost a player: the retry reused the context.
     expect(fake.contexts).toHaveLength(1)
     expect(fake.decodeCalls).toBe(2)
+
+    transport.dispose()
+  })
+})
+
+/**
+ * Step C3 — R7, R8, AC5.
+ *
+ * `getPosition()` is built on `getElapsed()`, which is latency-corrected: it
+ * describes what the listener is *hearing*. A note scheduled against that would
+ * land exactly one output latency behind the beat — inaudible wired, a real
+ * flam over Bluetooth. So the beat grid reads one link earlier in the chain:
+ * the graph time the groove's first sample was *emitted* at. This is the only
+ * thing the transport gives up to it, it is read-only, and nothing here can
+ * stop, move or reschedule the groove (R9).
+ */
+describe('the beat grid’s clock (R8)', () => {
+  it('reports nothing before any press', () => {
+    const { fake } = install()
+    const transport = createPageTransport(TEN_SECOND_LOOP)
+
+    expect(transport.getStartTime()).toBeNull()
+    // ...and asking has not built a context to ask it of.
+    expect(fake.contexts).toHaveLength(0)
+
+    transport.dispose()
+  })
+
+  it('reports the graph time the source started at', async () => {
+    const { fake } = install({ bufferSeconds: 12 })
+    const transport = createPageTransport(TEN_SECOND_LOOP)
+
+    fake.advance(2)
+    await transport.toggle()
+
+    expect(transport.getStartTime()).toBe(2)
+    expect(Number.isFinite(transport.getStartTime())).toBe(true)
+
+    // A start time, not an elapsed one: the grid is `startedAt + n × beat`.
+    fake.advance(3.5)
+    expect(transport.getStartTime()).toBe(2)
+
+    transport.dispose()
+  })
+
+  it('reports nothing once the loop is stopped, and a new time on a restart', async () => {
+    const { fake } = install({ bufferSeconds: 12 })
+    const transport = createPageTransport(TEN_SECOND_LOOP)
+
+    fake.advance(2)
+    await transport.toggle()
+    const first = transport.getStartTime()
+    expect(first).toBe(2)
+
+    await transport.toggle()
+    expect(transport.getStartTime()).toBeNull()
+
+    // A restart moves the grid with it: beat 0 is where the groove is now.
+    fake.advance(5)
+    await transport.toggle()
+    const second = transport.getStartTime()
+    expect(second).toBe(7)
+    expect(second!).toBeGreaterThan(first!)
+
+    transport.dispose()
+  })
+
+  it('reports nothing while the press is still loading', async () => {
+    const { fake } = install({ bufferSeconds: 12 })
+    fake.deferNextDecode()
+    const transport = createPageTransport(TEN_SECOND_LOOP)
+
+    fake.advance(1)
+    const pressed = transport.toggle()
+    await flush()
+
+    // The control already reads "Stop", but nothing has sounded yet — so a tap
+    // during the gap is immediate rather than scheduled against a groove that
+    // has not started.
+    expect(transport.isPlaying()).toBe(true)
+    expect(transport.isLoading()).toBe(true)
+    expect(transport.getStartTime()).toBeNull()
+
+    fake.releaseDecodes()
+    await pressed
+
+    expect(transport.getStartTime()).toBe(1)
+
+    transport.dispose()
+  })
+
+  it('is the emission clock, not the latency-corrected one', async () => {
+    const { fake } = install({ bufferSeconds: 12, outputLatency: 0.2 })
+    const transport = createPageTransport(TEN_SECOND_LOOP)
+
+    await transport.toggle()
+    fake.advance(2)
+
+    // The heard timeline the progress bar uses is 200ms behind...
+    expect(transport.getPosition()).toBeCloseTo(1.8 / 10, 6)
+    // ...and the grid's timeline is not, which is the whole point of it.
+    expect(fake.currentTime - transport.getStartTime()!).toBeCloseTo(2, 9)
 
     transport.dispose()
   })

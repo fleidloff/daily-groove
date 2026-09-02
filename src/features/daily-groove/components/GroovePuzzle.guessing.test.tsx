@@ -109,7 +109,7 @@ describe('GroovePuzzle', () => {
       const expected = flavourOptions(new Date(2026, 7, 29, 12, 0, 0), GROOVE)
       const rendered = within(flavourGroup())
         .getAllByRole('button')
-        .map((b) => b.textContent)
+        .map(chipLabel)
 
       expect(rendered).toEqual(expected)
       expect(rendered).toContain('Aeolian')
@@ -544,7 +544,7 @@ describe('GroovePuzzle', () => {
    * is mocked: the page loads the preference the way it will in a browser.
    */
   async function enableSimpleMode() {
-    await createLocalPreferenceStore().set({ simpleMode: true })
+    await createLocalPreferenceStore().update({ simpleMode: true })
   }
 
   const modeSwitch = () => screen.getByRole('switch', { name: /simple mode/i })
@@ -815,7 +815,7 @@ describe('GroovePuzzle', () => {
       expect(
         within(flavourGroup())
           .getAllByRole('button')
-          .map((b) => b.textContent),
+          .map(chipLabel),
       ).toEqual(flavours())
 
       // The same check control: prompting, then naming the pair, then locked.
@@ -852,7 +852,7 @@ describe('GroovePuzzle', () => {
       expect(
         within(flavourGroup())
           .getAllByRole('button')
-          .map((b) => b.textContent),
+          .map(chipLabel),
       ).toEqual(['Major', 'Minor'])
     })
   })
@@ -1115,5 +1115,53 @@ describe('GroovePuzzle', () => {
       expect(invitation()).toBeNull()
       expect(inAppLinks()).toEqual([])
     })
+  })
+  // Step E7 — F16 E2 R5, AC5. Flipping a preference is doing something else
+  // with the card; it is not an attempt. The composed proof, because the claim
+  // is about the *session*: the card alone cannot show that no attempt was
+  // spent, only that nothing it renders changed.
+  it('spends nothing when the sounds are switched (F16 E2 E7, R5, AC5)', async () => {
+    const user = userEvent.setup()
+    await renderPuzzle()
+    const wrong = wrongFlavour()
+
+    // One wrong guess, so a dot is spent and the feedback line has spoken.
+    await guess(user, 'C', wrong)
+    // ...and a second guess staged but not checked, so the control is live and
+    // both rows have a selection to lose.
+    await user.click(within(rootGroup()).getByRole('button', { name: 'G' }))
+
+    const soundSwitch = () => screen.getByRole('switch', { name: /tap sounds/i })
+    const feedbackReads = () =>
+      document.querySelector('[data-tone]')?.textContent ?? null
+    const pressed = (group: HTMLElement) =>
+      within(group)
+        .getAllByRole('button')
+        .filter((chip) => chip.getAttribute('aria-pressed') === 'true')
+        .map(chipLabel)
+
+    const dotsWere = dotStates()
+    const feedbackWas = feedbackReads()
+    const labelWas = control().textContent
+    const rootsWere = pressed(rootGroup())
+    const flavoursWere = pressed(flavourGroup())
+
+    expect(dotsWere.filter((state) => state === 'spent')).toHaveLength(1)
+    expect(feedbackWas).not.toBe('')
+
+    await user.click(soundSwitch())
+    await user.click(soundSwitch())
+
+    expect(dotStates()).toEqual(dotsWere)
+    expect(feedbackReads()).toBe(feedbackWas)
+    expect(control().textContent).toBe(labelWas)
+    expect(pressed(rootGroup())).toEqual(rootsWere)
+    expect(pressed(flavourGroup())).toEqual(flavoursWere)
+
+    // And the staged guess still spends exactly one dot when it is checked:
+    // the two flips went to one, not three.
+    await user.click(control())
+
+    expect(dotStates().filter((state) => state === 'spent')).toHaveLength(2)
   })
 })

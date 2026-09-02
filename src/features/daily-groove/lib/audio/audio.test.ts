@@ -274,6 +274,55 @@ describe('createAudioPlayer', () => {
     })
   })
 
+  // Steps C1, C2 — R8: the graph time the groove's first sample was *emitted*
+  // at. Deliberately not latency-corrected: anything scheduled against the
+  // groove has to sit on the same clock the groove was handed to the graph on,
+  // or it lands one output latency late. `getElapsed()` stays the heard one.
+  describe('the start time is the emission clock (R8)', () => {
+    it('reports the graph time the source was started at', async () => {
+      const fake = installFakeAudioContext()
+      const player = createAudioPlayer(GROOVE_01)
+
+      expect(player.getStartTime()).toBeNull()
+
+      fake.advance(3)
+      await player.play()
+
+      expect(player.getStartTime()).toBe(3)
+
+      // A start time, not an elapsed time: the clock moves, this does not.
+      fake.advance(5)
+      expect(player.getStartTime()).toBe(3)
+
+      player.stop()
+      expect(player.getStartTime()).toBeNull()
+
+      player.dispose()
+    })
+
+    it('is not latency-corrected, and getElapsed() still is', async () => {
+      const fake = installFakeAudioContext({ outputLatency: 0.2 })
+      const player = createAudioPlayer(GROOVE_01)
+
+      fake.advance(1)
+      await player.play()
+      fake.advance(2)
+
+      const startedAt = player.getStartTime()!
+      // Heard: two seconds of graph time minus the 200ms still in the pipe.
+      expect(player.getElapsed()).toBeCloseTo(1.8, 9)
+      // Emitted: the full two seconds.
+      expect(fake.currentTime - startedAt).toBeCloseTo(2, 9)
+      // The gap between the two timelines is exactly the reported latency.
+      expect(fake.currentTime - startedAt - player.getElapsed()).toBeCloseTo(
+        fake.outputLatency!,
+        9,
+      )
+
+      player.dispose()
+    })
+  })
+
   // Step B7 — R7a, AC8b, AC8c: loading is visible while it happens.
   describe('loading is visible while it happens (R7a, AC8b, AC8c)', () => {
     it('is loading between the press and the first sound', async () => {

@@ -6,16 +6,19 @@
 import { afterEach, beforeEach, describe, expect, it, vi, type Mock } from 'vitest'
 import { act, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import type { DailyResult, Groove, Root } from '../types'
+import type { DailyResult, Flavour, Groove, Root } from '../types'
 // The shared setup — fixtures, the fake audio context, the render and the
 // accessible-name queries — has one home (F14 E2 R5). Everything below the
 // `vi.mock` block is imported from it rather than restated here.
 import {
   advance,
   CAPTION,
+  CAPTION_SOUNDS_OFF,
   CHANGES_READ,
   chipAdornment,
   chipLabel,
+  flavourGroup,
+  flavours,
   GROOVE,
   GROOVE_LOOP_SECONDS,
   guess,
@@ -57,13 +60,20 @@ vi.mock('../lib/persistence/storage', async (importOriginal) => ({
 }))
 
 import { GroovePuzzle } from './GroovePuzzle'
-import { answerOf, simpleRootOptions } from '../lib/theory/music'
+import { beatSeconds } from '../lib/audio/beat'
+import { REFERENCE_FADE_SECONDS } from '../lib/audio/level'
+import { referenceOutput } from '../lib/audio/output'
+import { answerOf, flavourPool, simpleRootOptions } from '../lib/theory/music'
+import { FAMILIES, familyOf, type Family } from '../lib/theory/families'
+import { scheduleLick, type ScheduledNote } from '../lib/theory/phrase'
+import { simpleLickMode } from '../lib/theory/simpleModes'
 import { createLocalPreferenceStore } from '../lib/persistence/preferences'
 import { dateLine } from '../lib/presentation/date'
 import { barChords } from '../lib/theory/changes'
-import { NOTES } from '../data/notes.generated'
+import { GROOVES } from '../data/grooves.generated'
+import { NOTES, PITCHES, type PitchSample } from '../data/notes.generated'
 import { renderFeature } from '../testing/renderFeature'
-import type { FakeContext } from '../testing/fakeAudioContext'
+import type { FakeContext, FakeSourceNode } from '../testing/fakeAudioContext'
 
 /** The fake audio context this test's cases read the clock and sources from. */
 let fake: FakeContext
@@ -92,12 +102,26 @@ describe('GroovePuzzle', () => {
   const DORIAN: Groove = { ...GROOVE, flavour: 'Dorian', scale: 'C Dorian' }
 
   /**
+   * The Major-family day. Simple mode's resolution is family-symmetric, so the
+   * Dorian day above exercises the same code from the Minor side — but F16 E1
+   * AC11 names a day *in the Major family*, and until this fixture existed that
+   * scenario had never been played through the composed page. Same shape as the
+   * sibling fixture in `GroovePuzzle.guessing.test.tsx`, and the same root, so
+   * everything derived from the root is unchanged.
+   */
+  const MIXOLYDIAN: Groove = {
+    ...GROOVE,
+    flavour: 'Mixolydian',
+    scale: 'C Mixolydian',
+  }
+
+  /**
    * Turn the preference on before the page reads it, through the same
    * `PreferenceStore` the hook behind the toggle uses. No hook and no component
    * is mocked: the page loads the preference the way it will in a browser.
    */
   async function enableSimpleMode() {
-    await createLocalPreferenceStore().set({ simpleMode: true })
+    await createLocalPreferenceStore().update({ simpleMode: true })
   }
 
   /** The six roots the day offers in simple mode, resolved as the page does. */
@@ -456,6 +480,23 @@ describe('GroovePuzzle', () => {
     return fake.sources
   }
 
+  /**
+   * This groove's own quarter note, read from the fixture's tempo rather than
+   * written out: the grid is derived from the tempo, so a literal here would
+   * stop being about the same beat the moment the fixture changed (R8).
+   */
+  const BEAT = beatSeconds(GROOVE.bpm)
+
+  /** A deliberately off-beat offset: a quarter of a beat past one. */
+  const OFF_BEAT = BEAT * 0.25
+
+  /** The graph time a source node was told to start at. */
+  const startedAt = (node: (typeof fake.sources)[number]) =>
+    (node.start.mock.calls[0] as [number])[0]
+
+  const progressReads = () =>
+    screen.getByRole('progressbar').getAttribute('aria-valuenow')
+
   // Step D2 — R1, R2, AC1. It is also AC3 and AC21: the groove has never been
   // played here, so nothing has been warmed and the note is fetched on demand.
   it('selects the tapped root and sounds its note (D2, R1, R2, R3, AC1)', async () => {
@@ -539,6 +580,56 @@ describe('GroovePuzzle', () => {
     await soundedNotes(six.length)
   })
 
+  // Step E4 — F16 E3 R6, R13, AC4, AC11. The wiring seen from the page: the
+  // day's tempo reaches the grid, and the grid reaches the voice.
+  it('selects at once and sounds on the next beat (F16 E3 R6, R13, AC4, AC11)', async () => {
+    const user = userEvent.setup()
+    await renderPuzzle()
+
+    await play(user)
+    await advance(OFF_BEAT)
+    const tappedAt = fake.currentTime
+
+    await user.click(within(rootGroup()).getByRole('button', { name: 'A' }))
+
+    // Selection is the half that never waits: the chip is pressed before the
+    // clock has moved a sample, let alone reached the beat (R13, AC11).
+    expect(
+      within(rootGroup()).getByRole('button', { name: 'A' }),
+    ).toHaveAttribute('aria-pressed', 'true')
+    expect(fake.currentTime).toBe(tappedAt)
+
+    const [, note] = await soundedNotes(2)
+    // Three quarters of a beat away — the next beat boundary of this groove's
+    // own tempo, not the moment of the tap (R6, AC4).
+    expect(startedAt(note)).toBeCloseTo(tappedAt + BEAT * 0.75, 9)
+    expect(startedAt(note)).toBeGreaterThan(tappedAt)
+  })
+
+  // Step E5 — F16 E3 R7, AC5. A stopped groove has no beat to wait for, whether
+  // or not it has ever run.
+  it('sounds without waiting while the loop is stopped (F16 E3 R7, AC5)', async () => {
+    const user = userEvent.setup()
+    await renderPuzzle()
+
+    await advance(2)
+    await user.click(within(rootGroup()).getByRole('button', { name: 'A' }))
+
+    const [first] = await soundedNotes(1)
+    expect(startedAt(first)).toBe(2)
+
+    // And once it has run and been stopped again: still immediate.
+    await play(user)
+    await user.click(screen.getByRole('button', { name: 'Stop the loop' }))
+    await advance(0.3)
+    const tappedAt = fake.currentTime
+
+    await user.click(within(rootGroup()).getByRole('button', { name: 'B' }))
+    await waitFor(() => expect(fake.sources).toHaveLength(3))
+
+    expect(startedAt(fake.sources[2])).toBe(tappedAt)
+  })
+
   // Step D7 — R6, R13, AC5, AC11. The two voices share the context and nothing
   // else. This fails loudly if the transport is ever reused to play a note.
   it('leaves the groove untouched, and the groove leaves the note alone (D7, R6, R13, AC5, AC11)', async () => {
@@ -546,12 +637,12 @@ describe('GroovePuzzle', () => {
     await renderPuzzle()
 
     await play(user)
-    await advance(loopFraction(0.5))
+    // Half a loop, and then off the beat: since F16 E3 a tap on the beat is
+    // immediate and a tap between beats is scheduled, so the position is chosen
+    // to make this case the scheduled one rather than to leave it to arithmetic.
+    await advance(loopFraction(0.5) + OFF_BEAT)
     const groove = fake.sources[0]
-    expect(screen.getByRole('progressbar')).toHaveAttribute(
-      'aria-valuenow',
-      '50',
-    )
+    const at = progressReads()
 
     await user.click(within(rootGroup()).getByRole('button', { name: 'A' }))
     const [, note] = await soundedNotes(2)
@@ -559,20 +650,77 @@ describe('GroovePuzzle', () => {
     // The groove kept playing, from where it was: no stop, no restart, no
     // rewind, and one context between the two voices (R6, R14, AC5).
     expect(groove.stop).not.toHaveBeenCalled()
-    expect(screen.getByRole('progressbar')).toHaveAttribute(
-      'aria-valuenow',
-      '50',
-    )
+    expect(progressReads()).toBe(at)
     expect(
       screen.getByRole('button', { name: 'Stop the loop' }),
     ).toBeInTheDocument()
     expect(fake.contexts).toHaveLength(1)
 
     // And the other direction: stopping the groove does not cut the note, which
-    // rings on to its natural end (R13, AC11).
+    // rings on to its natural end (R13, AC11; F16 E3 R11, AC9). The clock is
+    // moved past the beat the note was scheduled for first, so the note being
+    // spared is unambiguously one that is *sounding* — which is the whole of
+    // what separates this case from the one below it.
+    await advance(BEAT)
+    expect(fake.currentTime).toBeGreaterThan(startedAt(note))
+
     await user.click(screen.getByRole('button', { name: 'Stop the loop' }))
     expect(groove.stop).toHaveBeenCalledTimes(1)
     expect(note.stop).not.toHaveBeenCalled()
+  })
+
+  // Step E6 — F16 E3 R12, AC10. The exact pair to the case above, and the only
+  // thing separating them is whether the note had reached its start time.
+  it('drops a note the stopped groove never reaches (F16 E3 R12, AC10)', async () => {
+    const user = userEvent.setup()
+    await renderPuzzle()
+
+    await play(user)
+    await advance(loopFraction(0.5) + OFF_BEAT)
+
+    await user.click(within(rootGroup()).getByRole('button', { name: 'A' }))
+    const [, note] = await soundedNotes(2)
+
+    // Still pending: the beat it is waiting for is ahead of the clock.
+    const when = startedAt(note)
+    expect(when).toBeGreaterThan(fake.currentTime)
+
+    await user.click(screen.getByRole('button', { name: 'Stop the loop' }))
+
+    // Stopped before its own start time and faded to nothing, so it never
+    // sounds — the beat it was queued for will not arrive.
+    expect(note.stop).toHaveBeenCalled()
+    expect((note.stop.mock.calls[0] as [number])[0]).toBeLessThan(when)
+    expect(fake.gains[0].gain.linearRampToValueAtTime).toHaveBeenCalledWith(
+      0,
+      expect.any(Number),
+    )
+  })
+
+  // Step E7 — F16 E3 R9, R15, AC7. The regression guard that reading the
+  // groove's clock stayed one-directional once the page composed it.
+  it('leaves the groove exactly where it was (F16 E3 R9, R15, AC7)', async () => {
+    const user = userEvent.setup()
+    await renderPuzzle()
+
+    await play(user)
+    await advance(loopFraction(0.5))
+    const groove = fake.sources[0]
+    const at = progressReads()
+
+    for (const root of ['A', 'B', 'D'] as const) {
+      await user.click(within(rootGroup()).getByRole('button', { name: root }))
+    }
+    await waitFor(() => expect(fake.sources.length).toBeGreaterThanOrEqual(4))
+
+    // Three taps in quick succession, and the groove is untouched: not stopped,
+    // not restarted, not moved, and the control still offers the same press.
+    expect(groove.stop).not.toHaveBeenCalled()
+    expect(groove.start).toHaveBeenCalledTimes(1)
+    expect(progressReads()).toBe(at)
+    expect(
+      screen.getByRole('button', { name: 'Stop the loop' }),
+    ).toBeInTheDocument()
   })
 
   // Step D4 — R9, R10, AC8. The selection is the half that must not depend on
@@ -596,12 +744,609 @@ describe('GroovePuzzle', () => {
     expect(fake.sources).toHaveLength(0)
   })
 
+  /**
+   * The mode row's own voice (F16 E1). The root row above sounds one note; a
+   * mode chip sounds a short phrase in that mode, from the same root, at the
+   * same tempo, through the same shared output — so most of what is asserted
+   * here is that the second voice is the *same* instrument as the first and
+   * not a parallel one.
+   */
+  describe('the mode row sounds a lick (F16 E1)', () => {
+    /** Every mode the catalogue can play, as the page resolves the pool. */
+    const POOL = flavourPool(GROOVES)
+
+    /** The file one rendered pitch sits behind. */
+    const pitchSrc = (midi: number) =>
+      (PITCHES.find((pitch) => pitch.midi === midi) as PitchSample).audioSrc
+
+    /**
+     * The files a phrase needs, in the order the voice asks for them: note
+     * order, with a repeated pitch asked for once. Which files exist is
+     * `notes.generated.ts`'s business, so the URLs are read from it.
+     */
+    const phraseFiles = (notes: ScheduledNote[]) => {
+      const wanted: string[] = []
+      for (const note of notes) {
+        const src = pitchSrc(note.midi)
+        if (!wanted.includes(src)) wanted.push(src)
+      }
+      return wanted
+    }
+
+    /** Float noise from adding an origin to an offset is not the subject. */
+    const round = (seconds: number) => Math.round(seconds * 1e9) / 1e9
+
+    /** The graph time a node was told to stop at, as it was scheduled. */
+    const stoppedAt = (node: FakeSourceNode) =>
+      (node.stop.mock.calls[0] as [number])[0]
+
+    /**
+     * The phrase the graph was actually given, read back off its nodes: each
+     * note's onset relative to the first, and its sounding length. The tail
+     * ramp is the one declared fade, so the length comes back out of the stop
+     * time by subtracting it.
+     */
+    const soundedPhrase = (nodes: FakeSourceNode[]) => {
+      const origin = startedAt(nodes[0])
+      return nodes.map((node) => ({
+        offsetSeconds: round(startedAt(node) - origin),
+        durationSeconds: round(
+          stoppedAt(node) - startedAt(node) - REFERENCE_FADE_SECONDS,
+        ),
+      }))
+    }
+
+    /** The same shape, from the arithmetic `lib/theory/phrase.ts` owns. */
+    const phraseShape = (notes: ScheduledNote[]) =>
+      notes.map((note) => ({
+        offsetSeconds: round(note.offsetSeconds),
+        durationSeconds: round(note.durationSeconds),
+      }))
+
+    /** Wait for one phrase's nodes, and hand back only that phrase's. */
+    const soundedLick = async (from: number, count: number) => {
+      await waitFor(() => expect(fake.sources).toHaveLength(from + count))
+      return fake.sources.slice(from)
+    }
+
+    const tapMode = (
+      user: ReturnType<typeof userEvent.setup>,
+      name: string,
+    ) => user.click(within(flavourGroup()).getByRole('button', { name }))
+
+    /** The whole guess card's text, for the two "nothing names a mode" cases. */
+    const cardText = () =>
+      screen.getByRole('heading', { name: 'What is it?' })
+        .parentElement as HTMLElement
+
+    // Step H1 — R1, R7, R32. It is also AC20: the groove has never been played
+    // here, so nothing has been warmed and the phrase fetches its own pitches.
+    it('sounds the tapped mode’s lick from the day’s root (H1, R1, R7, R32, AC20)', async () => {
+      const user = userEvent.setup()
+      await renderPuzzle()
+
+      const mode = flavours()[0]
+      const phrase = scheduleLick({
+        flavour: mode,
+        root: GROOVE.root,
+        bpm: GROOVE.bpm,
+      })
+      expect(phrase.length).toBeGreaterThan(0)
+
+      await tapMode(user, mode)
+
+      const nodes = await soundedLick(0, phrase.length)
+      // One node per note, each one-shot and started rather than left waiting.
+      for (const node of nodes) {
+        expect(node.loop).toBe(false)
+        expect(node.start).toHaveBeenCalledTimes(1)
+      }
+      // The right pitches, in the right places, for the right lengths — the
+      // day's root and the day's tempo, resolved by `scheduleLick` and by
+      // nothing in the page.
+      expect(fetchedNotes()).toEqual(phraseFiles(phrase))
+      expect(soundedPhrase(nodes)).toEqual(phraseShape(phrase))
+      // Hearing is still selecting, and still not guessing (R2, R3).
+      expect(
+        within(flavourGroup()).getByRole('button', { name: mode }),
+      ).toHaveAttribute('aria-pressed', 'true')
+    })
+
+    // Step H1 — R1, AC2. The handler is deliberately unguarded, exactly as the
+    // root row's is: the chip already selected still sounds.
+    it('sounds the selected mode again when it is tapped again (H1, R1, AC2)', async () => {
+      const user = userEvent.setup()
+      await renderPuzzle()
+
+      const mode = flavours()[0]
+      const phrase = scheduleLick({
+        flavour: mode,
+        root: GROOVE.root,
+        bpm: GROOVE.bpm,
+      })
+
+      await tapMode(user, mode)
+      await soundedLick(0, phrase.length)
+      await tapMode(user, mode)
+      const again = await soundedLick(phrase.length, phrase.length)
+
+      expect(soundedPhrase(again)).toEqual(phraseShape(phrase))
+      // Heard twice, fetched once (R32).
+      expect(fetchedNotes()).toEqual(phraseFiles(phrase))
+    })
+
+    // Step H2 — R15, R16, R17, R18, AC11, AC12, AC13. Simple mode's row offers
+    // families, but a lick has to be *in* something, so each chip stands for
+    // one real mode.
+    it('sounds two real modes from simple mode’s two chips (H2, R15, R16, R17, R18, AC11, AC13)', async () => {
+      await enableSimpleMode()
+      const user = userEvent.setup()
+      await renderPuzzle(<GroovePuzzle groove={DORIAN} />)
+
+      expect(chipTexts(flavourGroup())).toEqual(FAMILIES)
+
+      const day = answerOf(DORIAN)
+      const own = familyOf(day.flavour)
+      const other = FAMILIES.find((family) => family !== own) as Family
+
+      // The chip whose family matches the day plays the day's actual mode, so
+      // the correct answer sounds like the groove the player is on (R15).
+      const dayPhrase = scheduleLick({
+        flavour: day.flavour,
+        root: day.root,
+        bpm: DORIAN.bpm,
+      })
+      await tapMode(user, own)
+      expect(soundedPhrase(await soundedLick(0, dayPhrase.length))).toEqual(
+        phraseShape(dayPhrase),
+      )
+
+      // The other chip plays a real mode of *its own* family, picked for the
+      // day — never the day's own mode, which its family cannot contain (R16).
+      const resolved = simpleLickMode({
+        family: other,
+        answer: day,
+        pool: POOL,
+        date: new Date(),
+      })
+      expect(resolved).not.toBeNull()
+      expect(familyOf(resolved as Flavour)).toBe(other)
+      expect(resolved).not.toBe(day.flavour)
+
+      const otherPhrase = scheduleLick({
+        flavour: resolved as Flavour,
+        root: day.root,
+        bpm: DORIAN.bpm,
+      })
+      await tapMode(user, other)
+      expect(
+        soundedPhrase(
+          await soundedLick(dayPhrase.length, otherPhrase.length),
+        ),
+      ).toEqual(phraseShape(otherPhrase))
+
+      // And neither mode is ever written down: the row still says Major and
+      // Minor and the card names no mode at all (R18, AC13).
+      expect(chipTexts(flavourGroup())).toEqual(FAMILIES)
+      for (const mode of POOL) {
+        expect(cardText()).not.toHaveTextContent(mode)
+      }
+    })
+
+    // Step H2 — R15, R16, AC11. The mirror of the case above, on the day AC11
+    // literally names: *a day whose mode is in the Major family*. The case
+    // above plays a Dorian day, which is Minor-family, so the criterion's own
+    // scenario had never been run through the composed page — both directions
+    // are unit-tested over all twelve answers in `simpleModes.test.ts`, and
+    // this is the page wiring on the side the criterion describes. It is
+    // deliberately the same render, the same taps and the same comparison as
+    // its Minor twin: the only thing that changes is the day.
+    it('plays the day’s own mode from Major on a Major day (H2, R15, R16, AC11)', async () => {
+      await enableSimpleMode()
+      const user = userEvent.setup()
+      await renderPuzzle(<GroovePuzzle groove={MIXOLYDIAN} />)
+
+      const day = answerOf(MIXOLYDIAN)
+      // The premise of the criterion, asserted rather than assumed: if the
+      // families table ever regraded this mode, the case below would silently
+      // stop being the Major-family scenario it is named for.
+      expect(familyOf(day.flavour)).toBe('Major')
+      expect(chipTexts(flavourGroup())).toEqual(FAMILIES)
+
+      // `Major` is the chip whose family matches the day, so it plays the day's
+      // actual mode — the correct answer sounds like the groove (R15).
+      const dayPhrase = scheduleLick({
+        flavour: day.flavour,
+        root: day.root,
+        bpm: MIXOLYDIAN.bpm,
+      })
+      expect(dayPhrase.length).toBeGreaterThan(0)
+      await tapMode(user, 'Major')
+      expect(soundedPhrase(await soundedLick(0, dayPhrase.length))).toEqual(
+        phraseShape(dayPhrase),
+      )
+      // Its pitches too, not only its rhythm: R15 is about *which mode* the
+      // chip is in, and the files asked for are what say so. Nothing had been
+      // warmed — the groove was never played — so this is the phrase's own set.
+      expect(fetchedNotes()).toEqual(phraseFiles(dayPhrase))
+
+      // `Minor` plays a real mode of its own family, picked for the day, and
+      // never the day's own — which its family cannot contain (R16).
+      const resolved = simpleLickMode({
+        family: 'Minor',
+        answer: day,
+        pool: POOL,
+        date: new Date(),
+      })
+      expect(resolved).not.toBeNull()
+      expect(familyOf(resolved as Flavour)).toBe('Minor')
+      expect(resolved).not.toBe(day.flavour)
+
+      const otherPhrase = scheduleLick({
+        flavour: resolved as Flavour,
+        root: day.root,
+        bpm: MIXOLYDIAN.bpm,
+      })
+      await tapMode(user, 'Minor')
+      expect(
+        soundedPhrase(
+          await soundedLick(dayPhrase.length, otherPhrase.length),
+        ),
+      ).toEqual(phraseShape(otherPhrase))
+      // And its pitches: every file the Minor mode's phrase needs was asked
+      // for. `arrayContaining` rather than equality because the first phrase's
+      // files are already in the list and the voice fetches each pitch once.
+      expect(fetchedNotes()).toEqual(
+        expect.arrayContaining(phraseFiles(otherPhrase)),
+      )
+      // The two chips really did sound two different things, so a resolution
+      // that collapsed to one mode could not pass by coincidence.
+      expect(phraseShape(otherPhrase)).not.toEqual(phraseShape(dayPhrase))
+    })
+
+    // Step H2 — R17, AC12. Same day, same pair: the seed is the date, so a
+    // reload hears what the first render heard.
+    it('sounds the same pair on a second render of the same day (H2, R17, AC12)', async () => {
+      await enableSimpleMode()
+      const user = userEvent.setup()
+
+      const day = answerOf(DORIAN)
+      const other = FAMILIES.find(
+        (family) => family !== familyOf(day.flavour),
+      ) as Family
+      const expected = phraseShape(
+        scheduleLick({
+          flavour: simpleLickMode({
+            family: other,
+            answer: day,
+            pool: POOL,
+            date: new Date(),
+          }) as Flavour,
+          root: day.root,
+          bpm: DORIAN.bpm,
+        }),
+      )
+
+      const first = await renderPuzzle(<GroovePuzzle groove={DORIAN} />)
+      await tapMode(user, other)
+      const heard = soundedPhrase(await soundedLick(0, expected.length))
+      expect(heard).toEqual(expected)
+
+      first.unmount()
+      const before = fake.sources.length
+      await renderPuzzle(<GroovePuzzle groove={DORIAN} />)
+      await tapMode(user, other)
+      expect(
+        soundedPhrase(await soundedLick(before, expected.length)),
+      ).toEqual(heard)
+    })
+
+    // Step H3 — R9, R11, AC7, AC8. The grid is the transport's, read one way:
+    // the phrase lands on the groove's next beat and the groove never notices.
+    it('starts the lick on the groove’s next beat, over an untouched groove (H3, R9, R11, AC7, AC8)', async () => {
+      const user = userEvent.setup()
+      await renderPuzzle()
+
+      await play(user)
+      await advance(OFF_BEAT)
+      const groove = fake.sources[0]
+      const tappedAt = fake.currentTime
+      const at = progressReads()
+      const before = fake.sources.length
+
+      const mode = flavours()[0]
+      const phrase = scheduleLick({
+        flavour: mode,
+        root: GROOVE.root,
+        bpm: GROOVE.bpm,
+      })
+      await tapMode(user, mode)
+      const nodes = await soundedLick(before, phrase.length)
+
+      // Three quarters of a beat away — the next beat of this groove's own
+      // tempo, and strictly ahead of the tap (AC8).
+      expect(startedAt(nodes[0])).toBeCloseTo(tappedAt + BEAT * 0.75, 9)
+      expect(startedAt(nodes[0])).toBeGreaterThan(tappedAt)
+      // Every note after it keeps its written place against that origin.
+      expect(soundedPhrase(nodes)).toEqual(phraseShape(phrase))
+
+      // The groove is exactly where it was: not stopped, not restarted, not
+      // moved, and one context between the two voices (AC7, R9).
+      expect(groove.stop).not.toHaveBeenCalled()
+      expect(groove.start).toHaveBeenCalledTimes(1)
+      expect(progressReads()).toBe(at)
+      expect(
+        screen.getByRole('button', { name: 'Stop the loop' }),
+      ).toBeInTheDocument()
+      expect(fake.contexts).toHaveLength(1)
+    })
+
+    // Step H3 — R12, AC9. A stopped groove has no beat to wait for.
+    it('sounds the lick at once while the loop is stopped (H3, R12, AC9)', async () => {
+      const user = userEvent.setup()
+      await renderPuzzle()
+
+      await advance(2)
+      const mode = flavours()[0]
+      const phrase = scheduleLick({
+        flavour: mode,
+        root: GROOVE.root,
+        bpm: GROOVE.bpm,
+      })
+
+      await tapMode(user, mode)
+      const nodes = await soundedLick(0, phrase.length)
+
+      expect(startedAt(nodes[0])).toBe(2)
+    })
+
+    // Step H3 — R10. The coupling is one-way in the other direction too:
+    // stopping the groove cannot reach into a phrase already scheduled.
+    it('leaves the lick alone when the groove stops (H3, R10)', async () => {
+      const user = userEvent.setup()
+      await renderPuzzle()
+
+      await play(user)
+      await advance(OFF_BEAT)
+      const before = fake.sources.length
+
+      const mode = flavours()[0]
+      const phrase = scheduleLick({
+        flavour: mode,
+        root: GROOVE.root,
+        bpm: GROOVE.bpm,
+      })
+      await tapMode(user, mode)
+      const nodes = await soundedLick(before, phrase.length)
+
+      await user.click(screen.getByRole('button', { name: 'Stop the loop' }))
+
+      // Each node carries exactly the one stop the phrase scheduled for its
+      // own tail. A second call would be the groove cutting it short.
+      for (const node of nodes) {
+        expect(node.stop).toHaveBeenCalledTimes(1)
+        expect(stoppedAt(node)).toBeGreaterThan(startedAt(node))
+      }
+    })
+
+    // Step H4 — R8, AC6. One reference sound at a time, and a second phrase is
+    // the same takeover a second root is.
+    it('lets one mode lick replace another (H4, R8, AC6)', async () => {
+      const user = userEvent.setup()
+      await renderPuzzle()
+
+      const [one, two] = flavours()
+      const first = scheduleLick({
+        flavour: one,
+        root: GROOVE.root,
+        bpm: GROOVE.bpm,
+      })
+      const second = scheduleLick({
+        flavour: two,
+        root: GROOVE.root,
+        bpm: GROOVE.bpm,
+      })
+
+      await tapMode(user, one)
+      const firstNodes = await soundedLick(0, first.length)
+      await tapMode(user, two)
+      const secondNodes = await soundedLick(first.length, second.length)
+
+      // Every node of the first phrase was let go, and none of the second's.
+      for (const node of firstNodes) {
+        expect(node.stop.mock.calls.length).toBeGreaterThan(1)
+      }
+      for (const node of secondNodes) {
+        expect(node.stop).toHaveBeenCalledTimes(1)
+      }
+      // And the output is held once, by the phrase that is sounding.
+      expect(referenceOutput().isClaimed()).toBe(true)
+    })
+
+    // Step H4 — R8a, AC6a. The root row's ringing note is the other half of
+    // the same instrument, so a mode tap silences it.
+    it('silences a ringing root note when a mode is tapped (H4, R8a, AC6a)', async () => {
+      const user = userEvent.setup()
+      await renderPuzzle()
+
+      await user.click(within(rootGroup()).getByRole('button', { name: 'A' }))
+      await waitFor(() => expect(fake.sources).toHaveLength(1))
+      const note = fake.sources[0]
+      // The root row's note is scheduled with no stop of its own: it rings for
+      // the length of the file. Anything that stops it is a takeover.
+      expect(note.stop).not.toHaveBeenCalled()
+
+      const mode = flavours()[0]
+      const phrase = scheduleLick({
+        flavour: mode,
+        root: GROOVE.root,
+        bpm: GROOVE.bpm,
+      })
+      await tapMode(user, mode)
+      await soundedLick(1, phrase.length)
+
+      // Faded, then stopped — not cut off mid-sample.
+      expect(fake.gains[0].gain.linearRampToValueAtTime).toHaveBeenCalledWith(
+        0,
+        expect.any(Number),
+      )
+      expect(note.stop).toHaveBeenCalledTimes(1)
+      expect(referenceOutput().isClaimed()).toBe(true)
+    })
+
+    // Step H4 — R8, AC6b. And the other direction, including the part of the
+    // phrase that had not sounded yet: a note queued for a beat that is still
+    // ahead is dropped as surely as one already ringing.
+    it('silences a scheduled lick when a root is tapped (H4, R8, AC6b)', async () => {
+      const user = userEvent.setup()
+      await renderPuzzle()
+
+      await play(user)
+      await advance(OFF_BEAT)
+      const before = fake.sources.length
+
+      const mode = flavours()[0]
+      const phrase = scheduleLick({
+        flavour: mode,
+        root: GROOVE.root,
+        bpm: GROOVE.bpm,
+      })
+      await tapMode(user, mode)
+      const nodes = await soundedLick(before, phrase.length)
+      // Every one of them is still waiting for its beat.
+      for (const node of nodes) {
+        expect(startedAt(node)).toBeGreaterThan(fake.currentTime)
+      }
+
+      await user.click(within(rootGroup()).getByRole('button', { name: 'A' }))
+      await waitFor(() =>
+        expect(fake.sources).toHaveLength(before + phrase.length + 1),
+      )
+
+      for (const node of nodes) {
+        await waitFor(() =>
+          expect(node.stop.mock.calls.length).toBeGreaterThan(1),
+        )
+        // Stopped before its own start time, so it never sounds at all.
+        expect((node.stop.mock.calls[1] as [number])[0]).toBeLessThan(
+          startedAt(node),
+        )
+      }
+      expect(referenceOutput().isClaimed()).toBe(true)
+    })
+
+    // Step H5 — R25. The caption is what names the behaviour, and both rows
+    // sound now, so it offers both — in one sentence, naming no mode.
+    it('offers both rows in one sentence, and names no mode (H5, R25)', async () => {
+      await renderPuzzle()
+
+      const text = screen.getByText(CAPTION).textContent as string
+      expect(text).toContain('a root')
+      expect(text).toContain('a mode')
+      // One sentence, one dash, no wrap written into the copy.
+      expect(text).not.toContain('\n')
+      expect(text.split('—')).toHaveLength(2)
+      for (const mode of POOL) expect(text).not.toContain(mode)
+    })
+
+    // Step H6 — R22, AC15. The chips are already locked on a finished day;
+    // this is the guard that the new call did not route around that lock.
+    it.each([
+      ['solved', { solved: true, attempts: [SOLVING] }],
+      ['given up on', { solved: false, revealed: true, attempts: [] }],
+    ])('stays silent on a day that has been %s (H6, R22, AC15)', async (_, ending) => {
+      const stored: DailyResult = {
+        date: TODAY(),
+        answer: { root: 'C', flavour: 'Aeolian' },
+        ...ending,
+      }
+      mockStore.get.mockResolvedValue(stored)
+      mockStore.getAll.mockResolvedValue([stored])
+
+      const user = userEvent.setup()
+      await renderPuzzle()
+
+      const mode = wrongFlavour()
+      const chip = () =>
+        within(flavourGroup()).getByRole('button', { name: mode })
+      const was = chip().getAttribute('aria-pressed')
+
+      await user.click(chip())
+
+      expect(fetchedNotes()).toEqual([])
+      expect(fake.sources).toHaveLength(0)
+      expect(chip()).toHaveAttribute('aria-pressed', was as string)
+    })
+
+    // Step H6 — R19, R20, R21, AC14. Selection is the half that must not
+    // depend on the audio, and a phrase that cannot sound is silence: no
+    // banner, no console-visible break.
+    it('selects and stays quiet where Web Audio is unavailable (H6, R19, R20, R21, AC14)', async () => {
+      vi.stubGlobal('AudioContext', undefined)
+      const complained = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {})
+      try {
+        const user = userEvent.setup()
+        await renderPuzzle()
+
+        const mode = flavours()[0]
+        await tapMode(user, mode)
+        await act(async () => {
+          await Promise.resolve()
+          await Promise.resolve()
+        })
+
+        expect(
+          within(flavourGroup()).getByRole('button', { name: mode }),
+        ).toHaveAttribute('aria-pressed', 'true')
+        expect(fake.sources).toHaveLength(0)
+        expect(screen.queryByRole('alert')).toBeNull()
+        expect(complained).not.toHaveBeenCalled()
+      } finally {
+        complained.mockRestore()
+      }
+    })
+
+    // Step H7 — R33, R34. The licks warm on the same gate the root row does,
+    // behind the groove the player actually pressed for.
+    it('warms the pitches once the groove has decoded, never before (H7, R33)', async () => {
+      const user = userEvent.setup()
+      await renderPuzzle()
+
+      // Nothing is asked for until the player asks for something.
+      expect(fake.fetchCalls).toBe(0)
+
+      await play(user)
+      await waitFor(() =>
+        expect(fetchedNotes()).toHaveLength(NOTES.length + PITCHES.length),
+      )
+
+      // The groove's own file was asked for first; both voices' files followed.
+      const urls = fetchedUrls()
+      expect(urls[0]).toBe(GROOVE.audioSrc)
+      expect(urls.indexOf(GROOVE.audioSrc)).toBeLessThan(
+        urls.findIndex((url) => url.startsWith('/notes/')),
+      )
+      // Warming sounds nothing — the groove is still the only voice.
+      expect(fake.sources).toHaveLength(1)
+    })
+  })
+
   /** Every reference note there is, in the order the module lists them. */
   const allNoteSrcs = () => NOTES.map((note) => note.audioSrc)
 
   // R18, R19, AC21. Warming is an optimisation that must never contend with
   // the groove the player actually pressed, so it waits for that fetch and
   // decode to finish before asking for anything of its own.
+  /**
+   * Everything one press warms. Since F16 E1 that is two voices' worth: the
+   * root row's twelve notes and the mode row's twenty-four pitches, each voice
+   * holding its own cache, so the twelve files the two sets share are asked for
+   * once per voice.
+   */
+  const WARMED = NOTES.length + PITCHES.length
+
   it('warms the whole row once the groove has decoded, never before (I2, R18, R19)', async () => {
     const user = userEvent.setup()
     await renderPuzzle()
@@ -610,16 +1355,16 @@ describe('GroovePuzzle', () => {
     expect(fetchedUrls()).toEqual([])
 
     await play(user)
-    await waitFor(() => expect(fetchedNotes()).toHaveLength(NOTES.length))
+    await waitFor(() => expect(fetchedNotes()).toHaveLength(WARMED))
 
-    // The groove's own file was asked for first; the twelve notes followed it.
+    // The groove's own file was asked for first; the notes followed it.
     const urls = fetchedUrls()
     expect(urls[0]).toBe(GROOVE.audioSrc)
     expect(urls.indexOf(GROOVE.audioSrc)).toBeLessThan(
       urls.findIndex((url) => url.startsWith('/notes/')),
     )
     // The whole row, whatever the mode: simple mode's six are a subset (R7).
-    expect([...fetchedNotes()].sort()).toEqual([...allNoteSrcs()].sort())
+    for (const src of allNoteSrcs()) expect(fetchedNotes()).toContain(src)
     // Warming sounds nothing — the groove is still the only voice (R18).
     expect(fake.sources).toHaveLength(1)
   })
@@ -629,15 +1374,15 @@ describe('GroovePuzzle', () => {
     await renderPuzzle()
 
     await play(user)
-    await waitFor(() => expect(fetchedNotes()).toHaveLength(NOTES.length))
+    await waitFor(() => expect(fetchedNotes()).toHaveLength(WARMED))
 
     await user.click(screen.getByRole('button', { name: 'Stop the loop' }))
     await play(user)
     await settle()
 
-    // Still twelve: the second press warms nothing, and neither does the
+    // Still the same set: the second press warms nothing, and neither does the
     // decoded buffer already in hand (R17, AC14).
-    expect(fetchedNotes()).toHaveLength(NOTES.length)
+    expect(fetchedNotes()).toHaveLength(WARMED)
   })
 
   // R19a, AC21. Warming is never a precondition. A player who taps a root
@@ -718,6 +1463,352 @@ describe('GroovePuzzle', () => {
     )
     const allowed = ['daily-groove:v2:results', 'daily-groove:v1:prefs']
     expect(written.filter((key) => !allowed.includes(key))).toEqual([])
+  })
+
+  /**
+   * The tap-sounds switch, seen from the composed page (F16 E2).
+   *
+   * Everything here runs through the real `useTapSounds` against the real
+   * `createLocalPreferenceStore`: no hook is mocked and nothing reaches past
+   * the feature's public surface, because a mocked hook path is a mocked
+   * internal and the claim being made is that *the page* reads the preference.
+   */
+  describe('the tap sounds can be switched off (F16 E2)', () => {
+    const soundSwitch = () => screen.getByRole('switch', { name: /tap sounds/i })
+    const modeSwitch = () => screen.getByRole('switch', { name: /simple mode/i })
+
+    const turnSoundsOff = async (user: ReturnType<typeof userEvent.setup>) => {
+      await user.click(soundSwitch())
+    }
+
+    /** Whether `b` comes after `a` in document order. */
+    const precedes = (a: Element, b: Element) =>
+      Boolean(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING)
+
+    /** The adornment every root chip is wearing, in row order. */
+    const marked = () =>
+      within(rootGroup())
+        .getAllByRole('button')
+        .map((chip) => chipAdornment(chip))
+
+    /** The accessible names the root row offers, in row order. */
+    const rootNames = () =>
+      within(rootGroup())
+        .getAllByRole('button')
+        .map((chip) => chipLabel(chip))
+
+    const tapRoot = (
+      user: ReturnType<typeof userEvent.setup>,
+      root: string,
+    ) => user.click(within(rootGroup()).getByRole('button', { name: root }))
+
+    // Step E1 — R1, R2, AC1, AC2. The page reads the preference and hands it
+    // to the card; a player who never touches the switch gets the app as it
+    // behaved before it existed.
+    it('offers the switch below the mode switch, on by default (E1, R1, R2, AC1, AC2)', async () => {
+      await renderPuzzle()
+
+      expect(soundSwitch()).toBeInTheDocument()
+      expect(soundSwitch()).toHaveAttribute('aria-checked', 'true')
+      expect(precedes(modeSwitch(), soundSwitch())).toBe(true)
+      expect(precedes(soundSwitch(), rootGroup())).toBe(true)
+    })
+
+    // Step E2 — R9, R10, R11, AC4, AC9, AC10. The gate is where the handlers
+    // are built, so a silenced tap fetches nothing and decodes nothing: not a
+    // mute over audio that still loads.
+    it('selects but fetches nothing on either row with the sounds off (E2, R9, R10, R11, AC4, AC9, AC10)', async () => {
+      const user = userEvent.setup()
+      await renderPuzzle()
+
+      await turnSoundsOff(user)
+
+      await tapRoot(user, 'E♭')
+
+      expect(fetchedNotes()).toEqual([])
+      expect(fake.sources).toHaveLength(0)
+      expect(
+        within(rootGroup()).getByRole('button', { name: 'E♭' }),
+      ).toHaveAttribute('aria-pressed', 'true')
+
+      // And the mode row, on the one flag: it is the half Epic 1 built, and
+      // this is the guard it inherits.
+      const mode = flavours()[0]
+      await user.click(within(flavourGroup()).getByRole('button', { name: mode }))
+
+      expect(fetchedNotes()).toEqual([])
+      expect(fake.sources).toHaveLength(0)
+      expect(
+        within(flavourGroup()).getByRole('button', { name: mode }),
+      ).toHaveAttribute('aria-pressed', 'true')
+    })
+
+    // Step E3 — R4, AC4. The handler is rebuilt from the current preference on
+    // every render, which is what makes both directions immediate.
+    it('sounds the next tap once the switch goes back on (E3, R4, AC4)', async () => {
+      const user = userEvent.setup()
+      await renderPuzzle()
+
+      await turnSoundsOff(user)
+      await tapRoot(user, 'E♭')
+      expect(fetchedNotes()).toEqual([])
+
+      await user.click(soundSwitch())
+      expect(soundSwitch()).toHaveAttribute('aria-checked', 'true')
+
+      await tapRoot(user, 'E♭')
+
+      const [note] = await soundedNotes(1)
+      expect(fetchedNotes()).toEqual([noteSrc('E♭')])
+      expect(note.start).toHaveBeenCalledTimes(1)
+      // Nothing was remounted on the way: one graph, whatever the switch did.
+      expect(fake.contexts.length).toBeLessThanOrEqual(1)
+    })
+
+    // Step E4 — R12, AC11. A row that cannot sound must not promise that it
+    // will — and the mark going away must not change what the row offers.
+    it('takes the mark off the row and puts it back (E4, R12, AC11)', async () => {
+      const user = userEvent.setup()
+      await renderPuzzle()
+
+      const names = rootNames()
+      expect(names).toHaveLength(12)
+      expect(marked().every((glyph) => glyph === NOTE_GLYPH)).toBe(true)
+
+      await turnSoundsOff(user)
+
+      expect(marked()).toHaveLength(12)
+      expect(marked().every((glyph) => glyph === null)).toBe(true)
+      expect(rootNames()).toEqual(names)
+
+      await user.click(soundSwitch())
+
+      expect(marked().every((glyph) => glyph === NOTE_GLYPH)).toBe(true)
+      expect(rootNames()).toEqual(names)
+    })
+
+    // Step E5 — R12a, AC11a. One line, in the same place, saying what happened
+    // and how to undo it. The assertions about *where* it sits are the caption
+    // case above, applied to the second wording, so a swap cannot quietly move
+    // it while chasing the words.
+    it('swaps the caption for one that says how to switch them back (E5, R12a, AC11a)', async () => {
+      const user = userEvent.setup()
+      await renderPuzzle()
+
+      expect(screen.getByText(CAPTION)).toBeInTheDocument()
+
+      await turnSoundsOff(user)
+
+      expect(screen.queryByText(CAPTION)).toBeNull()
+      const caption = screen.getByText(CAPTION_SOUNDS_OFF)
+      const control = screen.getByRole('button', { name: 'Play the loop' })
+      expect(control.nextElementSibling).toBe(caption)
+      expect(caption.parentElement).toBe(control.parentElement)
+      expect(caption.className).toMatch(/text-text-muted/)
+      expect(caption.className).toMatch(/text-\[13px\]/)
+      // Still one line: it names the state and points at the switch, and it
+      // does not explain what the sounds are for.
+      expect(CAPTION_SOUNDS_OFF).not.toContain('\n')
+
+      await user.click(soundSwitch())
+
+      expect(screen.getByText(CAPTION)).toBeInTheDocument()
+      expect(screen.queryByText(CAPTION_SOUNDS_OFF)).toBeNull()
+    })
+
+    // Step E6 — R6, AC6. The switch governs a chip's noise and reaches nothing
+    // the transport owns; this is the guard that a later edit does not connect
+    // them.
+    it('leaves the groove playing, at the same position (E6, R6, AC6)', async () => {
+      const user = userEvent.setup()
+      await renderPuzzle()
+
+      await play(user)
+      await advance(loopFraction(0.5))
+      const groove = fake.sources[0]
+      const at = progressReads()
+      const sounding = fake.sources.length
+
+      const stillPlaying = () => {
+        expect(progressReads()).toBe(at)
+        expect(
+          screen.getByRole('button', { name: 'Stop the loop' }),
+        ).toBeInTheDocument()
+        expect(fake.sources).toHaveLength(sounding)
+        expect(groove.stop).not.toHaveBeenCalled()
+      }
+
+      await turnSoundsOff(user)
+      stillPlaying()
+
+      await user.click(soundSwitch())
+      stillPlaying()
+    })
+
+    // Step E8 — R3, AC3. The composed proof that the preference is stored, and
+    // that the second field did not open a second key.
+    it('is still off after a reload (E8, R3, AC3)', async () => {
+      const user = userEvent.setup()
+      const first = await renderFeature()
+
+      await turnSoundsOff(user)
+      await settle()
+      first.unmount()
+      await renderFeature()
+
+      expect(soundSwitch()).toHaveAttribute('aria-checked', 'false')
+      expect(marked().every((glyph) => glyph === null)).toBe(true)
+      expect(screen.getByText(CAPTION_SOUNDS_OFF)).toBeInTheDocument()
+
+      // One key for both preferences: the field was additive, so no migration
+      // and no second key (R7).
+      const written = Array.from(
+        { length: localStorage.length },
+        (_, i) => localStorage.key(i) as string,
+      )
+      const allowed = ['daily-groove:v2:results', 'daily-groove:v1:prefs']
+      expect(written.filter((key) => !allowed.includes(key))).toEqual([])
+    })
+
+    // Step E9 — R7, AC7. The case that actually matters: a player who already
+    // had simple mode on must not lose it to a field they have never seen.
+    it('loads a preference written before this switch existed (E9, R7, AC7)', async () => {
+      localStorage.setItem(
+        'daily-groove:v1:prefs',
+        JSON.stringify({ simpleMode: true }),
+      )
+      const user = userEvent.setup()
+      await renderFeature()
+
+      expect(modeSwitch()).toHaveAttribute('aria-checked', 'true')
+      expect(chipTexts(flavourGroup())).toEqual(FAMILIES)
+      expect(soundSwitch()).toHaveAttribute('aria-checked', 'true')
+
+      // ...and the sounds are really on, not merely reported as on.
+      const root = rootNames()[0]
+      await tapRoot(user, root)
+      await soundedNotes(1)
+    })
+
+    // R8, AC8 — the two clauses no other tier reaches. `useTapSounds.test.ts`
+    // holds the switch's *position* against an injected store that rejects, and
+    // `preferences.test.ts` keeps the store resolving over hostile storage.
+    // Neither of them can say whether the flip **took effect**, and nothing
+    // anywhere said that **nothing is shown** for the failure — the page does
+    // have an error surface, the groove's own banner and retry, and a
+    // preference that could not be stored must never raise it. Both were true
+    // of the code by construction, which is exactly the kind of thing a later
+    // edit removes without failing anything.
+    //
+    // The failing store here is the real one over refusing storage — quota, a
+    // disabled store, a private window, which is what R8 names — because that
+    // is the only way a write failure is reachable through `index.ts`:
+    // `GroovePuzzle` takes no store, so injecting one would mean mocking a
+    // module path, and the whole point of this file is that it does not.
+    it('still silences the taps, and says nothing, when the write fails (R8, AC8)', async () => {
+      const refused = vi
+        .spyOn(localStorage, 'setItem')
+        .mockImplementation(() => {
+          throw new DOMException('exceeded the quota', 'QuotaExceededError')
+        })
+      const complained = vi.spyOn(console, 'error').mockImplementation(() => {})
+      try {
+        const user = userEvent.setup()
+        await renderPuzzle()
+
+        await turnSoundsOff(user)
+        await settle()
+
+        // The write really was attempted and really did fail...
+        expect(refused).toHaveBeenCalled()
+        // ...and the switch still moved, and stayed where the player put it.
+        expect(soundSwitch()).toHaveAttribute('aria-checked', 'false')
+
+        // It also took effect. This is the clause that matters most: a switch
+        // that reads off while the taps keep sounding is the worst version of
+        // this bug, and it is the one the hook seam cannot see.
+        await tapRoot(user, 'E♭')
+        await settle()
+        expect(fetchedNotes()).toEqual([])
+        expect(fake.sources).toHaveLength(0)
+        expect(
+          within(rootGroup()).getByRole('button', { name: 'E♭' }),
+        ).toHaveAttribute('aria-pressed', 'true')
+        // The mode row too — one gate, both rows.
+        const mode = flavours()[0]
+        await user.click(
+          within(flavourGroup()).getByRole('button', { name: mode }),
+        )
+        await settle()
+        expect(fetchedNotes()).toEqual([])
+        expect(fake.sources).toHaveLength(0)
+        // And the rest of the page agrees with the switch, so the position is
+        // not merely being reported back in the one place it was set.
+        expect(screen.getByText(CAPTION_SOUNDS_OFF)).toBeInTheDocument()
+        expect(marked().every((glyph) => glyph === null)).toBe(true)
+
+        // Nothing is shown for the failure: no banner, no retry, no message
+        // anywhere on the page, and no console-visible break.
+        expect(screen.queryByRole('alert')).toBeNull()
+        expect(screen.queryByRole('button', { name: /retry/i })).toBeNull()
+        expect(screen.queryByText(/quota|storage|could not|failed/i)).toBeNull()
+        expect(complained).not.toHaveBeenCalled()
+      } finally {
+        complained.mockRestore()
+        refused.mockRestore()
+      }
+    })
+
+    // Step E10 — R5a, AC11b. It is a durable setting rather than a record of
+    // how the day was played, and this card is the only place it can be
+    // changed — so it does not settle when the mode toggle above it does.
+    it.each([
+      ['solved', { solved: true, attempts: [SOLVING] }],
+      ['revealed', { solved: false, revealed: true, attempts: [] }],
+    ])('still switches on a %s day, and stores it (E10, R5a, AC11b)', async (_name, ending) => {
+      const stored: DailyResult = {
+        date: TODAY(),
+        answer: { root: 'C', flavour: 'Aeolian' },
+        ...ending,
+      }
+      mockStore.get.mockResolvedValue(stored)
+      mockStore.getAll.mockResolvedValue([stored])
+
+      const user = userEvent.setup()
+      await renderPuzzle()
+
+      expect(modeSwitch()).toBeDisabled()
+      expect(soundSwitch()).toBeEnabled()
+
+      await turnSoundsOff(user)
+      await settle()
+
+      expect(soundSwitch()).toHaveAttribute('aria-checked', 'false')
+      expect(await createLocalPreferenceStore().get()).toEqual({
+        simpleMode: false,
+        tapSounds: false,
+      })
+    })
+
+    // Step E11 — R11. Twelve prefetched files for a row that has been switched
+    // off is the same fetch R11 forbids, only earlier. The `warmed` ref is what
+    // makes the second half true: the effect re-runs when the flag changes.
+    it('warms nothing for a row that has been switched off (E11, R11)', async () => {
+      const user = userEvent.setup()
+      await renderPuzzle()
+
+      await turnSoundsOff(user)
+      await play(user)
+      await settle()
+
+      // The groove's own file is the only thing that was asked for.
+      expect(fetchedNotes()).toEqual([])
+      expect(fetchedUrls()).toEqual([GROOVE.audioSrc])
+
+      await user.click(soundSwitch())
+
+      await waitFor(() => expect(fetchedNotes()).toHaveLength(WARMED))
+    })
   })
 
   /**

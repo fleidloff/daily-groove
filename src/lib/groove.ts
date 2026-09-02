@@ -51,7 +51,16 @@ export type Groove = {
   uuid: string
   audioSrc: string // URL under /grooves, e.g. "/grooves/groove-01.mp3"
   name: string // display name shown on the groove card, e.g. "Sunroom Shuffle"
-  bpm: number // display only; does not drive playback or the progress bar
+  /**
+   * The groove's tempo. Shown on the card, and — since F16 E3 — the
+   * quarter-note grid a tapped chip is scheduled against, so a reference note
+   * lands on the groove's next beat rather than wherever the thumb fell.
+   *
+   * Still not what drives the audio: the file plays at its own rate and the
+   * progress bar is derived from the loop length and the graph clock, neither
+   * of which reads this number.
+   */
+  bpm: number
   scale: string // absolute, e.g. "C minor"
   chord: string // absolute, e.g. "Dmaj7"
   progression: string // absolute, e.g. "Dm–G–C"

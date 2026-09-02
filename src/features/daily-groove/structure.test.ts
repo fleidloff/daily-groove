@@ -131,6 +131,10 @@ describe('feature components sit in screen regions', () => {
       'TransportPanel',
       'GuessCard',
       'ModeToggle',
+      // Feature-16 Epic 2: the card's second preference switch. It sits with
+      // `ModeToggle` because it renders in the same stack on the same card —
+      // both are thin callers of `@/components/controls/Switch`.
+      'TapSoundsToggle',
       'AttemptDots',
       'FeedbackLine',
       'NudgeBox',

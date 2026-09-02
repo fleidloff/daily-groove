@@ -63,6 +63,10 @@ function fixture(ids: string[] = ['groove-01', 'groove-02']): Fixture {
  * Feature-10, Track B. The same tree with the reference notes beside it: three
  * note mp3s named by root slug, their generated manifest, and the pack
  * declaration they were rendered from.
+ *
+ * Its ids carry no octave, which is what today's committed lock records — so
+ * this fixture is also the transition case, run through the real command: a
+ * pre-widening lock still resolves to the twelve committed files (R27).
  */
 const NOTE_FILES: Record<string, string> = {
   C: 'note-c.mp3',
@@ -100,6 +104,76 @@ function notesFixture(ids: string[] = ['groove-01', 'groove-02']): NotesFixture 
     packDeclarationPath,
   }
   writeLock(buildLock(paths, ids, roots), f.lockPath)
+
+  return { ...f, notesDir, notesManifestPath, packDeclarationPath }
+}
+
+/**
+ * Feature-16, Epic 1, Step B3 — R30, R31, AC19. The widened family: twenty-four
+ * pitches across two octaves, keyed by scientific pitch, the base octave
+ * keeping its historical bare names (R27).
+ *
+ * A literal table rather than a derivation. A fixture that built each file name
+ * the way `noteFile` builds it could not catch `noteFile` building it wrongly —
+ * both sides would be wrong together and the guard would pass.
+ */
+const PITCH_FILES: Record<string, string> = {
+  C4: 'note-c.mp3',
+  'C\u266f4': 'note-c-sharp.mp3',
+  D4: 'note-d.mp3',
+  'E\u266d4': 'note-e-flat.mp3',
+  E4: 'note-e.mp3',
+  F4: 'note-f.mp3',
+  'F\u266f4': 'note-f-sharp.mp3',
+  G4: 'note-g.mp3',
+  'A\u266d4': 'note-a-flat.mp3',
+  A4: 'note-a.mp3',
+  'B\u266d4': 'note-b-flat.mp3',
+  B4: 'note-b.mp3',
+  C5: 'note-c-5.mp3',
+  'C\u266f5': 'note-c-sharp-5.mp3',
+  D5: 'note-d-5.mp3',
+  'E\u266d5': 'note-e-flat-5.mp3',
+  E5: 'note-e-5.mp3',
+  F5: 'note-f-5.mp3',
+  'F\u266f5': 'note-f-sharp-5.mp3',
+  G5: 'note-g-5.mp3',
+  'A\u266d5': 'note-a-flat-5.mp3',
+  A5: 'note-a-5.mp3',
+  'B\u266d5': 'note-b-flat-5.mp3',
+  B5: 'note-b-5.mp3',
+}
+
+const ALL_PITCHES = Object.keys(PITCH_FILES)
+const BASE_OCTAVE_PITCHES = ALL_PITCHES.slice(0, 12)
+
+/** The intact tree with `pitches` rendered beside the grooves. */
+function pitchesFixture(pitches: string[] = ALL_PITCHES): NotesFixture {
+  const f = fixture()
+  const dir = join(f.lockPath, '..')
+
+  const notesDir = join(dir, 'public', 'notes')
+  mkdirSync(notesDir, { recursive: true })
+  for (const id of pitches) writeFileSync(join(notesDir, PITCH_FILES[id]), audioBytes(id, 512))
+
+  const notesManifestPath = join(dir, 'notes.generated.ts')
+  writeFileSync(
+    notesManifestPath,
+    `export const PITCHES = [\n${pitches.map((id) => `  { id: '${id}' },`).join('\n')}\n]\n`,
+  )
+
+  const packDeclarationPath = join(dir, 'pack.json')
+  writeFileSync(packDeclarationPath, `${JSON.stringify({ comp: ['c4.wav'] }, null, 2)}\n`)
+
+  const paths = {
+    grooveDir: f.grooveDir,
+    cataloguePath: f.cataloguePath,
+    manifestPath: f.manifestPath,
+    notesDir,
+    notesManifestPath,
+    packDeclarationPath,
+  }
+  writeLock(buildLock(paths, ['groove-01', 'groove-02'], pitches), f.lockPath)
 
   return { ...f, notesDir, notesManifestPath, packDeclarationPath }
 }
@@ -287,6 +361,54 @@ describe('verify-cli main — Step B4', () => {
       join(import.meta.dirname, '../../src/features/daily-groove/data/notes.generated.ts'),
     )
     expect(DEFAULT_PACK_DECLARATION_PATH).toBe(join(import.meta.dirname, 'samples/pack.json'))
+  })
+
+  // Feature-16, Epic 1, Step B3 — R30, R31, AC19. Twenty-four notes across two
+  // octaves, checked by the same command, with no new machinery: `verifyLock`
+  // already walks `lock.notes` through `noteFile`, so the count and every
+  // failure follow from the id.
+  it('exits zero and reports twenty-four notes when both octaves are intact', async () => {
+    const r = run(pitchesFixture())
+    await expect(r.code).resolves.toBe(0)
+    const output = r.lines.join('\n')
+    expect(output).toContain('2 grooves')
+    expect(output).toContain('24 notes')
+  })
+
+  it('reports the count it actually finds, not the count it expects', async () => {
+    // The guard is a consistency check, never a completeness check: an
+    // interrupted render leaves twelve files, twelve lock entries and a
+    // twelve-entry manifest that all agree with each other, and nothing here
+    // can tell that from a finished render. The printed count is the only
+    // signal a human gets, so it has to stay derived from the lock.
+    const r = run(pitchesFixture(BASE_OCTAVE_PITCHES))
+    await expect(r.code).resolves.toBe(0)
+    expect(r.lines.join('\n')).toContain('12 notes')
+  })
+
+  it('exits non-zero naming the upper-octave note that was deleted (AC19)', async () => {
+    const f = pitchesFixture()
+    rmSync(join(f.notesDir, 'note-c-5.mp3'))
+
+    const r = run(f)
+    await expect(r.code).resolves.toBe(1)
+    const output = r.lines.join('\n')
+    expect(output).toContain('[missing]')
+    expect(output).toContain('note-c-5.mp3')
+    expect(output).toContain('C\u266f5'.slice(0, 0) + 'C5')
+  })
+
+  it('exits non-zero when one byte of the widened notes manifest is rewritten (AC19)', async () => {
+    const f = pitchesFixture()
+    const source = readFileSync(f.notesManifestPath, 'utf8')
+    writeFileSync(f.notesManifestPath, source.replace("'C5'", "'D5'"))
+
+    const r = run(f)
+    await expect(r.code).resolves.toBe(1)
+    const line = r.lines.find((l) => l.includes('notes-manifest-stale'))
+    expect(line).toBeDefined()
+    expect(line).toContain('notes.generated.ts')
+    expect(line!.endsWith('run `npm run notes` to re-render the reference notes')).toBe(true)
   })
 
   it('importing the module runs nothing — the top-level call is guarded', async () => {

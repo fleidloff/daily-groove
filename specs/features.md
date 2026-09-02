@@ -31,7 +31,8 @@ tested and verified). Lettered candidates sit at ✏️ **Briefed** until promot
 | [13](feature-13/) | Drum kit rewrite | ✅ Done | Rebuilds every groove on a real drum kit in place of the cajon, adds a bongo where it fits, brings the keys within a few dB of the drums, and takes the mechanical evenness off the piano — with every groove’s harmony untouched. |
 | [14](feature-14/) | Development speed | ✅ Done | Splits the slow generator tests out of the default test run, breaks up the 3111-line GroovePuzzle test file, and gives implementation workers role-specialized agents so less documentation travels with each dispatch. |
 | [15](feature-15/) | Explain the answer | ✅ Done | Turns the solved box from a scoreboard into the day's lesson — why it is that mode, the notes and the changes as degrees, and how near the guess came. |
-| [16](feature-16/) | Hear the mode | 🛠 Ready to implement | Gives the mode row a voice — tap a mode to hear a short lick in it from the day's root — and puts both rows on the groove's beat, quieter, behind a switch that turns the tap sounds off. |
+| [16](feature-16/) | Hear the mode | 🔨 In progress | Gives the mode row a voice — tap a mode to hear a short lick in it from the day's root — and puts both rows on the groove's beat, quieter, behind a switch that turns the tap sounds off. |
+| [17](feature-17/) | Fair feedback | 📋 Planned | Stops handing the root over — it stays hidden until the puzzle is solved or given up — and marks the half that was right with a check mark once Check is pressed. |
 
 ## Prepared candidates
 

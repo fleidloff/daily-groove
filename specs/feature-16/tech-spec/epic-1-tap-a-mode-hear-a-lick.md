@@ -795,21 +795,42 @@ Covers: R4, R5, R5a, R5b, R6, AC4, AC6c
 
      | Mode | Degrees that must appear |
      | :-- | :-- |
-     | Ionian | 2, 6 |
-     | Dorian | 2 is absent; 5 must appear |
+     | Ionian | 2, 3, 5, 6 |
+     | Dorian | 2 and 5 |
      | Phrygian | 1 |
      | Lydian | 3 |
-     | Mixolydian | 2 and 6 |
-     | Aeolian | 5 |
+     | Mixolydian | 2, 5, 6 |
+     | Aeolian | 1, 2, 5, 6 |
      | Blues | 3 |
      | Harmonic minor | 5 and 6 |
      | Melodic minor | 5 and 6 |
-     | Harmonic major | 2 and 5 |
+     | Harmonic major | 2, 5, 6 |
      | Lydian dominant | 3 and 6 |
      | Phrygian dominant | 1 and 2 |
 
-     Spell it as `Record<Flavour, { present: number[]; absent?: number[] }>` so
-     Dorian's "no minor third-and-flat-sixth pairing" is expressible.
+     Spell it as `Record<Flavour, { present: number[] }>`. **There is no
+     `absent`, and one must not be added.** A `LickNote` carries a degree index
+     resolved through the tapped mode's own interval table, so a degree that
+     resolves to the same pitch in two modes cannot make them confusable —
+     forbidding it removes information and no ambiguity. More generally,
+     deleting a pitch class can only grow the set of scales a phrase fits, so an
+     exclusion is strictly counterproductive. An earlier draft of this table
+     read "Dorian: 2 is absent", to stop Dorian being mistaken for Aeolian; the
+     phrase it produced had no minor third and was, note for note, a legal
+     *Mixolydian* phrase — a mode that can be the chip sitting next to it.
+  3a. **Each phrase belongs to exactly one scale.** This is what the exclusion
+     was reaching for, stated so that it can only be satisfied by adding tones:
+     a phrase's pitch-class set, taken from the root, is contained in its own
+     mode's scale and in no other scale in `FLAVOUR_INTERVALS`. Iterate all
+     thirteen keys, Locrian included, and resolve through `degreeSemitones` so
+     the test measures the pitches the app actually schedules.
+  3b. **No note outlasts its file.** No `LickNote` declares `beats > 2`. The
+     note files are 2.0s and the browser ramps a note to zero at
+     `durationSeconds + REFERENCE_FADE_SECONDS`; at open-ballad's 62 bpm — the
+     slowest tempo any template can draw, below the catalogue's current 67 —
+     two beats is 1.935s + 0.03 = 1.965s, leaving 35ms of file. 2.25 beats
+     overruns. The failure mode is a note that goes quiet early at ballad tempo
+     only.
   4. **No two are the same, in either dimension.** The twelve
      `notes.map((n) => n.degree)` sequences are all distinct (R5b), and the
      twelve sequences of `beat` paired with `beats` are all

@@ -9,7 +9,9 @@ const GROUPS = ['controls', 'display', 'layout', 'surfaces', 'typography']
 const COMPONENTS: Record<string, string[]> = {
   layout: ['Container', 'PageShell', 'Row', 'Stack', 'LabelledColumn'],
   surfaces: ['Card', 'Panel'],
-  controls: ['Button', 'Chip', 'ChipGroup', 'InlineButton', 'PlayControl'],
+  // `Switch` joined in F16 Epic 2, Step B6: the guess card's two toggles are
+  // one control with different words, so the treatment lives here once.
+  controls: ['Button', 'Chip', 'ChipGroup', 'InlineButton', 'PlayControl', 'Switch'],
   typography: ['Heading', 'Text', 'EyebrowLabel', 'SectionLabel', 'Lettering'],
   display: ['Pill', 'ProgressTrack'],
 }

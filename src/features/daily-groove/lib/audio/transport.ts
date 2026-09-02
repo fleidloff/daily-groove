@@ -23,6 +23,18 @@ export type PageTransport = {
   isLoading(): boolean
   /** Position through the loop, 0..1. */
   getPosition(): number
+  /**
+   * The player's start time while running; null when stopped or still loading.
+   *
+   * The graph time the groove's first sample was *emitted* at, not the
+   * latency-corrected time it was heard at. `getPosition()` is built on the
+   * heard timeline because it draws what the listener is hearing; a note
+   * scheduled against that timeline would arrive one output latency behind the
+   * beat, so the beat grid reads this one instead. Read-only in the strongest
+   * sense: nothing reachable from here can stop, move or reschedule the
+   * groove (R9).
+   */
+  getStartTime(): number | null
   /** Starts the source, or stops it if it is already running. */
   toggle(): Promise<void>
   dispose(): void
@@ -100,6 +112,15 @@ export function createPageTransport(source: PlayableSource): PageTransport {
     getPosition() {
       if (!running || !player) return 0
       return loopPosition(player.getElapsed(), source.loopSeconds)
+    },
+
+    getStartTime() {
+      // Null while a press is still fetching and decoding: `running` is
+      // already true, but the player has no start time until a source has
+      // actually been handed to the graph, and a tap in that gap has no beat
+      // to wait for (R7).
+      if (!running || !player) return null
+      return player.getStartTime()
     },
 
     async toggle() {

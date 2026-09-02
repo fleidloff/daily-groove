@@ -259,18 +259,37 @@ describe('verifyLock — Step B2b, stale inputs and outputs', () => {
 })
 
 /**
- * Feature-10, Track B. The reference notes are a second artifact family in the
- * same lock: twelve mp3s named by root slug, their own generated manifest, and
- * the pack declaration they were rendered from.
+ * Feature-10, Track B, widened by feature-16 Epic 1 Track B. The reference
+ * notes are a second artifact family in the same lock: mp3s named by pitch,
+ * their own generated manifest, and the pack declaration they were rendered
+ * from. Two octaves now, so a note is keyed by its scientific pitch rather
+ * than by its root alone.
+ *
+ * Every expectation here is a literal file name. `notes.ts`'s `noteFileName`
+ * asserts the same literals on its own side and the two are never asserted
+ * against each other, because this module may not import that one — see
+ * `noteFile`'s comment for the four things that have to stay true across both
+ * copies of the rule.
  */
-
-/** The twelve are keyed by root; the file name is the root's ASCII slug. */
 const NOTE_FILES: Record<string, string> = {
+  C4: 'note-c.mp3',
+  'C\u266f4': 'note-c-sharp.mp3',
+  'E\u266d4': 'note-e-flat.mp3',
+  C5: 'note-c-5.mp3',
+  'C\u266f5': 'note-c-sharp-5.mp3',
+  'E\u266d5': 'note-e-flat-5.mp3',
+  // The ids a lock written before the widening carries: no octave digit at all.
+  // They name the same three base-octave files (R27).
   C: 'note-c.mp3',
   'C\u266f': 'note-c-sharp.mp3',
   'E\u266d': 'note-e-flat.mp3',
 }
-const NOTE_ROOTS = Object.keys(NOTE_FILES)
+
+/** The fixture's notes: both octaves, so every path in the guard is walked. */
+const NOTE_IDS = ['C4', 'C\u266f4', 'E\u266d4', 'C5', 'C\u266f5', 'E\u266d5']
+
+/** What today's committed lock records, until the artifacts are re-rendered. */
+const HISTORICAL_IDS = ['C', 'C\u266f', 'E\u266d']
 
 type NotesFixture = Fixture & {
   notesDir: string
@@ -281,16 +300,16 @@ type NotesFixture = Fixture & {
 }
 
 /** The groove fixture, plus an intact notes family beside it. */
-function notesFixture(roots: string[] = NOTE_ROOTS): NotesFixture {
+function notesFixture(ids: string[] = NOTE_IDS): NotesFixture {
   const f = fixture()
   const notesDir = join(f.dir, 'public', 'notes')
   mkdirSync(notesDir, { recursive: true })
-  for (const root of roots) writeFileSync(join(notesDir, NOTE_FILES[root]), audioBytes(root, 1024))
+  for (const id of ids) writeFileSync(join(notesDir, NOTE_FILES[id]), audioBytes(id, 1024))
 
   const notesManifestPath = join(f.dir, 'notes.generated.ts')
   writeFileSync(
     notesManifestPath,
-    `export const NOTES = [\n${roots.map((r) => `  { root: '${r}', midi: 60 },`).join('\n')}\n]\n`,
+    `export const NOTES = [\n${ids.map((r) => `  { id: '${r}', midi: 60 },`).join('\n')}\n]\n`,
   )
 
   const packDeclarationPath = join(f.dir, 'pack.json')
@@ -308,21 +327,105 @@ function notesFixture(roots: string[] = NOTE_ROOTS): NotesFixture {
     notesManifestPath,
     packDeclarationPath,
     notePaths,
-    notesLock: buildLock(notePaths, ['groove-01', 'groove-02'], roots),
+    notesLock: buildLock(notePaths, ['groove-01', 'groove-02'], ids),
   }
 }
 
-describe('noteFile — the notes are named by root slug, not by id', () => {
-  it('derives the ASCII slug the render writes', () => {
+const ROOT_SLUGS = ['C', 'C\u266f', 'D', 'E\u266d', 'E', 'F', 'F\u266f', 'G', 'A\u266d', 'A', 'B\u266d', 'B']
+
+describe('noteFile — a scientific-pitch id names the file (Step B1, R30)', () => {
+  it('derives the ASCII slug the render writes, in both octaves', () => {
+    expect(noteFile('/notes', 'C4')).toBe('/notes/note-c.mp3')
+    expect(noteFile('/notes', 'C\u266f4')).toBe('/notes/note-c-sharp.mp3')
+    expect(noteFile('/notes', 'E\u266d4')).toBe('/notes/note-e-flat.mp3')
+    expect(noteFile('/notes', 'C5')).toBe('/notes/note-c-5.mp3')
+    expect(noteFile('/notes', 'C\u266f5')).toBe('/notes/note-c-sharp-5.mp3')
+    expect(noteFile('/notes', 'E\u266d5')).toBe('/notes/note-e-flat-5.mp3')
+    expect(noteFile('/notes', 'B5')).toBe('/notes/note-b-5.mp3')
+  })
+
+  it('reads an id with no octave digit as the base octave', () => {
+    // Today's committed lock records `A`, `E\u266d`, `B` — no digits at all. Between
+    // this change landing and the artifacts being re-rendered, those are the ids
+    // `noteFile` is handed, and they have to keep naming the twelve committed
+    // files or `prebuild` goes red for a render nobody has run yet. Leniency
+    // hides nothing: the file must still exist and still hash-match.
     expect(noteFile('/notes', 'C')).toBe('/notes/note-c.mp3')
     expect(noteFile('/notes', 'C\u266f')).toBe('/notes/note-c-sharp.mp3')
     expect(noteFile('/notes', 'E\u266d')).toBe('/notes/note-e-flat.mp3')
+    expect(noteFile('/notes', 'B')).toBe('/notes/note-b.mp3')
+    // ...and the bare id and the base-octave id name one file, never two.
+    for (const root of ROOT_SLUGS) {
+      expect(noteFile('/notes', root)).toBe(noteFile('/notes', `${root}4`))
+    }
   })
 
-  it('never emits a sharp or flat sign, or an uppercase letter', () => {
-    for (const root of ['C', 'C\u266f', 'D', 'E\u266d', 'E', 'F', 'F\u266f', 'G', 'A\u266d', 'A', 'B\u266d', 'B']) {
-      expect(noteFile('/notes', root)).toMatch(/^\/notes\/note-[a-z-]+\.mp3$/)
+  it('names the base octave bare and the octave above with a plain decimal suffix', () => {
+    // Stronger than one regex over both octaves: a single `[a-z0-9-]+` pattern
+    // also matches `note-c4.mp3`, so it would pass the naming scheme R27
+    // forbids. Each octave is asserted against its own shape instead.
+    const names: string[] = []
+    for (const root of ROOT_SLUGS) {
+      const base = noteFile('/notes', `${root}4`)
+      const upper = noteFile('/notes', `${root}5`)
+      expect(base, root).toMatch(/^\/notes\/note-[a-z-]+\.mp3$/)
+      expect(upper, root).toMatch(/^\/notes\/note-[a-z-]+-5\.mp3$/)
+      names.push(base, upper)
     }
+    // Twenty-four pitches, twenty-four distinct files.
+    expect(names).toHaveLength(24)
+    expect(new Set(names).size).toBe(24)
+  })
+})
+
+describe('verifyLock — two note entries may not share one id (Step B1)', () => {
+  // The trap this closes: a render that keys its lock entries by root rather
+  // than by pitch produces twenty-four entries with twelve duplicate ids, each
+  // duplicate hashing the same file. Every hash matches, nothing is missing,
+  // the guard passes and reports "24 notes" — a fully green, completely wrong
+  // lock. A duplicate id is never legitimate: `sorted()` already treats the id
+  // as the key that identifies an entry.
+  it('fails, naming the id, when the notes family repeats one', () => {
+    const f = notesFixture()
+    const doubled: Lock = {
+      ...f.notesLock,
+      notes: [...f.notesLock.notes!, { ...f.notesLock.notes![0] }],
+    }
+
+    const failures = verifyLock(doubled, f.notePaths)
+
+    expect(failures.map((x) => x.check)).toEqual(['duplicate-id'])
+    expect(failures[0].detail).toContain(f.notesLock.notes![0].id)
+    expect(failures[0].detail).toContain('.mp3')
+  })
+
+  it('catches the same fault in the groove family', () => {
+    const f = fixture()
+    const doubled: Lock = { ...f.lock, grooves: [...f.lock.grooves, { ...f.lock.grooves[0] }] }
+
+    expect(verifyLock(doubled, f.paths).map((x) => x.check)).toEqual(['duplicate-id'])
+  })
+
+  it('says nothing when every id is distinct, in either octave', () => {
+    const f = notesFixture()
+    expect(verifyLock(f.notesLock, f.notePaths)).toEqual([])
+  })
+})
+
+describe('verifyLock — the historical ids still resolve', () => {
+  it('verifies a lock whose note ids carry no octave (R27)', () => {
+    const f = notesFixture(HISTORICAL_IDS)
+    expect(verifyLock(f.notesLock, f.notePaths)).toEqual([])
+  })
+
+  it('still fails on a missing file when the id is a bare root', () => {
+    const f = notesFixture(HISTORICAL_IDS)
+    rmSync(join(f.notesDir, 'note-c.mp3'))
+
+    const failures = verifyLock(f.notesLock, f.notePaths)
+    expect(failures).toHaveLength(1)
+    expect(failures[0].check).toBe('missing')
+    expect(failures[0].detail).toContain('note-c.mp3')
   })
 })
 
@@ -459,7 +562,7 @@ describe('buildLock — Step B5, it records the notes', () => {
   it('hashes each note, the notes manifest and the pack declaration', () => {
     const f = notesFixture()
 
-    expect(f.notesLock.notes).toHaveLength(NOTE_ROOTS.length)
+    expect(f.notesLock.notes).toHaveLength(NOTE_IDS.length)
     for (const entry of f.notesLock.notes!) {
       const file = join(f.notesDir, NOTE_FILES[entry.id])
       expect(entry.sha256).toBe(sha256File(file))

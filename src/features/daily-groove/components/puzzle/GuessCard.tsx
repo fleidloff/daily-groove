@@ -7,6 +7,7 @@ import { AttemptDots } from './AttemptDots'
 import { FeedbackLine } from './FeedbackLine'
 import { NudgeBox } from './NudgeBox'
 import { ModeToggle } from './ModeToggle'
+import { TapSoundsToggle } from './TapSoundsToggle'
 import { Button } from '@/components/controls/Button'
 import { Card } from '@/components/surfaces/Card'
 import { ChipGroup } from '@/components/controls/ChipGroup'
@@ -30,6 +31,15 @@ type GuessCardProps = {
    */
   onHearRoot(r: Root): void
   onSelectFlavour(f: Flavour): void
+  /**
+   * Sound the mode that was just tapped. Called on every mode tap, including a
+   * re-tap of the chip already selected (F16 E1 R1, AC2).
+   *
+   * Best effort by contract: it returns nothing and must never throw, because
+   * `onSelectFlavour` has already run by the time it is called and no audio
+   * failure may undo the selection (F16 E1 R19).
+   */
+  onHearMode(f: Flavour): void
   canCheck: boolean
   onCheck(): void
   solved: boolean
@@ -59,6 +69,22 @@ type GuessCardProps = {
   simple: boolean
   /** Asked for the mode the player wants. Never locked by the day (R8a). */
   onToggleSimple(simple: boolean): void
+  /**
+   * Whether tapping a chip sounds. Drives both rows' `♪` and nothing else
+   * here — the gate itself is in `GroovePuzzle`, where the handlers are built,
+   * so a tap with the sounds off fetches and decodes nothing (F16 E2 R11).
+   *
+   * One flag for both rows: the root row's mark and the mode row's read the
+   * same prop, and the mode handler passes through the same gate, so there is
+   * no second notion of "the chips are audible" to keep in step.
+   */
+  tapSounds: boolean
+  /**
+   * Asked for the state the player wants. Never locked by the day
+   * (F16 E2 R5a) — see the call site below for why this one does not settle
+   * when the mode toggle above it does.
+   */
+  onToggleTapSounds(on: boolean): void
 }
 
 /**
@@ -88,6 +114,7 @@ export function GuessCard({
   onSelectRoot,
   onHearRoot,
   onSelectFlavour,
+  onHearMode,
   canCheck,
   onCheck,
   solved,
@@ -100,6 +127,8 @@ export function GuessCard({
   onReveal,
   simple,
   onToggleSimple,
+  tapSounds,
+  onToggleTapSounds,
 }: GuessCardProps) {
   const [armed, setArmed] = useState(false)
 
@@ -139,18 +168,45 @@ export function GuessCard({
         </Heading>
 
         {/*
-          The switch sits above both rows, so the shape of the question is
-          settled before the question is asked (R1). It stays live for the whole
-          playable day — narrowing the row mid-puzzle is the point, and switching
-          is not an attempt (R8a) — and it settles with the chips once the day is
-          over: the same `over`, so there is one notion of finished on this card
-          (F11 E4 R1, R2).
+          The card's two preferences, in one stack above both rows (F16 E2 R1,
+          AC1). They are the same control with different words — both render
+          `@/components/controls/Switch` — so they read as a pair rather than
+          as two treatments that happen to be adjacent (F16 E2 R14).
+
+          Both flips go through `disarming`: changing a preference is doing
+          something else with the card, which is the documented way back out of
+          an armed give-up (F7 E3 R6b), and neither is an attempt.
         */}
-        <ModeToggle
-          simple={simple}
-          onChange={disarming(onToggleSimple)}
-          disabled={over}
-        />
+        <Stack gap="sm">
+          {/*
+            The mode switch sits above both rows, so the shape of the question
+            is settled before the question is asked (R1). It stays live for the
+            whole playable day — narrowing the row mid-puzzle is the point, and
+            switching is not an attempt (R8a) — and it settles with the chips
+            once the day is over: the same `over`, so there is one notion of
+            finished on this card (F11 E4 R1, R2).
+          */}
+          <ModeToggle
+            simple={simple}
+            onChange={disarming(onToggleSimple)}
+            disabled={over}
+          />
+
+          {/*
+            And it is handed no `over`, which is the surprising part of the two
+            lines above being different. The mode is a record of how the day
+            was played, so it settles with the card; the tap sounds are a
+            durable setting, and this card is the only place they can be
+            changed — so the switch stays live for the whole day, solved or
+            given up (F16 E2 R5a, AC11b). `TapSoundsToggle` declares no
+            `disabled` prop at all, so that is structural rather than a choice
+            made here.
+          */}
+          <TapSoundsToggle
+            on={tapSounds}
+            onChange={disarming(onToggleTapSounds)}
+          />
+        </Stack>
 
         {/*
           One gesture, two things: the root row reports the choice and asks for
@@ -163,9 +219,16 @@ export function GuessCard({
           The `♪` is the promise that goes with it (F10 E2 R1, R2, AC1). The
           chip only knows it has an adornment; that this one means "this chip
           sounds" is decided here, which is what keeps the primitive free of
-          the domain. The mode row is handed none, because mode chips are
-          silent and must not say otherwise. It is deliberately outside the
-          `over` lock: a locked row is still an audible one (R3, AC4).
+          the domain. The mode row wears the same mark, because mode chips
+          sound too now (F16 E1 R23). It is deliberately outside the `over`
+          lock: a locked row is still an audible one (R3, AC4).
+
+          It is inside the `tapSounds` condition, though. A row that cannot
+          sound must not promise that it will, so with the sounds off the mark
+          goes — from both rows, on the one flag (F16 E2 R12, AC11). `Chip`
+          renders the span only for a truthy string, so `undefined` removes the
+          mark and changes nothing else: the chips keep their classes, their
+          accessible names and their offer.
         */}
         <ChipGroup
           label="Root"
@@ -179,7 +242,7 @@ export function GuessCard({
           })}
           disabled={over}
           columns={{ base: 4, wide: 6 }}
-          adornment="♪"
+          adornment={tapSounds ? '♪' : undefined}
         />
 
         {/*
@@ -187,15 +250,39 @@ export function GuessCard({
           it is a DOM grouping key for the chip elements, never read by a
           player, and the props, the store and the manifest still speak of a
           groove's flavour.
+
+          One gesture, two things, exactly as the root row above does it: the
+          row reports the choice and asks for the lick (F16 E1 R1, R2, AC1).
+          Selection goes first — it is the half that is allowed to fail loudly
+          — and the second call is deliberately unguarded, so a re-tap of the
+          chip already selected sounds it again (AC2). Both sit inside
+          `disarming`, so a mode tap still cancels an armed give-up.
+
+          Hearing is not guessing: nothing here spends an attempt, fills a dot
+          or scores anything (R3, AC3).
+
+          The `♪` is the promise that goes with it (R23, R24, AC16). The chip
+          only knows it has an adornment; that this one means "this chip
+          sounds" is decided here, which is what keeps the primitive free of
+          the domain — and the chip renders it `aria-hidden`, so a chip's
+          accessible name stays its label alone. It is deliberately outside the
+          `over` lock: a locked row is still an audible one. It is inside the
+          `tapSounds` condition, which is the seam the two epics agreed on:
+          Epic 1 marked the row, Epic 2 routed both rows' marks through the one
+          flag (F16 E2 R12, AC11).
         */}
         <ChipGroup
           label="Mode"
           name="flavour"
           options={flavours}
           value={selectedFlavour}
-          onSelect={disarming((option: Flavour) => onSelectFlavour(option))}
+          onSelect={disarming((option: Flavour) => {
+            onSelectFlavour(option)
+            onHearMode(option)
+          })}
           disabled={over}
           columns={{ base: 2, wide: 4 }}
+          adornment={tapSounds ? '♪' : undefined}
         />
 
         {/*
@@ -207,10 +294,23 @@ export function GuessCard({
           <AttemptDots states={dots} />
         </div>
 
+        {/*
+          The call to action, at the play control's size (F16 E2 R15, AC13).
+          `lg` is the size `PlayControl` already asks for rather than a third
+          one: the two moves the card offers are equals, and the button that
+          ends the puzzle should not read as an afterthought beside the one
+          that starts it. Nothing came down to meet it — the give-up control
+          below keeps the default, because it is not the call to action.
+
+          The longest label this can show is `Check E♭ Phrygian dominant`, 26
+          characters, which fits on one line at 360px and is asserted as the
+          budget in the test beside this file (R16, AC14).
+        */}
         <Button
           onPress={disarming(onCheck)}
           disabled={!canCheck || revealed}
           tone={tone}
+          size="lg"
         >
           {label}
         </Button>

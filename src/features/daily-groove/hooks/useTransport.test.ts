@@ -4,6 +4,12 @@ import { act, renderHook } from '@testing-library/react'
 /** Any loop length works; the fake only has to be self-consistent. */
 const LOOP_SECONDS = 10
 
+/**
+ * The graph time the fake player's first sample goes out at. Any non-zero
+ * number works; the point is only that the beat grid is offset by it.
+ */
+const START_TIME = 4
+
 // The player is mocked so playback can be driven without real audio.
 // `createPageTransport` itself is NOT mocked: the hook is only an orchestrator
 // over the real adapter in `lib/audio/transport.ts`, and one-groove-only is
@@ -83,6 +89,16 @@ function makePlayer(play: () => Promise<void> = () => Promise.resolve()) {
     // Latency-corrected seconds since the source started, which is what the
     // transport divides by the loop length.
     getElapsed: vi.fn(() => elapsed),
+    // The *emission* clock: graph time at which the first sample went out,
+    // uncorrected, and null while nothing is running. Anything scheduled
+    // against the groove reads this rather than `getElapsed`, so that the
+    // groove and the scheduled sound sit on the same clock and latency
+    // cancels.
+    //
+    // Deliberately not zero. The beat grid the hook builds is anchored at this
+    // number — `startedAt + n × beat` — and a fake that started at zero would
+    // let a grid counted from the graph's origin pass too (R8).
+    getStartTime: vi.fn(() => (playing ? START_TIME : null)),
     subscribe: vi.fn((fn: () => void) => {
       listeners.add(fn)
       return () => {
@@ -109,6 +125,9 @@ describe('useTransport', () => {
     const { result } = renderHook(() => useTransport(TODAY))
 
     expect(Object.keys(result.current).sort()).toEqual([
+      // The beat grid joins the five: the page hands it down to the reference
+      // voice, and it is built beside the transport because it reads it (R8).
+      'clock',
       'error',
       'isPlaying',
       'loading',
@@ -318,5 +337,70 @@ describe('useTransport', () => {
     // A re-render never rebuilds the transport, so playback survives.
     expect(result.current.isPlaying).toBe(true)
     expect(createAudioPlayer).toHaveBeenCalledTimes(1)
+  })
+
+  // --- Step E1: the beat grid (R6, R8) ------------------------------------
+  //
+  // The clock is built here, beside the transport, because the transport is the
+  // only thing that knows when the groove started — and it is returned rather
+  // than kept, because the voice that schedules against it is a sibling hook.
+  describe('the beat grid (R8)', () => {
+    it('offers no beat before the groove has started', () => {
+      const { result } = renderHook(() => useTransport(TODAY, 120))
+
+      expect(result.current.clock.isRunning()).toBe(false)
+      // Null, not zero: nothing is running, so there is no beat to wait for and
+      // the caller sounds at once (R7).
+      expect(result.current.clock.nextBeat(0)).toBeNull()
+    })
+
+    it('answers with the next beat of the tempo it was given', async () => {
+      const { result } = renderHook(() => useTransport(TODAY, 120))
+
+      await act(async () => {
+        await result.current.toggle()
+      })
+
+      expect(result.current.clock.isRunning()).toBe(true)
+      // 120bpm is a half-second beat, and the groove went out at START_TIME:
+      // a tap 1.2s in is 0.2s past a beat, so the next one is 0.3s away. The
+      // answer is a graph time, not an offset, and it is anchored on the
+      // player's start time rather than on the graph's origin.
+      expect(result.current.clock.nextBeat(START_TIME + 1.2)).toBeCloseTo(
+        START_TIME + 1.5,
+        6,
+      )
+    })
+
+    it('hands down the same grid on every render (R6)', async () => {
+      const { result, rerender } = renderHook(() => useTransport(TODAY, 120))
+      const first = result.current.clock
+
+      rerender()
+      await act(async () => {
+        await result.current.toggle()
+      })
+      rerender()
+
+      // The voice below reads the grid once, when it is built. A new object
+      // here would leave it scheduling against a grid the page has forgotten.
+      expect(result.current.clock).toBe(first)
+    })
+
+    it('degrades to an immediate note when no tempo is given (R7)', async () => {
+      const { result } = renderHook(() => useTransport(TODAY))
+
+      expect(result.current.clock.nextBeat(0)).toBeNull()
+
+      await act(async () => {
+        await result.current.toggle()
+      })
+
+      // A tempo that cannot describe a beat is today's behaviour exactly: the
+      // grid answers "now", not "never" — which is what keeps every call site
+      // above, all of which pass no tempo, sounding as it always has.
+      const now = START_TIME + 1.2
+      expect(result.current.clock.nextBeat(now)).toBe(now)
+    })
   })
 })

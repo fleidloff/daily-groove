@@ -1,0 +1,321 @@
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { act, renderHook, waitFor } from '@testing-library/react'
+import type { Flavour } from '../types'
+import type { PitchSample } from '../data/notes.generated'
+import { releaseAudioContext } from '../lib/audio/context'
+import { REFERENCE_FADE_SECONDS, REFERENCE_LEVEL } from '../lib/audio/level'
+import { referenceOutput } from '../lib/audio/output'
+import type { LickVoice, ReferenceOutput } from '../lib/audio/lick'
+import { scheduleLick, type ScheduledNote } from '../lib/theory/phrase'
+import { ROOTS, flavourPool } from '../lib/theory/music'
+import { GROOVES } from '../data/grooves.generated'
+import { installFakeAudioContext } from '../testing/fakeAudioContext'
+import { useModeLick } from './useModeLick'
+
+/**
+ * The hook that holds the lick voice.
+ *
+ * What is under test here is ownership and routing: one voice for the life of
+ * the component, a `Flavour` turned into the phrase `scheduleLick` names, the
+ * clock handed straight through, and a call site that cannot be made to throw.
+ * How a phrase reaches the graph is `lib/audio/lick.test.ts`'s, and which
+ * degrees a mode declares is `lib/theory/licks.test.ts`'s — so the default here
+ * is an injected stand-in voice, and the two cases that need a real one say so.
+ */
+
+const POOL = flavourPool(GROOVES)
+
+/**
+ * The twenty-four rendered pitches, built rather than imported: what the
+ * manifest happens to hold is `data/notes.generated.test.ts`'s subject, and a
+ * phrase only needs a file behind every midi it reaches.
+ */
+const PITCHES: PitchSample[] = ROOTS.flatMap((root, index) =>
+  [4, 5].map((octave) => ({
+    id: `${root}${octave}`,
+    root,
+    octave,
+    midi: 60 + index + (octave - 4) * 12,
+    audioSrc: `/notes/note-${index}-${octave}.mp3`,
+  })),
+).sort((a, b) => a.midi - b.midi)
+
+/** A grid the hook can only have consulted by handing it to a real voice. */
+function makeClock(beat: number | null = null) {
+  return { nextBeat: vi.fn<(now: number) => number | null>(() => beat) }
+}
+
+/**
+ * A stand-in `LickVoice`, injected the way `useReferenceNote` takes a `voice`.
+ * The seam is the hook's own parameter, so no test here mocks the module path
+ * the hook imports (see docs/testing.md).
+ */
+function makeVoice(overrides: Partial<LickVoice> = {}): LickVoice {
+  return {
+    play: vi.fn(async (notes: ScheduledNote[]) => {
+      void notes
+    }),
+    warm: vi.fn(async () => {}),
+    dispose: vi.fn(() => {}),
+    ...overrides,
+  }
+}
+
+/** Everything the hook needs beyond the seam, at one root and one tempo. */
+function inputs(extra: {
+  voice?: LickVoice
+  clock?: { nextBeat: (now: number) => number | null }
+  output?: ReferenceOutput
+}) {
+  return {
+    pitches: PITCHES,
+    root: 'C' as const,
+    bpm: 96,
+    level: REFERENCE_LEVEL,
+    fadeSeconds: REFERENCE_FADE_SECONDS,
+    output: extra.output ?? referenceOutput(),
+    clock: extra.clock,
+    voice: extra.voice,
+  }
+}
+
+describe('useModeLick', () => {
+  afterEach(async () => {
+    await releaseAudioContext()
+    vi.unstubAllGlobals()
+    vi.restoreAllMocks()
+  })
+
+  // --- Step F1: one voice for the life of the page (R32) -------------------
+
+  it('keeps one voice across re-renders and disposes nothing in between', () => {
+    const voice = makeVoice()
+    const { result, rerender } = renderHook(() => useModeLick(inputs({ voice })))
+    const first = result.current.playMode
+
+    rerender()
+    rerender()
+    rerender()
+
+    expect(voice.dispose).not.toHaveBeenCalled()
+    // A stable callback, so the card below it is not re-rendered every tick.
+    expect(result.current.playMode).toBe(first)
+  })
+
+  it('disposes the voice exactly once on unmount (R32)', () => {
+    const voice = makeVoice()
+    const { unmount } = renderHook(() => useModeLick(inputs({ voice })))
+
+    expect(voice.dispose).not.toHaveBeenCalled()
+    unmount()
+    expect(voice.dispose).toHaveBeenCalledTimes(1)
+  })
+
+  // --- Step F2: a mode becomes a scheduled phrase (R1, R13, AC4) ----------
+
+  it('hands the voice exactly the phrase scheduleLick names (R1, R13)', () => {
+    const voice = makeVoice()
+    const { result } = renderHook(() => useModeLick(inputs({ voice })))
+
+    act(() => {
+      result.current.playMode('Lydian')
+    })
+
+    expect(voice.play).toHaveBeenCalledTimes(1)
+    expect(voice.play).toHaveBeenCalledWith(
+      scheduleLick({ flavour: 'Lydian', root: 'C', bpm: 96 }),
+    )
+  })
+
+  it('plays every catalogue flavour, and no two the same (AC4)', () => {
+    const voice = makeVoice()
+    const { result } = renderHook(() => useModeLick(inputs({ voice })))
+
+    POOL.forEach((flavour) => {
+      act(() => {
+        result.current.playMode(flavour)
+      })
+    })
+
+    const play = voice.play as unknown as ReturnType<typeof vi.fn>
+    expect(play).toHaveBeenCalledTimes(POOL.length)
+
+    const phrases = play.mock.calls.map((call) => call[0] as ScheduledNote[])
+    // Every one is a phrase, not the empty silence a missing lick returns.
+    phrases.forEach((phrase, index) => {
+      expect(phrase.length, POOL[index]).toBeGreaterThan(0)
+    })
+    // And no two modes sound the same thing from the same root (AC5).
+    expect(new Set(phrases.map((p) => JSON.stringify(p))).size).toBe(POOL.length)
+  })
+
+  it('asks the voice for nothing when the mode has no lick (R19, R20)', () => {
+    const voice = makeVoice()
+    const { result } = renderHook(() => useModeLick(inputs({ voice })))
+
+    act(() => {
+      result.current.playMode('Locrian' as Flavour)
+    })
+
+    expect(voice.play).not.toHaveBeenCalled()
+  })
+
+  // --- Step F3: the clock reaches the voice, and nothing else (R11, R12, R14)
+
+  it('builds its voice with the clock it was given (R11, R12)', async () => {
+    // No injected voice: the real one is constructed, which is the only way the
+    // clock can reach a phrase at all. Web Audio and fetch are stubbed so the
+    // tap's fetch-decode-start chain actually runs.
+    const fake = installFakeAudioContext()
+    const clock = makeClock()
+    const { result } = renderHook(() => useModeLick(inputs({ clock })))
+
+    await act(async () => {
+      result.current.playMode('Dorian')
+    })
+
+    // The grid was consulted for the phrase's own graph time, which is the only
+    // externally visible proof the hook handed it to the voice it built.
+    await waitFor(() => {
+      expect(clock.nextBeat).toHaveBeenCalledTimes(1)
+    })
+    expect(clock.nextBeat).toHaveBeenCalledWith(fake.currentTime)
+  })
+
+  it('keeps the first clock when a later render brings another (R14)', async () => {
+    installFakeAudioContext()
+    const first = makeClock()
+    const second = makeClock(4.25)
+    const { result, rerender } = renderHook(
+      (clock: { nextBeat: (now: number) => number | null }) =>
+        useModeLick(inputs({ clock })),
+      { initialProps: first as { nextBeat: (now: number) => number | null } },
+    )
+
+    await act(async () => {
+      result.current.playMode('Dorian')
+    })
+    await waitFor(() => {
+      expect(first.nextBeat).toHaveBeenCalledTimes(1)
+    })
+
+    rerender(second as { nextBeat: (now: number) => number | null })
+
+    await act(async () => {
+      result.current.playMode('Aeolian')
+    })
+    // The voice was held, not rebuilt: it still asks the grid it was born with.
+    // `useTransport` builds one clock per groove and the page has one groove.
+    await waitFor(() => {
+      expect(first.nextBeat).toHaveBeenCalledTimes(2)
+    })
+    expect(second.nextBeat).not.toHaveBeenCalled()
+  })
+
+  it('reads no transport of its own (R14)', () => {
+    const source = readFileSync(
+      join(process.cwd(), 'src/features/daily-groove/hooks/useModeLick.ts'),
+      'utf8',
+    )
+
+    const specifiers = [...source.matchAll(/from '([^']+)'/g)].map((m) => m[1])
+    specifiers.forEach((specifier) => {
+      expect(specifier, specifier).not.toMatch(/transport|loop|useTransport/)
+    })
+    ;['getElapsed', 'getPosition', 'getStartTime', 'toggle'].forEach((name) => {
+      expect(source, name).not.toContain(name)
+    })
+  })
+
+  // --- Step F4: nothing here can throw at the call site (R19, R20, AC14) ---
+
+  it('returns undefined and rejects nothing when play rejects (R19, R20)', async () => {
+    const voice = makeVoice({
+      play: vi.fn(async () => {
+        throw new Error('no Web Audio')
+      }),
+    })
+    const errors = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const rejections: unknown[] = []
+    const onRejection = (reason: unknown) => rejections.push(reason)
+    process.on('unhandledRejection', onRejection)
+
+    const { result } = renderHook(() => useModeLick(inputs({ voice })))
+
+    let returned: unknown = 'not called'
+    await act(async () => {
+      returned = result.current.playMode('Dorian')
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+    await new Promise((resolve) => setImmediate(resolve))
+    process.off('unhandledRejection', onRejection)
+
+    expect(returned).toBeUndefined()
+    expect(voice.play).toHaveBeenCalledTimes(1)
+    expect(rejections).toEqual([])
+    expect(errors).not.toHaveBeenCalled()
+  })
+
+  it('survives a play that throws synchronously (R19, AC14)', () => {
+    const voice = makeVoice({
+      play: vi.fn(() => {
+        throw new Error('boom')
+      }) as unknown as LickVoice['play'],
+    })
+    const { result } = renderHook(() => useModeLick(inputs({ voice })))
+
+    expect(() =>
+      act(() => {
+        result.current.playMode('Dorian')
+      }),
+    ).not.toThrow()
+  })
+
+  // --- Step F5: warming is an optimisation (R33, R34) ---------------------
+
+  it('warms through the same voice without sounding anything (R33)', () => {
+    const voice = makeVoice()
+    const { result } = renderHook(() => useModeLick(inputs({ voice })))
+
+    act(() => {
+      result.current.warm()
+    })
+
+    expect(voice.warm).toHaveBeenCalledTimes(1)
+    expect(voice.play).not.toHaveBeenCalled()
+  })
+
+  it('survives a warm that rejects (R33)', async () => {
+    const voice = makeVoice({
+      warm: vi.fn(async () => {
+        throw new Error('offline')
+      }),
+    })
+    const { result } = renderHook(() => useModeLick(inputs({ voice })))
+
+    await act(async () => {
+      result.current.warm()
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+
+    expect(voice.warm).toHaveBeenCalledTimes(1)
+  })
+
+  it('fetches nothing until something asks it to (R34)', async () => {
+    const fake = installFakeAudioContext()
+    renderHook(() => useModeLick(inputs({ clock: makeClock() })))
+
+    await act(async () => {
+      await Promise.resolve()
+    })
+
+    // Holding the voice is not warming it: the groove is what the player
+    // pressed, and nothing here contends with its own fetch.
+    expect(fake.fetchCalls).toBe(0)
+    expect(fake.decodeCalls).toBe(0)
+  })
+})
