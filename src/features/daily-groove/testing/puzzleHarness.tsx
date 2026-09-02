@@ -31,6 +31,10 @@ export const flavours = () => flavourOptions(new Date(), GROOVE)
 export const wrongFlavour = () => flavours().find((f) => f !== 'Aeolian') as string
 export const otherWrongFlavour = () =>
   flavours().filter((f) => f !== 'Aeolian' && f !== wrongFlavour())[0]
+export const thirdWrongFlavour = () =>
+  flavours().filter(
+    (f) => f !== 'Aeolian' && f !== wrongFlavour() && f !== otherWrongFlavour(),
+  )[0]
 
 export const TODAY = () => isoDate(new Date())
 
@@ -137,7 +141,7 @@ export const CAPTION =
   'Find the note that feels like home — Play along with your instrument, or tap a root or a mode to hear it.'
 
 export const CAPTION_SOUNDS_OFF =
-  'Tap sounds are off — switch them back on under Simple mode.'
+  'Find the note that feels like home — Play along with your instrument.'
 
 export const chipLabel = (chip: Element) =>
   Array.from(chip.childNodes)
@@ -154,12 +158,13 @@ export const chipAdornment = (chip: Element) =>
 export const rootGroup = () => screen.getByRole('radiogroup', { name: 'Root' })
 export const flavourGroup = () => screen.getByRole('radiogroup', { name: 'Mode' })
 export const control = () =>
-  screen.getByRole('button', { name: /^(Pick a root|Check |Solved$)/ })
+  screen.getByRole('button', { name: /^(Pick a |Check |Solved$)/ })
 export const dotStates = () =>
   Array.from(document.querySelectorAll('[data-dot-state]')).map((el) =>
     el.getAttribute('data-dot-state'),
   )
-export const nudge = () => screen.queryByRole('complementary', { name: 'A nudge' })
+export const nudge = () => screen.queryByRole('complementary', { name: 'Hint' })
+export const nudgeLine = () => screen.queryByText(/roots ruled out/i)
 
 export async function guess(
   user: ReturnType<typeof userEvent.setup>,

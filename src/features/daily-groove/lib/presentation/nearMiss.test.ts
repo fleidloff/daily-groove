@@ -38,11 +38,11 @@ function everyProducibleLine(): string[] {
 
     for (const guessed of MODES) {
       if (guessed === flavour) continue
-      const line = selectNearMiss([wrong(guessed, 'C', answer)], answer)
+      const line = selectNearMiss([wrong(guessed, 'C', answer)], answer, true)
       if (line !== undefined) lines.push(line)
     }
 
-    const rightColour = selectNearMiss([wrong(flavour, 'C', answer)], answer)
+    const rightColour = selectNearMiss([wrong(flavour, 'C', answer)], answer, true)
     if (rightColour !== undefined) lines.push(rightColour)
   }
 
@@ -51,11 +51,12 @@ function everyProducibleLine(): string[] {
 
 describe('selectNearMiss', () => {
   it('has nothing to say about a day given up on with no guesses spent', () => {
-    expect(selectNearMiss([], mixolydianDay)).toBeUndefined()
+    expect(selectNearMiss([], mixolydianDay, true)).toBeUndefined()
   })
 
   it('has nothing to say about a day solved on the first guess', () => {
-    expect(selectNearMiss([right()], mixolydianDay)).toBeUndefined()
+    expect(selectNearMiss([right()], mixolydianDay, false)).toBeUndefined()
+    expect(selectNearMiss([right()], mixolydianDay, true)).toBeUndefined()
   })
 
   it('says nothing about a simple-mode guess, and never asks the interval table', () => {
@@ -66,8 +67,8 @@ describe('selectNearMiss', () => {
       for (const family of FAMILIES) {
         const attempt = wrong(family, 'C', answer)
 
-        expect(() => selectNearMiss([attempt], answer)).not.toThrow()
-        expect(selectNearMiss([attempt], answer)).toBeUndefined()
+        expect(() => selectNearMiss([attempt], answer, true)).not.toThrow()
+        expect(selectNearMiss([attempt], answer, true)).toBeUndefined()
 
         expect(() => degreeDifferences(family, flavour)).toThrow(UnknownFlavourError)
       }
@@ -85,44 +86,44 @@ describe('selectNearMiss', () => {
         flavourMatched: true,
       }
 
-      expect(selectNearMiss([attempt], answer)).toBeUndefined()
+      expect(selectNearMiss([attempt], answer, true)).toBeUndefined()
     }
   })
 
   it('says the colour was right where only the root was wrong', () => {
-    expect(selectNearMiss([wrong('Mixolydian', 'C')], mixolydianDay)).toBe(
+    expect(selectNearMiss([wrong('Mixolydian', 'C')], mixolydianDay, true)).toBe(
       'You said Mixolydian — the colour was right, not the home note.',
     )
   })
 
   it('names no degree on the right-colour line', () => {
-    const line = selectNearMiss([wrong('Mixolydian', 'C')], mixolydianDay)
+    const line = selectNearMiss([wrong('Mixolydian', 'C')], mixolydianDay, true)
     expect(line).toBeDefined()
     expect(line).not.toMatch(/[0-9♭♯]/)
   })
 
   it('treats a guess that missed both halves as a wrong colour, not a wrong root', () => {
-    const bothWrong = selectNearMiss([wrong('Dorian', 'C')], mixolydianDay)
-    const rightRoot = selectNearMiss([wrong('Dorian', 'G')], mixolydianDay)
+    const bothWrong = selectNearMiss([wrong('Dorian', 'C')], mixolydianDay, true)
+    const rightRoot = selectNearMiss([wrong('Dorian', 'G')], mixolydianDay, true)
 
     expect(bothWrong).toBeDefined()
     expect(bothWrong).toBe(rightRoot)
   })
 
   it('names the single degree that separates the guess from the answer', () => {
-    expect(selectNearMiss([wrong('Dorian', 'G')], mixolydianDay)).toBe(
+    expect(selectNearMiss([wrong('Dorian', 'G')], mixolydianDay, true)).toBe(
       'You said Dorian — one note apart: ♭3, not 3.',
     )
   })
 
   it('names both degrees, in degree order, where two of them differ', () => {
-    expect(selectNearMiss([wrong('Lydian', 'G')], mixolydianDay)).toBe(
+    expect(selectNearMiss([wrong('Lydian', 'G')], mixolydianDay, true)).toBe(
       'You said Lydian — two notes apart: ♯4 and 7, not 4 and ♭7.',
     )
   })
 
   it('says plainly that a distant guess is far off, and names no degree', () => {
-    const line = selectNearMiss([wrong('Phrygian', 'G')], mixolydianDay)
+    const line = selectNearMiss([wrong('Phrygian', 'G')], mixolydianDay, true)
 
     expect(line).toBe('You said Phrygian — a long way from this one, not a near miss.')
     expect(line).not.toMatch(/[0-9]/)
@@ -130,32 +131,36 @@ describe('selectNearMiss', () => {
 
   it('gives a blues day the same plain wording, in both directions', () => {
     const bluesDay: Answer = { root: 'C', flavour: 'Blues' }
-    expect(selectNearMiss([wrong('Dorian', 'C', bluesDay)], bluesDay)).toBe(
+    expect(selectNearMiss([wrong('Dorian', 'C', bluesDay)], bluesDay, true)).toBe(
       'You said Dorian — a long way from this one, not a near miss.',
     )
 
     const dorianDay: Answer = { root: 'C', flavour: 'Dorian' }
-    expect(selectNearMiss([wrong('Blues', 'C', dorianDay)], dorianDay)).toBe(
+    expect(selectNearMiss([wrong('Blues', 'C', dorianDay)], dorianDay, true)).toBe(
       'You said Blues — a long way from this one, not a near miss.',
     )
   })
 
   it('speaks about the last incorrect guess, not the first', () => {
     const spent = [wrong('Ionian', 'C'), wrong('Lydian', 'A'), wrong('Dorian', 'G')]
-    const line = selectNearMiss(spent, mixolydianDay)
+    const line = selectNearMiss(spent, mixolydianDay, true)
 
     expect(line).toContain('Dorian')
     expect(line).not.toContain('Ionian')
     expect(line).not.toContain('Lydian')
   })
 
-  it('still speaks about the last miss on a day solved after it', () => {
+  it('says nothing about a day that was solved, whatever was missed first (F17 E3)', () => {
     const spent = [wrong('Ionian', 'C'), wrong('Lydian', 'A'), wrong('Dorian', 'G')]
 
-    expect(selectNearMiss([...spent, right()], mixolydianDay)).toBe(
-      selectNearMiss(spent, mixolydianDay),
-    )
-    expect(selectNearMiss([...spent, right()], mixolydianDay)).toBe(
+    expect(selectNearMiss([...spent, right()], mixolydianDay, false)).toBeUndefined()
+    expect(selectNearMiss(spent, mixolydianDay, false)).toBeUndefined()
+  })
+
+  it('speaks about the same misses once the day was given up on (F17 E3)', () => {
+    const spent = [wrong('Ionian', 'C'), wrong('Lydian', 'A'), wrong('Dorian', 'G')]
+
+    expect(selectNearMiss(spent, mixolydianDay, true)).toBe(
       'You said Dorian — one note apart: ♭3, not 3.',
     )
   })
@@ -163,8 +168,8 @@ describe('selectNearMiss', () => {
   it('says nothing about a stored guess the interval table cannot read', () => {
     const attempt = wrong('Klingon', 'G')
 
-    expect(() => selectNearMiss([attempt], mixolydianDay)).not.toThrow()
-    expect(selectNearMiss([attempt], mixolydianDay)).toBeUndefined()
+    expect(() => selectNearMiss([attempt], mixolydianDay, true)).not.toThrow()
+    expect(selectNearMiss([attempt], mixolydianDay, true)).toBeUndefined()
   })
 
   it('says nothing where the two scales turn out to be the same one', () => {
@@ -172,15 +177,15 @@ describe('selectNearMiss', () => {
     const attempt = wrong('dorian', 'G', dorianDay)
 
     expect(attempt.flavourMatched).toBe(false)
-    expect(selectNearMiss([attempt], dorianDay)).toBeUndefined()
+    expect(selectNearMiss([attempt], dorianDay, true)).toBeUndefined()
   })
 
   it('says nothing where the answer’s own flavour has no interval entry', () => {
     const unknownDay: Answer = { root: 'G', flavour: 'Klingon' }
     const attempt = wrong('Dorian', 'G', unknownDay)
 
-    expect(() => selectNearMiss([attempt], unknownDay)).not.toThrow()
-    expect(selectNearMiss([attempt], unknownDay)).toBeUndefined()
+    expect(() => selectNearMiss([attempt], unknownDay, true)).not.toThrow()
+    expect(selectNearMiss([attempt], unknownDay, true)).toBeUndefined()
   })
 
   it('keeps every line it can produce inside the box, and never scolds', () => {
@@ -202,11 +207,12 @@ describe('selectNearMiss', () => {
   })
 
   it('reads the same in every key', () => {
-    const inFSharp = selectNearMiss([wrong('Dorian', 'C')], {
-      root: 'F♯',
-      flavour: 'Mixolydian',
-    })
+    const inFSharp = selectNearMiss(
+      [wrong('Dorian', 'C')],
+      { root: 'F♯', flavour: 'Mixolydian' },
+      true,
+    )
 
-    expect(inFSharp).toBe(selectNearMiss([wrong('Dorian', 'G')], mixolydianDay))
+    expect(inFSharp).toBe(selectNearMiss([wrong('Dorian', 'G')], mixolydianDay, true))
   })
 })

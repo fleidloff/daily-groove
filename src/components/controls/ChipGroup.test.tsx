@@ -257,4 +257,138 @@ describe('ChipGroup', () => {
 
     expect(adornedClass).toBe(plainClass)
   })
+
+  it('gives per-option state to the options it names (R4, R5, R6, AC4, AC6, AC7)', () => {
+    const stated = renderGroup({
+      options: TWELVE,
+      columns: { base: 4, wide: 6 },
+      optionStates: { Two: { unavailable: true }, Five: { unavailable: true } },
+    })
+    const list = stated.container.querySelector(
+      '[data-testid="chip-list"]',
+    ) as HTMLElement
+    const chips = [...list.querySelectorAll('button')]
+
+    expect(chips.map((chip) => chip.textContent)).toEqual(TWELVE)
+    for (const chip of chips) {
+      if (chip.textContent === 'Two' || chip.textContent === 'Five') {
+        expect(chip).toHaveAttribute('aria-disabled', 'true')
+        expect(chip).not.toBeDisabled()
+      } else {
+        expect(chip).not.toHaveAttribute('aria-disabled')
+      }
+    }
+    expect(
+      chips.filter((chip) => chip.hasAttribute('aria-disabled')).map(
+        (chip) => chip.textContent,
+      ),
+    ).toEqual(['Two', 'Five'])
+
+    const statedLayout = list.className
+    cleanup()
+
+    const plain = renderGroup({ options: TWELVE, columns: { base: 4, wide: 6 } })
+    const plainLayout = (
+      plain.container.querySelector('[data-testid="chip-list"]') as HTMLElement
+    ).className
+    expect(statedLayout).toBe(plainLayout)
+  })
+
+  it('reports the press of an unavailable option without reporting a choice (R4a, AC5a)', async () => {
+    const user = userEvent.setup()
+    const onSelect = vi.fn()
+    const onPress = vi.fn()
+    renderGroup({
+      onSelect,
+      onPress,
+      optionStates: { Two: { unavailable: true } },
+    })
+
+    await user.click(screen.getByRole('button', { name: 'Two' }))
+    expect(onPress).toHaveBeenCalledWith('Two')
+    expect(onSelect).not.toHaveBeenCalled()
+
+    await user.click(screen.getByRole('button', { name: 'Three' }))
+    expect(onSelect).toHaveBeenCalledWith('Three')
+    expect(onPress).toHaveBeenLastCalledWith('Three')
+  })
+
+  it('reports neither a choice nor a press while the row is locked (R4b, AC5b)', async () => {
+    const user = userEvent.setup()
+    const onSelect = vi.fn()
+    const onPress = vi.fn()
+    renderGroup({
+      onSelect,
+      onPress,
+      disabled: true,
+      optionStates: { Two: { unavailable: true } },
+    })
+
+    await user.click(screen.getByRole('button', { name: 'Two' }))
+    await user.click(screen.getByRole('button', { name: 'Three' }))
+
+    expect(onSelect).not.toHaveBeenCalled()
+    expect(onPress).not.toHaveBeenCalled()
+  })
+
+  it('cannot express the row’s own lock per option (R4b)', () => {
+    const source = readFileSync(
+      resolve(process.cwd(), 'src/components/controls/ChipGroup.tsx'),
+      'utf8',
+    )
+    const block = source.match(/export type ChipOptionState = \{([\s\S]*?)\n\}/)
+    expect(block).not.toBeNull()
+    const fields = [
+      ...(block as RegExpMatchArray)[1].matchAll(/^\s{2}(\w+)\??:/gm),
+    ].map((match) => match[1])
+
+    expect(fields).toContain('unavailable')
+
+    const ROW_LOCK = /disabled|silen|inert|locked|frozen|readonly|unclickable/i
+    expect(
+      fields.filter((field) => ROW_LOCK.test(field)),
+      'a per-option field that silences a chip would collapse the two locks: the row owns `disabled`, an option owns `unavailable`',
+    ).toEqual([])
+  })
+
+  it('keeps an unavailable option out of every other chip’s box, and the row’s (F17 E2 R9b, AC10c)', () => {
+    const plain = renderGroup({ options: FOUR, columns: { base: 2, wide: 4 } })
+    const before = [...plain.container.querySelectorAll('button')].map(
+      (chip) => chip.className,
+    )
+    const listBefore = (
+      plain.container.querySelector('[data-testid="chip-list"]') as HTMLElement
+    ).className
+    cleanup()
+
+    const stated = renderGroup({
+      options: FOUR,
+      columns: { base: 2, wide: 4 },
+      optionStates: { Beta: { unavailable: true } },
+    })
+    const after = [...stated.container.querySelectorAll('button')].map(
+      (chip) => chip.className,
+    )
+    const listAfter = (
+      stated.container.querySelector('[data-testid="chip-list"]') as HTMLElement
+    ).className
+
+    expect(after.filter((_, index) => index !== 1)).toEqual(
+      before.filter((_, index) => index !== 1),
+    )
+    expect(after[1]).not.toBe(before[1])
+    expect(listAfter).toBe(listBefore)
+  })
+
+  it('ignores a state for an option it does not offer (F17 E2 R9b)', () => {
+    renderGroup({
+      options: FOUR,
+      columns: { base: 2, wide: 4 },
+      optionStates: { Zeta: { unavailable: true } },
+    })
+    const chips = [...chipList().querySelectorAll('button')]
+
+    expect(chips.some((chip) => chip.hasAttribute('aria-disabled'))).toBe(false)
+    expect(chips.map((chip) => chip.textContent)).toEqual(FOUR)
+  })
 })

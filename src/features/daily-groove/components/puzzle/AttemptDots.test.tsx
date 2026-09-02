@@ -123,8 +123,6 @@ describe('through the composed page', () => {
     ).map((el) => el.getAttribute("data-dot-state"));
     expect(dots).toEqual(["unspent", "unspent", "unspent"]);
     expect(screen.getByRole("status")).toHaveTextContent(/feels like rest/i);
-    expect(
-      screen.queryByRole("complementary", { name: "A nudge" }),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByText(/roots ruled out/i)).not.toBeInTheDocument();
   })
 })

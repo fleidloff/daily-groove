@@ -36,7 +36,7 @@ export function SolvedPanel({
   const notes = scaleNotes(answer)
   const degrees = scaleDegrees(answer)
   const character = characterOf(answer.flavour)
-  const nearMiss = selectNearMiss(attempts, answer)
+  const nearMiss = selectNearMiss(attempts, answer, revealed)
 
   return (
     <div role="status" className="grid">

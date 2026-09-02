@@ -3,6 +3,26 @@
 PRD: [../prd/epic-3-the-payoff-reads-cleanly.md](../prd/epic-3-the-payoff-reads-cleanly.md) ·
 Roadmap: [../roadmap.md](../roadmap.md)
 
+## Added after execution — the near-miss line
+
+**R12–R14 and AC12–AC14 are not specified below.** They were added to the PRD
+after this spec had been executed and the epic verified, when the user found the
+near-miss line reading on a solved panel: *"You said Phrygian — the colour was
+right, not the home note"* after a win, which describes a state the win has
+already superseded. The line now appears only on a day given up on.
+
+The change was made directly rather than specced, and it is recorded in
+`specs/feature-17/.implement/no-near-miss-when-solved.md`. Three files outside
+either track's ownership list were touched:
+`lib/presentation/nearMiss.ts`, `components/solved/SolvedPanel.tsx` and
+`components/GroovePuzzle.guessing.test.tsx`.
+
+It also narrows a shipped feature. Feature-15's Epic 4 made the solved day the
+baseline — its R1 gave the line to any finished day with a wrong guess, R2 chose
+"the last incorrect attempt", and R11 derived the given-up wording *from* the
+solved one. R12 inverts that. Feature-15's PRD and specs stay untouched as the
+record of what was built and verified.
+
 ## Approach
 
 Two unrelated fixes to the payoff, in two tracks that share no file with each
@@ -215,8 +235,9 @@ Blues:               'the blues scale, not the 12-bar form — that ♭5 between
 `lib/theory/music.ts`, `src/components/controls/{Chip,ChipGroup}.tsx`,
 `components/puzzle/NudgeBox.tsx` and `GuessCard`; Epic 2 owns those plus
 `GroovePuzzle.tsx`. This epic's four-plus-two files appear in neither. The one
-file all three epics *read through* is `GroovePuzzle`'s test suite, and this
-epic changes no assertion in it.
+file all three epics *read through* is `GroovePuzzle`'s test suite. This was
+written before R12–R14 existed; the near-miss change adds three files to the
+epic and edits one assertion in that suite. See the note at the top.
 
 ## Execution waves
 

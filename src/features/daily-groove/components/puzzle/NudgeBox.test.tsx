@@ -1,38 +1,149 @@
 import { describe, expect, it } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { cleanup, render, screen } from '@testing-library/react'
 import { NudgeBox } from './NudgeBox'
+import { ROOTS } from '../../lib/theory/music'
+import type { Feedback } from '../../lib/presentation/feedback'
+
+const NOTE_CHARS = 'A-Za-z♭♯'
+
+function rootPattern(root: string) {
+  const escaped = root.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  return new RegExp(`(?<![${NOTE_CHARS}])${escaped}(?![${NOTE_CHARS}])`)
+}
+
+const ROOT_MATCHED: Feedback = {
+  message: 'Right home note, wrong colour.',
+  tone: 'warm',
+}
+
+const SOLVED: Feedback = {
+  message: 'That is it. The groove is yours now.',
+  tone: 'solved',
+}
+
+function box() {
+  return screen.getByRole('complementary', { name: 'Hint' })
+}
+
+function line() {
+  return screen.getByText(/ruled out/)
+}
 
 describe('NudgeBox', () => {
-  it('carries the "A nudge" eyebrow (R6, AC9)', () => {
-    render(<NudgeBox root="G" />)
-    expect(screen.getByText(/a nudge/i)).toBeInTheDocument()
+  it('carries the "Hint" eyebrow, and never the old "A nudge" wording (R6, AC9)', () => {
+    render(<NudgeBox feedback={ROOT_MATCHED} eliminated={2} />)
+    expect(screen.getByText('Hint')).toBeInTheDocument()
+    expect(screen.queryByText(/a nudge/i)).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('complementary', { name: 'A nudge' }),
+    ).not.toBeInTheDocument()
   })
 
-  it('names the given root as the root of the day (R6, AC9)', () => {
-    const { container } = render(<NudgeBox root="G" />)
-    expect(container).toHaveTextContent(/root is G\b/i)
+  it('holds the feedback message it is given (R8)', () => {
+    render(<NudgeBox feedback={ROOT_MATCHED} eliminated={2} />)
+    expect(box()).toContainElement(screen.getByText(ROOT_MATCHED.message))
   })
 
-  it('names a different root when given one (R6, AC9)', () => {
-    const { container } = render(<NudgeBox root="B♭" />)
-    expect(container).toHaveTextContent(/root is B♭/i)
-    expect(container).not.toHaveTextContent(/root is G\b/i)
+  it('puts the feedback message above the nudge sentence (R8)', () => {
+    render(<NudgeBox feedback={ROOT_MATCHED} eliminated={2} />)
+    const message = screen.getByText(ROOT_MATCHED.message)
+    expect(
+      message.compareDocumentPosition(line()) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy()
   })
 
-  it('is a named live region, so its arrival is announced (R10, AC14)', () => {
-    render(<NudgeBox root="G" />)
-    const nudge = screen.getByRole('complementary', { name: /a nudge/i })
-    expect(nudge).toHaveAttribute('aria-live', 'polite')
-    expect(nudge).toHaveTextContent(/root is G\b/i)
+  it('names how many roots the app ruled out, and says the row is narrowing (R17, AC17)', () => {
+    render(<NudgeBox feedback={ROOT_MATCHED} eliminated={2} />)
+    expect(line()).toHaveTextContent('2 roots ruled out. Narrowing as you go.')
   })
 
-  it('leaves the feedback line the only status region (R5)', () => {
-    render(<NudgeBox root="G" />)
+  it('names the count it is given (R17, AC17)', () => {
+    render(<NudgeBox feedback={ROOT_MATCHED} eliminated={4} />)
+    expect(line()).toHaveTextContent('4 roots ruled out. Narrowing as you go.')
+  })
+
+  it('names no root anywhere in the box — neither the answer nor the ones removed (R18, AC17)', () => {
+    render(<NudgeBox feedback={ROOT_MATCHED} eliminated={4} />)
+    const text = box().textContent ?? ''
+    for (const root of ROOTS) {
+      expect(text, `the box names the root ${root}`).not.toMatch(
+        rootPattern(root),
+      )
+    }
+  })
+
+  it.each([2, 4, 6, 8])(
+    'states no live count — %i is the only number in the line (R17a, AC17a)',
+    (eliminated) => {
+      render(<NudgeBox feedback={ROOT_MATCHED} eliminated={eliminated} />)
+      expect(line().textContent?.match(/\d+/g)).toEqual([String(eliminated)])
+    },
+  )
+
+  it('reads the same at the floor, however long the player goes on missing (R17b, AC17b)', () => {
+    render(<NudgeBox feedback={ROOT_MATCHED} eliminated={4} />)
+    const fourth = line().textContent
+    cleanup()
+    render(<NudgeBox feedback={ROOT_MATCHED} eliminated={4} />)
+    expect(line().textContent).toBe(fourth)
+  })
+
+  it('shows the feedback alone when the app has eliminated nothing (R19, AC18)', () => {
+    render(<NudgeBox feedback={ROOT_MATCHED} eliminated={null} />)
+    expect(box()).toContainElement(screen.getByText(ROOT_MATCHED.message))
+    expect(screen.queryByText(/ruled out/)).not.toBeInTheDocument()
+  })
+
+  it('treats a count of zero as nothing to report (R19, AC18)', () => {
+    render(<NudgeBox feedback={SOLVED} eliminated={0} />)
+    expect(box()).toContainElement(screen.getByText(SOLVED.message))
+    expect(screen.queryByText(/ruled out/)).not.toBeInTheDocument()
+  })
+
+  it('shows the nudge sentence alone when there is no feedback (R17, AC17)', () => {
+    render(<NudgeBox feedback={null} eliminated={2} />)
+    expect(box()).toContainElement(line())
     expect(screen.queryByRole('status')).not.toBeInTheDocument()
   })
 
+  it('renders nothing at all when it has no content to carry (R19, AC18)', () => {
+    const { container } = render(<NudgeBox feedback={null} eliminated={null} />)
+    expect(container).toBeEmptyDOMElement()
+    expect(
+      screen.queryByRole('complementary', { name: 'Hint' }),
+    ).not.toBeInTheDocument()
+  })
+
+  it('renders nothing when the feedback message is blank (R19, AC18)', () => {
+    const { container } = render(
+      <NudgeBox feedback={{ message: '  ', tone: 'neutral' }} eliminated={0} />,
+    )
+    expect(container).toBeEmptyDOMElement()
+  })
+
+  it('is a named landmark, but not a live region of its own (R5, R10, AC14)', () => {
+    render(<NudgeBox feedback={ROOT_MATCHED} eliminated={2} />)
+    expect(box()).not.toHaveAttribute('aria-live')
+    expect(box().querySelectorAll('[aria-live]')).toHaveLength(1)
+  })
+
+  it('announces its changes from the one feedback status region (R5, R10, AC14)', () => {
+    render(<NudgeBox feedback={ROOT_MATCHED} eliminated={2} />)
+    const regions = screen.getAllByRole('status')
+    expect(regions).toHaveLength(1)
+    expect(regions[0]).toHaveTextContent(ROOT_MATCHED.message)
+    expect(regions[0]).toHaveAttribute('aria-live', 'polite')
+    expect(regions[0]).not.toHaveTextContent(/ruled out/)
+  })
+
+  it('keeps the feedback tone on the feedback line (R8)', () => {
+    render(<NudgeBox feedback={ROOT_MATCHED} eliminated={2} />)
+    expect(screen.getByRole('status').dataset.tone).toBe('warm')
+  })
+
   it('is informational only — it offers no control to press (R6, AC10)', () => {
-    render(<NudgeBox root="G" />)
+    render(<NudgeBox feedback={ROOT_MATCHED} eliminated={2} />)
     expect(screen.queryByRole('button')).not.toBeInTheDocument()
   })
 })

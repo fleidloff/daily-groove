@@ -3,6 +3,46 @@
 PRD: [../prd/epic-1-the-row-shows-what-is-ruled-out.md](../prd/epic-1-the-row-shows-what-is-ruled-out.md) ·
 Roadmap: [../roadmap.md](../roadmap.md)
 
+## Superseded in part — the box became the Hint box
+
+**Read this before anything below.** After this spec was executed and the epic
+verified, the user asked for three changes to the box, in sequence: the feedback
+message moved *inside* it, above the nudge sentence; the box renders only when it
+has content and its label became `Hint`; and the box is not rendered at all on a
+solved or given-up day. The requirements are in the PRD as **R17c, R17d, R17e,
+R18a** and a reworded **R19**, with **AC17c, AC17d, AC17e, AC18a** and a reworded
+**AC18**.
+
+**Eight statements below are now false.** Treat them as history:
+
+- Contract C5's props — it says `{ eliminated: number }`; they are now
+  `{ feedback: Feedback | null; eliminated: number | null }`.
+- C5's claim that the `aria-label`, the `aria-live` and the eyebrow are all
+  unchanged. All three moved: the label and name are `Hint`, and the container's
+  `aria-live` is gone.
+- C5's `FeedbackLine` sibling relationship — it is now a child of the box.
+- Step D1's "leave the eyebrow wording alone".
+- **Step D3's assertion of the *absence* of `role="status"` in the box** — a
+  `role="status"` inside it is now required, being the card's single live region.
+- Step E8's render call and its `showNudge` visibility rule.
+- Demo step 6's "no box is rendered" in simple mode — the box is present there,
+  carrying the feedback alone; it is the *sentence* that is absent.
+
+**The Requirement coverage table has no rows for the new criteria.** The PRD is
+the authority on what this epic now owes.
+
+**One guard worth not trimming**, found when QA reproduced a mutation: the
+single-live-region rule (R17d) is caught by `GuessCard.test.tsx`'s
+`getAllByRole('status')` length assertion, **not** by the `[aria-live]` counts
+beside it — a bare `role="status"` implies a polite region without setting the
+attribute, so every `[aria-live]` count in this epic passes under exactly the
+mutation R17d forbids. The role assertions are load-bearing and are not
+redundant with the attribute counts.
+
+The changes are recorded in
+`specs/feature-17/.implement/feedback-in-the-nudge-box.md` and
+`no-hint-box-once-the-day-ends.md`.
+
 ## Approach
 
 Four pieces, in a line from the design system outwards. `Chip` learns a **second

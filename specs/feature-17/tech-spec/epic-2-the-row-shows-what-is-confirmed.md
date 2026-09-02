@@ -3,6 +3,41 @@
 PRD: [../prd/epic-2-the-row-shows-what-is-confirmed.md](../prd/epic-2-the-row-shows-what-is-confirmed.md) ·
 Roadmap: [../roadmap.md](../roadmap.md)
 
+## Superseded in part — the check mark is gone
+
+**Read this before anything below.** After this spec was executed and its epic
+verified, the check-mark glyph was removed. A confirmed half now **locks its
+row**: every other option in it becomes unavailable, in the dim-and-unpickable
+state Epic 1 already ships. The row collapsing to one live chip is the
+confirmation; there is no glyph.
+
+What that retires in the pages below — treat every mention of these as history,
+not instruction:
+
+- `mark` on `ChipProps` and `ChipOptionState`, the `MARK` class, the `data-mark`
+  span, `ChipGroup`'s pass-through, and `CHECK_GLYPH`.
+- The out-of-flow positioning decision and its 360px arithmetic (C3, C4, D8, and
+  Steps B2, B3, B4, B7).
+- The harness's `chipAdornment` narrowing to `:not([data-mark])`, which existed
+  only because a mark span shared that selector.
+- Contracts C3 and C4 in full.
+
+What still stands, unchanged:
+
+- `confirmedHalves` in `lib/presentation/confirmed.ts` — the fold over the whole
+  attempt list is still what knows which half is settled, and stickiness is
+  still the epic's load-bearing requirement.
+- `optionStatesFor` as the single per-option map, now computing the lock rather
+  than merging a mark into it.
+- Track C's feedback-line change and Track E's caption change, including that
+  R10 moves feature-16's AC11a.
+- Every requirement about *when* a lock happens: only after *Check*, permanent
+  for the day, derived from the attempts, and the same in simple mode.
+
+The rewritten requirements and acceptance criteria are in the PRD, whose
+question log carries the reasoning as Cycle 3. The implementation is recorded in
+`specs/feature-17/.implement/lock-in-place-of-mark.md`.
+
 ## Approach
 
 Four pieces, and the order they go in is the order of the dependency. First a

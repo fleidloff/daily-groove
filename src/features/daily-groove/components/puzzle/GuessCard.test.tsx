@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
@@ -45,7 +47,11 @@ function props(overrides: Partial<Props> = {}): Props {
     feedback: OPENING,
     showNudge: false,
     dots: UNSPENT,
-    answerRoot: 'G',
+    ruledOutRoots: [],
+    ruledOutFlavours: [],
+    confirmedRoots: [],
+    confirmedFlavours: [],
+    eliminated: 0,
     revealed: false,
     showReveal: false,
     onReveal: vi.fn(),
@@ -75,12 +81,19 @@ const chipAdornment = (chip: Element) =>
   chip.querySelector('[aria-hidden="true"]')?.textContent ?? null
 const chipList = (group: HTMLElement) =>
   group.querySelector('[data-testid="chip-list"]') as HTMLElement
+const hintBox = () => screen.getByRole('complementary', { name: 'Hint' })
+const hintQuery = () =>
+  screen.queryByRole('complementary', { name: 'Hint' })
+const nudgeLine = () => screen.queryByText(/roots ruled out/i)
 const modeSwitch = () => screen.getByRole('switch', { name: /simple mode/i })
 const soundSwitch = () => screen.getByRole('switch', { name: /tap sounds/i })
 const precedes = (a: Element, b: Element) =>
   Boolean(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING)
 const MODE_NAME = /ionian|dorian|phrygian|lydian|mixolydian|aeolian|locrian/i
 const FAMILIES: Flavour[] = ['Major', 'Minor']
+const LONGEST_FLAVOUR = [...new Set(GROOVES.map((g) => g.flavour))].sort(
+  (a, b) => b.length - a.length,
+)[0]
 const dotStates = () =>
   Array.from(document.querySelectorAll('[data-dot-state]')).map((el) =>
     el.getAttribute('data-dot-state'),
@@ -172,10 +185,39 @@ describe('GuessCard', () => {
 
   it('keeps prompting while only one half is chosen (R7)', () => {
     render(<GuessCard {...props({ selectedRoot: 'G' as Root })} />)
-    expect(
-      screen.getByRole('button', { name: 'Pick a root and a mode' }),
-    ).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Pick a mode' })).toBeDisabled()
   })
+
+  const CTA_CASES: [string, Partial<Props>, string][] = [
+    ['a root chosen', { selectedRoot: 'G' as Root }, 'Pick a mode'],
+    ['a mode chosen', { selectedFlavour: 'Dorian' }, 'Pick a root'],
+    ['neither chosen', {}, 'Pick a root and a mode'],
+    [
+      'both chosen',
+      { selectedRoot: 'G' as Root, selectedFlavour: 'Dorian', canCheck: true },
+      'Check G Dorian',
+    ],
+    [
+      'a solved day',
+      {
+        selectedRoot: 'G' as Root,
+        selectedFlavour: 'Dorian',
+        solved: true,
+        dots: ['solved', 'solved', 'solved'],
+        feedback: SOLVED,
+      },
+      'Solved',
+    ],
+  ]
+
+  it.each(CTA_CASES)(
+    'asks for the half that is missing with %s (R19c, AC19b)',
+    (_name, selection, label) => {
+      render(<GuessCard {...props(selection)} />)
+
+      expect(screen.getByRole('button', { name: label })).toBeInTheDocument()
+    },
+  )
 
   it('calls onCheck when the enabled control is pressed (R7)', async () => {
     const user = userEvent.setup()
@@ -234,7 +276,7 @@ describe('GuessCard', () => {
     expect(screen.queryByText(/^correct\.$/i)).not.toBeInTheDocument()
   })
 
-  it('shows the solved wording once the day is solved (R9, AC13)', () => {
+  it('drops the hint box, feedback and all, once the day is solved (R9, AC13)', () => {
     render(
       <GuessCard
         {...props({
@@ -248,43 +290,160 @@ describe('GuessCard', () => {
       />,
     )
 
-    expect(screen.getByRole('status')).toHaveTextContent(SOLVED.message)
     expect(dotStates()).toEqual(['solved', 'solved', 'solved'])
-    expect(
-      screen.queryByRole('complementary', { name: 'A nudge' }),
-    ).not.toBeInTheDocument()
+    expect(hintQuery()).not.toBeInTheDocument()
+    expect(screen.queryByText(SOLVED.message)).not.toBeInTheDocument()
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+    expect(nudgeLine()).not.toBeInTheDocument()
   })
 
-  it('shows no nudge until it is asked for (R5, AC8)', () => {
-    render(<GuessCard {...props({ dots: ['spent', 'unspent', 'unspent'] })} />)
-    expect(
-      screen.queryByRole('complementary', { name: 'A nudge' }),
-    ).not.toBeInTheDocument()
-  })
+  it.each([
+    [
+      'solved',
+      {
+        solved: true,
+        dots: ['solved', 'solved', 'solved'] as DotState[],
+        feedback: SOLVED,
+      },
+    ],
+    ['revealed', { revealed: true, feedback: ROOT_MATCHED }],
+  ])(
+    'renders no hint box at all on a %s day, however much it could say',
+    (_name, over) => {
+      render(
+        <GuessCard
+          {...props({
+            selectedRoot: 'G' as Root,
+            selectedFlavour: 'Dorian',
+            showNudge: true,
+            eliminated: 4,
+            ...over,
+          })}
+        />,
+      )
 
-  it('names the day’s root in the nudge, alongside the feedback line (R5, R6, AC9)', () => {
+      expect(hintQuery()).not.toBeInTheDocument()
+      expect(screen.queryByText('Hint')).not.toBeInTheDocument()
+      expect(nudgeLine()).not.toBeInTheDocument()
+      expect(screen.queryByRole('status')).not.toBeInTheDocument()
+    },
+  )
+
+  it('keeps the hint box on a playable day with attempts spent (R8, AC17)', () => {
     render(
       <GuessCard
         {...props({
           showNudge: true,
-          answerRoot: 'G',
+          eliminated: 2,
           dots: ['spent', 'spent', 'unspent'],
           feedback: ROOT_MATCHED,
         })}
       />,
     )
 
-    const nudge = screen.getByRole('complementary', { name: 'A nudge' })
-    expect(nudge.textContent).toMatch(/root is G\./)
-    expect(screen.getByRole('status')).toHaveTextContent(ROOT_MATCHED.message)
+    expect(hintBox()).toHaveTextContent(ROOT_MATCHED.message)
+    expect(nudgeLine()).toBeInTheDocument()
   })
 
-  it('leaves every root chip unpressed and enabled when the nudge appears (AC10, AC11)', () => {
+  it('is never given the day’s root (R1, AC1)', () => {
+    const source = readFileSync(
+      resolve(
+        process.cwd(),
+        'src/features/daily-groove/components/puzzle/GuessCard.tsx',
+      ),
+      'utf8',
+    )
+
+    expect(source).not.toContain('answerRoot')
+
+    const propsBlock = source.match(/type GuessCardProps = \{([\s\S]*?)\n\}/)
+    expect(propsBlock).not.toBeNull()
+    expect((propsBlock as RegExpMatchArray)[1]).not.toMatch(/answer/i)
+  })
+
+  it('shows no nudge sentence until it is asked for (R5, AC8)', () => {
+    render(<GuessCard {...props({ dots: ['spent', 'unspent', 'unspent'] })} />)
+
+    expect(nudgeLine()).not.toBeInTheDocument()
+    expect(hintBox()).toContainElement(screen.getByText(OPENING.message))
+  })
+
+  it('names the count the app ruled out, below the feedback inside one box (R17, AC17)', () => {
     render(
       <GuessCard
         {...props({
           showNudge: true,
-          answerRoot: 'G',
+          eliminated: 2,
+          dots: ['spent', 'spent', 'unspent'],
+          feedback: ROOT_MATCHED,
+        })}
+      />,
+    )
+
+    const box = hintBox()
+    expect(box).toHaveTextContent(/2 roots ruled out/)
+    expect(box).toHaveTextContent(/narrowing/i)
+    for (const root of ROOTS) {
+      expect(box.textContent ?? '', root).not.toMatch(
+        new RegExp(`(^|[^A-Za-z♭♯])${root}([^A-Za-z♭♯]|$)`),
+      )
+    }
+    const status = screen.getByRole('status')
+    expect(status).toHaveTextContent(ROOT_MATCHED.message)
+    expect(box).toContainElement(status)
+    expect(precedes(status, nudgeLine() as HTMLElement)).toBe(true)
+  })
+
+  it('renders no nudge sentence when the app has eliminated nothing (R19, AC18)', () => {
+    render(<GuessCard {...props({ showNudge: false, eliminated: 0 })} />)
+
+    expect(nudgeLine()).not.toBeInTheDocument()
+    expect(hintBox()).toHaveTextContent(OPENING.message)
+  })
+
+  it('renders the box with the count it was handed (R17, AC17)', () => {
+    render(<GuessCard {...props({ showNudge: true, eliminated: 4 })} />)
+
+    expect(hintBox()).toHaveTextContent(/4 roots ruled out/)
+  })
+
+  it('labels the one box "Hint", never "A nudge" (R6, AC9)', () => {
+    render(<GuessCard {...props({ showNudge: true, eliminated: 2 })} />)
+
+    expect(screen.getByText('Hint')).toBeInTheDocument()
+    expect(screen.queryByText(/a nudge/i)).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('complementary', { name: 'A nudge' }),
+    ).not.toBeInTheDocument()
+  })
+
+  it('keeps the feedback the card\u2019s only live region (R5, R10, AC14)', () => {
+    const { container } = render(
+      <GuessCard
+        {...props({
+          showNudge: true,
+          eliminated: 2,
+          feedback: ROOT_MATCHED,
+          dots: ['spent', 'spent', 'unspent'],
+        })}
+      />,
+    )
+
+    expect(hintBox()).not.toHaveAttribute('aria-live')
+    expect(container.querySelectorAll('[aria-live]')).toHaveLength(1)
+    const regions = screen.getAllByRole('status')
+    expect(regions).toHaveLength(1)
+    expect(regions[0]).toHaveTextContent(ROOT_MATCHED.message)
+    expect(regions[0]).not.toHaveTextContent(/ruled out/)
+  })
+
+  it('leaves every root chip unpressed and enabled when the box appears (AC10, AC11)', () => {
+    render(
+      <GuessCard
+        {...props({
+          showNudge: true,
+          eliminated: 2,
+          ruledOutRoots: [],
           dots: ['spent', 'spent', 'unspent'],
           feedback: ROOT_MATCHED,
         })}
@@ -302,14 +461,15 @@ describe('GuessCard', () => {
     ).toEqual([])
   })
 
-  it('offers the revealed root as an ordinary, clickable choice (R6, AC10)', async () => {
+  it('offers every root as an ordinary, clickable choice while the box shows (R6, AC10)', async () => {
     const user = userEvent.setup()
     const onSelectRoot = vi.fn()
     render(
       <GuessCard
         {...props({
           showNudge: true,
-          answerRoot: 'G',
+          eliminated: 2,
+          ruledOutRoots: [],
           onSelectRoot,
           dots: ['spent', 'spent', 'unspent'],
           feedback: ROOT_MATCHED,
@@ -319,6 +479,11 @@ describe('GuessCard', () => {
 
     await user.click(within(rootGroup()).getByRole('button', { name: 'G' }))
     expect(onSelectRoot).toHaveBeenCalledWith('G')
+    expect(
+      within(rootGroup())
+        .getAllByRole('button')
+        .filter((chip) => chip.getAttribute('aria-disabled') === 'true'),
+    ).toEqual([])
   })
 
   it('keeps both chips pressed and disables the control after a wrong check (AC9)', () => {
@@ -632,6 +797,164 @@ describe('GuessCard', () => {
     showNudge: true,
     showReveal: true,
   }
+
+  it('sounds a chip it declines to select (R4a, AC5a)', async () => {
+    const user = userEvent.setup()
+    const onSelectRoot = vi.fn()
+    const onHearRoot = vi.fn()
+    render(
+      <GuessCard
+        {...props({ ruledOutRoots: ['G'], onSelectRoot, onHearRoot })}
+      />,
+    )
+
+    await user.click(within(rootGroup()).getByRole('button', { name: 'G' }))
+
+    expect(onHearRoot).toHaveBeenCalledWith('G')
+    expect(onSelectRoot).not.toHaveBeenCalled()
+  })
+
+  it('dims the roots it is told are ruled out, and leaves the row alone (R4, R5, R6)', async () => {
+    const user = userEvent.setup()
+    const onSelectRoot = vi.fn()
+    const onCheck = vi.fn()
+    const out: Root[] = ['G', 'B♭', 'F♯']
+    render(
+      <GuessCard {...props({ ruledOutRoots: out, onSelectRoot, onCheck })} />,
+    )
+
+    const chips = within(rootGroup()).getAllByRole('button')
+    expect(chips.map(chipLabel)).toEqual(ROOTS)
+
+    const dimmed = chips.filter(
+      (chip) => chip.getAttribute('aria-disabled') === 'true',
+    )
+    expect(dimmed.map(chipLabel)).toEqual(
+      ROOTS.filter((root) => out.includes(root)),
+    )
+    for (const chip of dimmed) expect(chip, chipLabel(chip)).not.toBeDisabled()
+
+    const live = within(rootGroup()).getByRole('button', { name: 'C' })
+    for (const chip of dimmed) {
+      expect(chip.className, chipLabel(chip)).not.toBe(live.className)
+    }
+
+    await user.click(within(rootGroup()).getByRole('button', { name: 'G' }))
+    expect(onSelectRoot).not.toHaveBeenCalled()
+    expect(onCheck).not.toHaveBeenCalled()
+  })
+
+  it('dims a ruled-out mode in the treatment a ruled-out root wears (R4, R5, AC5)', async () => {
+    const user = userEvent.setup()
+    const onSelectFlavour = vi.fn()
+    const onHearMode = vi.fn()
+    render(
+      <GuessCard
+        {...props({
+          ruledOutRoots: ['G'],
+          ruledOutFlavours: ['Mixolydian'],
+          onSelectFlavour,
+          onHearMode,
+        })}
+      />,
+    )
+
+    expect(
+      within(flavourGroup()).getAllByRole('button').map(chipLabel),
+    ).toEqual(FLAVOURS)
+
+    const chip = within(flavourGroup()).getByRole('button', {
+      name: 'Mixolydian',
+    })
+    expect(chip).toHaveAttribute('aria-disabled', 'true')
+    expect(chip).not.toBeDisabled()
+    expect(chip.className).toBe(
+      within(rootGroup()).getByRole('button', { name: 'G' }).className,
+    )
+    expect(chip.className).not.toBe(
+      within(flavourGroup()).getByRole('button', { name: 'Dorian' }).className,
+    )
+
+    await user.click(chip)
+    expect(onHearMode).toHaveBeenCalledWith('Mixolydian')
+    expect(onSelectFlavour).not.toHaveBeenCalled()
+  })
+
+  it('keeps a simple-mode row whole while one of its two options is out (R4, R6)', () => {
+    render(
+      <GuessCard
+        {...props({
+          simple: true,
+          flavours: FAMILIES,
+          ruledOutFlavours: ['Major'],
+        })}
+      />,
+    )
+
+    const chips = within(flavourGroup()).getAllByRole('button')
+    expect(chips.map(chipLabel)).toEqual(FAMILIES)
+    expect(
+      chips
+        .filter((chip) => chip.getAttribute('aria-disabled') === 'true')
+        .map(chipLabel),
+    ).toEqual(['Major'])
+  })
+
+  it.each([
+    ['solved', { solved: true, dots: ['solved', 'solved', 'solved'] as DotState[], feedback: SOLVED }],
+    ['revealed', { revealed: true }],
+  ])(
+    'silences a ruled-out chip once the day is %s (R4b, AC5b)',
+    async (_name, over) => {
+      const user = userEvent.setup()
+      const onHearRoot = vi.fn()
+      const onSelectRoot = vi.fn()
+      render(
+        <GuessCard
+          {...props({
+            ruledOutRoots: ['G'],
+            ruledOutFlavours: ['Mixolydian'],
+            onHearRoot,
+            onSelectRoot,
+            ...over,
+          })}
+        />,
+      )
+
+      const chip = within(rootGroup()).getByRole('button', { name: 'G' })
+      expect(chip).toBeDisabled()
+
+      await user.click(chip)
+      expect(onHearRoot).not.toHaveBeenCalled()
+      expect(onSelectRoot).not.toHaveBeenCalled()
+
+      for (const group of [rootGroup(), flavourGroup()]) {
+        for (const other of within(group).getAllByRole('button')) {
+          expect(other, chipLabel(other)).toBeDisabled()
+        }
+      }
+    },
+  )
+
+  it('keeps the ruled-out chips distinguishable once the day has ended (R20, AC19)', () => {
+    render(
+      <GuessCard {...props({ revealed: true, ruledOutRoots: ['G', 'B♭'] })} />,
+    )
+
+    const chips = within(rootGroup()).getAllByRole('button')
+    expect(chips).toHaveLength(12)
+    expect(new Set(chips.map((chip) => chip.className)).size).toBe(2)
+
+    const isOut = (chip: Element) => ['G', 'B♭'].includes(chipLabel(chip))
+    const ruled = chips.filter(isOut)
+    const rest = chips.filter((chip) => !isOut(chip))
+    expect(ruled).toHaveLength(2)
+    expect(new Set(ruled.map((chip) => chip.className)).size).toBe(1)
+    expect(new Set(rest.map((chip) => chip.className)).size).toBe(1)
+    expect(ruled[0].className).not.toBe(rest[0].className)
+
+    for (const chip of chips) expect(chip, chipLabel(chip)).toBeDisabled()
+  })
 
   it('offers no way to give up until it is asked for (R6, AC6)', () => {
     render(<GuessCard {...props({ dots: ['spent', 'spent', 'unspent'] })} />)
@@ -1212,7 +1535,7 @@ describe('GuessCard', () => {
     )
 
     const control = () =>
-      screen.getByRole('button', { name: /^(Pick a root|Check |Solved$)/ })
+      screen.getByRole('button', { name: /^(Pick a |Check |Solved$)/ })
     const before = {
       dots: dotStates(),
       line: screen.getByText(OPENING.message).textContent,
@@ -1527,6 +1850,42 @@ describe('GuessCard', () => {
       }
     })
 
+    it('keeps the mark on a ruled-out chip while the sounds are on (R4c, AC5c)', () => {
+      render(
+        <GuessCard
+          {...props({
+            tapSounds: true,
+            ruledOutRoots: ['G', 'B♭'],
+            ruledOutFlavours: ['Mixolydian'],
+          })}
+        />,
+      )
+
+      for (const group of [rootGroup(), flavourGroup()]) {
+        for (const chip of within(group).getAllByRole('button')) {
+          expect(chipAdornment(chip), chipLabel(chip)).toBe(NOTE_GLYPH)
+        }
+      }
+    })
+
+    it('takes the mark off a ruled-out chip too while the sounds are off (R4c, AC5c)', () => {
+      render(
+        <GuessCard
+          {...props({
+            tapSounds: false,
+            ruledOutRoots: ['G', 'B♭'],
+            ruledOutFlavours: ['Mixolydian'],
+          })}
+        />,
+      )
+
+      for (const group of [rootGroup(), flavourGroup()]) {
+        for (const chip of within(group).getAllByRole('button')) {
+          expect(chipAdornment(chip), chipLabel(chip)).toBeNull()
+        }
+      }
+    })
+
     it('leaves both rows offering exactly what they offered (R12, AC11)', () => {
       const { unmount } = render(<GuessCard {...props({ tapSounds: true })} />)
       const marked = {
@@ -1571,7 +1930,7 @@ describe('GuessCard', () => {
       )
 
       const control = () =>
-        screen.getByRole('button', { name: /^(Pick a root|Check |Solved$)/ })
+        screen.getByRole('button', { name: /^(Pick a |Check |Solved$)/ })
       const before = {
         dots: dotStates(),
         line: screen.getByRole('status').textContent,
@@ -1613,6 +1972,367 @@ describe('GuessCard', () => {
       expect(giveUp()).toBeInTheDocument()
     })
   })
+
+  describe('the row locks once a check confirms a half (F17 E2)', () => {
+    const dimmedIn = (group: HTMLElement) =>
+      within(group)
+        .getAllByRole('button')
+        .filter((chip) => chip.getAttribute('aria-disabled') === 'true')
+        .map(chipLabel)
+
+    it('takes every other root out of the row when the root is confirmed (R1, R7, AC1, AC9)', () => {
+      render(<GuessCard {...props({ confirmedRoots: ['G'] })} />)
+      const g = within(rootGroup()).getByRole('button', { name: 'G' })
+
+      expect(g).not.toHaveAttribute('aria-disabled')
+      expect(dimmedIn(rootGroup())).toEqual(ROOTS.filter((r) => r !== 'G'))
+      expect(dimmedIn(flavourGroup())).toEqual([])
+      for (const chip of within(rootGroup()).getAllByRole('button')) {
+        expect(chip, chipLabel(chip)).toBeEnabled()
+      }
+    })
+
+    it('takes every other mode out, and the other family in simple mode (R1, R6, AC2, AC8)', () => {
+      const { unmount } = render(
+        <GuessCard {...props({ confirmedFlavours: ['Dorian'] })} />,
+      )
+
+      expect(dimmedIn(flavourGroup())).toEqual(
+        FLAVOURS.filter((f) => f !== 'Dorian'),
+      )
+      expect(dimmedIn(rootGroup())).toEqual([])
+      unmount()
+
+      render(
+        <GuessCard
+          {...props({
+            simple: true,
+            flavours: FAMILIES,
+            confirmedFlavours: ['Minor'],
+          })}
+        />,
+      )
+
+      expect(dimmedIn(flavourGroup())).toEqual(['Major'])
+      expect(
+        within(flavourGroup()).getByRole('button', { name: 'Minor' }),
+      ).not.toHaveAttribute('aria-disabled')
+    })
+
+    const liveIn = (group: HTMLElement) =>
+      within(group)
+        .getAllByRole('button')
+        .filter((chip) => chip.getAttribute('aria-disabled') !== 'true')
+        .map(chipLabel)
+
+    it('leaves the row unlocked when the confirmed value is not one it offers, in both directions (R6, AC8)', () => {
+      const { unmount } = render(
+        <GuessCard
+          {...props({
+            simple: true,
+            flavours: FAMILIES,
+            confirmedFlavours: ['Aeolian'],
+          })}
+        />,
+      )
+
+      expect(liveIn(flavourGroup())).toEqual(FAMILIES)
+      expect(dimmedIn(flavourGroup())).toEqual([])
+      unmount()
+
+      render(<GuessCard {...props({ confirmedFlavours: ['Minor'] })} />)
+
+      expect(liveIn(flavourGroup())).toEqual(FLAVOURS)
+      expect(dimmedIn(flavourGroup())).toEqual([])
+    })
+
+    it('falls back to the ruled-out dimming when no confirmed value is offered (R6, R9c, AC8)', () => {
+      const SIX: Root[] = ['C', 'D', 'E', 'F', 'G', 'A']
+      render(
+        <GuessCard
+          {...props({
+            simple: true,
+            roots: SIX,
+            flavours: FAMILIES,
+            confirmedRoots: ['B♭'],
+            confirmedFlavours: ['Aeolian'],
+            ruledOutRoots: ['D', 'E'],
+            ruledOutFlavours: ['Dorian'],
+          })}
+        />,
+      )
+
+      expect(dimmedIn(rootGroup())).toEqual(['D', 'E'])
+      expect(liveIn(rootGroup())).toEqual(['C', 'F', 'G', 'A'])
+      expect(dimmedIn(flavourGroup())).toEqual([])
+      expect(liveIn(flavourGroup())).toEqual(FAMILIES)
+    })
+
+    it.each([
+      [
+        'a mode confirmed in full mode, read by the simple row',
+        {
+          simple: true,
+          flavours: FAMILIES,
+          confirmedFlavours: ['Aeolian'],
+          ruledOutFlavours: ['Major'],
+        },
+      ],
+      [
+        'a family confirmed in simple mode, read by the full row',
+        {
+          confirmedFlavours: ['Minor'],
+          ruledOutFlavours: ['Dorian', 'Lydian'],
+        },
+      ],
+      [
+        'a root the narrowed row no longer offers',
+        {
+          simple: true,
+          roots: ['C', 'D', 'E', 'F', 'G', 'A'] as Root[],
+          flavours: FAMILIES,
+          confirmedRoots: ['B♭' as Root],
+          ruledOutRoots: ['D' as Root, 'E' as Root],
+        },
+      ],
+      [
+        'both halves confirmed and offered, with ruled-out options besides',
+        {
+          confirmedRoots: ['G' as Root],
+          confirmedFlavours: ['Dorian'],
+          ruledOutRoots: ['D' as Root, 'E' as Root],
+          ruledOutFlavours: ['Lydian'],
+        },
+      ],
+      [
+        'a stale confirmed half on one row and a live one on the other',
+        {
+          confirmedRoots: ['G' as Root],
+          confirmedFlavours: ['Minor'],
+          ruledOutRoots: ['D' as Root],
+          ruledOutFlavours: ['Dorian'],
+        },
+      ],
+      [
+        'every option on both rows named as ruled out',
+        {
+          ruledOutRoots: [...ROOTS],
+          ruledOutFlavours: [...FLAVOURS],
+          confirmedRoots: ['G' as Root],
+          confirmedFlavours: ['Dorian'],
+        },
+      ],
+    ])(
+      'always keeps at least one live chip in each row: %s (R6, R9c, AC8)',
+      (_name, overrides) => {
+        render(<GuessCard {...props(overrides)} />)
+
+        expect(
+          liveIn(rootGroup()),
+          'the root row must always offer a live chip',
+        ).not.toEqual([])
+        expect(
+          liveIn(flavourGroup()),
+          'the mode row must always offer a live chip',
+        ).not.toEqual([])
+      },
+    )
+
+    it('adds no glyph to any chip, at the longest label either row offers (R1a, R9b, AC3)', () => {
+      expect(Math.max(...ROOTS.map((root) => root.length))).toBe(2)
+      expect(LONGEST_FLAVOUR).toHaveLength(17)
+      const { unmount } = render(
+        <GuessCard
+          {...props({
+            flavours: [LONGEST_FLAVOUR, 'Dorian'],
+            confirmedRoots: ['C♯'],
+            confirmedFlavours: [LONGEST_FLAVOUR],
+            tapSounds: true,
+          })}
+        />,
+      )
+
+      for (const group of [rootGroup(), flavourGroup()]) {
+        for (const chip of within(group).getAllByRole('button')) {
+          expect(chip.children, chipLabel(chip)).toHaveLength(1)
+          expect(chip.textContent).toBe(`${NOTE_GLYPH}${chipLabel(chip)}`)
+          expect(chip).toHaveAccessibleName(chipLabel(chip))
+          for (const cut of [
+            /\btruncate\b/,
+            /\btext-ellipsis\b/,
+            /\boverflow-hidden\b/,
+          ]) {
+            expect(chip.className).not.toMatch(cut)
+          }
+        }
+      }
+      unmount()
+
+      render(
+        <GuessCard {...props({ confirmedRoots: ['C♯'], tapSounds: false })} />,
+      )
+
+      for (const chip of within(rootGroup()).getAllByRole('button')) {
+        expect(chip.children, chipLabel(chip)).toHaveLength(0)
+        expect(chip.textContent).toBe(chipLabel(chip))
+      }
+    })
+
+    it('locks nothing until something is confirmed, selection included (R2, AC4)', () => {
+      const { unmount } = render(<GuessCard {...props()} />)
+
+      expect(dimmedIn(rootGroup())).toEqual([])
+      expect(dimmedIn(flavourGroup())).toEqual([])
+      unmount()
+
+      render(
+        <GuessCard
+          {...props({ selectedRoot: 'G' as Root, selectedFlavour: 'Dorian' })}
+        />,
+      )
+
+      expect(dimmedIn(rootGroup())).toEqual([])
+      expect(dimmedIn(flavourGroup())).toEqual([])
+    })
+
+    it('keeps the confirmed chip live, selected and selectable (R4, R7, AC6, AC9)', async () => {
+      const user = userEvent.setup()
+      const onSelectRoot = vi.fn()
+      const onHearRoot = vi.fn()
+      render(
+        <GuessCard
+          {...props({
+            confirmedRoots: ['G'],
+            selectedRoot: 'G' as Root,
+            onSelectRoot,
+            onHearRoot,
+          })}
+        />,
+      )
+      const g = within(rootGroup()).getByRole('button', { name: 'G' })
+
+      expect(g).toHaveAttribute('aria-pressed', 'true')
+      expect(g).not.toHaveAttribute('aria-disabled')
+
+      await user.click(g)
+
+      expect(onSelectRoot).toHaveBeenCalledTimes(1)
+      expect(onSelectRoot).toHaveBeenCalledWith('G')
+      expect(onHearRoot).toHaveBeenCalledTimes(1)
+      expect(onHearRoot).toHaveBeenCalledWith('G')
+    })
+
+    it('still sounds a locked-out chip, and refuses the pick (R9, AC10a)', async () => {
+      const user = userEvent.setup()
+      const onSelectRoot = vi.fn()
+      const onHearRoot = vi.fn()
+      render(
+        <GuessCard
+          {...props({ confirmedRoots: ['G'], onSelectRoot, onHearRoot })}
+        />,
+      )
+      const out = within(rootGroup()).getByRole('button', { name: 'B♭' })
+
+      expect(out).toHaveAttribute('aria-disabled', 'true')
+
+      await user.click(out)
+
+      expect(onSelectRoot).not.toHaveBeenCalled()
+      expect(onHearRoot).toHaveBeenCalledTimes(1)
+      expect(onHearRoot).toHaveBeenCalledWith('B♭')
+    })
+
+    it('keeps the ♪ on every chip in a locked row, and drops it row-wide (R9a, AC10b)', () => {
+      const { unmount } = render(
+        <GuessCard
+          {...props({
+            confirmedRoots: ['G'],
+            confirmedFlavours: ['Dorian'],
+            tapSounds: true,
+          })}
+        />,
+      )
+
+      for (const group of [rootGroup(), flavourGroup()]) {
+        for (const chip of within(group).getAllByRole('button')) {
+          expect(chipAdornment(chip), chipLabel(chip)).toBe(NOTE_GLYPH)
+        }
+      }
+      expect(dimmedIn(rootGroup())).toHaveLength(11)
+      unmount()
+
+      render(
+        <GuessCard
+          {...props({
+            confirmedRoots: ['G'],
+            confirmedFlavours: ['Dorian'],
+            tapSounds: false,
+          })}
+        />,
+      )
+
+      for (const group of [rootGroup(), flavourGroup()]) {
+        for (const chip of within(group).getAllByRole('button')) {
+          expect(chipAdornment(chip), chipLabel(chip)).toBeNull()
+        }
+      }
+    })
+
+    it.each([{ solved: true }, { revealed: true }])(
+      'still reads as locked under the day’s own lock (%o) (R8, AC10)',
+      (terminal) => {
+        render(<GuessCard {...props({ confirmedRoots: ['G'], ...terminal })} />)
+        const g = within(rootGroup()).getByRole('button', { name: 'G' })
+
+        expect(dimmedIn(rootGroup())).toEqual(ROOTS.filter((r) => r !== 'G'))
+        expect(g).not.toHaveAttribute('aria-disabled')
+        expect(g).toBeDisabled()
+        expect(g).toHaveAccessibleName('G')
+        for (const chip of within(rootGroup()).getAllByRole('button')) {
+          expect(chip, chipLabel(chip)).toBeDisabled()
+        }
+      },
+    )
+
+    it('moves nothing on the card when a row locks (R9b, AC10c)', () => {
+      const GEOMETRY =
+        /^(w-|h-|min-|max-|p[xytblrse]?-|-?m[xytblrse]?-|grid|col-|row-|gap-|flex|absolute|relative|fixed|sticky|-?translate|text-\[|leading-|border-\[|border-[0-9])/
+      const chips = () =>
+        [rootGroup(), flavourGroup()].flatMap((group) =>
+          within(group)
+            .getAllByRole('button')
+            .map((chip) => chip.className),
+        )
+      const rows = () =>
+        [rootGroup(), flavourGroup()].map((group) => chipList(group).className)
+
+      const { unmount } = render(<GuessCard {...props()} />)
+      const before = { chips: chips(), rows: rows() }
+      unmount()
+
+      render(
+        <GuessCard
+          {...props({
+            confirmedRoots: ['G'],
+            confirmedFlavours: ['Dorian'],
+          })}
+        />,
+      )
+      const after = { chips: chips(), rows: rows() }
+
+      expect(after.rows).toEqual(before.rows)
+      expect(after.chips).toHaveLength(before.chips.length)
+      after.chips.forEach((className, index) => {
+        const was = before.chips[index].split(/\s+/).filter(Boolean)
+        const now = className.split(/\s+/).filter(Boolean)
+        expect(was.filter((name) => !now.includes(name))).toEqual([])
+        expect(
+          now.filter((name) => !was.includes(name)).filter((name) => GEOMETRY.test(name)),
+          'locking a row may not add a class that changes a chip’s box',
+        ).toEqual([])
+      })
+    })
+  })
 })
 
 describe('through the composed page', () => {
@@ -1641,7 +2361,7 @@ describe('through the composed page', () => {
     await renderFeature();
 
     const control = () =>
-      screen.getByRole("button", { name: /^(Pick a root|Check |Solved$)/ });
+      screen.getByRole("button", { name: /^(Pick a |Check |Solved$)/ });
 
     expect(control()).toHaveAccessibleName("Pick a root and a mode");
     expect(control()).toBeDisabled();

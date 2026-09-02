@@ -202,8 +202,8 @@ describe('usePuzzleSession', () => {
 
     expect(result.current.attempts).toEqual(stored.attempts)
     expect(result.current.solved).toBe(false)
-    expect(result.current.selectedRoot).toBe('G')
-    expect(result.current.selectedFlavour).toBe(wrong)
+    expect(result.current.selectedRoot).toBeNull()
+    expect(result.current.selectedFlavour).toBeNull()
 
     await guess(result, 'D', wrong)
     expect(result.current.attempts).toHaveLength(3)
@@ -346,16 +346,18 @@ describe('usePuzzleSession', () => {
     })
   })
 
-  it("hands the day's root over on the second miss (E3 R4, AC3)", async () => {
+  it('clears the half a miss ruled out, and keeps the half it did not (R19a, R19b)', async () => {
     const { result } = await renderSession()
     const wrong = wrongFlavour()
 
     await guess(result, 'G', wrong)
-    expect(result.current.selectedRoot).toBe('G')
+    expect(result.current.selectedRoot).toBeNull()
+    expect(result.current.selectedFlavour).toBeNull()
 
-    await guess(result, 'D', wrong)
+    await guess(result, 'C', wrong)
 
     expect(result.current.selectedRoot).toBe('C')
+    expect(result.current.selectedFlavour).toBeNull()
     expect(result.current.solved).toBe(false)
     expect(result.current.revealed).toBe(false)
   })
@@ -547,14 +549,15 @@ describe('usePuzzleSession', () => {
     expect(second.result.current.solved).toBe(true)
   })
 
-  it('keeps the second-miss root handover in simple mode (E5 R10, AC10)', async () => {
+  it('clears the ruled-out half in simple mode too, naming no root (R19a, R1)', async () => {
     const { result } = await renderModal(true)
 
     await guess(result, 'G', 'Major')
     await guess(result, 'D', 'Major')
 
     expect(result.current.attempts).toHaveLength(2)
-    expect(result.current.selectedRoot).toBe('C')
+    expect(result.current.selectedRoot).toBeNull()
+    expect(result.current.selectedFlavour).toBeNull()
   })
 
   it('records a simple-mode solve as a solved day (E5 R9, AC9)', async () => {

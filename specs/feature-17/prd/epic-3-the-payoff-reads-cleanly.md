@@ -4,7 +4,7 @@ Feature: [briefing.md](../briefing.md) · [roadmap.md](../roadmap.md)
 
 ## Summary
 
-Two fixes to the solved box. The four-bar lead sheet stays one row of four bars
+Three fixes to the solved box. The four-bar lead sheet stays one row of four bars
 at every width instead of folding into a 2 × 2 block on a phone, bought with a
 smaller type size and tighter padding below `sm`. And the line explaining the
 mode drops its trailing clause: "major with a ♯4" rather than "major with a ♯4
@@ -24,6 +24,7 @@ not, which is the elbow-in-the-ribs that `docs/persona.md` calls homework.
 - One row of four bars at every supported width.
 - The type size and padding that buys it.
 - Removing the trailing clause from all twelve mode lines.
+- Dropping the near-miss line on a solved day.
 
 **Out of scope**
 - **What the solved box says beyond that clause.** Feature-15 settled the
@@ -51,6 +52,19 @@ not, which is the elbow-in-the-ribs that `docs/persona.md` calls homework.
   a long numeral cannot make its bar taller than its neighbour.
 - **R7** — A bar whose numeral is missing or empty draws its symbol and nothing
   below it, as it does today.
+
+### The near-miss line
+
+- **R12** — On a solved day the box carries no near-miss line. The player found
+  the answer; a sentence about the guess before it describes a state the win has
+  already superseded, and reads as a comment from before the day ended.
+- **R13** — On a day given up on the line is unchanged, in wording and in which
+  guess it compares. That is the day it earns its place: Sam wants "to be told
+  the answer eventually" because "failing without learning is worse than
+  losing".
+- **R14** — Nothing else about the line changes — not which attempt it compares
+  on a given-up day, not its wording, not the single live region it shares with
+  the character line.
 
 ### The mode line
 
@@ -86,6 +100,12 @@ not, which is the elbow-in-the-ribs that `docs/persona.md` calls homework.
   bar a long numeral, then its height matches its neighbours'.
 - **AC7** (R7) — Given a bar with an empty numeral, then it draws its symbol and
   no numeral.
+- **AC12** (R12) — Given a day solved after at least one wrong guess, when the
+  box renders, then no near-miss line is present.
+- **AC13** (R13) — Given a day given up on after wrong guesses, when the box
+  renders, then the line is present and worded as it was before this change.
+- **AC14** (R14) — Given a day given up on, when the box renders, then the
+  character line and the near-miss line still share one live region.
 - **AC8** (R8) — Given every mode line in turn, then none contains "doing it"
   and none contains "the sound of it".
 - **AC8a** (R8a) — Given `Blues`, then its line still names its ♭5.
@@ -99,7 +119,15 @@ not, which is the elbow-in-the-ribs that `docs/persona.md` calls homework.
 
 ## Dependencies
 
-**Needs nothing, and hands nothing on.** It shares no file with the other two
+**This narrows a requirement in a shipped feature.** Feature-15's Epic 4
+specified the solved case deliberately: its **R1** gives the line to any
+finished day with a wrong guess, its **R2** picks the last incorrect attempt as
+"the one Sam last believed", and its **R11** derives the given-up wording from
+the solved one. R12 inverts that — the given-up day becomes the only case.
+Feature-15's PRD and specs stay as the record of what was built and verified;
+the change belongs here.
+
+**Needs nothing else, and hands nothing on.** It shares no file with the other two
 epics: `components/solved/LeadSheet.tsx` and `lib/theory/character.ts`.
 
 Feature-15's existing tests assert the current line strings and the sheet's

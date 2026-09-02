@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event'
 import type { DailyResult, Groove, Root } from '../types'
 import {
   CHANGES_READ,
+  chipAdornment,
   chipLabel,
   control,
   dotStates,
@@ -13,7 +14,9 @@ import {
   guess,
   installPuzzleAudio,
   miss,
+  NOTE_GLYPH,
   nudge,
+  nudgeLine,
   otherWrongFlavour,
   play,
   renderPuzzle,
@@ -21,6 +24,7 @@ import {
   rootGroup,
   SOLVING,
   teardownPuzzleAudio,
+  thirdWrongFlavour,
   TODAY,
   wrongFlavour,
 } from '../testing/puzzleHarness'
@@ -55,6 +59,25 @@ describe('GroovePuzzle', () => {
     teardownPuzzleAudio()
   })
 
+  const liveIn = (group: HTMLElement) =>
+    within(group)
+      .getAllByRole('button')
+      .filter((chip) => chip.getAttribute('aria-disabled') !== 'true')
+      .map(chipLabel)
+
+  const dimmedIn = (group: HTMLElement) =>
+    within(group)
+      .getAllByRole('button')
+      .filter((chip) => chip.getAttribute('aria-disabled') === 'true')
+      .map(chipLabel)
+
+  const liveRoots = () => liveIn(rootGroup())
+  const liveRoot = () => liveRoots().find((root) => root !== 'C') as string
+  const liveWrongFlavour = () =>
+    liveIn(flavourGroup()).find((flavour) => flavour !== 'Aeolian') as string
+  const standalone = (token: string) =>
+    new RegExp(`(^|[\\s(])${token}($|[\\s.,)])`)
+
   it('renders a play control and the guessing card (R1, R2, AC1)', async () => {
     await renderPuzzle()
 
@@ -62,19 +85,6 @@ describe('GroovePuzzle', () => {
     expect(within(rootGroup()).getAllByRole('button')).toHaveLength(12)
     expect(within(flavourGroup()).getAllByRole('button')).toHaveLength(4)
     expect(screen.queryAllByRole('checkbox')).toHaveLength(0)
-  })
-
-  it('leaves the nudge’s revealed root on the serif (E4 R2, AC2)', async () => {
-    const user = userEvent.setup()
-    await renderPuzzle()
-    const wrong = wrongFlavour()
-
-    await guess(user, 'C', wrong)
-    await guess(user, 'G', wrong)
-
-    const root = within(nudge() as HTMLElement).getByText('C')
-    expect(root.className).toMatch(/font-display/)
-    expect(root.className).not.toMatch(/font-jazz/)
   })
 
   it("offers the day's deterministic flavour options, including the answer (R3, R4)", async () => {
@@ -112,7 +122,7 @@ describe('GroovePuzzle', () => {
     expect(control()).toBeDisabled()
 
     await user.click(within(rootGroup()).getByRole('button', { name: 'C' }))
-    expect(control()).toHaveAccessibleName('Pick a root and a mode')
+    expect(control()).toHaveAccessibleName('Pick a mode')
     expect(control()).toBeDisabled()
 
     await user.click(within(flavourGroup()).getByRole('button', { name: wrong }))
@@ -125,8 +135,11 @@ describe('GroovePuzzle', () => {
       within(rootGroup()).getByRole('button', { name: 'C' }),
     ).toHaveAttribute('aria-pressed', 'true')
     expect(
+      within(flavourGroup()).queryByRole('button', { pressed: true }),
+    ).toBeNull()
+    expect(
       within(flavourGroup()).getByRole('button', { name: wrong }),
-    ).toHaveAttribute('aria-pressed', 'true')
+    ).toHaveAttribute('aria-disabled', 'true')
     expect(control()).toBeDisabled()
 
     await user.click(within(flavourGroup()).getByRole('button', { name: 'Aeolian' }))
@@ -134,7 +147,10 @@ describe('GroovePuzzle', () => {
     expect(control()).toBeEnabled()
 
     await user.click(control())
-    expect(screen.getByText(/the groove is yours now/i)).toBeInTheDocument()
+    expect(
+      screen.getByRole('heading', { name: 'C Aeolian' }),
+    ).toBeInTheDocument()
+    expect(nudge()).not.toBeInTheDocument()
     expect(control()).toHaveAccessibleName('Solved')
     expect(control()).toBeDisabled()
 
@@ -164,8 +180,8 @@ describe('GroovePuzzle', () => {
     await renderPuzzle()
 
     expect(dotStates()).toEqual(['unspent', 'unspent', 'unspent'])
-    expect(screen.getByText(/feels like rest/i)).toBeInTheDocument()
-    expect(nudge()).not.toBeInTheDocument()
+    expect(nudge()).toContainElement(screen.getByText(/feels like rest/i))
+    expect(nudgeLine()).not.toBeInTheDocument()
   })
 
   it('spends a dot and names the half that matched on each wrong guess (E3 R1, R3, AC2, AC5, AC7)', async () => {
@@ -173,82 +189,200 @@ describe('GroovePuzzle', () => {
     await renderPuzzle()
     const wrong = wrongFlavour()
 
-    await guess(user, 'C', wrong)
-    expect(dotStates()).toEqual(['spent', 'unspent', 'unspent'])
-    expect(screen.getByText(/right home note/i)).toBeInTheDocument()
-    expect(nudge()).not.toBeInTheDocument()
-
     await guess(user, 'G', wrong)
-    expect(dotStates()).toEqual(['spent', 'spent', 'unspent'])
+    expect(dotStates()).toEqual(['spent', 'unspent', 'unspent'])
     expect(screen.getByText(/not it\. keep playing/i)).toBeInTheDocument()
+    expect(nudgeLine()).not.toBeInTheDocument()
+
+    await guess(user, 'C', otherWrongFlavour())
+    expect(dotStates()).toEqual(['spent', 'spent', 'unspent'])
+    expect(screen.getByText(/right home note/i)).toBeInTheDocument()
   })
 
-  it("reveals the day's root in a nudge after the second miss (E3 R5, R6, AC8, AC9)", async () => {
+  it('narrows the row instead of naming the root, from the second miss (R1, R11, R17, R18, AC1, AC6, AC12, AC17)', async () => {
     const user = userEvent.setup()
     await renderPuzzle()
-    const wrong = wrongFlavour()
 
-    await guess(user, 'C', wrong)
-    expect(nudge()).not.toBeInTheDocument()
+    await guess(user, 'G', wrongFlavour())
+    expect(nudgeLine()).not.toBeInTheDocument()
 
-    await guess(user, 'G', wrong)
+    await guess(user, 'D', otherWrongFlavour())
+
     const box = nudge() as HTMLElement
     expect(box).toBeInTheDocument()
-    expect(box.textContent).toMatch(/root is C\./)
+    expect(box).toHaveTextContent(/2 roots ruled out/)
+    expect(box.textContent).toMatch(/narrowing as you go/i)
+    expect(box).toContainElement(screen.getByText(/not it\. keep playing/i))
+
+    const line = box.textContent ?? ''
+    for (const root of ROOTS) expect(line).not.toMatch(standalone(root))
+
+    expect(within(rootGroup()).getAllByRole('button').map(chipLabel)).toEqual(
+      ROOTS,
+    )
+
+    const dimmed = dimmedIn(rootGroup())
+    expect(dimmed).toHaveLength(4)
+    expect(dimmed).toContain('G')
+    expect(dimmed).toContain('D')
+    expect(dimmed).not.toContain('C')
+
+    expect(
+      within(rootGroup()).queryByRole('button', { pressed: true }),
+    ).toBeNull()
   })
 
-  it('hands the day\u2019s root over as a selection when the nudge arrives (F7 E3 R4, R5, AC3, AC5)', async () => {
+  it('dims only the root the player checked after one miss (R6, R10, AC7, AC11)', async () => {
     const user = userEvent.setup()
     await renderPuzzle()
-    const wrong = wrongFlavour()
 
-    await guess(user, 'C', wrong)
+    await guess(user, 'G', wrongFlavour())
+
+    expect(within(rootGroup()).getAllByRole('button').map(chipLabel)).toEqual(
+      ROOTS,
+    )
+    expect(dimmedIn(rootGroup())).toEqual(['G'])
+    expect(nudgeLine()).not.toBeInTheDocument()
+  })
+
+  it('stops narrowing at four live roots, and lets the player go past it (R12, R13, AC13)', async () => {
+    const user = userEvent.setup()
+    await renderPuzzle()
+
+    for (let played = 0; played < 4; played += 1) {
+      const root = liveRoot()
+      const flavour = liveWrongFlavour() ?? 'Aeolian'
+      await guess(user, root, flavour)
+      expect(liveRoots()).toContain('C')
+    }
+    expect(liveRoots()).toHaveLength(4)
+
+    await guess(user, liveRoot(), 'Aeolian')
+    expect(liveRoots()).toHaveLength(3)
+    expect(liveRoots()).toContain('C')
+  })
+
+  it('derives the dims from the attempts, so a reload shows the same row (R8, R9, AC9, AC10)', async () => {
+    const user = userEvent.setup()
+    const wrong = wrongFlavour()
+    const other = otherWrongFlavour()
+    const third = thirdWrongFlavour()
+
+    const played = await renderPuzzle()
     await guess(user, 'G', wrong)
-    expect(nudge()).toBeInTheDocument()
+    await guess(user, 'D', other)
+    const thirdRoot = liveRoot()
+    await guess(user, thirdRoot, third)
+    const dimmedLive = dimmedIn(rootGroup())
+    expect(dimmedLive).toHaveLength(7)
+    played.unmount()
+
+    const stored: DailyResult = {
+      date: TODAY(),
+      answer: { root: 'C', flavour: 'Aeolian' },
+      attempts: [
+        miss('G', wrong, false),
+        miss('D', other, false),
+        miss(thirdRoot as Root, third, false),
+      ],
+      solved: false,
+    }
+    mockStore.get.mockResolvedValue(stored)
+    mockStore.getAll.mockResolvedValue([stored])
+
+    await renderPuzzle()
+    expect(dimmedIn(rootGroup())).toEqual(dimmedLive)
+
+    await guess(user, liveRoot(), 'Aeolian')
+    for (const root of dimmedLive) {
+      expect(dimmedIn(rootGroup())).toContain(root)
+    }
+  })
+
+  it('keeps the half that survived a check and asks for the other (R19a, R19b, R19c, AC19a, AC19b)', async () => {
+    const user = userEvent.setup()
+
+    const kept = await renderPuzzle()
+    await guess(user, 'C', wrongFlavour())
+    expect(
+      within(rootGroup()).getByRole('button', { name: 'C' }),
+    ).toHaveAttribute('aria-pressed', 'true')
+    expect(
+      within(flavourGroup()).queryByRole('button', { pressed: true }),
+    ).toBeNull()
+    expect(control()).toHaveAccessibleName('Pick a mode')
+    kept.unmount()
+
+    await renderPuzzle()
+    await guess(user, 'G', otherWrongFlavour())
+    expect(
+      within(rootGroup()).queryByRole('button', { pressed: true }),
+    ).toBeNull()
+    expect(
+      within(flavourGroup()).queryByRole('button', { pressed: true }),
+    ).toBeNull()
+    expect(control()).toHaveAccessibleName('Pick a root and a mode')
+  })
+
+  it('still diagnoses a mode-right, root-wrong check (R3, AC3)', async () => {
+    const user = userEvent.setup()
+    await renderPuzzle()
+
+    await guess(user, 'G', 'Aeolian')
+
+    expect(
+      screen.getByText(/the mode is right\. but the tonic is somewhere else/i),
+    ).toBeInTheDocument()
+    expect(
+      within(flavourGroup()).getByRole('button', { name: 'Aeolian' }),
+    ).not.toHaveAttribute('aria-disabled')
+  })
+
+  it('hands no root over, and locks nothing, when the row narrows (R1, R4b, AC1)', async () => {
+    const user = userEvent.setup()
+    await renderPuzzle()
+
+    await guess(user, 'G', wrongFlavour())
+    await guess(user, 'D', otherWrongFlavour())
+    expect(nudgeLine()).toBeInTheDocument()
 
     const chips = within(rootGroup()).getAllByRole('button')
     expect(chips).toHaveLength(12)
     for (const chip of chips) expect(chip).toBeEnabled()
     expect(
-      chips
-        .filter((b) => b.getAttribute('aria-pressed') === 'true')
-        .map(chipLabel),
-    ).toEqual(['C'])
-    expect(
-      within(rootGroup()).getByRole('button', { name: 'G' }),
-    ).toHaveAttribute('aria-pressed', 'false')
-    expect(chips.filter((b) => b.getAttribute('aria-disabled') === 'true')).toEqual(
-      [],
-    )
+      chips.filter((b) => b.getAttribute('aria-pressed') === 'true'),
+    ).toEqual([])
+    expect(dimmedIn(rootGroup())).toHaveLength(4)
+    expect(dimmedIn(rootGroup())).not.toContain('C')
   })
 
-  it('lets the player overrule the auto-selected root, and keeps their choice (F7 E3 R5, AC4)', async () => {
+  it('lets the player pick a fresh pair after a miss, and keeps their choice until they check it (R19a, R19b)', async () => {
     const user = userEvent.setup()
     await renderPuzzle()
-    const wrong = wrongFlavour()
-    const other = otherWrongFlavour()
 
-    await guess(user, 'C', wrong)
-    await guess(user, 'G', wrong)
+    await guess(user, 'G', wrongFlavour())
+    await guess(user, 'D', otherWrongFlavour())
     expect(
-      within(rootGroup()).getByRole('button', { name: 'C' }),
+      within(rootGroup()).queryByRole('button', { pressed: true }),
+    ).toBeNull()
+
+    const fresh = liveRoot()
+    const third = liveWrongFlavour()
+    await user.click(within(rootGroup()).getByRole('button', { name: fresh }))
+    expect(
+      within(rootGroup()).getByRole('button', { name: fresh }),
     ).toHaveAttribute('aria-pressed', 'true')
+    expect(control()).toHaveAccessibleName('Pick a mode')
 
-    await user.click(within(rootGroup()).getByRole('button', { name: 'D' }))
-    expect(
-      within(rootGroup()).getByRole('button', { name: 'D' }),
-    ).toHaveAttribute('aria-pressed', 'true')
-    expect(
-      within(rootGroup()).getByRole('button', { name: 'C' }),
-    ).toHaveAttribute('aria-pressed', 'false')
-    expect(control()).toHaveAccessibleName(`Check D ${wrong}`)
+    await user.click(within(flavourGroup()).getByRole('button', { name: third }))
+    expect(control()).toHaveAccessibleName(`Check ${fresh} ${third}`)
 
-    await user.click(within(flavourGroup()).getByRole('button', { name: other }))
     await user.click(control())
     expect(dotStates()).toEqual(['spent', 'spent', 'spent'])
+    expect(dimmedIn(rootGroup())).toContain(fresh)
     expect(
-      within(rootGroup()).getByRole('button', { name: 'D' }),
-    ).toHaveAttribute('aria-pressed', 'true')
+      within(rootGroup()).queryByRole('button', { pressed: true }),
+    ).toBeNull()
   })
 
   it('never locks the player out, however many guesses miss (E3 R8, AC3, AC12)', async () => {
@@ -257,34 +391,62 @@ describe('GroovePuzzle', () => {
     const wrong = wrongFlavour()
     const other = otherWrongFlavour()
 
-    await guess(user, 'C', wrong)
     await guess(user, 'G', wrong)
-    await guess(user, 'G', other)
+    await guess(user, 'D', other)
+    await guess(user, liveRoot(), thirdWrongFlavour())
 
     expect(dotStates()).toEqual(['spent', 'spent', 'spent'])
     expect(control()).toBeDisabled()
-    await user.click(within(rootGroup()).getByRole('button', { name: 'D' }))
+    await user.click(
+      within(rootGroup()).getByRole('button', { name: liveRoot() }),
+    )
+    await user.click(
+      within(flavourGroup()).getByRole('button', { name: 'Aeolian' }),
+    )
     expect(control()).toBeEnabled()
 
     await user.click(control())
     expect(dotStates()).toEqual(['spent', 'spent', 'spent'])
-    expect(nudge()).toBeInTheDocument()
+    expect(nudgeLine()).toBeInTheDocument()
   })
 
-  it('withdraws the nudge and turns the dots on the solve (E3 R9, AC13)', async () => {
+  it('withdraws the whole hint box and turns the dots on the solve (E3 R9, AC13)', async () => {
     const user = userEvent.setup()
     await renderPuzzle()
     const wrong = wrongFlavour()
 
     await guess(user, 'C', wrong)
-    await guess(user, 'G', wrong)
+    await guess(user, 'C', otherWrongFlavour())
     expect(nudge()).toBeInTheDocument()
+    expect(nudgeLine()).toBeInTheDocument()
 
     await guess(user, 'C', 'Aeolian')
 
     expect(nudge()).not.toBeInTheDocument()
-    expect(screen.getByText(/the groove is yours now/i)).toBeInTheDocument()
+    expect(nudgeLine()).not.toBeInTheDocument()
+    expect(screen.queryByText(/the groove is yours now/i)).toBeNull()
     expect(dotStates()).toEqual(['solved', 'solved', 'solved'])
+    expect(
+      screen.getByRole('heading', { name: 'C Aeolian' }),
+    ).toBeInTheDocument()
+  })
+
+  it('takes the hint box away when the player gives up instead (F7 E3 R8, AC8a)', async () => {
+    const user = userEvent.setup()
+    await renderPuzzle()
+
+    await guess(user, 'G', wrongFlavour())
+    await guess(user, 'D', otherWrongFlavour())
+    await guess(user, liveRoot(), thirdWrongFlavour())
+    expect(nudge()).toBeInTheDocument()
+
+    await user.click(giveUp() as HTMLElement)
+    await user.click(giveUp() as HTMLElement)
+
+    expect(nudge()).not.toBeInTheDocument()
+    expect(nudgeLine()).not.toBeInTheDocument()
+    expect(screen.queryByText('Hint')).toBeNull()
+    expect(solutionPanel()).toBeInTheDocument()
   })
 
   const giveUp = () =>
@@ -302,13 +464,13 @@ describe('GroovePuzzle', () => {
     await renderPuzzle()
     const wrong = wrongFlavour()
 
-    await guess(user, 'C', wrong)
-    expect(giveUp()).toBeNull()
     await guess(user, 'G', wrong)
     expect(giveUp()).toBeNull()
+    await guess(user, 'D', otherWrongFlavour())
+    expect(giveUp()).toBeNull()
 
-    const third = otherWrongFlavour()
-    await guess(user, 'G', third)
+    const third = thirdWrongFlavour()
+    await guess(user, liveRoot(), third)
     expect(giveUp()).toHaveAccessibleName('Give up and show the answer')
 
     await user.click(giveUp() as HTMLElement)
@@ -407,7 +569,7 @@ describe('GroovePuzzle', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('opens the solved panel with the answer, its lesson, the near miss and the changes (E4 R1-R5, AC1, AC3, AC4, F15 E1 R5, F15 E4 R1, R2, AC1, AC2)', async () => {
+  it('opens the solved panel with the answer, its lesson and the changes, and no near miss (E4 R1-R5, AC1, AC3, AC4, F15 E1 R5, F17 E3)', async () => {
     const user = userEvent.setup()
     const { container } = await renderPuzzle()
     const wrong = wrongFlavour()
@@ -424,8 +586,9 @@ describe('GroovePuzzle', () => {
     expect(panel.textContent).not.toMatch(/streak/i)
     expect(screen.getByRole('img', { name: 'Solved' })).toBeInTheDocument()
     expect(
-      within(panel).getByText(new RegExp(`^You said ${wrong} — `)),
-    ).toBeInTheDocument()
+      within(panel).queryByText(new RegExp(`^You said ${wrong} — `)),
+    ).toBeNull()
+    expect(within(panel).queryByText(/^You said /)).toBeNull()
     expect(screen.getByLabelText('Current streak')).toHaveTextContent(
       '1 day streak',
     )
@@ -499,6 +662,20 @@ describe('GroovePuzzle', () => {
     expect(flavourGroup().textContent).not.toMatch(MODE_NAME)
   })
 
+  it('keeps the hint box in simple mode, carrying the feedback and no sentence (R18a, R19, AC18)', async () => {
+    const user = userEvent.setup()
+    await enableSimpleMode()
+    await renderPuzzle(<GroovePuzzle groove={DORIAN} />)
+
+    await guess(user, simpleRoots()[1], 'Major')
+    await guess(user, simpleRoots()[2], 'Major')
+
+    const box = nudge() as HTMLElement
+    expect(box).toBeInTheDocument()
+    expect(within(box).getByRole('status')).toBeInTheDocument()
+    expect(nudgeLine()).not.toBeInTheDocument()
+  })
+
   it('offers all twelve roots and four modes with simple mode off (E5 R2, R4, AC2, AC3)', async () => {
     await renderPuzzle(<GroovePuzzle groove={DORIAN} />)
 
@@ -516,7 +693,7 @@ describe('GroovePuzzle', () => {
 
     await guess(user, 'C', 'Minor')
 
-    expect(screen.getByText(/the groove is yours now/i)).toBeInTheDocument()
+    expect(nudge()).not.toBeInTheDocument()
     expect(control()).toHaveAccessibleName('Solved')
     expect(screen.getByRole('heading', { name: 'C Dorian' })).toBeInTheDocument()
   })
@@ -534,17 +711,27 @@ describe('GroovePuzzle', () => {
 
     await user.click(within(flavourGroup()).getByRole('button', { name: 'Major' }))
     await user.click(control())
-    expect(screen.getByText(/the groove is yours now/i)).toBeInTheDocument()
+    expect(control()).toHaveAccessibleName('Solved')
+    expect(
+      screen.getByRole('heading', { name: 'C Mixolydian' }),
+    ).toBeInTheDocument()
   })
 
-  it('keeps the day when the toggle is flipped mid-play (E5 R8, R8a, AC8, AC8a)', async () => {
+  it('keeps the day when the toggle is flipped mid-play, and withdraws the app\u2019s eliminations when the row narrows to six (E5 R8, R8a, AC8, AC8a, R8, R14, R16)', async () => {
     const user = userEvent.setup()
     await renderPuzzle()
     const wrong = wrongFlavour()
+    const inSix = simpleRoots().find((root) => root !== 'C') as string
+    const outsideSix = ROOTS.find((root) => !simpleRoots().includes(root)) as Root
 
-    await guess(user, 'C', wrong)
-    await guess(user, 'G', wrong)
+    await guess(user, outsideSix, wrong)
+    await guess(user, inSix, otherWrongFlavour())
     expect(dotStates()).toEqual(['spent', 'spent', 'unspent'])
+    expect(nudgeLine()).toBeInTheDocument()
+    const dimmedInTwelve = dimmedIn(rootGroup())
+    expect(dimmedInTwelve).toHaveLength(4)
+    expect(dimmedInTwelve).toContain(inSix)
+    expect(dimmedInTwelve).toContain(outsideSix)
     const writes = mockStore.save.mock.calls.length
 
     expect(modeSwitch()).toBeEnabled()
@@ -558,15 +745,25 @@ describe('GroovePuzzle', () => {
     expect(
       screen.getByRole('heading', { level: 2, name: 'Test Groove' }),
     ).toBeInTheDocument()
-    expect(nudge()).toBeInTheDocument()
+    expect(nudgeLine()).not.toBeInTheDocument()
+    expect(dimmedIn(rootGroup())).toEqual([inSix])
 
     expect(chipTexts(rootGroup())).toHaveLength(6)
     expect(chipTexts(flavourGroup())).toEqual(['Major', 'Minor'])
 
+    await user.click(modeSwitch())
+    expect(nudgeLine()).toBeInTheDocument()
+    expect(dimmedIn(rootGroup())).toEqual(dimmedInTwelve)
+    await user.click(modeSwitch())
+
+    await user.click(within(rootGroup()).getByRole('button', { name: 'C' }))
     await user.click(within(flavourGroup()).getByRole('button', { name: 'Minor' }))
     await user.click(control())
     expect(dotStates()).toEqual(['solved', 'solved', 'solved'])
-    expect(screen.getByText(/the groove is yours now/i)).toBeInTheDocument()
+    expect(
+      screen.getByRole('heading', { name: 'C Aeolian' }),
+    ).toBeInTheDocument()
+    expect(nudge()).not.toBeInTheDocument()
     expect(mockStore.save.mock.calls.at(-1)?.[0].attempts).toHaveLength(3)
 
     expect(modeSwitch()).toBeDisabled()
@@ -575,28 +772,32 @@ describe('GroovePuzzle', () => {
     expect(modeSwitch()).toHaveAttribute('aria-checked', 'true')
   })
 
-  it('keeps the nudge and the way out at the same thresholds in simple mode (E5 R10, AC10)', async () => {
+  it('never narrows simple mode\u2019s six, and claims nothing (E5 R10, AC10, R16, R19, AC16, AC18)', async () => {
     await enableSimpleMode()
     const user = userEvent.setup()
     await renderPuzzle()
-    const [wrongRoot, otherWrongRoot] = simpleRoots().filter((r) => r !== 'C')
+    const [wrongRoot, otherWrongRoot, thirdWrongRoot] = simpleRoots().filter(
+      (r) => r !== 'C',
+    )
 
     await guess(user, wrongRoot, 'Major')
-    expect(nudge()).not.toBeInTheDocument()
+    expect(nudgeLine()).not.toBeInTheDocument()
     expect(giveUp()).toBeNull()
 
-    await guess(user, otherWrongRoot, 'Major')
-    const box = nudge() as HTMLElement
-    expect(box).toBeInTheDocument()
-    expect(box.textContent).toMatch(/root is C\./)
+    await guess(user, otherWrongRoot, 'Minor')
+    expect(nudgeLine()).not.toBeInTheDocument()
+    expect(dimmedIn(rootGroup())).toEqual(
+      simpleRoots().filter((r) => r === wrongRoot || r === otherWrongRoot),
+    )
     expect(
-      within(rootGroup()).getByRole('button', { name: 'C' }),
-    ).toHaveAttribute('aria-pressed', 'true')
+      within(rootGroup()).queryByRole('button', { pressed: true }),
+    ).toBeNull()
     expect(giveUp()).toBeNull()
 
-    await user.click(control())
+    await guess(user, thirdWrongRoot, 'Minor')
     expect(dotStates()).toEqual(['spent', 'spent', 'spent'])
     expect(giveUp()).toHaveAccessibleName('Give up and show the answer')
+    expect(nudgeLine()).not.toBeInTheDocument()
   })
 
   it('records a day solved in simple mode as solved, and counts it (E5 R9, AC9)', async () => {
@@ -627,11 +828,13 @@ describe('GroovePuzzle', () => {
     await enableSimpleMode()
     const user = userEvent.setup()
     await renderPuzzle()
-    const [wrongRoot, otherWrongRoot] = simpleRoots().filter((r) => r !== 'C')
+    const [wrongRoot, otherWrongRoot, thirdWrongRoot] = simpleRoots().filter(
+      (r) => r !== 'C',
+    )
 
     await guess(user, wrongRoot, 'Major')
-    await guess(user, otherWrongRoot, 'Major')
-    await user.click(control())
+    await guess(user, otherWrongRoot, 'Minor')
+    await guess(user, thirdWrongRoot, 'Minor')
     expect(dotStates()).toEqual(['spent', 'spent', 'spent'])
 
     await user.click(giveUp() as HTMLElement)
@@ -677,12 +880,12 @@ describe('GroovePuzzle', () => {
       expect(dotStates()).toEqual(['spent', 'unspent', 'unspent'])
       expect(screen.getByText(/right home note/i)).toBeInTheDocument()
 
-      expect(nudge()).not.toBeInTheDocument()
-      await guess(user, 'G', wrong)
-      expect((nudge() as HTMLElement).textContent).toMatch(/root is C\./)
+      expect(nudgeLine()).not.toBeInTheDocument()
+      await guess(user, 'C', otherWrongFlavour())
+      expect(nudge()).toHaveTextContent(/2 roots ruled out/)
 
       expect(giveUp()).toBeNull()
-      await guess(user, 'G', otherWrongFlavour())
+      await guess(user, 'C', thirdWrongFlavour())
       expect(giveUp()).toHaveAccessibleName('Give up and show the answer')
 
       await user.click(screen.getByRole('switch', { name: /simple mode/i }))
@@ -844,8 +1047,8 @@ describe('GroovePuzzle', () => {
 
       await renderShared()
       await guess(user, 'C', wrong)
-      await guess(user, 'G', wrong)
-      await guess(user, 'G', otherWrongFlavour())
+      await guess(user, 'C', otherWrongFlavour())
+      await guess(user, 'C', thirdWrongFlavour())
       await user.click(giveUp() as HTMLElement)
       await user.click(giveUp() as HTMLElement)
 
@@ -881,8 +1084,8 @@ describe('GroovePuzzle', () => {
 
       await renderPuzzle()
       await guess(user, 'C', wrong)
-      await guess(user, 'G', wrong)
-      await guess(user, 'G', otherWrongFlavour())
+      await guess(user, 'C', otherWrongFlavour())
+      await guess(user, 'C', thirdWrongFlavour())
       await user.click(giveUp() as HTMLElement)
       await user.click(giveUp() as HTMLElement)
 
@@ -897,7 +1100,10 @@ describe('GroovePuzzle', () => {
     const wrong = wrongFlavour()
 
     await guess(user, 'C', wrong)
-    await user.click(within(rootGroup()).getByRole('button', { name: 'G' }))
+    await user.click(within(rootGroup()).getByRole('button', { name: 'C' }))
+    await user.click(
+      within(flavourGroup()).getByRole('button', { name: otherWrongFlavour() }),
+    )
 
     const soundSwitch = () => screen.getByRole('switch', { name: /tap sounds/i })
     const feedbackReads = () =>
@@ -929,5 +1135,213 @@ describe('GroovePuzzle', () => {
     await user.click(control())
 
     expect(dotStates().filter((state) => state === 'spent')).toHaveLength(2)
+  })
+
+  describe('the row locks once a check confirms a half (F17 E2)', () => {
+    const glyphsIn = (group: HTMLElement) =>
+      within(group)
+        .getAllByRole('button')
+        .map((chip) => chipAdornment(chip))
+
+    const extrasIn = (group: HTMLElement) =>
+      within(group)
+        .getAllByRole('button')
+        .map((chip) => chip.children.length)
+
+    it('locks the root row to the root a check got right (R1, R1a, R4, AC1, AC3, AC6, AC10b)', async () => {
+      const user = userEvent.setup()
+      await renderPuzzle()
+
+      await guess(user, 'C', wrongFlavour())
+
+      const c = within(rootGroup()).getByRole('button', { name: 'C' })
+      expect(liveRoots()).toEqual(['C'])
+      expect(dimmedIn(rootGroup())).toEqual(ROOTS.filter((r) => r !== 'C'))
+      expect(c).toHaveAttribute('aria-pressed', 'true')
+      expect(c).not.toHaveAttribute('aria-disabled')
+
+      expect(c.textContent).toBe(`${NOTE_GLYPH}C`)
+      expect(extrasIn(rootGroup()).every((count) => count === 1)).toBe(true)
+      expect(glyphsIn(rootGroup()).every((glyph) => glyph === NOTE_GLYPH)).toBe(
+        true,
+      )
+      expect(c).toHaveAccessibleName('C')
+      expect(dimmedIn(flavourGroup())).toEqual([wrongFlavour()])
+    })
+
+    it('keeps both family chips live when the switch is flipped after a confirmed mode (R6, AC8)', async () => {
+      const user = userEvent.setup()
+      await renderPuzzle()
+
+      await guess(user, liveRoot(), 'Aeolian')
+      expect(liveIn(flavourGroup())).toEqual(['Aeolian'])
+
+      await user.click(screen.getByRole('switch', { name: /simple mode/i }))
+
+      expect(liveIn(flavourGroup())).toEqual(['Major', 'Minor'])
+      expect(dimmedIn(flavourGroup())).toEqual([])
+    })
+
+    it('keeps every mode live when the switch is flipped after a confirmed family (R6, AC8)', async () => {
+      const user = userEvent.setup()
+      await renderPuzzle()
+
+      await user.click(screen.getByRole('switch', { name: /simple mode/i }))
+      await guess(user, liveRoot(), 'Minor')
+      expect(liveIn(flavourGroup())).toEqual(['Minor'])
+
+      await user.click(screen.getByRole('switch', { name: /simple mode/i }))
+
+      expect(dimmedIn(flavourGroup())).toEqual([])
+      expect(liveIn(flavourGroup())).toHaveLength(4)
+    })
+
+    it('locks the mode row to the mode a check got right (R1, R1a, AC2, AC3)', async () => {
+      const user = userEvent.setup()
+      await renderPuzzle()
+
+      await guess(user, 'G', 'Aeolian')
+
+      const aeolian = within(flavourGroup()).getByRole('button', {
+        name: 'Aeolian',
+      })
+      expect(liveIn(flavourGroup())).toEqual(['Aeolian'])
+      expect(aeolian).toHaveAttribute('aria-pressed', 'true')
+      expect(aeolian).toHaveAccessibleName('Aeolian')
+      expect(aeolian.textContent).toBe(`${NOTE_GLYPH}Aeolian`)
+      expect(extrasIn(flavourGroup()).every((count) => count === 1)).toBe(true)
+      expect(dimmedIn(rootGroup())).toEqual(['G'])
+    })
+
+    it('locks nothing for a selection, or for a tap (R2, AC4)', async () => {
+      const user = userEvent.setup()
+      await renderPuzzle()
+
+      await user.click(within(rootGroup()).getByRole('button', { name: 'C' }))
+      await user.click(
+        within(flavourGroup()).getByRole('button', { name: 'Aeolian' }),
+      )
+      expect(dimmedIn(rootGroup())).toEqual([])
+      expect(dimmedIn(flavourGroup())).toEqual([])
+
+      await user.click(within(rootGroup()).getByRole('button', { name: 'C' }))
+      expect(dimmedIn(rootGroup())).toEqual([])
+      expect(dimmedIn(flavourGroup())).toEqual([])
+      expect(dotStates()).toEqual(['unspent', 'unspent', 'unspent'])
+    })
+
+    it('keeps the lock when the confirming check is not the last one, from a stored day alone (R3, R5, AC5, AC7)', async () => {
+      const wrong = wrongFlavour()
+      const stored: DailyResult = {
+        date: TODAY(),
+        answer: { root: 'C', flavour: 'Aeolian' },
+        attempts: [
+          miss('C', wrong, true),
+          miss('G', otherWrongFlavour(), false),
+          miss('A', thirdWrongFlavour(), false),
+        ],
+        solved: false,
+        grooveId: GROOVE.id,
+      }
+      mockStore.get.mockResolvedValue(stored)
+      mockStore.getAll.mockResolvedValue([stored])
+
+      await renderPuzzle()
+
+      expect(liveRoots()).toEqual(['C'])
+      expect(dimmedIn(rootGroup())).not.toContain('C')
+      expect(mockStore.save).not.toHaveBeenCalled()
+    })
+
+    it('lets the confirmed chip be picked and checked again, which a locked-out one cannot (R4, R7, AC6, AC9)', async () => {
+      const wrong = wrongFlavour()
+      const stored: DailyResult = {
+        date: TODAY(),
+        answer: { root: 'C', flavour: 'Aeolian' },
+        attempts: [miss('C', wrong, true), miss('C', otherWrongFlavour(), true)],
+        solved: false,
+        grooveId: GROOVE.id,
+      }
+      mockStore.get.mockResolvedValue(stored)
+      mockStore.getAll.mockResolvedValue([stored])
+
+      const user = userEvent.setup()
+      await renderPuzzle()
+
+      expect(dotStates()).toEqual(['spent', 'spent', 'unspent'])
+      expect(liveRoots()).toEqual(['C'])
+
+      const g = () => within(rootGroup()).getByRole('button', { name: 'G' })
+      await user.click(g())
+      expect(g()).toHaveAttribute('aria-pressed', 'false')
+
+      const c = () => within(rootGroup()).getByRole('button', { name: 'C' })
+      await user.click(c())
+      expect(c()).toHaveAttribute('aria-pressed', 'true')
+      expect(c()).not.toHaveAttribute('aria-disabled')
+
+      await user.click(
+        within(flavourGroup()).getByRole('button', { name: liveWrongFlavour() }),
+      )
+      await user.click(control())
+
+      expect(dotStates()).toEqual(['spent', 'spent', 'spent'])
+      expect(liveRoots()).toEqual(['C'])
+    })
+
+    it('locks the family row in simple mode (R6, AC8)', async () => {
+      await enableSimpleMode()
+      const user = userEvent.setup()
+      await renderPuzzle()
+
+      const wrongRoot = simpleRoots().find((root) => root !== 'C') as string
+      await guess(user, wrongRoot, 'Minor')
+
+      expect(liveIn(flavourGroup())).toEqual(['Minor'])
+      expect(dimmedIn(flavourGroup())).toEqual(['Major'])
+      expect(
+        within(flavourGroup()).getByRole('button', { name: 'Minor' }),
+      ).toHaveAccessibleName('Minor')
+      expect(dimmedIn(rootGroup())).toEqual([wrongRoot])
+    })
+
+    it.each([
+      ['revealed', { solved: false, revealed: true }],
+      ['solved', { solved: true }],
+    ])('keeps a %s day’s lock under the card’s own lock (R8, AC10)', async (
+      _name,
+      ending,
+    ) => {
+      const attempts = [miss('C', wrongFlavour(), true)]
+      const stored: DailyResult = {
+        date: TODAY(),
+        answer: { root: 'C', flavour: 'Aeolian' },
+        attempts: 'revealed' in ending ? attempts : [...attempts, SOLVING],
+        grooveId: GROOVE.id,
+        ...ending,
+      }
+      mockStore.get.mockResolvedValue(stored)
+      mockStore.getAll.mockResolvedValue([stored])
+
+      await renderPuzzle()
+
+      const c = within(rootGroup()).getByRole('button', { name: 'C' })
+      expect(dimmedIn(rootGroup())).toEqual(ROOTS.filter((r) => r !== 'C'))
+      expect(c).not.toHaveAttribute('aria-disabled')
+      expect(c).toBeDisabled()
+      expect(c).toHaveAccessibleName('C')
+    })
+
+    it('diagnoses the guess and leaves the instruction to the row (R13, AC13)', async () => {
+      const user = userEvent.setup()
+      await renderPuzzle()
+
+      await guess(user, 'C', wrongFlavour())
+
+      expect(screen.getByText(/right home note/i)).toBeInTheDocument()
+      expect(screen.queryByText(/keep the root/i)).toBeNull()
+      expect(screen.queryByText(/another flavour/i)).toBeNull()
+      expect(liveRoots()).toEqual(['C'])
+    })
   })
 })

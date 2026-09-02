@@ -8,8 +8,6 @@ export type DotState = 'unspent' | 'spent' | 'solved'
 
 const DOT_COUNT = 3
 
-const NUDGE_AFTER_MISSES = 2
-
 const REVEAL_AFTER_MISSES = 3
 
 const OPENING: Feedback = {
@@ -24,7 +22,7 @@ const SOLVED: Feedback = {
 }
 
 const ROOT_MATCHED: Feedback = {
-  message: 'Right home note, wrong colour. Keep the root and try another flavour.',
+  message: 'Right home note, wrong colour.',
   tone: 'warm',
 }
 
@@ -65,8 +63,11 @@ export function selectFeedback(attempts: Attempt[], solved: boolean): Feedback {
   return WRONG_GUESS[matchedHalf(last)]
 }
 
-export function shouldShowNudge(attempts: Attempt[], solved: boolean): boolean {
-  return !solved && missCount(attempts) >= NUDGE_AFTER_MISSES
+export function shouldShowNudge(
+  eliminatedCount: number,
+  solved: boolean,
+): boolean {
+  return !solved && eliminatedCount > 0
 }
 
 export function shouldOfferReveal(

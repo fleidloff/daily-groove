@@ -4,15 +4,30 @@ import { useState } from 'react'
 import type { Flavour, Root } from '../../types'
 import type { DotState, Feedback } from '../../lib/presentation/feedback'
 import { AttemptDots } from './AttemptDots'
-import { FeedbackLine } from './FeedbackLine'
 import { NudgeBox } from './NudgeBox'
 import { ModeToggle } from './ModeToggle'
 import { TapSoundsToggle } from './TapSoundsToggle'
 import { Button } from '@/components/controls/Button'
 import { Card } from '@/components/surfaces/Card'
 import { ChipGroup } from '@/components/controls/ChipGroup'
+import type { ChipOptionState } from '@/components/controls/ChipGroup'
 import { Heading } from '@/components/typography/Heading'
 import { Stack } from '@/components/layout/Stack'
+
+const optionStatesFor = (
+  options: readonly string[],
+  ruledOut: readonly string[],
+  confirmed: readonly string[],
+): Record<string, ChipOptionState> => {
+  const states: Record<string, ChipOptionState> = {}
+  const locked = options.filter((option) => confirmed.includes(option))
+  const out =
+    locked.length > 0
+      ? options.filter((option) => !locked.includes(option))
+      : ruledOut
+  for (const option of out) states[option] = { unavailable: true }
+  return states
+}
 
 type GuessCardProps = {
   roots: Root[]
@@ -29,7 +44,11 @@ type GuessCardProps = {
   feedback: Feedback
   showNudge: boolean
   dots: DotState[]
-  answerRoot: Root
+  ruledOutRoots: Root[]
+  ruledOutFlavours: Flavour[]
+  confirmedRoots: Root[]
+  confirmedFlavours: Flavour[]
+  eliminated: number
   revealed: boolean
   showReveal: boolean
   onReveal(): void
@@ -54,7 +73,11 @@ export function GuessCard({
   feedback,
   showNudge,
   dots,
-  answerRoot,
+  ruledOutRoots,
+  ruledOutFlavours,
+  confirmedRoots,
+  confirmedFlavours,
+  eliminated,
   revealed,
   showReveal,
   onReveal,
@@ -80,7 +103,11 @@ export function GuessCard({
     ? 'Solved'
     : bothChosen
       ? `Check ${selectedRoot} ${selectedFlavour}`
-      : 'Pick a root and a mode'
+      : selectedRoot !== null
+        ? 'Pick a mode'
+        : selectedFlavour !== null
+          ? 'Pick a root'
+          : 'Pick a root and a mode'
 
   const tone = solved ? 'solved' : canCheck && !revealed ? 'ready' : 'idle'
 
@@ -109,14 +136,12 @@ export function GuessCard({
           name="root"
           options={roots}
           value={selectedRoot}
-          onSelect={disarming((option: string) => {
-            const root = option as Root
-            onSelectRoot(root)
-            onHearRoot(root)
-          })}
+          onSelect={disarming((option: string) => onSelectRoot(option as Root))}
+          onPress={disarming((option: string) => onHearRoot(option as Root))}
           disabled={over}
           columns={{ base: 4, wide: 6 }}
           adornment={tapSounds ? '♪' : undefined}
+          optionStates={optionStatesFor(roots, ruledOutRoots, confirmedRoots)}
         />
 
         <ChipGroup
@@ -124,13 +149,18 @@ export function GuessCard({
           name="flavour"
           options={flavours}
           value={selectedFlavour}
-          onSelect={disarming((option: Flavour) => {
-            onSelectFlavour(option)
-            onHearMode(option)
-          })}
+          onSelect={disarming((option: string) =>
+            onSelectFlavour(option as Flavour),
+          )}
+          onPress={disarming((option: string) => onHearMode(option as Flavour))}
           disabled={over}
           columns={{ base: 2, wide: 4 }}
           adornment={tapSounds ? '♪' : undefined}
+          optionStates={optionStatesFor(
+            flavours,
+            ruledOutFlavours,
+            confirmedFlavours,
+          )}
         />
 
         <div className="flex justify-end">
@@ -146,9 +176,12 @@ export function GuessCard({
           {label}
         </Button>
 
-        <FeedbackLine feedback={feedback} />
-
-        {showNudge && <NudgeBox root={answerRoot} />}
+        {!over && (
+          <NudgeBox
+            feedback={feedback}
+            eliminated={showNudge ? eliminated : null}
+          />
+        )}
 
         {showReveal && !revealed && (
           <Button

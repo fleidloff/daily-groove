@@ -14,6 +14,7 @@ import {
   installPuzzleAudio,
   miss,
   nudge,
+  nudgeLine,
   otherWrongFlavour,
   play,
   renderPuzzle,
@@ -22,6 +23,7 @@ import {
   settle,
   SOLVING,
   teardownPuzzleAudio,
+  thirdWrongFlavour,
   TODAY,
   wrongFlavour,
 } from '../testing/puzzleHarness'
@@ -192,8 +194,12 @@ describe('GroovePuzzle', () => {
 
     expect(dotStates()).toEqual(['spent', 'spent', 'unspent'])
     expect(screen.getByText(/not it\. keep playing/i)).toBeInTheDocument()
-    expect(nudge()).toBeInTheDocument()
+    expect(nudgeLine()).toBeInTheDocument()
 
+    expect(
+      within(rootGroup()).queryByRole('button', { pressed: true }),
+    ).toBeNull()
+    await user.click(within(rootGroup()).getByRole('button', { name: 'C' }))
     await user.click(
       within(flavourGroup()).getByRole('button', { name: otherWrongFlavour() }),
     )
@@ -401,7 +407,7 @@ describe('GroovePuzzle', () => {
       )
 
       const regions = Array.from(document.querySelectorAll('[role="status"]'))
-      expect(regions).toHaveLength(2)
+      expect(regions).toHaveLength(1)
       expect(regions.filter((region) => region === solutionPanel())).toHaveLength(
         1,
       )
@@ -474,7 +480,8 @@ describe('GroovePuzzle', () => {
       flavours().length,
     )
     expect(dotStates()).toHaveLength(3)
-    expect(guessRoot.querySelectorAll('[aria-live]')).toHaveLength(1)
+    expect(guessRoot.querySelectorAll('[aria-live]')).toHaveLength(0)
+    expect(nudge()).toBeNull()
   })
 
   it('places the box the same way on a day given up on (F15 E5 R8, AC2)', async () => {
@@ -660,8 +667,8 @@ describe('GroovePuzzle', () => {
       const wrong = wrongFlavour()
 
       await guess(user, 'C', wrong)
-      await guess(user, 'G', wrong)
-      await guess(user, 'G', otherWrongFlavour())
+      await guess(user, 'C', otherWrongFlavour())
+      await guess(user, 'C', thirdWrongFlavour())
       await user.click(giveUp() as HTMLElement)
       await user.click(giveUp() as HTMLElement)
 
@@ -711,7 +718,7 @@ describe('GroovePuzzle', () => {
       const first = await renderShared()
 
       await guess(user, 'C', wrongFlavour())
-      await guess(user, 'G', wrongFlavour())
+      await guess(user, 'C', otherWrongFlavour())
       expect(dotStates()).toEqual(['spent', 'spent', 'unspent'])
       first.unmount()
 
@@ -725,7 +732,7 @@ describe('GroovePuzzle', () => {
           .getAllByRole('button')
           .filter((b) => b.getAttribute('aria-pressed') === 'true'),
       ).toHaveLength(0)
-      expect(nudge()).not.toBeInTheDocument()
+      expect(nudgeLine()).not.toBeInTheDocument()
     })
 
     it('leaves the day at / unplayed and its storage untouched (R18, R20)', async () => {

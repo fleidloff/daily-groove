@@ -419,6 +419,59 @@ describe('GroovePuzzle', () => {
     ).toHaveAttribute('aria-pressed', 'false')
   })
 
+  it('still sounds a root the player has ruled out (F17 E1 R4a, R4b, AC5a)', async () => {
+    const stored: DailyResult = {
+      date: TODAY(),
+      answer: { root: 'C', flavour: 'Aeolian' },
+      attempts: [miss('G', wrongFlavour(), false)],
+      solved: false,
+    }
+    mockStore.get.mockResolvedValue(stored)
+    mockStore.getAll.mockResolvedValue([stored])
+
+    const user = userEvent.setup()
+    await renderPuzzle()
+
+    const g = () => within(rootGroup()).getByRole('button', { name: 'G' })
+    expect(g()).toHaveAttribute('aria-disabled', 'true')
+    expect(g()).toBeEnabled()
+
+    await user.click(g())
+
+    const [note] = await soundedNotes(1)
+    expect(fetchedNotes()).toEqual([noteSrc('G')])
+    expect(note.start).toHaveBeenCalledTimes(1)
+    expect(g()).toHaveAttribute('aria-pressed', 'false')
+  })
+
+  it('still sounds a root a confirmed half locked out (F17 E2 R9, AC10a)', async () => {
+    const stored: DailyResult = {
+      date: TODAY(),
+      answer: { root: 'C', flavour: 'Aeolian' },
+      attempts: [miss('C', wrongFlavour(), true)],
+      solved: false,
+    }
+    mockStore.get.mockResolvedValue(stored)
+    mockStore.getAll.mockResolvedValue([stored])
+
+    const user = userEvent.setup()
+    await renderPuzzle()
+
+    const a = () => within(rootGroup()).getByRole('button', { name: 'A' })
+    expect(a()).toHaveAttribute('aria-disabled', 'true')
+    expect(a()).toBeEnabled()
+
+    await user.click(a())
+
+    const [note] = await soundedNotes(1)
+    expect(fetchedNotes()).toEqual([noteSrc('A')])
+    expect(note.start).toHaveBeenCalledTimes(1)
+    expect(a()).toHaveAttribute('aria-pressed', 'false')
+    expect(
+      within(rootGroup()).getByRole('button', { name: 'C' }),
+    ).toHaveAttribute('aria-pressed', 'true')
+  })
+
   it('sounds each of simple mode’s six roots (D6, R7, AC6)', async () => {
     await enableSimpleMode()
     const user = userEvent.setup()
@@ -1246,7 +1299,7 @@ describe('GroovePuzzle', () => {
       expect(rootNames()).toEqual(names)
     })
 
-    it('swaps the caption for one that says how to switch them back (E5, R12a, AC11a)', async () => {
+    it('swaps the caption for the task sentence without the tap clause (F17 E2 R10, R12, AC11, AC12)', async () => {
       const user = userEvent.setup()
       await renderPuzzle()
 
@@ -1261,6 +1314,13 @@ describe('GroovePuzzle', () => {
       expect(caption.parentElement).toBe(control.parentElement)
       expect(caption.className).toMatch(/text-text-muted/)
       expect(caption.className).toMatch(/text-\[13px\]/)
+
+      expect(CAPTION.replace(', or tap a root or a mode to hear it', '')).toBe(
+        CAPTION_SOUNDS_OFF,
+      )
+      expect(CAPTION_SOUNDS_OFF).not.toMatch(/switch/i)
+      expect(CAPTION_SOUNDS_OFF).not.toMatch(/tap/i)
+      expect(CAPTION_SOUNDS_OFF).toMatch(/feels like home/i)
       expect(CAPTION_SOUNDS_OFF).not.toContain('\n')
 
       await user.click(soundSwitch())
@@ -1438,7 +1498,7 @@ describe('GroovePuzzle', () => {
     expect(trackChords()).toBeNull()
 
     await guess(user, 'C', wrongFlavour())
-    await guess(user, 'G', wrongFlavour())
+    await guess(user, 'C', otherWrongFlavour())
     expect(trackChords()).toBeNull()
 
     await play(user)

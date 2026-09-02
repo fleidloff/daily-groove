@@ -5,7 +5,14 @@ type LeadSheetProps = {
   numerals?: string[]
 }
 
-const BAR = 'relative border-l border-current/60 pl-3 pr-4 pt-1 pb-9'
+const SHEET =
+  'relative grid grid-cols-4 items-stretch border-r-[3px] border-current/60'
+
+const BAR =
+  'relative whitespace-nowrap border-l border-current/60 ' +
+  'pl-1 pr-1 pt-1 pb-9 sm:pl-3 sm:pr-4'
+
+const NUMERAL = 'absolute bottom-2 left-1 sm:left-3'
 
 export function LeadSheet({ chords, numerals }: LeadSheetProps) {
   return (
@@ -16,14 +23,18 @@ export function LeadSheet({ chords, numerals }: LeadSheetProps) {
           numerals?.[bar] ? `${chord} ${numerals[bar]}` : chord,
         )
         .join(' · ')}
-      className="relative grid grid-cols-2 sm:grid-cols-4 items-stretch border-r-[3px] border-current/60"
+      className={SHEET}
     >
       {chords.map((chord, bar) => (
         <div key={bar} data-bar={bar} className={BAR}>
-          <Lettering size="md">{chord}</Lettering>
+          <Lettering size="sm" sizeAbove="md">
+            {chord}
+          </Lettering>
           {numerals?.[bar] ? (
-            <span data-numeral="" className="absolute bottom-2 left-3">
-              <Lettering size="sm">{numerals[bar]}</Lettering>
+            <span data-numeral="" className={NUMERAL}>
+              <Lettering size="xs" sizeAbove="sm">
+                {numerals[bar]}
+              </Lettering>
             </span>
           ) : null}
         </div>

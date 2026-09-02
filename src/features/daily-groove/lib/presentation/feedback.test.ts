@@ -41,6 +41,21 @@ describe('selectFeedback', () => {
     expect(feedback.tone).toBe('warm')
     expect(feedback.message).toMatch(/home note/i)
     expect(feedback.message).toMatch(/right/i)
+    expect(feedback.message).not.toMatch(/keep the root/i)
+    expect(feedback.message).not.toMatch(/another flavour/i)
+    expect(feedback.message).toBe('Right home note, wrong colour.')
+  })
+
+  it('leaves the other three diagnoses untouched (R13 boundary)', () => {
+    expect(selectFeedback([FLAVOUR_ONLY], false).message).toBe(
+      'The mode is right. But the tonic is somewhere else.',
+    )
+    expect(selectFeedback([NEITHER], false).message).toBe(
+      'Not it. Keep playing and try again.',
+    )
+    expect(selectFeedback([], false).message).toBe(
+      'Loop it a few times. Sing the note that feels like rest — that’s usually the root.',
+    )
   })
 
   it('names the mode as right and the tonic as elsewhere when only the mode matched', () => {
@@ -112,33 +127,21 @@ describe('selectFeedback', () => {
 })
 
 describe('shouldShowNudge', () => {
-  it('is hidden before any guess', () => {
-    expect(shouldShowNudge([], false)).toBe(false)
+  it('is hidden while the app has eliminated nothing (R19, AC18)', () => {
+    expect(shouldShowNudge(0, false)).toBe(false)
   })
 
-  it('is hidden after one failed guess', () => {
-    expect(shouldShowNudge([NEITHER], false)).toBe(false)
+  it('appears once the app has eliminated roots (R17, AC17)', () => {
+    expect(shouldShowNudge(2, false)).toBe(true)
   })
 
-  it('appears on the second failed guess', () => {
-    expect(shouldShowNudge([NEITHER, ROOT_ONLY], false)).toBe(true)
-  })
-
-  it('stays visible on the third and fourth failed guess', () => {
-    expect(shouldShowNudge([NEITHER, ROOT_ONLY, FLAVOUR_ONLY], false)).toBe(true)
-    expect(
-      shouldShowNudge([NEITHER, ROOT_ONLY, FLAVOUR_ONLY, NEITHER], false),
-    ).toBe(true)
+  it('stays visible while the count stands at the floor (R17b, AC17b)', () => {
+    expect(shouldShowNudge(4, false)).toBe(true)
   })
 
   it('is withdrawn once the day is solved', () => {
-    expect(
-      shouldShowNudge([NEITHER, ROOT_ONLY, FLAVOUR_ONLY, EXACT], true),
-    ).toBe(false)
-  })
-
-  it('counts only failed attempts, not correct ones', () => {
-    expect(shouldShowNudge([NEITHER, EXACT], false)).toBe(false)
+    expect(shouldShowNudge(2, true)).toBe(false)
+    expect(shouldShowNudge(0, true)).toBe(false)
   })
 })
 

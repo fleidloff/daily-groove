@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { render, screen } from '@testing-library/react'
-import { Lettering } from './Lettering'
+import { Lettering, type LetteringSize } from './Lettering'
 
 function renderLettering(ui: React.ReactElement): HTMLElement {
   const { container } = render(ui)
@@ -20,7 +20,7 @@ describe('Lettering', () => {
   })
 
   it('keeps the jazz face at every size', () => {
-    for (const size of ['sm', 'md', 'lg'] as const) {
+    for (const size of ['xs', 'sm', 'md', 'lg'] as const) {
       expect(
         renderLettering(<Lettering size={size}>Cm7</Lettering>).className,
         size,
@@ -40,14 +40,47 @@ describe('Lettering', () => {
   })
 
   it('resolves each size to a distinct class string', () => {
-    const classes = (['sm', 'md', 'lg'] as const).map(
+    const classes = (['xs', 'sm', 'md', 'lg'] as const).map(
       (size) => renderLettering(<Lettering size={size}>Cm7</Lettering>).className,
     )
-    expect(new Set(classes).size).toBe(3)
+    expect(new Set(classes).size).toBe(4)
+  })
+
+  it('keeps all four sizes in the scale at their documented sizes', () => {
+    const DOCUMENTED: Record<LetteringSize, string> = {
+      xs: 'text-[13px]',
+      sm: 'text-[15px]',
+      md: 'text-[20px]',
+      lg: 'text-[26px]',
+    }
+    for (const [size, expected] of Object.entries(DOCUMENTED)) {
+      expect(
+        renderLettering(
+          <Lettering size={size as LetteringSize}>Cm7</Lettering>,
+        ).className,
+        size,
+      ).toContain(expected)
+    }
+  })
+
+  it('renders the size from sm up as a breakpoint variant', () => {
+    const className = renderLettering(
+      <Lettering size="sm" sizeAbove="md">
+        Cm7
+      </Lettering>,
+    ).className
+    expect(className).toContain('text-[15px]')
+    expect(className).toContain('sm:text-[20px]')
+  })
+
+  it('renders no breakpoint variant when sizeAbove is absent', () => {
+    expect(
+      renderLettering(<Lettering size="md">Cm7</Lettering>).className,
+    ).toMatch(/^font-jazz font-normal text-\[20px\] leading-\[1\.2\]$/)
   })
 
   it('sets no colour of its own, so it inherits the surface ink', () => {
-    for (const size of ['sm', 'md', 'lg'] as const) {
+    for (const size of ['xs', 'sm', 'md', 'lg'] as const) {
       const className = renderLettering(
         <Lettering size={size}>Cm7</Lettering>,
       ).className

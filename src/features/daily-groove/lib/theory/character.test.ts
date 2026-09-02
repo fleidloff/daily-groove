@@ -79,6 +79,11 @@ describe('MODE_CHARACTERS', () => {
     }
   })
 
+  it.each(ENTRIES)('%s states what the mode is and stops', (_flavour, entry) => {
+    expect(entry.line).not.toContain('doing it')
+    expect(entry.line).not.toContain('the sound of it')
+  })
+
   it.each(ENTRIES)('%s says it in one clause with no sentence break', (_flavour, entry) => {
     expect(entry.line).not.toMatch(/[.!?]\s/)
   })

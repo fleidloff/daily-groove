@@ -283,4 +283,173 @@ describe('Chip', () => {
     expect(mark.className).not.toMatch(/\bopacity-/)
     expect(mark).not.toHaveAttribute('style')
   })
+
+  it('is an ordinary pressable chip with no state given (R4b)', async () => {
+    const user = userEvent.setup()
+    const onSelect = vi.fn()
+    render(<Chip label="C" selected={false} disabled={false} onSelect={onSelect} />)
+    const chip = screen.getByRole('button', { name: 'C' })
+
+    expect(chip).not.toBeDisabled()
+    expect(chip).not.toHaveAttribute('aria-disabled')
+
+    await user.click(chip)
+    expect(onSelect).toHaveBeenCalledTimes(1)
+  })
+
+  it('reports an unavailable chip through aria-disabled without disabling it (R4, R4a, AC4, AC5a)', () => {
+    render(
+      <Chip label="C" selected={false} disabled={false} unavailable onSelect={() => {}} />,
+    )
+    const chip = screen.getByRole('button', { name: 'C' })
+
+    expect(chip).toHaveAttribute('aria-disabled', 'true')
+    expect(chip).not.toBeDisabled()
+  })
+
+  it('declines the pick and still reports the press when unavailable (R4a, AC5a)', async () => {
+    const user = userEvent.setup()
+    const onSelect = vi.fn()
+    const onPress = vi.fn()
+    render(
+      <Chip
+        label="C"
+        selected={false}
+        disabled={false}
+        unavailable
+        onSelect={onSelect}
+        onPress={onPress}
+      />,
+    )
+
+    await user.click(screen.getByRole('button', { name: 'C' }))
+
+    expect(onSelect).not.toHaveBeenCalled()
+    expect(onPress).toHaveBeenCalledTimes(1)
+  })
+
+  it('picks before it reports the press when it is live (R4a, AC5a)', async () => {
+    const user = userEvent.setup()
+    const onSelect = vi.fn()
+    const onPress = vi.fn()
+    render(
+      <Chip
+        label="C"
+        selected={false}
+        disabled={false}
+        onSelect={onSelect}
+        onPress={onPress}
+      />,
+    )
+
+    await user.click(screen.getByRole('button', { name: 'C' }))
+
+    expect(onSelect).toHaveBeenCalledTimes(1)
+    expect(onPress).toHaveBeenCalledTimes(1)
+    expect(onSelect.mock.invocationCallOrder[0]).toBeLessThan(
+      onPress.mock.invocationCallOrder[0],
+    )
+  })
+
+  it.each([
+    { disabled: false, unavailable: false, select: 1, press: 1 },
+    { disabled: false, unavailable: true, select: 0, press: 1 },
+    { disabled: true, unavailable: false, select: 0, press: 0 },
+    { disabled: true, unavailable: true, select: 0, press: 0 },
+  ])(
+    'calls onSelect $select and onPress $press times when disabled=$disabled unavailable=$unavailable (R4b, AC5b)',
+    async ({ disabled, unavailable, select, press }) => {
+      const user = userEvent.setup()
+      const onSelect = vi.fn()
+      const onPress = vi.fn()
+      render(
+        <Chip
+          label="C"
+          selected={false}
+          disabled={disabled}
+          unavailable={unavailable}
+          onSelect={onSelect}
+          onPress={onPress}
+        />,
+      )
+      const chip = screen.getByRole('button', { name: 'C' })
+      if (disabled) expect(chip).toBeDisabled()
+
+      await user.click(chip)
+
+      expect(onSelect).toHaveBeenCalledTimes(select)
+      expect(onPress).toHaveBeenCalledTimes(press)
+    },
+  )
+
+  it('never derives one lock from the other (R4b)', () => {
+    const source = readFileSync(
+      resolve(process.cwd(), 'src/components/controls/Chip.tsx'),
+      'utf8',
+    )
+
+    expect(source).toContain('disabled={disabled}')
+    expect(
+      source,
+      'the native disabled attribute may never be fed by unavailable; aria-disabled is a different attribute and is exempt',
+    ).not.toMatch(/(?<!aria-)disabled=\{[^}]*unavailable/)
+    expect(source).not.toMatch(/unavailable\s*(\|\||&&|\?\?)\s*disabled/)
+    expect(source).not.toMatch(/disabled\s*(\|\||&&|\?\?)\s*unavailable/)
+  })
+
+  it('draws an unavailable chip apart from an idle and a locked one (R4, R5, R20, AC4, AC19)', () => {
+    const chipWith = (props: Partial<Parameters<typeof Chip>[0]>) =>
+      render(
+        <Chip
+          label="C"
+          selected={false}
+          disabled={false}
+          onSelect={() => {}}
+          {...props}
+        />,
+      ).container.firstElementChild as HTMLButtonElement
+    const treatment = (chip: HTMLButtonElement) =>
+      `${chip.className}|${chip.disabled}`
+
+    const idle = chipWith({})
+    const unavailable = chipWith({ unavailable: true })
+    const locked = chipWith({ disabled: true })
+    const lockedOut = chipWith({ disabled: true, unavailable: true })
+
+    expect(
+      new Set([idle, unavailable, locked].map(treatment)).size,
+      'idle, unavailable and locked must be three distinguishable treatments',
+    ).toBe(3)
+    expect(unavailable.className).not.toBe(idle.className)
+    expect(unavailable.className).not.toBe(locked.className)
+    expect(
+      lockedOut.className,
+      'a finished row must still show which chips were ruled out during play',
+    ).not.toBe(locked.className)
+  })
+
+  it('leaves the adornment untouched when unavailable (R4c, AC5c)', () => {
+    const mark = (props: Partial<Parameters<typeof Chip>[0]>) => {
+      const chip = render(
+        <Chip
+          label="C"
+          selected={false}
+          disabled={false}
+          onSelect={() => {}}
+          adornment={NOTE}
+          {...props}
+        />,
+      ).container.firstElementChild as HTMLElement
+      return { chip, mark: chip.firstElementChild as HTMLElement }
+    }
+
+    const available = mark({})
+    const unavailable = mark({ unavailable: true })
+
+    expect(unavailable.chip.textContent).toBe(`${NOTE}C`)
+    expect(unavailable.mark.className).toBe(available.mark.className)
+    expect(unavailable.mark.className).not.toMatch(/\btext-(?!\[)/)
+    expect(unavailable.mark.className).not.toMatch(/\b(bg|border|fill|stroke)-/)
+    expect(unavailable.mark.className).not.toMatch(/\bopacity-/)
+  })
 })

@@ -104,6 +104,10 @@ guessed twice.
 
 ### The box that says so
 
+The box is now the card's one status area: the feedback message sits at the top
+of it, and the nudge sentence below. R17 onwards govern the sentence; R17c and
+R19 govern the box itself.
+
 - **R17** — When the app has eliminated roots, the card says so in one line, in
   the slot the nudge occupies today, beside the feedback line. It names what
   happened and that the row is still narrowing — the count the app has ruled out
@@ -116,8 +120,24 @@ guessed twice.
   app has stopped helping, and saying otherwise would claim work it is not
   doing.
 - **R18** — That line names no root — neither the answer nor the ones removed.
-- **R19** — In a mode where the app eliminates nothing, the card claims nothing.
-  The line is absent rather than saying that nothing happened.
+- **R17c** — The feedback message renders inside the box, above the nudge
+  sentence. The box carries one eyebrow label, reading `Hint`, which is also its
+  accessible name — so it stays a named landmark.
+- **R17d** — Exactly one live region. The box no longer announces as a whole;
+  the feedback paragraph keeps `role="status"`, because it is the part that
+  changes on every guess, and nesting two live regions would announce twice.
+- **R17e** — On a solved or revealed day the box is not rendered at all. It is a
+  playable-day thing: once the day has ended the solved panel is what says what
+  happened, and a box still labelled `Hint` offering a narrowing count or "that's
+  it" alongside it is confusing. Because the box is the only place the feedback
+  message renders, that message ends with it.
+- **R18a** — While the day is playable, the box renders only when it has content — a feedback message, a
+  nudge sentence, or both. An empty box is unrepresentable rather than merely
+  unlikely. In practice a feedback message is always present, so the box is
+  visible from the first render.
+- **R19** — In a mode where the app eliminates nothing, **the nudge sentence** is
+  absent rather than saying that nothing happened. The box itself may still be
+  present, carrying the feedback message alone — which is every simple-mode day.
 
 ### What happens to the selection
 
@@ -223,8 +243,19 @@ stateDiagram-v2
   many roots remain live.
 - **AC17b** (R17b) — Given four misses and then a fifth, then the line reads the
   same both times.
-- **AC18** (R19) — Given simple mode with any number of misses, then no such
-  line is rendered.
+- **AC17c** (R17c) — Given two misses in the full row, when the box is read,
+  then it is labelled `Hint` and the feedback message appears above the nudge
+  sentence.
+- **AC17d** (R17d) — Given the box with both lines in it, when the page is
+  inspected, then exactly one live region exists within it.
+- **AC18** (R19) — Given simple mode with any number of misses, then no nudge
+  sentence is rendered, though the box is still present with the feedback in it.
+- **AC17e** (R17e) — Given a day that is solved, and separately one given up on,
+  when the card is read, then no box is present and no feedback message is on
+  the card.
+- **AC18a** (R18a) — Given a playable day with no attempts, then the box is
+  present with the opening message and no nudge sentence; and the box is never
+  rendered empty.
 - **AC19** (R20) — Given a revealed day, when the row is inspected, then the
   chips ruled out during play are still distinguishable from those that were not.
 - **AC19a** (R19a, R19b) — Given a selected root and mode checked and missed on

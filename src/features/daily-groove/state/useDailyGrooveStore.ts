@@ -64,11 +64,15 @@ export function createDailyGrooveStore(
         matchFlavour,
       )
       const next = [...attempts, attempt]
-      const misses = next.filter((a) => !a.correct).length
       set({
         attempts: next,
         solved: attempt.correct,
-        ...(!attempt.correct && misses === 2 ? { selectedRoot: answer.root } : {}),
+        ...(attempt.correct
+          ? {}
+          : {
+              ...(attempt.rootMatched ? {} : { selectedRoot: null }),
+              ...(attempt.flavourMatched ? {} : { selectedFlavour: null }),
+            }),
       })
     },
 
@@ -89,8 +93,8 @@ export function createDailyGrooveStore(
         attempts,
         solved: result.solved ?? attempts.some((a) => a.correct),
         revealed: result.revealed ?? false,
-        selectedRoot: last?.root ?? null,
-        selectedFlavour: last?.flavour ?? null,
+        selectedRoot: last?.rootMatched ? last.root : null,
+        selectedFlavour: last?.flavourMatched ? last.flavour : null,
       })
     },
   }))

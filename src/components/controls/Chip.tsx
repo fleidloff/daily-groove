@@ -6,7 +6,9 @@ type ChipProps = {
   label: string
   selected: boolean
   disabled: boolean
+  unavailable?: boolean
   onSelect: () => void
+  onPress?: () => void
   tone?: ChipTone
   adornment?: string
 }
@@ -27,6 +29,8 @@ const INVERTED_SELECTED =
 
 const ADORNMENT = 'mr-[5px]'
 
+const UNAVAILABLE = 'border-dashed opacity-60'
+
 const TONE: Record<ChipTone, { idle: string; selected: string }> = {
   default: { idle: IDLE, selected: SELECTED },
   inverted: { idle: INVERTED_IDLE, selected: INVERTED_SELECTED },
@@ -36,7 +40,9 @@ export function Chip({
   label,
   selected,
   disabled,
+  unavailable,
   onSelect,
+  onPress,
   tone = 'default',
   adornment,
 }: ChipProps) {
@@ -45,10 +51,14 @@ export function Chip({
   return (
     <button
       type="button"
-      onClick={onSelect}
+      onClick={() => {
+        if (!unavailable) onSelect()
+        onPress?.()
+      }}
       disabled={disabled}
+      aria-disabled={unavailable ? true : undefined}
       aria-pressed={selected}
-      className={`${BASE} ${selected ? palette.selected : palette.idle}`}
+      className={`${BASE} ${selected ? palette.selected : palette.idle}${unavailable ? ` ${UNAVAILABLE}` : ''}`}
     >
       {adornment && (
         <span aria-hidden="true" className={ADORNMENT}>

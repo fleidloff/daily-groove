@@ -24,7 +24,13 @@ function spell(differences: DegreeDifference[], side: 'guess' | 'answer'): strin
   return differences.flatMap((difference) => difference[side]).join(' and ')
 }
 
-export function selectNearMiss(attempts: Attempt[], answer: Answer): string | undefined {
+export function selectNearMiss(
+  attempts: Attempt[],
+  answer: Answer,
+  revealed: boolean,
+): string | undefined {
+  if (!revealed) return undefined
+
   const attempt = lastIncorrect(attempts)
   if (!attempt) return undefined
 

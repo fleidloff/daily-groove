@@ -99,13 +99,13 @@ describe('createDailyGrooveStore', () => {
       expect(solved).toBe(false)
     })
 
-    it('keeps both chips selected after a wrong check', () => {
+    it('keeps the half a wrong check confirmed and drops the half it ruled out', () => {
       const store = freshStore()
       store.getState().selectRoot('G')
       store.getState().selectFlavour('Mixolydian')
       store.getState().check()
       expect(store.getState().selectedRoot).toBe('G')
-      expect(store.getState().selectedFlavour).toBe('Mixolydian')
+      expect(store.getState().selectedFlavour).toBeNull()
     })
 
     it('does nothing when both halves are not chosen', () => {
@@ -134,6 +134,8 @@ describe('createDailyGrooveStore', () => {
       store.getState().selectRoot('C')
       store.getState().selectFlavour('Mixolydian')
       store.getState().check()
+      expect(store.getState().canCheck()).toBe(false)
+      store.getState().selectFlavour('Mixolydian')
       expect(store.getState().canCheck()).toBe(false)
       store.getState().selectRoot('D')
       expect(store.getState().canCheck()).toBe(true)
@@ -199,15 +201,44 @@ describe('createDailyGrooveStore', () => {
       solved: false,
     }
 
-    it('restores a stored day', () => {
+    it('restores a stored day, keeping only the half its last check confirmed', () => {
       const store = freshStore()
       store.getState().hydrate(result)
       const state = store.getState()
       expect(state.attempts).toEqual([attempt])
       expect(state.selectedRoot).toBe('G')
-      expect(state.selectedFlavour).toBe('Mixolydian')
+      expect(state.selectedFlavour).toBeNull()
       expect(state.solved).toBe(false)
       expect(state.canCheck()).toBe(false)
+    })
+
+    it('restores neither half when the last stored check missed both', () => {
+      const store = freshStore()
+      store.getState().hydrate({
+        ...result,
+        attempts: [{ ...attempt, root: 'C', rootMatched: false }],
+      })
+      expect(store.getState().selectedRoot).toBeNull()
+      expect(store.getState().selectedFlavour).toBeNull()
+    })
+
+    it('restores both halves of a solved record', () => {
+      const store = freshStore()
+      store.getState().hydrate({
+        ...result,
+        attempts: [{ ...attempt, flavour: 'Dorian', correct: true, flavourMatched: true }],
+        solved: true,
+      })
+      expect(store.getState().selectedRoot).toBe('G')
+      expect(store.getState().selectedFlavour).toBe('Dorian')
+    })
+
+    it('restores no selection from a record whose halves cannot be read', () => {
+      const store = freshStore()
+      const legacy = { root: 'G', flavour: 'Mixolydian', correct: false } as Attempt
+      store.getState().hydrate({ ...result, attempts: [legacy] })
+      expect(store.getState().selectedRoot).toBeNull()
+      expect(store.getState().selectedFlavour).toBeNull()
     })
 
     it('restores a solved day as locked', () => {
@@ -288,45 +319,53 @@ describe('createDailyGrooveStore', () => {
     })
   })
 
-  describe("the second miss selects the day's root", () => {
+  describe('a miss clears the half it ruled out', () => {
     const E_DORIAN: Answer = { root: 'E', flavour: 'Dorian' }
 
-    it('leaves the selection alone on the first miss', () => {
+    it("never selects the day's root on the player's behalf", () => {
       const store = createDailyGrooveStore(E_DORIAN)
-      store.getState().selectRoot('C')
-      store.getState().selectFlavour('Mixolydian')
-      store.getState().check()
+      const roots = ['C', 'D', 'F'] as const
 
-      expect(store.getState().selectedRoot).toBe('C')
-    })
-
-    it("selects the day's root on the second miss", () => {
-      const store = createDailyGrooveStore(E_DORIAN)
-      store.getState().selectRoot('C')
-      store.getState().selectFlavour('Mixolydian')
-      store.getState().check()
-      store.getState().selectRoot('D')
-      store.getState().check()
-
-      expect(store.getState().attempts).toHaveLength(2)
-      expect(store.getState().selectedRoot).toBe('E')
-      expect(store.getState().selectedFlavour).toBe('Mixolydian')
-    })
-
-    it('fires once: a later miss does not overwrite the player\'s choice', () => {
-      const store = createDailyGrooveStore(E_DORIAN)
-      store.getState().selectRoot('C')
-      store.getState().selectFlavour('Mixolydian')
-      store.getState().check()
-      store.getState().selectRoot('D')
-      store.getState().check()
-      expect(store.getState().selectedRoot).toBe('E')
-
-      store.getState().selectRoot('C')
-      store.getState().check()
+      for (const root of roots) {
+        store.getState().selectRoot(root)
+        store.getState().selectFlavour('Mixolydian')
+        expect(store.getState().canCheck()).toBe(true)
+        store.getState().check()
+        expect(store.getState().selectedRoot).not.toBe('E')
+        expect(store.getState().selectedRoot).toBeNull()
+      }
 
       expect(store.getState().attempts).toHaveLength(3)
-      expect(store.getState().selectedRoot).toBe('C')
+    })
+
+    it('keeps the root and clears the mode when only the mode was wrong', () => {
+      const store = createDailyGrooveStore(E_DORIAN)
+      store.getState().selectRoot('E')
+      store.getState().selectFlavour('Mixolydian')
+      store.getState().check()
+
+      expect(store.getState().selectedRoot).toBe('E')
+      expect(store.getState().selectedFlavour).toBeNull()
+    })
+
+    it('keeps the mode and clears the root when only the root was wrong', () => {
+      const store = createDailyGrooveStore(E_DORIAN)
+      store.getState().selectRoot('C')
+      store.getState().selectFlavour('Dorian')
+      store.getState().check()
+
+      expect(store.getState().selectedRoot).toBeNull()
+      expect(store.getState().selectedFlavour).toBe('Dorian')
+    })
+
+    it('clears both when both halves were wrong', () => {
+      const store = createDailyGrooveStore(E_DORIAN)
+      store.getState().selectRoot('C')
+      store.getState().selectFlavour('Mixolydian')
+      store.getState().check()
+
+      expect(store.getState().selectedRoot).toBeNull()
+      expect(store.getState().selectedFlavour).toBeNull()
     })
 
     it('scores and records a fourth miss like the first', () => {
@@ -344,7 +383,7 @@ describe('createDailyGrooveStore', () => {
       expect(store.getState().solved).toBe(false)
     })
 
-    it('does not fire when the second guess solves the day', () => {
+    it('keeps the pair that won when the guess solves the day', () => {
       const store = createDailyGrooveStore(E_DORIAN)
       store.getState().selectRoot('C')
       store.getState().selectFlavour('Mixolydian')
@@ -452,6 +491,7 @@ describe('createDailyGrooveStore', () => {
 
       current = familyMatch
       store.getState().selectRoot('G')
+      store.getState().selectFlavour('Minor')
       store.getState().check()
       expect(store.getState().attempts).toHaveLength(2)
       expect(store.getState().solved).toBe(true)

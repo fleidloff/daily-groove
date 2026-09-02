@@ -17,6 +17,7 @@ import {
   rootGroup,
   SOLVING,
   teardownPuzzleAudio,
+  thirdWrongFlavour,
   TODAY,
   wrongFlavour,
 } from '../testing/puzzleHarness'
@@ -139,8 +140,8 @@ describe('GroovePuzzle', () => {
       const wrong = wrongFlavour()
 
       await guess(user, 'C', wrong)
-      await guess(user, 'G', wrong)
-      await guess(user, 'G', otherWrongFlavour())
+      await guess(user, 'C', otherWrongFlavour())
+      await guess(user, 'C', thirdWrongFlavour())
       await user.click(giveUp() as HTMLElement)
       await user.click(giveUp() as HTMLElement)
 
@@ -195,7 +196,7 @@ describe('GroovePuzzle', () => {
       expect(
         within(rootGroup()).getByRole('button', { name: 'C' }),
       ).toHaveAttribute('aria-pressed', 'true')
-      expect(control()).toHaveAccessibleName('Pick a root and a mode')
+      expect(control()).toHaveAccessibleName('Pick a mode')
       expect(mockStore.save).not.toHaveBeenCalled()
       expect(screen.queryByRole('alert')).toBeNull()
     })

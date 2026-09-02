@@ -266,8 +266,12 @@ describe('SolvedPanel', () => {
     expect(numeralTexts()).toEqual([])
   })
 
-  it('names how close the last wrong guess came (F15 E4 R1, R3, R9, AC1)', () => {
-    renderPanel({ answer: G_MIXOLYDIAN, attempts: [miss('Dorian')] })
+  it('names how close the last wrong guess came on a day given up on (F15 E4 R1, R3, R9, AC1, F17 E3)', () => {
+    renderPanel({
+      answer: G_MIXOLYDIAN,
+      attempts: [miss('Dorian')],
+      revealed: true,
+    })
 
     const line = within(headerBlock()).getByText(
       /^You said Dorian — one note apart/,
@@ -276,6 +280,15 @@ describe('SolvedPanel', () => {
     expect(
       character.compareDocumentPosition(line) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy()
+  })
+
+  it('says nothing about a miss on a day that was solved (F17 E3)', () => {
+    renderPanel({ answer: G_MIXOLYDIAN, attempts: [miss('Dorian')] })
+
+    expect(screen.queryByText(/you said/i)).toBeNull()
+    for (const paragraph of paragraphs()) {
+      expect(paragraph.textContent).not.toBe('')
+    }
   })
 
   it('says nothing where the day was solved first time (F15 E4 R6, AC5, AC6)', () => {
@@ -307,22 +320,22 @@ describe('SolvedPanel', () => {
     }
   })
 
-  it('reads the same line on a day given up on (F15 E4 R11, AC11)', () => {
+  it('never scolds the day given up on for having given up (F17 E3 R13, R14, AC13)', () => {
     const attempts = [miss('Phrygian'), miss('Aeolian', false), miss('Dorian')]
-
-    const solved = renderPanel({ answer: G_MIXOLYDIAN, attempts })
-    const onSolved = within(headerBlock()).getByText(/^You said/).textContent
-    solved.unmount()
 
     renderPanel({ answer: G_MIXOLYDIAN, attempts, revealed: true })
     const line = within(headerBlock()).getByText(/^You said/)
 
-    expect(line.textContent).toBe(onSolved)
+    expect(line.textContent).toMatch(/^You said Dorian — /)
     expect(line.textContent).not.toMatch(/given up/i)
   })
 
   it('keeps both lines inside the one live region (F15 E4 R9, AC9)', () => {
-    renderPanel({ answer: G_MIXOLYDIAN, attempts: [miss('Dorian')] })
+    renderPanel({
+      answer: G_MIXOLYDIAN,
+      attempts: [miss('Dorian')],
+      revealed: true,
+    })
 
     expect(screen.getAllByRole('status')).toHaveLength(1)
     const region = screen.getByRole('status')
@@ -454,12 +467,12 @@ describe('SolvedPanel', () => {
     expect(within(notes).queryAllByRole('button')).toHaveLength(0)
   })
 
-  it('gives the four bars equal columns, breaking 2 × 2 or not at all (F11 E1 R5)', () => {
+  it('gives the four bars equal columns, in one row at every width (F17 E3 R1)', () => {
     renderPanel({ progression: 'C7–Em7♭5–B♭maj7–Fmaj7' })
     const changes = leadSheet()
 
-    expect(changes.className).toMatch(/\bgrid-cols-2\b/)
-    expect(changes.className).toMatch(/\bsm:grid-cols-4\b/)
+    expect(changes.className).toMatch(/\bgrid-cols-4\b/)
+    expect(changes.className).not.toMatch(/\bgrid-cols-2\b/)
     expect(changes.className).not.toMatch(/\bflex-wrap\b/)
     expect(changes.className).not.toContain('justify-between')
   })
@@ -509,7 +522,7 @@ describe('SolvedPanel', () => {
     expect(accidentalGlyphs()).toEqual(['♭', '♭', '♮', '♭'])
   })
 
-  it('breaks rather than overflowing on the longest progression (R8, AC9)', () => {
+  it('keeps one row rather than overflowing on the longest progression (F17 E3 R1)', () => {
     const longest = GROOVES.map((groove) => groove.progression).sort(
       (a, b) => b.length - a.length,
     )[0]
@@ -518,7 +531,7 @@ describe('SolvedPanel', () => {
     const changes = leadSheet()
 
     expect(barTexts()).toEqual(barChords(longest))
-    expect(changes.className).toMatch(/\bgrid-cols-2\b/)
+    expect(changes.className).toMatch(/\bgrid-cols-4\b/)
     expect(changes.className).not.toMatch(/\bmin-w-/)
     expect(changes.className).not.toMatch(/overflow-x/)
   })

@@ -26,6 +26,8 @@ import {
 import { FAMILIES, type Family } from '../lib/theory/families'
 import { simpleLickMode } from '../lib/theory/simpleModes'
 import { barChords } from '../lib/theory/changes'
+import { confirmedHalves } from '../lib/presentation/confirmed'
+import { ruledOut } from '../lib/presentation/ruledOut'
 import { metaLine } from '../lib/presentation/date'
 import { selectGrooveForDate } from '../lib/puzzle/selectGroove'
 import { GROOVES } from '../data/grooves.generated'
@@ -78,7 +80,7 @@ const CAPTION_SOUNDS_ON =
   'Find the note that feels like home — Play along with your instrument, or tap a root or a mode to hear it.'
 
 const CAPTION_SOUNDS_OFF =
-  'Tap sounds are off — switch them back on under Simple mode.'
+  'Find the note that feels like home — Play along with your instrument.'
 
 function PuzzleLoading() {
   return (
@@ -181,10 +183,6 @@ function GroovePuzzleView({
     () => selectFeedback(attempts, solved),
     [attempts, solved],
   )
-  const showNudge = useMemo(
-    () => shouldShowNudge(attempts, solved),
-    [attempts, solved],
-  )
   const dots = useMemo(() => dotStates(attempts, solved), [attempts, solved])
   const showReveal = useMemo(
     () => shouldOfferReveal(attempts, solved, revealed),
@@ -200,6 +198,18 @@ function GroovePuzzleView({
     () => (simple ? FAMILIES : flavourOptions(today, groove)),
     [simple, today, groove],
   )
+
+  const narrowing = useMemo(
+    () => ruledOut({ attempts, answer, roots, date: today }),
+    [attempts, answer, roots, today],
+  )
+
+  const showNudge = useMemo(
+    () => shouldShowNudge(narrowing.eliminatedCount, solved),
+    [narrowing, solved],
+  )
+
+  const confirmed = useMemo(() => confirmedHalves(attempts), [attempts])
 
   const offeredRoot = selectedRoot !== null && roots.includes(selectedRoot)
     ? selectedRoot
@@ -272,7 +282,11 @@ function GroovePuzzleView({
       feedback={feedback}
       showNudge={showNudge}
       dots={dots}
-      answerRoot={answer.root}
+      ruledOutRoots={narrowing.roots}
+      ruledOutFlavours={narrowing.flavours}
+      eliminated={narrowing.eliminatedCount}
+      confirmedRoots={confirmed.roots}
+      confirmedFlavours={confirmed.flavours}
       revealed={revealed}
       showReveal={showReveal}
       onReveal={reveal}

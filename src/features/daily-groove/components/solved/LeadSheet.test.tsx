@@ -1,10 +1,20 @@
 import { describe, expect, it } from 'vitest'
 import { render, screen, within } from '@testing-library/react'
 import { LeadSheet } from './LeadSheet'
+import { GROOVES } from '../../data/grooves.generated'
+import { barChords } from '../../lib/theory/changes'
 
 const CHANGES = ['C7', 'Em7♭5', 'B♭maj7', 'Fmaj7']
 
 const NUMERALS = ['I', 'III', '♭VII', 'IV']
+
+const SYMBOLS = [
+  ...new Set(GROOVES.flatMap((groove) => barChords(groove.progression))),
+].filter(Boolean)
+
+const widest = Math.max(...SYMBOLS.map((symbol) => [...symbol].length))
+
+const WIDEST = SYMBOLS.filter((symbol) => [...symbol].length === widest)
 
 function bars(container: HTMLElement): HTMLElement[] {
   return Array.from(container.querySelectorAll<HTMLElement>('[data-bar]'))
@@ -12,6 +22,15 @@ function bars(container: HTMLElement): HTMLElement[] {
 
 function numerals(container: HTMLElement): HTMLElement[] {
   return Array.from(container.querySelectorAll<HTMLElement>('[data-numeral]'))
+}
+
+function expectNothingClips(container: HTMLElement): void {
+  for (const element of container.querySelectorAll<HTMLElement>('*')) {
+    expect(element.className).not.toMatch(/\btruncate\b/)
+    expect(element.className).not.toMatch(/\btext-ellipsis\b/)
+    expect(element.className).not.toMatch(/\boverflow-hidden\b/)
+    expect(element.className).not.toMatch(/\bline-clamp/)
+  }
 }
 
 describe('LeadSheet', () => {
@@ -27,6 +46,15 @@ describe('LeadSheet', () => {
     for (const chord of CHANGES) {
       expect(within(container).getByText(chord).className).toMatch(/font-jazz/)
     }
+  })
+
+  it("sets the symbol one step smaller below sm and feature-11's size above it (F17 E3 R2, R5, AC2, AC5)", () => {
+    const { container } = render(<LeadSheet chords={CHANGES} />)
+    const symbol = within(container).getByText('C7').className
+
+    expect(symbol).toContain('text-[15px]')
+    expect(symbol).toContain('sm:text-[20px]')
+    expect(symbol).not.toMatch(/(?<!sm:)text-\[20px\]/)
   })
 
   it('is a drawing, not a control: nothing to press and nothing to focus (R12)', () => {
@@ -108,13 +136,14 @@ describe('LeadSheet', () => {
     )
   })
 
-  it('breaks two-by-two, never three-and-one, on a phone (R10)', () => {
+  it('keeps four bars in one row at every width (F17 E3 R1, AC1)', () => {
     const { container } = render(<LeadSheet chords={CHANGES} />)
     const sheet = screen.getByRole('img')
 
     expect(sheet.className).toMatch(/\bgrid\b/)
-    expect(sheet.className).toMatch(/\bgrid-cols-2\b/)
-    expect(sheet.className).toMatch(/\bsm:grid-cols-4\b/)
+    expect(sheet.className).toMatch(/\bgrid-cols-4\b/)
+    expect(sheet.className).not.toMatch(/\bgrid-cols-2\b/)
+    expect(sheet.className).not.toMatch(/\bsm:grid-cols-/)
     expect(sheet.className).not.toMatch(/overflow-x/)
 
     expect(sheet.className).not.toMatch(/\bflex-wrap\b/)
@@ -177,22 +206,35 @@ describe('LeadSheet', () => {
     expect(classes).toEqual(bars(plain).map((bar) => bar.className))
     for (const className of classes) {
       expect(className).toMatch(/\bpb-9\b/)
-      expect(className).toMatch(/\bpl-3\b/)
+      expect(className).toMatch(/\bpl-1\b/)
+      expect(className).toMatch(/\bsm:pl-3\b/)
+      expect(className).toMatch(/\bpr-1\b/)
+      expect(className).toMatch(/\bsm:pr-4\b/)
       expect(className).toMatch(/\bpt-1\b/)
       expect(className).toMatch(/\brelative\b/)
       expect(className).toMatch(/\bborder-l\b/)
     }
   })
 
-  it('keeps the two-by-two break the grid guarantees (R7, AC9)', () => {
+  it('never breaks a chord symbol across two lines (F17 E3 R3)', () => {
+    const { container } = render(<LeadSheet chords={CHANGES} />)
+
+    for (const bar of bars(container)) {
+      expect(bar.className).toMatch(/\bwhitespace-nowrap\b/)
+    }
+  })
+
+  it('keeps the one-row grid with the numerals drawn (F17 E3 R1, R4, AC1, AC4)', () => {
     const { container } = render(
       <LeadSheet chords={CHANGES} numerals={NUMERALS} />,
     )
     const sheet = within(container).getByRole('img')
 
-    expect(sheet.className).toMatch(/\bgrid-cols-2\b/)
-    expect(sheet.className).toMatch(/\bsm:grid-cols-4\b/)
+    expect(sheet.className).toMatch(/\bgrid-cols-4\b/)
+    expect(sheet.className).not.toMatch(/\bgrid-cols-2\b/)
+    expect(sheet.className).not.toMatch(/\bsm:grid-cols-/)
     expect(sheet.className).not.toMatch(/\bflex-wrap\b/)
+    expect(numerals(container)).toHaveLength(4)
   })
 
   it('holds each numeral inside its own bar, whatever the layout (R7, AC9)', () => {
@@ -205,7 +247,8 @@ describe('LeadSheet', () => {
     expect(drawnNumerals).toHaveLength(drawn.length)
     for (const numeral of drawnNumerals) {
       expect(numeral.className).toMatch(/\babsolute\b/)
-      expect(numeral.className).toMatch(/\bleft-3\b/)
+      expect(numeral.className).toMatch(/\bleft-1\b/)
+      expect(numeral.className).toMatch(/\bsm:left-3\b/)
       expect(numeral.className).toMatch(/\bbottom-/)
     }
     drawn.forEach((bar, index) => {
@@ -223,7 +266,8 @@ describe('LeadSheet', () => {
     for (const numeral of NUMERALS) {
       const lettering = within(container).getByText(numeral)
       expect(lettering.className).toMatch(/font-jazz/)
-      expect(lettering.className).toMatch(/text-\[15px\]/)
+      expect(lettering.className).toContain('text-[13px]')
+      expect(lettering.className).toContain('sm:text-[15px]')
     }
   })
 
@@ -278,5 +322,34 @@ describe('LeadSheet', () => {
     expect(
       screen.getByRole('img', { name: 'C7 I · Em7♭5 · B♭maj7 · Fmaj7 IV' }),
     ).toBeInTheDocument()
+  })
+
+  describe('the widest symbol the catalogue can produce (F17 E3 R3, AC3)', () => {
+    it('derives at least one widest symbol from the shipped manifest', () => {
+      expect(WIDEST.length).toBeGreaterThan(0)
+      expect(widest, WIDEST.join(' ')).toBe(7)
+    })
+
+    it.each(WIDEST)('draws %s whole in bar one', (symbol) => {
+      const { container } = render(
+        <LeadSheet chords={[symbol, 'C7', 'C7', 'C7']} />,
+      )
+      const bar = bars(container)[0]
+
+      expect(bar.textContent).toBe(symbol)
+      expect(within(bar).getByText(symbol).childNodes).toHaveLength(1)
+      expectNothingClips(container)
+    })
+
+    it.each(WIDEST)('draws %s whole in bar four', (symbol) => {
+      const { container } = render(
+        <LeadSheet chords={['C7', 'C7', 'C7', symbol]} />,
+      )
+      const bar = bars(container)[3]
+
+      expect(bar.textContent).toBe(symbol)
+      expect(within(bar).getByText(symbol).childNodes).toHaveLength(1)
+      expectNothingClips(container)
+    })
   })
 })
