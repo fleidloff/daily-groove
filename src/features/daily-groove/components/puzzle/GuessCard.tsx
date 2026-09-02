@@ -42,6 +42,8 @@ type GuessCardProps = {
   onCheck(): void
   solved: boolean
   feedback: Feedback
+  coaching: Feedback
+  showVerdict: boolean
   showNudge: boolean
   dots: DotState[]
   ruledOutRoots: Root[]
@@ -71,6 +73,8 @@ export function GuessCard({
   onCheck,
   solved,
   feedback,
+  coaching,
+  showVerdict,
   showNudge,
   dots,
   ruledOutRoots,
@@ -178,7 +182,8 @@ export function GuessCard({
 
         {!over && (
           <NudgeBox
-            feedback={feedback}
+            feedback={showVerdict ? feedback : null}
+            coaching={coaching}
             eliminated={showNudge ? eliminated : null}
           />
         )}

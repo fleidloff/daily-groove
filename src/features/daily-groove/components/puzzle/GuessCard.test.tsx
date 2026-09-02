@@ -26,6 +26,10 @@ const SOLVED: Feedback = {
   message: 'That is it. The groove is yours now.',
   tone: 'solved',
 }
+const MOVE: Feedback = {
+  message: 'Hum the bass note on beat one.',
+  tone: 'neutral',
+}
 
 const UNSPENT: DotState[] = ['unspent', 'unspent', 'unspent']
 
@@ -45,6 +49,8 @@ function props(overrides: Partial<Props> = {}): Props {
     onCheck: vi.fn(),
     solved: false,
     feedback: OPENING,
+    coaching: MOVE,
+    showVerdict: true,
     showNudge: false,
     dots: UNSPENT,
     ruledOutRoots: [],
@@ -254,9 +260,46 @@ describe('GuessCard', () => {
   it('shows the feedback it is given in a live region (R3, R4, AC4, AC14)', () => {
     render(<GuessCard {...props()} />)
 
-    const line = screen.getByRole('status')
-    expect(line).toHaveTextContent(OPENING.message)
-    expect(line).toHaveAttribute('aria-live', 'polite')
+    const region = screen.getByRole('status')
+    expect(region).toContainElement(screen.getByText(OPENING.message))
+    expect(region).toHaveAttribute('aria-live', 'polite')
+  })
+
+  it('shows the coaching under the verdict in the hint box (R12, AC11)', () => {
+    render(
+      <GuessCard
+        {...props({
+          feedback: ROOT_MATCHED,
+          coaching: MOVE,
+          dots: ['spent', 'unspent', 'unspent'],
+        })}
+      />,
+    )
+
+    const box = hintBox()
+    const verdict = screen.getByText(ROOT_MATCHED.message)
+    const move = screen.getByText(MOVE.message)
+
+    expect(box).toContainElement(verdict)
+    expect(box).toContainElement(move)
+    expect(precedes(verdict, move)).toBe(true)
+    expect(move).toHaveAttribute('data-tone', 'neutral')
+  })
+
+  it('carries the coaching alone when the verdict is suppressed (R12a, AC16)', () => {
+    render(
+      <GuessCard
+        {...props({
+          showVerdict: false,
+          feedback: ROOT_MATCHED,
+          coaching: MOVE,
+          dots: ['spent', 'spent', 'unspent'],
+        })}
+      />,
+    )
+
+    expect(hintBox()).toHaveTextContent(MOVE.message)
+    expect(screen.queryByText(ROOT_MATCHED.message)).toBeNull()
   })
 
   it('shows targeted feedback after a wrong guess instead of a bare verdict (R3, AC5)', () => {
@@ -293,6 +336,7 @@ describe('GuessCard', () => {
     expect(dotStates()).toEqual(['solved', 'solved', 'solved'])
     expect(hintQuery()).not.toBeInTheDocument()
     expect(screen.queryByText(SOLVED.message)).not.toBeInTheDocument()
+    expect(screen.queryByText(MOVE.message)).not.toBeInTheDocument()
     expect(screen.queryByRole('status')).not.toBeInTheDocument()
     expect(nudgeLine()).not.toBeInTheDocument()
   })
@@ -326,6 +370,7 @@ describe('GuessCard', () => {
       expect(screen.queryByText('Hint')).not.toBeInTheDocument()
       expect(nudgeLine()).not.toBeInTheDocument()
       expect(screen.queryByRole('status')).not.toBeInTheDocument()
+      expect(screen.queryByText(MOVE.message)).toBeNull()
     },
   )
 
@@ -434,7 +479,8 @@ describe('GuessCard', () => {
     const regions = screen.getAllByRole('status')
     expect(regions).toHaveLength(1)
     expect(regions[0]).toHaveTextContent(ROOT_MATCHED.message)
-    expect(regions[0]).not.toHaveTextContent(/ruled out/)
+    expect(regions[0]).toHaveTextContent(MOVE.message)
+    expect(regions[0]).toHaveTextContent(/2 roots ruled out/)
   })
 
   it('leaves every root chip unpressed and enabled when the box appears (AC10, AC11)', () => {

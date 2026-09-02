@@ -5,6 +5,7 @@ import {
   shouldShowNudge,
   shouldOfferReveal,
   dotStates,
+  missCount,
 } from './feedback'
 
 const attempt = (
@@ -243,5 +244,15 @@ describe('shouldOfferReveal', () => {
     shouldOfferReveal(attempts, false, false)
     expect(JSON.stringify(attempts)).toBe(before)
     expect(attempts).toHaveLength(3)
+  })
+})
+
+describe('missCount', () => {
+  it('counts nothing on a day with no attempts', () => {
+    expect(missCount([])).toBe(0)
+  })
+
+  it('counts the wrong guesses and not the right one', () => {
+    expect(missCount([NEITHER, EXACT, ROOT_ONLY])).toBe(2)
   })
 })

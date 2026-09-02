@@ -6,14 +6,17 @@ import {
   CHANGES_READ,
   chipAdornment,
   chipLabel,
+  coachingLine,
   control,
   dotStates,
   flavourGroup,
   flavours,
   GROOVE,
   guess,
+  hintRegion,
   installPuzzleAudio,
   miss,
+  move,
   NOTE_GLYPH,
   nudge,
   nudgeLine,
@@ -26,6 +29,7 @@ import {
   teardownPuzzleAudio,
   thirdWrongFlavour,
   TODAY,
+  verdictLine,
   wrongFlavour,
 } from '../testing/puzzleHarness'
 
@@ -45,9 +49,23 @@ import {
   ROOTS,
   simpleRootOptions,
 } from '../lib/theory/music'
+import { LADDER } from '../lib/presentation/moves'
+import {
+  COLOUR_MOVES,
+  SIMPLE_COLOUR_MOVES,
+  TONIC_MOVES,
+} from '../lib/presentation/coachingMoves'
+import { FAMILIES } from '../lib/theory/families'
 import { createLocalPreferenceStore } from '../lib/persistence/preferences'
 import { isoDate, selectGrooveForDate } from '../lib/puzzle/selectGroove'
 import { GROOVES } from '../data/grooves.generated'
+
+const NOTE_CHARS = 'A-Za-z♭♯'
+
+function rootPattern(root: string) {
+  const escaped = root.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  return new RegExp(`(?<![${NOTE_CHARS}])${escaped}(?![${NOTE_CHARS}])`)
+}
 
 describe('GroovePuzzle', () => {
   beforeEach(() => {
@@ -212,7 +230,7 @@ describe('GroovePuzzle', () => {
     expect(box).toBeInTheDocument()
     expect(box).toHaveTextContent(/2 roots ruled out/)
     expect(box.textContent).toMatch(/narrowing as you go/i)
-    expect(box).toContainElement(screen.getByText(/not it\. keep playing/i))
+    expect(box).toContainElement(coachingLine() as HTMLElement)
 
     const line = box.textContent ?? ''
     for (const root of ROOTS) expect(line).not.toMatch(standalone(root))
@@ -1342,6 +1360,434 @@ describe('GroovePuzzle', () => {
       expect(screen.queryByText(/keep the root/i)).toBeNull()
       expect(screen.queryByText(/another flavour/i)).toBeNull()
       expect(liveRoots()).toEqual(['C'])
+    })
+  })
+
+  describe('the listening move (F18 E1)', () => {
+    const soundsOffRung = LADDER.findIndex((rung) => rung.soundsOff !== undefined)
+
+    const tapSwitch = () => screen.getByRole('switch', { name: /tap sounds/i })
+
+    const missOnce = async (user: ReturnType<typeof userEvent.setup>) => {
+      await guess(user, liveRoot(), liveWrongFlavour() ?? 'Aeolian')
+    }
+
+    it('shows the opening move before anything is pressed (R1, R2, R7, AC1, AC3)', async () => {
+      await renderPuzzle()
+
+      expect(nudge()).toContainElement(coachingLine() as HTMLElement)
+      expect(hintRegion()).toContainElement(coachingLine() as HTMLElement)
+      expect(move()).toBe(LADDER[0].message)
+      expect(nudge()).toHaveTextContent(/feels like rest/i)
+      expect(verdictLine()).toBeNull()
+      expect(nudgeLine()).not.toBeInTheDocument()
+    })
+
+    it('answers the first miss with a verdict and a different move (R3, R12a, AC2, AC15)', async () => {
+      const user = userEvent.setup()
+      await renderPuzzle()
+
+      const before = move()
+      await guess(user, 'G', wrongFlavour())
+
+      expect(screen.getByText(/not it\. keep playing/i)).toBeInTheDocument()
+      expect(verdictLine()).not.toBeNull()
+      expect(move()).not.toBe(before)
+      expect(move()).toBe(LADDER[1].message)
+    })
+
+    it('advances the ladder again on the second miss (R3, AC4)', async () => {
+      const user = userEvent.setup()
+      await renderPuzzle()
+
+      await guess(user, 'G', wrongFlavour())
+      const afterOne = move()
+      await guess(user, liveRoot(), otherWrongFlavour())
+
+      expect(move()).toBe(LADDER[2].message)
+      expect(move()).not.toBe(afterOne)
+    })
+
+    it('walks the general ladder to its last move (R4, AC5)', async () => {
+      const user = userEvent.setup()
+      await renderPuzzle()
+
+      for (let played = 0; played < 3; played += 1) await missOnce(user)
+
+      expect(move()).toBe(LADDER[3].message)
+      expect(giveUp()).toHaveAccessibleName(/give up/i)
+    })
+
+    it('holds the last move once the misses outrun the ladder (R4, AC5)', async () => {
+      const stored: DailyResult = {
+        date: TODAY(),
+        answer: { root: 'C', flavour: 'Aeolian' },
+        attempts: [
+          miss('D', wrongFlavour(), false),
+          miss('E', otherWrongFlavour(), false),
+          miss('F', thirdWrongFlavour(), false),
+          miss('G', wrongFlavour(), false),
+          miss('A', otherWrongFlavour(), false),
+        ],
+        solved: false,
+        grooveId: GROOVE.id,
+      }
+      mockStore.get.mockResolvedValue(stored)
+      mockStore.getAll.mockResolvedValue([stored])
+
+      await renderPuzzle()
+
+      expect(move()).toBe(LADDER[3].message)
+    })
+
+    it('keeps the verdict for the first miss and for the first confirmation alone (R12a, R12b, AC16, AC17, AC18)', async () => {
+      const user = userEvent.setup()
+      await renderPuzzle()
+
+      await guess(user, liveRoot(), liveWrongFlavour())
+      expect(verdictLine()).not.toBeNull()
+
+      await guess(user, liveRoot(), liveWrongFlavour())
+      expect(verdictLine()).toBeNull()
+      expect(screen.queryByText(/not it\. keep playing/i)).toBeNull()
+      expect(nudge()).toHaveTextContent(move() as string)
+
+      await guess(user, liveRoot(), 'Aeolian')
+      expect(
+        screen.getByText(/the mode is right\. but the tonic is somewhere else/i),
+      ).toBeInTheDocument()
+      expect(verdictLine()).not.toBeNull()
+
+      await guess(user, liveRoot(), 'Aeolian')
+      expect(verdictLine()).toBeNull()
+      expect(coachingLine()).not.toBeNull()
+      expect(nudge()).toHaveTextContent(move() as string)
+    })
+
+    it('does not advance the ladder when a ruled-out chip is tapped to hear it (R6, R11, AC7)', async () => {
+      const user = userEvent.setup()
+      await renderPuzzle()
+
+      await guess(user, 'G', wrongFlavour())
+
+      const before = move()
+      const dotsBefore = dotStates()
+      const verdictBefore = verdictLine()?.textContent ?? null
+      expect(before).toBe(LADDER[1].message)
+      expect(verdictBefore).not.toBeNull()
+
+      await user.click(within(rootGroup()).getByRole('button', { name: 'G' }))
+      await user.click(
+        within(flavourGroup()).getByRole('button', { name: 'Aeolian' }),
+      )
+
+      expect(move()).toBe(before)
+      expect(dotStates()).toEqual(dotsBefore)
+      expect(verdictLine()?.textContent ?? null).toBe(verdictBefore)
+    })
+
+    it('comes back on the same rung after a reload (R7, AC8)', async () => {
+      const stored: DailyResult = {
+        date: TODAY(),
+        answer: { root: 'C', flavour: 'Aeolian' },
+        attempts: [
+          miss('D', wrongFlavour(), false),
+          miss('E', otherWrongFlavour(), false),
+        ],
+        solved: false,
+        grooveId: GROOVE.id,
+      }
+      mockStore.get.mockResolvedValue(stored)
+      mockStore.getAll.mockResolvedValue([stored])
+
+      await renderPuzzle()
+
+      expect(move()).toBe(LADDER[2].message)
+    })
+
+    it('keeps the rung when simple mode is switched on and off (R8, AC9)', async () => {
+      const user = userEvent.setup()
+      await renderPuzzle()
+
+      await guess(user, 'G', wrongFlavour())
+      await guess(user, liveRoot(), otherWrongFlavour())
+
+      const before = move()
+      expect(before).toBe(LADDER[2].message)
+
+      await user.click(modeSwitch())
+      expect(move()).toBe(before)
+
+      await user.click(modeSwitch())
+      expect(move()).toBe(before)
+    })
+
+    it('rewords the move when the tap sounds go off, with no reload (R9, R10, AC10)', async () => {
+      const user = userEvent.setup()
+      await renderPuzzle()
+
+      expect(soundsOffRung).toBeGreaterThanOrEqual(0)
+      for (let played = 0; played < soundsOffRung; played += 1) {
+        await missOnce(user)
+      }
+
+      expect(move()).toBe(LADDER[soundsOffRung].message)
+
+      await user.click(tapSwitch())
+      expect(move()).toBe(LADDER[soundsOffRung].soundsOff)
+
+      await user.click(tapSwitch())
+      expect(move()).toBe(LADDER[soundsOffRung].message)
+    })
+
+    it('leaves the move alone while the loop plays and stops (R16, AC19)', async () => {
+      const user = userEvent.setup()
+      await renderPuzzle()
+
+      await guess(user, 'G', wrongFlavour())
+      const before = move()
+      expect(before).toBe(LADDER[1].message)
+
+      await play(user)
+      expect(move()).toBe(before)
+
+      await user.click(screen.getByRole('button', { name: 'Stop the loop' }))
+      expect(move()).toBe(before)
+    })
+
+    it('takes the move away with the box when the day is solved (R14, AC12)', async () => {
+      const user = userEvent.setup()
+      await renderPuzzle()
+
+      await guess(user, 'G', wrongFlavour())
+      await guess(user, liveRoot(), otherWrongFlavour())
+      const carried = move() as string
+      expect(carried).not.toBe('')
+
+      await guess(user, 'C', 'Aeolian')
+
+      expect(nudge()).not.toBeInTheDocument()
+      expect(screen.queryByText(carried)).toBeNull()
+    })
+
+    it('takes the move away with the box when the day is given up on (R14, AC13)', async () => {
+      const user = userEvent.setup()
+      await renderPuzzle()
+
+      await guess(user, 'G', wrongFlavour())
+      await guess(user, liveRoot(), otherWrongFlavour())
+      await guess(user, liveRoot(), thirdWrongFlavour())
+      const carried = move() as string
+
+      await user.click(giveUp() as HTMLElement)
+      await user.click(giveUp() as HTMLElement)
+
+      expect(nudge()).not.toBeInTheDocument()
+      expect(screen.queryByText(carried)).toBeNull()
+    })
+
+    it('never shows a verdict or a second rung on a day solved first time (R15, AC14)', async () => {
+      const user = userEvent.setup()
+      await renderPuzzle()
+
+      expect(move()).toBe(LADDER[0].message)
+
+      await guess(user, 'C', 'Aeolian')
+
+      expect(nudge()).not.toBeInTheDocument()
+      expect(screen.queryByText(LADDER[1].message)).toBeNull()
+      expect(screen.queryByText(/not it\. keep playing/i)).toBeNull()
+    })
+
+    it('reads verdict, then coaching, then count (R12, R13, AC11)', async () => {
+      const user = userEvent.setup()
+      await renderPuzzle()
+
+      await guess(user, liveRoot(), liveWrongFlavour())
+      await guess(user, liveRoot(), liveWrongFlavour())
+      await guess(user, liveRoot(), 'Aeolian')
+
+      const verdict = verdictLine() as HTMLElement
+      const coaching = coachingLine() as HTMLElement
+      const count = nudgeLine() as HTMLElement
+
+      expect(verdict.dataset.tone).toBe('warm')
+      expect(coaching.dataset.tone).toBe('neutral')
+      expect(verdict.className).not.toBe(coaching.className)
+      expect(
+        verdict.compareDocumentPosition(coaching) &
+          Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy()
+      expect(
+        coaching.compareDocumentPosition(count) &
+          Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy()
+    })
+
+    it('announces the box once, not line by line (R17, AC20)', async () => {
+      const user = userEvent.setup()
+      await renderPuzzle()
+
+      await guess(user, liveRoot(), liveWrongFlavour())
+      await guess(user, liveRoot(), liveWrongFlavour())
+      await guess(user, liveRoot(), 'Aeolian')
+
+      const box = nudge() as HTMLElement
+      expect(within(box).getAllByRole('status')).toHaveLength(1)
+      expect(box.querySelectorAll('[aria-live]')).toHaveLength(1)
+
+      const region = within(box).getByRole('status')
+      expect(region).toHaveTextContent(/the mode is right/i)
+      expect(region).toHaveTextContent(move() as string)
+      expect(region).toHaveTextContent(/roots ruled out/i)
+      expect(box.querySelectorAll('[data-tone][role="status"]')).toHaveLength(0)
+    })
+  })
+
+  describe('the move matches the miss (F18 E2)', () => {
+    const generalMiss = async (
+      user: ReturnType<typeof userEvent.setup>,
+      step: number,
+    ) => {
+      const wrong = [wrongFlavour(), otherWrongFlavour(), thirdWrongFlavour()]
+      await guess(user, liveRoot(), wrong[step])
+    }
+
+    it('swaps the colour move the moment simple mode is switched (R9a, AC9a)', async () => {
+      const user = userEvent.setup()
+      await renderPuzzle()
+
+      await guess(user, 'C', wrongFlavour())
+      expect(move()).toBe(COLOUR_MOVES[0].message)
+
+      await user.click(modeSwitch())
+      expect(move()).toBe(SIMPLE_COLOUR_MOVES[0].message)
+      expect(move()).not.toBe(COLOUR_MOVES[0].message)
+
+      await user.click(modeSwitch())
+      expect(move()).toBe(COLOUR_MOVES[0].message)
+    })
+
+    it('coaches the tonic when a check got the mode right (R2, R4, AC1)', async () => {
+      const user = userEvent.setup()
+      await renderPuzzle()
+
+      await guess(user, liveRoot(), 'Aeolian')
+
+      expect(liveIn(flavourGroup())).toEqual(['Aeolian'])
+      expect(move()).toBe(TONIC_MOVES[0].message)
+    })
+
+    it('coaches the colour when a check got the root right (R2, R3, AC2)', async () => {
+      const user = userEvent.setup()
+      await renderPuzzle()
+
+      await guess(user, 'C', wrongFlavour())
+
+      expect(liveIn(rootGroup())).toEqual(['C'])
+      expect(move()).toBe(COLOUR_MOVES[0].message)
+    })
+
+    it('keeps Epic 1’s ladder when a miss confirms neither half (R5, AC3)', async () => {
+      const user = userEvent.setup()
+      await renderPuzzle()
+
+      expect(move()).toBe(LADDER[0].message)
+
+      await generalMiss(user, 0)
+
+      expect(move()).toBe(LADDER[1].message)
+      expect(move()).not.toBe(COLOUR_MOVES[0].message)
+      expect(move()).not.toBe(TONIC_MOVES[0].message)
+    })
+
+    it('enters the tonic family at its first move after two general misses (R7a, AC12)', async () => {
+      const user = userEvent.setup()
+      await renderPuzzle()
+
+      await generalMiss(user, 0)
+      await generalMiss(user, 1)
+      expect(move()).toBe(LADDER[2].message)
+
+      await guess(user, liveRoot(), 'Aeolian')
+
+      expect(move()).toBe(TONIC_MOVES[0].message)
+    })
+
+    it('advances to the family’s second move on the next miss, then holds (R7b, R7c, R7d, AC13, AC14)', async () => {
+      const user = userEvent.setup()
+      await renderPuzzle()
+
+      await generalMiss(user, 0)
+      await generalMiss(user, 1)
+      await guess(user, liveRoot(), 'Aeolian')
+
+      await guess(user, liveRoot(), 'Aeolian')
+      expect(move()).toBe(TONIC_MOVES[1].message)
+
+      for (let more = 0; more < 2; more += 1) {
+        await guess(user, liveRoot(), 'Aeolian')
+        expect(move()).toBe(TONIC_MOVES[1].message)
+      }
+    })
+
+    it('stays in the tonic family two misses after confirming the mode (R7, AC7)', async () => {
+      const user = userEvent.setup()
+      await renderPuzzle()
+
+      await guess(user, liveRoot(), 'Aeolian')
+      await guess(user, liveRoot(), 'Aeolian')
+      await guess(user, liveRoot(), 'Aeolian')
+
+      const shown = move() as string
+      expect(TONIC_MOVES.map((m) => m.message)).toContain(shown)
+      for (const rung of LADDER) expect(shown).not.toBe(rung.message)
+    })
+
+    it('gives simple mode the shared tonic wording when the family is confirmed (R9, AC8)', async () => {
+      const user = userEvent.setup()
+      await renderPuzzle()
+
+      await user.click(modeSwitch())
+      expect(chipTexts(flavourGroup())).toEqual(['Major', 'Minor'])
+
+      await guess(user, liveRoot(), 'Minor')
+
+      expect(move()).toBe(TONIC_MOVES[0].message)
+    })
+
+    it('gives simple mode its own colour wording when the root is confirmed (R8, AC9)', async () => {
+      const user = userEvent.setup()
+      await renderPuzzle()
+
+      await user.click(modeSwitch())
+      await guess(user, 'C', 'Major')
+
+      expect(liveIn(rootGroup())).toEqual(['C'])
+      expect(move()).toBe(SIMPLE_COLOUR_MOVES[0].message)
+      expect(move()).not.toBe(COLOUR_MOVES[0].message)
+    })
+
+    it('never names a root or a mode in the Hint box, in any family (R10, AC10)', async () => {
+      const user = userEvent.setup()
+      await renderPuzzle()
+
+      const read = () => nudge()?.textContent ?? ''
+      const seen: string[] = [read()]
+
+      await guess(user, 'C', wrongFlavour())
+      seen.push(read())
+
+      await user.click(modeSwitch())
+      seen.push(read())
+
+      for (const text of seen) {
+        expect(text).not.toBe('')
+        for (const root of ROOTS) expect(text).not.toMatch(rootPattern(root))
+        for (const mode of [...flavours(), ...FAMILIES]) {
+          expect(text).not.toMatch(new RegExp(`\\b${mode}\\b`, 'i'))
+        }
+      }
     })
   })
 })

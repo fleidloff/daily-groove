@@ -18,6 +18,7 @@ import {
   loopFraction,
   miss,
   NOTE_GLYPH,
+  move,
   otherWrongFlavour,
   play,
   renderPuzzle,
@@ -26,6 +27,7 @@ import {
   settle,
   SOLVING,
   teardownPuzzleAudio,
+  thirdWrongFlavour,
   TODAY,
   wrongFlavour,
 } from '../testing/puzzleHarness'
@@ -49,6 +51,8 @@ import { scheduleLick, type ScheduledNote } from '../lib/theory/phrase'
 import { simpleLickMode } from '../lib/theory/simpleModes'
 import { createLocalPreferenceStore } from '../lib/persistence/preferences'
 import { dateLine } from '../lib/presentation/date'
+import type { Move } from '../lib/presentation/moves'
+import { COLOUR_MOVES, TONIC_MOVES } from '../lib/presentation/coachingMoves'
 import { barChords } from '../lib/theory/changes'
 import { GROOVES } from '../data/grooves.generated'
 import { NOTES, PITCHES, type PitchSample } from '../data/notes.generated'
@@ -1464,6 +1468,57 @@ describe('GroovePuzzle', () => {
         tapSounds: false,
       })
     })
+
+    const liveRootOtherThanC = () =>
+      within(rootGroup())
+        .getAllByRole('button')
+        .filter((chip) => chip.getAttribute('aria-disabled') !== 'true')
+        .map(chipLabel)
+        .find((root) => root !== 'C') as string
+
+    const colourMiss = async (
+      user: ReturnType<typeof userEvent.setup>,
+      step: number,
+    ) => {
+      const wrong = [wrongFlavour(), otherWrongFlavour(), thirdWrongFlavour()]
+      await guess(user, 'C', wrong[step])
+    }
+
+    const tonicMiss = async (user: ReturnType<typeof userEvent.setup>) => {
+      await guess(user, liveRootOtherThanC(), 'Aeolian')
+    }
+
+    it.each([
+      ['the colour family', COLOUR_MOVES, colourMiss],
+      [
+        'the tonic family',
+        TONIC_MOVES,
+        (user: ReturnType<typeof userEvent.setup>) => tonicMiss(user),
+      ],
+    ] as [string, readonly Move[], (u: ReturnType<typeof userEvent.setup>, step: number) => Promise<void>][])(
+      'swaps %s\u2019s move when the tap sounds are switched off (F18 E2 R10, AC11)',
+      async (_name, table, missInFamily) => {
+        const user = userEvent.setup()
+        await renderPuzzle()
+
+        const index = table.findIndex((entry) => entry.soundsOff !== undefined)
+        expect(index).toBeGreaterThanOrEqual(0)
+
+        for (let step = 0; step <= index; step += 1) {
+          await missInFamily(user, step)
+        }
+
+        const target = table[index]
+        expect(move()).toBe(target.message)
+
+        await turnSoundsOff(user)
+        expect(move()).toBe(target.soundsOff)
+        expect(move()).not.toBe(target.message)
+
+        await user.click(soundSwitch())
+        expect(move()).toBe(target.message)
+      },
+    )
 
     it('warms nothing for a row that has been switched off (E11, R11)', async () => {
       const user = userEvent.setup()

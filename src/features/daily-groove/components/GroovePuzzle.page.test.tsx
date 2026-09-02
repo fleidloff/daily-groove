@@ -15,6 +15,8 @@ import {
   miss,
   nudge,
   nudgeLine,
+  verdictLine,
+  coachingLine,
   otherWrongFlavour,
   play,
   renderPuzzle,
@@ -193,7 +195,8 @@ describe('GroovePuzzle', () => {
     await renderPuzzle()
 
     expect(dotStates()).toEqual(['spent', 'spent', 'unspent'])
-    expect(screen.getByText(/not it\. keep playing/i)).toBeInTheDocument()
+    expect(verdictLine()).toBeNull()
+    expect(coachingLine()).toBeInTheDocument()
     expect(nudgeLine()).toBeInTheDocument()
 
     expect(

@@ -26,6 +26,8 @@ import {
 import { FAMILIES, type Family } from '../lib/theory/families'
 import { simpleLickMode } from '../lib/theory/simpleModes'
 import { barChords } from '../lib/theory/changes'
+import { selectCoaching } from '../lib/presentation/coaching'
+import { shouldShowVerdict } from '../lib/presentation/verdict'
 import { confirmedHalves } from '../lib/presentation/confirmed'
 import { ruledOut } from '../lib/presentation/ruledOut'
 import { metaLine } from '../lib/presentation/date'
@@ -183,6 +185,11 @@ function GroovePuzzleView({
     () => selectFeedback(attempts, solved),
     [attempts, solved],
   )
+  const coaching = useMemo(
+    () => selectCoaching({ attempts, tapSounds, simple }),
+    [attempts, tapSounds, simple],
+  )
+  const showVerdict = useMemo(() => shouldShowVerdict(attempts), [attempts])
   const dots = useMemo(() => dotStates(attempts, solved), [attempts, solved])
   const showReveal = useMemo(
     () => shouldOfferReveal(attempts, solved, revealed),
@@ -280,6 +287,8 @@ function GroovePuzzleView({
       onCheck={check}
       solved={solved}
       feedback={feedback}
+      coaching={coaching}
+      showVerdict={showVerdict}
       showNudge={showNudge}
       dots={dots}
       ruledOutRoots={narrowing.roots}

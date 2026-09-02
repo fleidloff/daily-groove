@@ -13,8 +13,6 @@ const TONE: Record<FeedbackTone, string> = {
 export function FeedbackLine({ feedback }: FeedbackLineProps) {
   return (
     <p
-      role="status"
-      aria-live="polite"
       data-tone={feedback.tone}
       className={`text-[14.5px] leading-[1.55] ${TONE[feedback.tone]}`}
     >

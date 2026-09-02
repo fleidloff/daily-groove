@@ -5,15 +5,16 @@ import { FeedbackLine } from './FeedbackLine'
 
 type NudgeBoxProps = {
   feedback: Feedback | null
+  coaching: Feedback | null
   eliminated: number | null
 }
 
-export function NudgeBox({ feedback, eliminated }: NudgeBoxProps) {
-  const message =
-    feedback !== null && feedback.message.trim() !== '' ? feedback : null
+export function NudgeBox({ feedback, coaching, eliminated }: NudgeBoxProps) {
+  const message = feedback && feedback.message.trim() !== '' ? feedback : null
+  const move = coaching && coaching.message.trim() !== '' ? coaching : null
   const count = eliminated !== null && eliminated > 0 ? eliminated : null
 
-  if (message === null && count === null) return null
+  if (message === null && move === null && count === null) return null
 
   return (
     <aside
@@ -22,12 +23,17 @@ export function NudgeBox({ feedback, eliminated }: NudgeBoxProps) {
     >
       <Stack gap="xs">
         <EyebrowLabel>Hint</EyebrowLabel>
-        {message !== null && <FeedbackLine feedback={message} />}
-        {count !== null && (
-          <p className="text-[14px] leading-[1.5] text-text-muted">
-            {count} roots ruled out. Narrowing as you go.
-          </p>
-        )}
+        <div role="status" aria-live="polite">
+          <Stack gap="xs">
+            {message !== null && <FeedbackLine feedback={message} />}
+            {move !== null && <FeedbackLine feedback={move} />}
+            {count !== null && (
+              <p className="text-[14px] leading-[1.5] text-text-muted">
+                {count} roots ruled out. Narrowing as you go.
+              </p>
+            )}
+          </Stack>
+        </div>
       </Stack>
     </aside>
   )

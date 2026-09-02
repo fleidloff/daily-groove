@@ -50,7 +50,7 @@ function matchedHalf(attempt: Attempt): MatchedHalf {
   return 'neither'
 }
 
-function missCount(attempts: Attempt[]): number {
+export function missCount(attempts: Attempt[]): number {
   return attempts.filter((attempt) => !attempt.correct).length
 }
 

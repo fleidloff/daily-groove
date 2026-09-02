@@ -165,6 +165,11 @@ export const dotStates = () =>
   )
 export const nudge = () => screen.queryByRole('complementary', { name: 'Hint' })
 export const nudgeLine = () => screen.queryByText(/roots ruled out/i)
+export const hintRegion = () => nudge()?.querySelector('[role="status"]') ?? null
+export const verdictLine = () => nudge()?.querySelector('[data-tone="warm"]') ?? null
+export const coachingLine = () =>
+  nudge()?.querySelector('[data-tone="neutral"]') ?? null
+export const move = () => coachingLine()?.textContent ?? null
 
 export async function guess(
   user: ReturnType<typeof userEvent.setup>,

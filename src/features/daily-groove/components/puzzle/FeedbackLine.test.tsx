@@ -9,7 +9,7 @@ const SOLVED: Feedback = { message: 'That is it. The groove is yours.', tone: 's
 
 function classOf(feedback: Feedback): string {
   const { unmount } = render(<FeedbackLine feedback={feedback} />)
-  const className = screen.getByRole('status').className
+  const className = screen.getByText(feedback.message).className
   unmount()
   return className
 }
@@ -20,19 +20,21 @@ describe('FeedbackLine', () => {
     expect(screen.getByText(WARM.message)).toBeInTheDocument()
   })
 
-  it('puts the message in a polite live region so it is announced (R10, AC14)', () => {
+  it('declares no live region of its own — the box owns the one (R17, AC20)', () => {
     render(<FeedbackLine feedback={WARM} />)
-    const status = screen.getByRole('status')
-    expect(status).toHaveTextContent(WARM.message)
-    expect(status).toHaveAttribute('aria-live', 'polite')
+    const line = screen.getByText(WARM.message)
+    expect(line).not.toHaveAttribute('role')
+    expect(line).not.toHaveAttribute('aria-live')
+    expect(screen.queryByRole('status')).toBeNull()
   })
 
-  it('announces a changed message from the same live region (R10, AC14)', () => {
+  it('renders a changed message in place of the one before it (R10, AC14)', () => {
     const { rerender } = render(<FeedbackLine feedback={NEUTRAL} />)
-    expect(screen.getByRole('status')).toHaveTextContent(NEUTRAL.message)
+    expect(screen.getByText(NEUTRAL.message)).toBeInTheDocument()
 
     rerender(<FeedbackLine feedback={WARM} />)
-    expect(screen.getByRole('status')).toHaveTextContent(WARM.message)
+    expect(screen.getByText(WARM.message)).toBeInTheDocument()
+    expect(screen.queryByText(NEUTRAL.message)).toBeNull()
   })
 
   it('gives the three tones distinct classes (R8)', () => {
@@ -43,10 +45,9 @@ describe('FeedbackLine', () => {
   it('marks the tone it rendered (R8)', () => {
     const tones: FeedbackTone[] = ['neutral', 'warm', 'solved']
     for (const tone of tones) {
-      const { unmount } = render(
-        <FeedbackLine feedback={{ message: `a ${tone} line`, tone }} />,
-      )
-      expect(screen.getByRole('status').dataset.tone).toBe(tone)
+      const message = `a ${tone} line`
+      const { unmount } = render(<FeedbackLine feedback={{ message, tone }} />)
+      expect(screen.getByText(message).dataset.tone).toBe(tone)
       unmount()
     }
   })
@@ -54,7 +55,9 @@ describe('FeedbackLine', () => {
   it('carries the whole message in text, never in colour alone (R10, AC14)', () => {
     for (const feedback of [NEUTRAL, WARM, SOLVED]) {
       const { unmount } = render(<FeedbackLine feedback={feedback} />)
-      expect(screen.getByRole('status')).toHaveTextContent(feedback.message)
+      expect(screen.getByText(feedback.message)).toHaveTextContent(
+        feedback.message,
+      )
       unmount()
     }
   })
