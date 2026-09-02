@@ -31,6 +31,7 @@ tested and verified). Lettered candidates sit at ✏️ **Briefed** until promot
 | [13](feature-13/) | Drum kit rewrite | ✅ Done | Rebuilds every groove on a real drum kit in place of the cajon, adds a bongo where it fits, brings the keys within a few dB of the drums, and takes the mechanical evenness off the piano — with every groove’s harmony untouched. |
 | [14](feature-14/) | Development speed | ✅ Done | Splits the slow generator tests out of the default test run, breaks up the 3111-line GroovePuzzle test file, and gives implementation workers role-specialized agents so less documentation travels with each dispatch. |
 | [15](feature-15/) | Explain the answer | ✅ Done | Turns the solved box from a scoreboard into the day's lesson — why it is that mode, the notes and the changes as degrees, and how near the guess came. |
+| [16](feature-16/) | Hear the mode | 🛠 Ready to implement | Gives the mode row a voice — tap a mode to hear a short lick in it from the day's root — and puts both rows on the groove's beat, quieter, behind a switch that turns the tap sounds off. |
 
 ## Prepared candidates
 
@@ -41,7 +42,6 @@ briefing. Rename the folder to the next free number to put one on the plan.
 | :-- | :-- | :-- | :-- |
 | [A](feature-a/) | Vercel & Supabase | ✏️ Briefed | Deploys to Vercel and moves user data to Supabase behind an anonymous, non-stealable local ID, with data export/import between browsers. |
 | [B](feature-b/) | Internationalization | ✏️ Briefed | Replaces hardcoded text with snippets, translates them all, and automates translation at build time. |
-| [C](feature-c/) | Hear the mode | ✏️ Briefed | Gives the mode row a voice — tap a mode to hear a short lick in it from the day's root, against the running groove, so the mode can be found by ear instead of read off a word. |
 
 ---
 

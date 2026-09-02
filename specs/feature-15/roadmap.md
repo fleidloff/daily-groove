@@ -16,7 +16,7 @@ how near the guess actually came.
 dinner" and abandoned three theory courses "because a course is homework"; every
 epic below adds at most a line or a row of numbers to a drawing that already
 exists. Nothing here makes a sound — hearing a mode is
-[feature-c](../feature-c/briefing.md)'s job, and that briefing excludes theory
+[feature-c](../feature-16/briefing.md)'s job, and that briefing excludes theory
 text for the same reason this one excludes audio. They are two halves of one
 payoff and neither blocks the other.
 
