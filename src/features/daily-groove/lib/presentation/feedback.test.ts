@@ -129,20 +129,25 @@ describe('selectFeedback', () => {
 
 describe('shouldShowNudge', () => {
   it('is hidden while the app has eliminated nothing (R19, AC18)', () => {
-    expect(shouldShowNudge(0, false)).toBe(false)
+    expect(shouldShowNudge(0, false, false)).toBe(false)
   })
 
   it('appears once the app has eliminated roots (R17, AC17)', () => {
-    expect(shouldShowNudge(2, false)).toBe(true)
+    expect(shouldShowNudge(2, false, false)).toBe(true)
   })
 
   it('stays visible while the count stands at the floor (R17b, AC17b)', () => {
-    expect(shouldShowNudge(4, false)).toBe(true)
+    expect(shouldShowNudge(4, false, false)).toBe(true)
   })
 
   it('is withdrawn once the day is solved', () => {
-    expect(shouldShowNudge(2, true)).toBe(false)
-    expect(shouldShowNudge(0, true)).toBe(false)
+    expect(shouldShowNudge(2, true, false)).toBe(false)
+    expect(shouldShowNudge(0, true, false)).toBe(false)
+  })
+
+  it('is withdrawn once the root is confirmed (F18 E3 R1, AC1)', () => {
+    expect(shouldShowNudge(2, false, true)).toBe(false)
+    expect(shouldShowNudge(4, false, true)).toBe(false)
   })
 })
 

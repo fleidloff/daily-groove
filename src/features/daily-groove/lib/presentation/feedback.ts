@@ -66,8 +66,9 @@ export function selectFeedback(attempts: Attempt[], solved: boolean): Feedback {
 export function shouldShowNudge(
   eliminatedCount: number,
   solved: boolean,
+  rootConfirmed: boolean,
 ): boolean {
-  return !solved && eliminatedCount > 0
+  return !solved && !rootConfirmed && eliminatedCount > 0
 }
 
 export function shouldOfferReveal(

@@ -428,13 +428,40 @@ describe('GroovePuzzle', () => {
     expect(nudgeLine()).toBeInTheDocument()
   })
 
+  it('drops the narrowing count once the root is confirmed, and never brings it back (F18 E3 R1, R2, AC1, AC2)', async () => {
+    const user = userEvent.setup()
+    await renderPuzzle()
+
+    await guess(user, 'G', wrongFlavour())
+    await guess(user, 'D', otherWrongFlavour())
+    expect(nudgeLine()).toBeInTheDocument()
+
+    await guess(user, 'C', thirdWrongFlavour())
+    expect(nudge()).toBeInTheDocument()
+    expect(coachingLine()).toBeInTheDocument()
+    expect(nudgeLine()).not.toBeInTheDocument()
+
+    await guess(user, 'C', wrongFlavour())
+    expect(nudgeLine()).not.toBeInTheDocument()
+  })
+
+  it('never shows the narrowing count when the root lands first (F18 E3 R1, AC3)', async () => {
+    const user = userEvent.setup()
+    await renderPuzzle()
+
+    await guess(user, 'C', wrongFlavour())
+    await guess(user, 'C', otherWrongFlavour())
+    expect(nudge()).toBeInTheDocument()
+    expect(nudgeLine()).not.toBeInTheDocument()
+  })
+
   it('withdraws the whole hint box and turns the dots on the solve (E3 R9, AC13)', async () => {
     const user = userEvent.setup()
     await renderPuzzle()
     const wrong = wrongFlavour()
 
-    await guess(user, 'C', wrong)
-    await guess(user, 'C', otherWrongFlavour())
+    await guess(user, 'G', wrong)
+    await guess(user, 'D', otherWrongFlavour())
     expect(nudge()).toBeInTheDocument()
     expect(nudgeLine()).toBeInTheDocument()
 
@@ -900,7 +927,8 @@ describe('GroovePuzzle', () => {
 
       expect(nudgeLine()).not.toBeInTheDocument()
       await guess(user, 'C', otherWrongFlavour())
-      expect(nudge()).toHaveTextContent(/2 roots ruled out/)
+      expect(nudge()).toBeInTheDocument()
+      expect(nudgeLine()).not.toBeInTheDocument()
 
       expect(giveUp()).toBeNull()
       await guess(user, 'C', thirdWrongFlavour())

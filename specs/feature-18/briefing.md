@@ -5,3 +5,4 @@
 * solves the moment the opening line "Sing the note that feels like rest — that's usually the root" disappears on the first guess and never comes back, so the only ear coaching in the app is spent by the fastest guesser
 * not a lesson: no curriculum, no levels, no reading — one line at a time, in the hint box that is already there
 * nothing new once the day is over — the solved panel stays the thing that explains the answer
+* once the root is confirmed, stop saying how many roots were ruled out — there is nothing left to narrow

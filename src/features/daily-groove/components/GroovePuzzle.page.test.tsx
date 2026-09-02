@@ -185,7 +185,7 @@ describe('GroovePuzzle', () => {
     const stored: DailyResult = {
       date: TODAY(),
       answer: { root: 'C', flavour: 'Aeolian' },
-      attempts: [miss('C', wrong, true), miss('G', wrong, false)],
+      attempts: [miss('G', wrong, false), miss('D', wrong, false)],
       solved: false,
     }
     mockStore.get.mockResolvedValue(stored)

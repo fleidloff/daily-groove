@@ -211,12 +211,17 @@ function GroovePuzzleView({
     [attempts, answer, roots, today],
   )
 
-  const showNudge = useMemo(
-    () => shouldShowNudge(narrowing.eliminatedCount, solved),
-    [narrowing, solved],
-  )
-
   const confirmed = useMemo(() => confirmedHalves(attempts), [attempts])
+
+  const showNudge = useMemo(
+    () =>
+      shouldShowNudge(
+        narrowing.eliminatedCount,
+        solved,
+        confirmed.roots.length > 0,
+      ),
+    [narrowing, solved, confirmed],
+  )
 
   const offeredRoot = selectedRoot !== null && roots.includes(selectedRoot)
     ? selectedRoot

@@ -154,6 +154,26 @@ Minor, the move is phrased for that choice rather than for one of four modes.
   simple and full mode, and the no-answers-in-the-copy and sounds-off assertions
   extended to every new move.
 
+### Epic 3 — The count stops when the root lands
+
+**Visible when done:** Sam gets the root right on the third guess and the Hint
+box stops saying "2 roots ruled out. Narrowing as you go." — the row above it
+has already collapsed to one chip, so there is nothing left to narrow.
+**Depends on:** none — added after Epics 1 and 2 shipped
+**Parallel with:** none
+
+**Scope**
+
+- `shouldShowNudge` takes whether the root is confirmed, read from the same
+  `confirmedHalves` result the chip rows lock from, and hides the count when it
+  is.
+- Nothing else in the box changes.
+
+**Validation**
+
+- Two misses on wrong roots → count shown. Right root, wrong mode → count gone,
+  coaching still there. Another miss → still gone.
+
 ## Dependency map
 
 ```mermaid
@@ -165,6 +185,7 @@ graph LR
 
 - **Wave 1:** Epic 1.
 - **Wave 2:** Epic 2 — needs Epic 1's coaching slot and selector.
+- **Wave 3:** Epic 3 — a one-selector follow-up, added after both shipped.
 - **No parallelism is claimed, deliberately.** Both epics edit
   `lib/presentation/feedback.ts`, `components/puzzle/NudgeBox.tsx` and the Hint
   box wiring in `components/puzzle/GuessCard.tsx`. Feature-16's roadmap claimed
