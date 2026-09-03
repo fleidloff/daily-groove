@@ -397,6 +397,52 @@ describe('Chip', () => {
     expect(source).not.toMatch(/disabled\s*(\|\||&&|\?\?)\s*unavailable/)
   })
 
+  it('refuses the pick but still reports the press once settled, without disabling (F22)', async () => {
+    const user = userEvent.setup()
+    const onSelect = vi.fn()
+    const onPress = vi.fn()
+    render(
+      <Chip
+        label="C"
+        selected={false}
+        disabled={false}
+        settled
+        onSelect={onSelect}
+        onPress={onPress}
+      />,
+    )
+    const chip = screen.getByRole('button', { name: 'C' })
+
+    expect(chip).not.toBeDisabled()
+    expect(chip).not.toHaveAttribute('aria-disabled')
+
+    await user.click(chip)
+    expect(onSelect).not.toHaveBeenCalled()
+    expect(onPress).toHaveBeenCalledTimes(1)
+  })
+
+  it('dims a settled chip and drops its hover, keeping its selection visible (F22)', () => {
+    const chipWith = (props: Partial<Parameters<typeof Chip>[0]>) =>
+      render(
+        <Chip label="C" selected={false} disabled={false} onSelect={() => {}} {...props} />,
+      ).container.firstElementChild as HTMLButtonElement
+
+    const idle = chipWith({})
+    const settled = chipWith({ settled: true })
+    const settledSelected = chipWith({ settled: true, selected: true })
+    const settledOut = chipWith({ settled: true, unavailable: true })
+
+    expect(settled.className).toContain('opacity-60')
+    expect(settled.className).not.toMatch(/hover:/)
+    expect(idle.className).toMatch(/hover:/)
+    expect(settledSelected.className).toContain('bg-accent')
+    expect(settled.className).not.toContain('border-dashed')
+    expect(settledOut.className).toContain('border-dashed')
+    expect(
+      new Set([idle, settled, settledOut].map((chip) => chip.className)).size,
+    ).toBe(3)
+  })
+
   it('draws an unavailable chip apart from an idle and a locked one (R4, R5, R20, AC4, AC19)', () => {
     const chipWith = (props: Partial<Parameters<typeof Chip>[0]>) =>
       render(

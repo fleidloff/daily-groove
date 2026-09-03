@@ -22,33 +22,35 @@ const CREDIT_LINK =
 export function GrooveCard({ groove, meta, children }: GrooveCardProps) {
   return (
     <Card>
-      <Stack gap="lg">
-        <Heading level={2} size="lg">
+      <Stack gap='lg' fill>
+        <Heading level={2} size='lg'>
           {groove.name}
         </Heading>
-        <Text tone="muted" size="sm">
+        <Text tone='muted' size='sm'>
           {meta}
         </Text>
         {children}
-        <Text tone="faint" size="sm">
-          <a
-            href={DRUM_CREDIT_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={CREDIT_LINK}
-          >
-            {puzzle.drumCredit}
-          </a>
-          {' · '}
-          <a
-            href={DRUM_CREDIT_LICENCE_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={CREDIT_LINK}
-          >
-            {DRUM_CREDIT_LICENCE}
-          </a>
-        </Text>
+        <div className='mt-auto'>
+          <Text tone='faint' size='sm'>
+            <a
+              href={DRUM_CREDIT_URL}
+              target='_blank'
+              rel='noopener noreferrer'
+              className={CREDIT_LINK}
+            >
+              {puzzle.drumCredit}
+            </a>
+            {' · '}
+            <a
+              href={DRUM_CREDIT_LICENCE_URL}
+              target='_blank'
+              rel='noopener noreferrer'
+              className={CREDIT_LINK}
+            >
+              {DRUM_CREDIT_LICENCE}
+            </a>
+          </Text>
+        </div>
       </Stack>
     </Card>
   )

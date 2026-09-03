@@ -324,3 +324,10 @@ are one instrument to the ear, and a root droning under a lick muddies exactly
 the interval the lick exists to expose.
 Applied to: R8 (widened from one lick to one sound), R8a, AC6a, AC6b,
 Dependencies
+
+### Superseded — 2026-09-03
+
+R22 / AC15 no longer hold: since feature-22, the mode chips on a solved or
+revealed day are settled (unpickable, dimmed) but still play their lick on a
+tap. Decided in chat during feature-22; the tests carry the
+`F22 chips keep sounding` tag.

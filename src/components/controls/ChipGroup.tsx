@@ -17,6 +17,7 @@ type ChipGroupProps = {
   onSelect: (option: string) => void
   onPress?: (option: string) => void
   disabled: boolean
+  settled?: boolean
   name: string
   columns: ChipColumns
   adornment?: string
@@ -43,6 +44,7 @@ export function ChipGroup({
   onSelect,
   onPress,
   disabled,
+  settled = false,
   name,
   columns,
   adornment,
@@ -63,6 +65,7 @@ export function ChipGroup({
             label={option}
             selected={value === option}
             disabled={disabled}
+            settled={settled}
             unavailable={optionStates?.[option]?.unavailable}
             onSelect={() => onSelect(option)}
             onPress={onPress ? () => onPress(option) : undefined}

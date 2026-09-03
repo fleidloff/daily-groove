@@ -402,7 +402,7 @@ describe('GroovePuzzle', () => {
     expect(fetchedNotes()).toEqual([noteSrc('E♭')])
   })
 
-  it('stays silent on a day that has been solved (D5, R12, AC10)', async () => {
+  it('still sounds a root on a day that has been solved, without moving the pick (D5, R12, AC10; F22 chips keep sounding)', async () => {
     const stored: DailyResult = {
       date: TODAY(),
       answer: { root: 'C', flavour: 'Aeolian' },
@@ -417,8 +417,8 @@ describe('GroovePuzzle', () => {
 
     await user.click(within(rootGroup()).getByRole('button', { name: 'G' }))
 
-    expect(fetchedNotes()).toEqual([])
-    expect(fake.sources).toHaveLength(0)
+    expect(fetchedNotes()).toEqual([noteSrc('G')])
+    expect(fake.sources).toHaveLength(1)
     expect(
       within(rootGroup()).getByRole('button', { name: 'G' }),
     ).toHaveAttribute('aria-pressed', 'false')
@@ -1036,7 +1036,7 @@ describe('GroovePuzzle', () => {
     it.each([
       ['solved', { solved: true, attempts: [SOLVING] }],
       ['given up on', { solved: false, revealed: true, attempts: [] }],
-    ])('stays silent on a day that has been %s (H6, R22, AC15)', async (_, ending) => {
+    ])('still sounds a mode’s lick on a day that has been %s, without moving the pick (H6, R22, AC15; F22 chips keep sounding)', async (_, ending) => {
       const stored: DailyResult = {
         date: TODAY(),
         answer: { root: 'C', flavour: 'Aeolian' },
@@ -1052,11 +1052,16 @@ describe('GroovePuzzle', () => {
       const chip = () =>
         within(flavourGroup()).getByRole('button', { name: mode })
       const was = chip().getAttribute('aria-pressed')
+      const phrase = scheduleLick({
+        flavour: mode,
+        root: GROOVE.root,
+        bpm: GROOVE.bpm,
+      })
 
       await user.click(chip())
 
-      expect(fetchedNotes()).toEqual([])
-      expect(fake.sources).toHaveLength(0)
+      await soundedLick(0, phrase.length)
+      expect(fetchedNotes()).toEqual(phraseFiles(phrase))
       expect(chip()).toHaveAttribute('aria-pressed', was as string)
     })
 

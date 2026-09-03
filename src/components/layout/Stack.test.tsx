@@ -24,6 +24,25 @@ describe('Stack', () => {
     expect(root.className).toContain('flex-col')
   })
 
+  it('sizes itself to its content unless asked to fill', () => {
+    const { container } = render(<Stack gap="sm">x</Stack>)
+    const root = container.firstElementChild as HTMLElement
+
+    expect(root.className).not.toContain('h-full')
+  })
+
+  it('fills its container when asked, so a child can sit at the bottom', () => {
+    const { container } = render(
+      <Stack gap="sm" fill>
+        x
+      </Stack>,
+    )
+    const root = container.firstElementChild as HTMLElement
+
+    expect(root.className).toContain('h-full')
+    expect(root.className).toContain('flex-col')
+  })
+
   it('resolves each gap on the token scale to a distinct class', () => {
     const classes = (['xs', 'sm', 'md', 'lg', 'xl'] as const).map(
       (gap) =>

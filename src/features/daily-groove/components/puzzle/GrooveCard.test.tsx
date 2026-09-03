@@ -232,7 +232,7 @@ describe('GrooveCard', () => {
       }
     })
 
-    it("sits after the card's children, not among them", () => {
+    it('is pinned to the bottom edge of the card, after the children', () => {
       render(
         <GrooveCard groove={GROOVE} meta={metaFor(GROOVE)}>
           <button type="button">play</button>
@@ -240,11 +240,14 @@ describe('GrooveCard', () => {
       )
       const play = screen.getByRole('button', { name: 'play' })
       const link = screen.getByRole('link', { name: SOURCE })
+      const column = screen.getByRole('heading', { level: 2 }).parentElement as HTMLElement
+      const footer = link.closest('p')?.parentElement as HTMLElement
+
       expect(play.compareDocumentPosition(link) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
-      expect(link.closest('p')?.parentElement).toBe(
-        screen.getByRole('heading', { level: 2 }).parentElement,
-      )
-      expect(link.closest('p')?.nextElementSibling).toBeNull()
+      expect(footer.parentElement).toBe(column)
+      expect(footer.nextElementSibling).toBeNull()
+      expect(footer.className).toContain('mt-auto')
+      expect(column.className).toContain('h-full')
     })
 
     it('stays the quietest thing in the card', () => {

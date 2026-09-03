@@ -259,3 +259,10 @@ Answer: **A) No — the row stays disabled and silent** — it is today's behavi
 and it keeps `SolvedPanel` the single payoff rather than splitting attention
 back to a dead chip row.
 Applied to: R12, AC10, Out of scope
+
+### Superseded — 2026-09-03
+
+Q3 / R12 / AC10 no longer hold: since feature-22, the root chips on a solved
+or revealed day are settled (unpickable, dimmed) but still sound on a tap, so
+the day's groove can be jammed over with the root one tap away. Decided in chat
+during feature-22; the tests carry the `F22 chips keep sounding` tag.

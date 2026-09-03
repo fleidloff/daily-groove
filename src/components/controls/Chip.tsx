@@ -7,6 +7,7 @@ type ChipProps = {
   selected: boolean
   disabled: boolean
   unavailable?: boolean
+  settled?: boolean
   onSelect: () => void
   onPress?: () => void
   tone?: ChipTone
@@ -31,6 +32,14 @@ const ADORNMENT = 'mr-[5px]'
 
 const UNAVAILABLE = 'border-dashed opacity-60'
 
+const SETTLED = 'cursor-default opacity-60'
+
+const withoutHover = (classes: string) =>
+  classes
+    .split(' ')
+    .filter((token) => !token.startsWith('hover:'))
+    .join(' ')
+
 const TONE: Record<ChipTone, { idle: string; selected: string }> = {
   default: { idle: IDLE, selected: SELECTED },
   inverted: { idle: INVERTED_IDLE, selected: INVERTED_SELECTED },
@@ -41,24 +50,34 @@ export function Chip({
   selected,
   disabled,
   unavailable,
+  settled = false,
   onSelect,
   onPress,
   tone = 'default',
   adornment,
 }: ChipProps) {
   const palette = TONE[tone]
+  const shape = selected ? palette.selected : palette.idle
+  const treatment = [
+    BASE,
+    settled ? withoutHover(shape) : shape,
+    unavailable ? UNAVAILABLE : '',
+    settled ? SETTLED : '',
+  ]
+    .filter(Boolean)
+    .join(' ')
 
   return (
     <button
       type="button"
       onClick={() => {
-        if (!unavailable) onSelect()
+        if (!unavailable && !settled) onSelect()
         onPress?.()
       }}
       disabled={disabled}
       aria-disabled={unavailable ? true : undefined}
       aria-pressed={selected}
-      className={`${BASE} ${selected ? palette.selected : palette.idle}${unavailable ? ` ${UNAVAILABLE}` : ''}`}
+      className={treatment}
     >
       {adornment && (
         <span aria-hidden="true" className={ADORNMENT}>

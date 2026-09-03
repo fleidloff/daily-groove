@@ -1368,7 +1368,7 @@ describe('GroovePuzzle', () => {
     it.each([
       ['revealed', { solved: false, revealed: true }],
       ['solved', { solved: true }],
-    ])('keeps a %s day’s lock under the card’s own lock (R8, AC10)', async (
+    ])('keeps a %s day’s lock under the card’s own lock, which no longer disables (R8, AC10; F22 chips keep sounding)', async (
       _name,
       ending,
     ) => {
@@ -1388,7 +1388,8 @@ describe('GroovePuzzle', () => {
       const c = within(rootGroup()).getByRole('button', { name: 'C' })
       expect(dimmedIn(rootGroup())).toEqual(ROOTS.filter((r) => r !== 'C'))
       expect(c).not.toHaveAttribute('aria-disabled')
-      expect(c).toBeDisabled()
+      expect(c).not.toBeDisabled()
+      expect(c.className).toContain('opacity-60')
       expect(c).toHaveAccessibleName('C')
     })
 

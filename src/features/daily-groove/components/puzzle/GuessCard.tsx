@@ -81,7 +81,8 @@ export function GuessCard({ onHearRoot, onHearMode }: GuessCardProps) {
             session.selectRoot(option as Root),
           )}
           onPress={disarming((option: string) => onHearRoot(option as Root))}
-          disabled={view.over}
+          disabled={false}
+          settled={view.over}
           columns={{ base: 4, wide: 6 }}
           adornment={tapSounds ? '♪' : undefined}
           optionStates={chipStates(view.roots)}
@@ -96,7 +97,8 @@ export function GuessCard({ onHearRoot, onHearMode }: GuessCardProps) {
             session.selectFlavour(option as Flavour),
           )}
           onPress={disarming((option: string) => onHearMode(option as Flavour))}
-          disabled={view.over}
+          disabled={false}
+          settled={view.over}
           columns={{ base: 2, wide: 4 }}
           adornment={tapSounds ? '♪' : undefined}
           optionStates={chipStates(view.flavours)}

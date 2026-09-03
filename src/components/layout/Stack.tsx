@@ -4,6 +4,7 @@ import type { Space } from '@/components/tokens'
 type StackProps = {
   children: ReactNode
   gap: Space
+  fill?: boolean
 }
 
 const GAP: Record<Space, string> = {
@@ -14,6 +15,9 @@ const GAP: Record<Space, string> = {
   xl: 'gap-10',
 }
 
-export function Stack({ children, gap }: StackProps) {
-  return <div className={`flex flex-col ${GAP[gap]}`}>{children}</div>
+export function Stack({ children, gap, fill = false }: StackProps) {
+  const className = ['flex flex-col', GAP[gap], fill ? 'h-full' : '']
+    .filter(Boolean)
+    .join(' ')
+  return <div className={className}>{children}</div>
 }

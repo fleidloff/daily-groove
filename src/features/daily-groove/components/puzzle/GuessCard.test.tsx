@@ -792,23 +792,24 @@ describe('GuessCard', () => {
       }),
     ],
   ])(
-    'silences a ruled-out chip once the day is %s (R4b, AC5b)',
+    'still sounds a ruled-out chip once the day is %s, and refuses the pick (R4b, AC5b; F22 chips keep sounding)',
     async (_name, over) => {
       const user = userEvent.setup()
       await openDay(over())
 
       const chip = rootChip('G')
-      expect(chip).toBeDisabled()
+      expect(chip).not.toBeDisabled()
 
       await user.click(chip)
       await settle()
-      expect(fetchedNotes()).toEqual([])
-      expect(fake.sources).toHaveLength(0)
+      expect(fetchedNotes()).toEqual([noteSrc('G')])
+      expect(fake.sources).toHaveLength(1)
       expect(pressedIn(rootGroup())).not.toContain('G')
 
       for (const group of [rootGroup(), flavourGroup()]) {
         for (const other of chipsIn(group)) {
-          expect(other, chipLabel(other)).toBeDisabled()
+          expect(other, chipLabel(other)).not.toBeDisabled()
+          expect(other.className, chipLabel(other)).toContain('opacity-60')
         }
       }
     },
@@ -832,7 +833,10 @@ describe('GuessCard', () => {
     expect(new Set(rest.map((chip) => chip.className)).size).toBe(1)
     expect(ruled[0].className).not.toBe(rest[0].className)
 
-    for (const chip of chips) expect(chip, chipLabel(chip)).toBeDisabled()
+    for (const chip of chips) {
+      expect(chip, chipLabel(chip)).not.toBeDisabled()
+      expect(chip.className, chipLabel(chip)).toContain('opacity-60')
+    }
   })
 
   it('offers no way to give up until it is asked for (R6, AC6)', async () => {
@@ -927,8 +931,8 @@ describe('GuessCard', () => {
     const user = userEvent.setup()
     await openDay({ attempts: threeMisses(), revealed: true })
 
-    for (const chip of chipsIn(rootGroup())) expect(chip).toBeDisabled()
-    for (const chip of chipsIn(flavourGroup())) expect(chip).toBeDisabled()
+    for (const chip of chipsIn(rootGroup())) expect(chip).not.toBeDisabled()
+    for (const chip of chipsIn(flavourGroup())) expect(chip).not.toBeDisabled()
 
     expect(control()).toBeDisabled()
 
@@ -1022,7 +1026,8 @@ describe('GuessCard', () => {
     const user = userEvent.setup()
     await openDay({ attempts: [SOLVING], solved: true })
 
-    expect(chipsIn(rootGroup())[0]).toBeDisabled()
+    expect(chipsIn(rootGroup())[0]).not.toBeDisabled()
+    expect(chipsIn(rootGroup())[0].className).toContain('opacity-60')
     expect(modeSwitch()).toBeDisabled()
     await user.click(modeSwitch())
     expect(chipsIn(rootGroup())).toHaveLength(12)
@@ -1194,27 +1199,27 @@ describe('GuessCard', () => {
     expect(rootChip('E♭')).toHaveAttribute('aria-pressed', 'true')
   })
 
-  it('stays silent once the day is solved (R12, AC10)', async () => {
+  it('still sounds a root once the day is solved, without moving the pick (R12, AC10; F22 chips keep sounding)', async () => {
     const user = userEvent.setup()
     await openDay({ attempts: [SOLVING], solved: true })
 
     await user.click(rootChip('D'))
     await settle()
 
-    expect(fetchedNotes()).toEqual([])
-    expect(fake.sources).toHaveLength(0)
+    expect(fetchedNotes()).toEqual([noteSrc('D')])
+    expect(fake.sources).toHaveLength(1)
     expect(pressedIn(rootGroup())).toEqual(['C'])
   })
 
-  it('stays silent once the day has been revealed (R12, AC10)', async () => {
+  it('still sounds a root once the day has been revealed (R12, AC10; F22 chips keep sounding)', async () => {
     const user = userEvent.setup()
     await openDay({ attempts: threeMisses(), revealed: true })
 
     await user.click(rootChip('C'))
     await settle()
 
-    expect(fetchedNotes()).toEqual([])
-    expect(fake.sources).toHaveLength(0)
+    expect(fetchedNotes()).toEqual([noteSrc('C')])
+    expect(fake.sources).toHaveLength(1)
   })
 
   it('sounds every root a narrowed row offers (R7, AC6)', async () => {
@@ -1313,7 +1318,7 @@ describe('GuessCard', () => {
   it.each([
     ['solved', () => ({ attempts: [SOLVING], solved: true })],
     ['revealed', () => ({ attempts: threeMisses(), revealed: true })],
-  ])('stays silent on a %s day (R22, AC15)', async (_name, over) => {
+  ])('still sounds a mode on a %s day, without moving the pick (R22, AC15; F22 chips keep sounding)', async (_name, over) => {
     const user = userEvent.setup()
     await openDay(over())
 
@@ -1324,8 +1329,8 @@ describe('GuessCard', () => {
     await user.click(modeChip(target))
     await settle()
 
-    expect(fetchedNotes()).toEqual([])
-    expect(fake.sources).toHaveLength(0)
+    expect(fetchedUrls()).toEqual(lickFiles(target as Flavour))
+    expect(fake.sources.length).toBeGreaterThan(0)
     expect(pressedIn(flavourGroup())).not.toContain(target)
   })
 
@@ -1438,13 +1443,13 @@ describe('GuessCard', () => {
         }),
       ],
     ])(
-      'keeps the glyph on the disabled chips of a %s day (R3, AC4)',
+      'keeps the glyph on the settled chips of a %s day (R3, AC4)',
       async (_name, over) => {
         await openDay(over())
 
         const chips = chipsIn(rootGroup())
         for (const chip of chips) {
-          expect(chip).toBeDisabled()
+          expect(chip).not.toBeDisabled()
           expect(chipAdornment(chip), chipLabel(chip)).toBe(NOTE_GLYPH)
         }
         const selected = rootChip('C')
@@ -1513,12 +1518,12 @@ describe('GuessCard', () => {
         () => ({ attempts: [flavourHit('G', 'Aeolian')], revealed: true }),
       ],
     ])(
-      'keeps the glyph on the disabled mode chips of a %s day',
+      'keeps the glyph on the settled mode chips of a %s day',
       async (_name, over) => {
         await openDay(over())
 
         for (const chip of chipsIn(flavourGroup())) {
-          expect(chip).toBeDisabled()
+          expect(chip).not.toBeDisabled()
           expect(chipAdornment(chip), chipLabel(chip)).toBe(NOTE_GLYPH)
         }
         const selected = modeChip('Aeolian')
@@ -1994,10 +1999,11 @@ describe('GuessCard', () => {
 
         expect(dimmedIn(rootGroup())).toEqual(ROOTS.filter((r) => r !== 'C'))
         expect(c).not.toHaveAttribute('aria-disabled')
-        expect(c).toBeDisabled()
+        expect(c).not.toBeDisabled()
+        expect(c.className).toContain('opacity-60')
         expect(c).toHaveAccessibleName('C')
         for (const chip of chipsIn(rootGroup())) {
-          expect(chip, chipLabel(chip)).toBeDisabled()
+          expect(chip, chipLabel(chip)).not.toBeDisabled()
         }
       },
     )

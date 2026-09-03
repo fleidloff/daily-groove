@@ -331,6 +331,27 @@ describe('ChipGroup', () => {
     expect(onPress).not.toHaveBeenCalled()
   })
 
+  it('reports a press but no choice from every chip once the row has settled (F22)', async () => {
+    const user = userEvent.setup()
+    const onSelect = vi.fn()
+    const onPress = vi.fn()
+    renderGroup({
+      onSelect,
+      onPress,
+      settled: true,
+      optionStates: { Two: { unavailable: true } },
+    })
+
+    for (const name of ['One', 'Two', 'Three']) {
+      const chip = screen.getByRole('button', { name })
+      expect(chip).not.toBeDisabled()
+      await user.click(chip)
+    }
+
+    expect(onSelect).not.toHaveBeenCalled()
+    expect(onPress).toHaveBeenCalledTimes(3)
+  })
+
   it('cannot express the row’s own lock per option (R4b)', () => {
     const source = readFileSync(
       resolve(process.cwd(), 'src/components/controls/ChipGroup.tsx'),
