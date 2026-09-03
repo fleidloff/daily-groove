@@ -11,13 +11,6 @@ type HowToPlayProps = {
   onClose: () => void
 }
 
-const DRUM_CREDIT_URL = 'https://drumgizmo.org'
-const DRUM_CREDIT_LICENCE = 'CC BY 4.0'
-const DRUM_CREDIT_LICENCE_URL = 'https://creativecommons.org/licenses/by/4.0/'
-
-const CREDIT_LINK =
-  'underline decoration-border-strong underline-offset-2 transition-colors hover:text-text-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent'
-
 export function HowToPlay({ onClose }: HowToPlayProps) {
   return (
     <Card tone="inset">
@@ -49,25 +42,7 @@ export function HowToPlay({ onClose }: HowToPlayProps) {
           ))}
         </ol>
 
-        <Text tone="faint" size="sm">
-          <a
-            href={DRUM_CREDIT_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={CREDIT_LINK}
-          >
-            {intro.drumCredit}
-          </a>
-          {' · '}
-          <a
-            href={DRUM_CREDIT_LICENCE_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={CREDIT_LINK}
-          >
-            {DRUM_CREDIT_LICENCE}
-          </a>
-        </Text>
+        <Text tone="muted">{intro.twoWays}</Text>
       </Stack>
     </Card>
   )

@@ -334,12 +334,39 @@ describe('the check button’s label and tone', () => {
       { selectedRoot: 'C', selectedFlavour: ANSWER.flavour, solved: true },
       coaching.checkSolved,
     ],
+    [
+      'a revealed day, nothing chosen',
+      { attempts: misses(3), revealed: true },
+      coaching.checkRevealed,
+    ],
+    [
+      'a revealed day, a root chosen',
+      { attempts: misses(3), revealed: true, selectedRoot: 'G' },
+      coaching.checkRevealed,
+    ],
+    [
+      'a revealed day, both chosen',
+      {
+        attempts: misses(3),
+        revealed: true,
+        selectedRoot: 'G',
+        selectedFlavour: WRONG_FLAVOURS[0],
+        canCheck: true,
+      },
+      coaching.checkRevealed,
+    ],
   ])(
     'asks for the half that is missing with %s (F20 E2 R3c; was GuessCard.test.tsx CTA_CASES)',
     (_name, over, label) => {
       expect(guessCardView(input(over)).check.label).toBe(label)
     },
   )
+
+  it('keeps Solved above Revealed in the chain (F22 E3 R5, AC4)', () => {
+    expect(
+      guessCardView(input({ solved: true, revealed: true })).check.label,
+    ).toBe(coaching.checkSolved)
+  })
 
   it.each<[string, Partial<GuessCardViewInput>, string]>([
     ['idle while a half is missing', {}, 'idle'],
@@ -361,6 +388,11 @@ describe('the check button’s label and tone', () => {
         canCheck: true,
         revealed: true,
       },
+      'idle',
+    ],
+    [
+      'idle on a revealed day with nothing chosen',
+      { attempts: misses(3), revealed: true },
       'idle',
     ],
   ])('tones the control %s (R3c)', (_name, over, tone) => {

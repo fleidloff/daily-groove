@@ -10,6 +10,7 @@ import {
   otherWrongFlavour,
   renderPuzzle,
   resetMockStore,
+  seedFullSet,
   teardownPuzzleAudio,
   thirdWrongFlavour,
   wrongFlavour,
@@ -65,8 +66,9 @@ function offendingCopy(strings: readonly string[]): string[] {
 }
 
 describe('nothing on the page counts your tries (F19 E1)', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     resetMockStore(mockStore)
+    await seedFullSet()
     installPuzzleAudio()
   })
 

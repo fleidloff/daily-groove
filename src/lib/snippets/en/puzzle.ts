@@ -2,10 +2,6 @@ import type { PuzzleSnippets } from '../types'
 
 export const puzzle = {
   loading: "Loading today's groove…",
-  captionSoundsOn:
-    'Find the note that feels like home — Play along with your instrument, or tap a root or a mode to hear it.',
-  captionSoundsOff:
-    'Find the note that feels like home — Play along with your instrument.',
   audioError: "Couldn't play the groove.",
   audioRetry: 'Retry',
   playText: { play: 'Play the groove', stop: 'Stop', loading: 'Loading…' },
@@ -18,7 +14,10 @@ export const puzzle = {
   hint: 'Hint',
   ruledOut: ({ roots }) => `${roots} roots ruled out. Narrowing as you go.`,
   simpleMode: 'Simple mode',
+  simpleModeOn: 'Six roots, Major or Minor',
+  simpleModeOff: 'Twelve roots, four modes',
   tapSounds: 'Tap sounds',
+  drumCredit: 'Drum samples provided by DrumGizmo.org',
   sharedNotice:
     "This is a shared groove, not today's puzzle. Playing it won't change your streak, and it won't use up your day.",
   backToToday: "Back to today's puzzle",

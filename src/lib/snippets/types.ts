@@ -18,13 +18,11 @@ export type IntroSnippets = {
   title: string
   closeName: string
   steps: readonly [IntroStep, IntroStep, IntroStep, IntroStep]
-  drumCredit: string
+  twoWays: string
 }
 
 export type PuzzleSnippets = {
   loading: string
-  captionSoundsOn: string
-  captionSoundsOff: string
   audioError: string
   audioRetry: string
   playText: { play: string; stop: string; loading: string }
@@ -37,7 +35,10 @@ export type PuzzleSnippets = {
   hint: string
   ruledOut: (args: { roots: number }) => string
   simpleMode: string
+  simpleModeOn: string
+  simpleModeOff: string
   tapSounds: string
+  drumCredit: string
   sharedNotice: string
   backToToday: string
   playTodayIntro: string
@@ -67,6 +68,7 @@ export type CoachingSnippets = {
     answered: string
   }) => string
   checkSolved: string
+  checkRevealed: string
   checkPair: (args: { root: string; flavour: string }) => string
   pickMode: string
   pickRoot: string
@@ -74,7 +76,6 @@ export type CoachingSnippets = {
 }
 
 export type SolvedSnippets = {
-  givenUp: string
   changes: string
   notesToLiveIn: string
   modeLine: (args: { flavour: string }) => string | undefined

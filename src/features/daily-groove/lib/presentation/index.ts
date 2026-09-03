@@ -122,13 +122,15 @@ export function guessCardView(input: GuessCardViewInput): GuessCardView {
 
   const label = solved
     ? coaching.checkSolved
-    : bothOffered
-      ? coaching.checkPair({ root: selectedRoot, flavour: selectedFlavour })
-      : selectedRoot !== null
-        ? coaching.pickMode
-        : selectedFlavour !== null
-          ? coaching.pickRoot
-          : coaching.pickRootAndMode
+    : revealed
+      ? coaching.checkRevealed
+      : bothOffered
+        ? coaching.checkPair({ root: selectedRoot, flavour: selectedFlavour })
+        : selectedRoot !== null
+          ? coaching.pickMode
+          : selectedFlavour !== null
+            ? coaching.pickRoot
+            : coaching.pickRootAndMode
 
   const over = solved || revealed
 

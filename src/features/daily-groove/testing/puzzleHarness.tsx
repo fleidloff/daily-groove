@@ -76,6 +76,10 @@ export async function seedPreferences(
   await createLocalPreferenceStore().update(patch)
 }
 
+export async function seedFullSet(): Promise<void> {
+  await seedPreferences({ simpleMode: false })
+}
+
 export function miss(root: Root, flavour: string, rootMatched: boolean): Attempt {
   return { root, flavour, correct: false, rootMatched, flavourMatched: false }
 }
@@ -183,10 +187,6 @@ export async function renderPuzzle(ui?: ReactElement) {
 
 export const NOTE_GLYPH = '♪'
 
-export const CAPTION = puzzle.captionSoundsOn
-
-export const CAPTION_SOUNDS_OFF = puzzle.captionSoundsOff
-
 export const chipLabel = (chip: Element) =>
   Array.from(chip.childNodes)
     .filter(
@@ -201,6 +201,7 @@ export const chipAdornment = (chip: Element) =>
 
 const CONTROL_NAMES = new Set<string>([
   coaching.checkSolved,
+  coaching.checkRevealed,
   coaching.pickRoot,
   coaching.pickMode,
   coaching.pickRootAndMode,

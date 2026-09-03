@@ -172,6 +172,30 @@ describe('selectCoaching', () => {
     expect(attempts).toEqual(before)
   })
 
+  it('drops the tap clause from the opening move when the row is silent (F22 E2 R6, AC6)', () => {
+    const on = selectCoaching({
+      attempts: [],
+      tapSounds: true,
+      simple: false,
+    }).message
+    const off = selectCoaching({
+      attempts: [],
+      tapSounds: false,
+      simple: false,
+    }).message
+
+    expect(on).toBe(LADDER[0].message)
+    expect(off).toBe(LADDER[0].soundsOff)
+    expect(off).not.toBe(on)
+    expect(
+      selectCoaching({ attempts: [], tapSounds: false, simple: true }).message,
+    ).toBe(LADDER[0].soundsOff)
+    expect(
+      selectCoaching({ attempts: [NEITHER], tapSounds: true, simple: false })
+        .message,
+    ).toBe(LADDER[1].message)
+  })
+
   it('cannot read the transport (R16, AC19)', () => {
     const source = readFileSync(
       resolve(

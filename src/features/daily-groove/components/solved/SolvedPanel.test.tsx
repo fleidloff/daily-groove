@@ -113,14 +113,21 @@ describe('SolvedPanel', () => {
     const panel = screen.getByRole('status')
     expect(panel.textContent).not.toMatch(/tr(y|ies)/i)
     expect(panel.textContent).not.toMatch(/streak/i)
-    expect(screen.queryByText(solved.givenUp)).toBeNull()
+    expect(panel.textContent).not.toMatch(/given up/i)
   })
 
-  it('gives a day given up on the same line (F15 E1 R7, R7a, AC3)', () => {
+  it('keeps a given-up day’s header to the answer and its line (F15 E1 R7, R7a, F22 E3 R4, AC3)', () => {
     renderPanel({ answer: { root: 'C', flavour: 'Mixolydian' }, revealed: true })
 
     expect(within(header()).getByText(/♭7/)).toBeInTheDocument()
-    expect(screen.getByText(solved.givenUp)).toBeInTheDocument()
+    expect(header().textContent).not.toMatch(/given up/i)
+    expect(header().textContent).not.toMatch(/day is over/i)
+  })
+
+  it('renders a revealed day with no mode line as the bare answer (F22 E3 R4, AC3)', () => {
+    renderPanel({ answer: { root: 'C', flavour: 'Locrian' }, revealed: true })
+
+    expect(header().textContent).toBe('C Locrian')
   })
 
   it('renders a mode the table has no line for, without the line (F15 E1 R3a, AC8)', () => {
@@ -441,14 +448,11 @@ describe('SolvedPanel', () => {
     expect(header().textContent).not.toMatch(/\d+\s*(day|try|tries|attempt)/i)
   })
 
-  it('names the day as given up instead (R10, AC10)', () => {
+  it('names nothing but the answer on a revealed day (R10, AC10, F22 E3 R4, AC3)', () => {
     renderPanel({ revealed: true })
-    expect(screen.getByText(solved.givenUp)).toBeInTheDocument()
-  })
 
-  it('draws the given-up line in the existing muted inverted tone, adding no token (R10)', () => {
-    renderPanel({ revealed: true })
-    expect(screen.getByText(solved.givenUp).className).toContain('on-accent/75')
+    expect(screen.getByRole('status').textContent).not.toMatch(/given up/i)
+    expect(screen.getByRole('status').textContent).not.toMatch(/day is over/i)
   })
 
   it('passes no fixed width to what its columns draw (R6, AC7)', () => {

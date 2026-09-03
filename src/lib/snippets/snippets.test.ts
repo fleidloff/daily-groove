@@ -70,3 +70,55 @@ describe('an interpolating snippet is a function of its arguments', () => {
     expect(snippets.header.streakDays({ days: 3 })).toContain('3')
   })
 })
+
+describe('feature-22 wording', () => {
+  it('names both ways to play and points at the switch by its name (F22 E2 R4)', () => {
+    expect(snippets.intro.twoWays).toBe(
+      'Two ways to play: Simple mode is six roots, Major or Minor. The switch on the card opens up the full set.',
+    )
+    expect(snippets.intro.twoWays).toContain(snippets.puzzle.simpleMode)
+    expect(snippets.intro.steps).toHaveLength(4)
+  })
+
+  it('describes each side of the switch by what the row shows (F22 E2 R2)', () => {
+    expect(snippets.puzzle.simpleModeOn).toBe('Six roots, Major or Minor')
+    expect(snippets.puzzle.simpleModeOff).toBe('Twelve roots, four modes')
+    expect(snippets.puzzle.simpleMode).toBe('Simple mode')
+  })
+
+  it('holds the drum credit under puzzle (F22 E2 R8)', () => {
+    expect(snippets.puzzle.drumCredit).toBe(
+      'Drum samples provided by DrumGizmo.org',
+    )
+  })
+
+  it('opens the ladder on the listening line, on and off (F22 E2 R6, R7)', () => {
+    const [first] = snippets.coaching.ladder
+    expect(first.message).toBe(
+      'Loop it a few times. Find the note that feels like home — Play along with your instrument, or tap a root or a mode to hear it.',
+    )
+    expect(first.soundsOff).toBe(
+      'Loop it a few times. Find the note that feels like home — Play along with your instrument.',
+    )
+    expect(snippets.coaching.opening).toBe(first.message)
+    expect(
+      first.message.replace(', or tap a root or a mode to hear it', ''),
+    ).toBe(first.soundsOff)
+  })
+  it('carries no caption and files the credit under puzzle only (F22 E2 R5, R8, R9)', () => {
+    expect(snippets.puzzle).not.toHaveProperty('captionSoundsOn')
+    expect(snippets.puzzle).not.toHaveProperty('captionSoundsOff')
+    expect(snippets.intro).not.toHaveProperty('drumCredit')
+  })
+})
+
+describe('the give-up ending (F22 E3)', () => {
+  it('labels the revealed button from coaching, beside the solved label (R7, AC6)', () => {
+    expect(typeof snippets.coaching.checkRevealed).toBe('string')
+    expect(snippets.coaching.checkRevealed).not.toBe('')
+  })
+
+  it('no longer carries the given-up line (R7, AC6)', () => {
+    expect(snippets.solved).not.toHaveProperty('givenUp')
+  })
+})

@@ -101,7 +101,9 @@ function GroovePuzzleView({
 
   const [today] = useState(() => new Date())
 
-  const { simple, setSimple } = useSimpleMode()
+  const { simple, setSimple, loaded: modeLoaded } = useSimpleMode({
+    results: resultStore,
+  })
 
   const { tapSounds, setTapSounds } = useTapSounds()
 
@@ -207,7 +209,7 @@ function GroovePuzzleView({
     warmLicks()
   }, [isPlaying, loading, tapSounds, warm, warmLicks])
 
-  if (!hydrated) return <PuzzleLoading />
+  if (!hydrated || !modeLoaded) return <PuzzleLoading />
 
   const guessCard = (
     <GuessCard onHearRoot={hearRoot} onHearMode={handleHearMode} />
@@ -259,18 +261,13 @@ function GroovePuzzleView({
                     solved || revealed ? barChords(groove.progression) : null
                   }
                 />
-                <Stack gap="sm">
-                  <PlayControl
-                    isPlaying={isPlaying}
-                    onToggle={handleToggle}
-                    busy={loading}
-                    text={puzzle.playText}
-                    name={puzzle.playName}
-                  />
-                  <Text tone="muted" size="sm">
-                    {tapSounds ? puzzle.captionSoundsOn : puzzle.captionSoundsOff}
-                  </Text>
-                </Stack>
+                <PlayControl
+                  isPlaying={isPlaying}
+                  onToggle={handleToggle}
+                  busy={loading}
+                  text={puzzle.playText}
+                  name={puzzle.playName}
+                />
               </Stack>
             </GrooveCard>
           </div>

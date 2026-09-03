@@ -9,5 +9,6 @@ export const intro = {
     { words: 'Guess the Root & Mode ', mark: '🎯' },
     { words: 'Come back every day for a new challenge ', mark: '⏭' },
   ],
-  drumCredit: 'Drum samples provided by DrumGizmo.org',
+  twoWays:
+    'Two ways to play: Simple mode is six roots, Major or Minor. The switch on the card opens up the full set.',
 } satisfies IntroSnippets

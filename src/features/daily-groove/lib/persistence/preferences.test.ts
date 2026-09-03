@@ -38,9 +38,26 @@ describe('createLocalPreferenceStore', () => {
     expect(await reloaded.get()).toEqual({ simpleMode: true, tapSounds: true })
   })
 
-  it('defaults to off when nothing was ever stored (E5 A3, F16 E2 R2, AC2)', async () => {
+  it('holds no simpleMode when nothing was ever stored (F22 E1 R1, R4)', async () => {
     const store = createLocalPreferenceStore()
-    expect(await store.get()).toEqual({ simpleMode: false, tapSounds: true })
+    await expect(store.get()).resolves.toStrictEqual({ tapSounds: true })
+    const prefs = await store.get()
+    expect('simpleMode' in prefs).toBe(false)
+  })
+
+  it('writes the first-visit decision as a patch, beside the default tapSounds (F22 E1 R2, R5)', async () => {
+    await createLocalPreferenceStore().update({ simpleMode: true })
+    expect(JSON.parse(localStorage.getItem(PREFS_KEY) as string)).toStrictEqual({
+      tapSounds: true,
+      simpleMode: true,
+    })
+  })
+
+  it('a patch onto an empty store invents no simpleMode (F22 E1 R2, R5)', async () => {
+    await createLocalPreferenceStore().update({ tapSounds: false })
+    expect(JSON.parse(localStorage.getItem(PREFS_KEY) as string)).toStrictEqual({
+      tapSounds: false,
+    })
   })
 
   it('loads a blob written before tapSounds existed with simple mode intact (F16 E2 R7, AC7)', async () => {
@@ -61,42 +78,27 @@ describe('createLocalPreferenceStore', () => {
     expect(await store.get()).toEqual({ simpleMode: true, tapSounds: false })
   })
 
-  it('defaults to off when the stored value is corrupt JSON', async () => {
+  it('holds no simpleMode when the stored value is corrupt JSON (F22 E1 R4, R8)', async () => {
     localStorage.setItem(PREFS_KEY, 'not-json{')
     const store = createLocalPreferenceStore()
-    await expect(store.get()).resolves.toEqual({
-      simpleMode: false,
-      tapSounds: true,
-    })
+    await expect(store.get()).resolves.toStrictEqual({ tapSounds: true })
   })
 
-  it('defaults to off when the stored blob is the wrong shape', async () => {
+  it('holds no simpleMode when the stored blob is the wrong shape (F22 E1 R4, R8)', async () => {
     localStorage.setItem(PREFS_KEY, JSON.stringify({ nope: true }))
-    await expect(createLocalPreferenceStore().get()).resolves.toEqual({
-      simpleMode: false,
-      tapSounds: true,
-    })
+    await expect(createLocalPreferenceStore().get()).resolves.toStrictEqual({ tapSounds: true })
 
     localStorage.setItem(PREFS_KEY, JSON.stringify({ simpleMode: 'yes' }))
-    await expect(createLocalPreferenceStore().get()).resolves.toEqual({
-      simpleMode: false,
-      tapSounds: true,
-    })
+    await expect(createLocalPreferenceStore().get()).resolves.toStrictEqual({ tapSounds: true })
 
     localStorage.setItem(PREFS_KEY, JSON.stringify(['simpleMode']))
-    await expect(createLocalPreferenceStore().get()).resolves.toEqual({
-      simpleMode: false,
-      tapSounds: true,
-    })
+    await expect(createLocalPreferenceStore().get()).resolves.toStrictEqual({ tapSounds: true })
 
     localStorage.setItem(PREFS_KEY, JSON.stringify(null))
-    await expect(createLocalPreferenceStore().get()).resolves.toEqual({
-      simpleMode: false,
-      tapSounds: true,
-    })
+    await expect(createLocalPreferenceStore().get()).resolves.toStrictEqual({ tapSounds: true })
   })
 
-  it('one corrupt field does not cost the good one beside it (F16 E2 R7)', async () => {
+  it('one corrupt field does not cost the good one beside it (F16 E2 R7, F22 E1 R4)', async () => {
     localStorage.setItem(
       PREFS_KEY,
       JSON.stringify({ simpleMode: true, tapSounds: 'no' }),
@@ -110,10 +112,7 @@ describe('createLocalPreferenceStore', () => {
       PREFS_KEY,
       JSON.stringify({ simpleMode: 'yes', tapSounds: false }),
     )
-    await expect(createLocalPreferenceStore().get()).resolves.toEqual({
-      simpleMode: false,
-      tapSounds: false,
-    })
+    await expect(createLocalPreferenceStore().get()).resolves.toStrictEqual({ tapSounds: false })
   })
 
   it('writes under its own key, leaving the results envelope alone (E5 A2)', async () => {
@@ -138,8 +137,7 @@ describe('createLocalPreferenceStore', () => {
       vi.spyOn(globalThis.localStorage, 'getItem').mockImplementation(() => {
         throw new Error('SecurityError')
       })
-      await expect(createLocalPreferenceStore().get()).resolves.toEqual({
-        simpleMode: false,
+      await expect(createLocalPreferenceStore().get()).resolves.toStrictEqual({
         tapSounds: true,
       })
     })

@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { GrooveCard } from './GrooveCard'
 import { puzzle } from '@/lib/snippets'
@@ -202,6 +202,58 @@ describe('GrooveCard', () => {
     expect(source).not.toMatch(/shared/)
     expect(source).not.toMatch(/PuzzleMode/)
   })
+
+  describe('the drum samples credit', () => {
+    const SOURCE = puzzle.drumCredit
+
+    it('names the credit in the exact words the licence requires', () => {
+      render(<GrooveCard groove={GROOVE} meta={metaFor(GROOVE)} />)
+      expect(screen.getByRole('link', { name: SOURCE })).toHaveAttribute(
+        'href',
+        'https://drumgizmo.org',
+      )
+    })
+
+    it('names the licence and links to it', () => {
+      render(<GrooveCard groove={GROOVE} meta={metaFor(GROOVE)} />)
+      expect(screen.getByRole('link', { name: 'CC BY 4.0' })).toHaveAttribute(
+        'href',
+        'https://creativecommons.org/licenses/by/4.0/',
+      )
+    })
+
+    it('leaves the site safely, and never navigates the app', () => {
+      render(<GrooveCard groove={GROOVE} meta={metaFor(GROOVE)} />)
+      for (const name of [SOURCE, 'CC BY 4.0']) {
+        const link = screen.getByRole('link', { name })
+        expect(link.getAttribute('href')).toMatch(/^https:\/\//)
+        expect(link).toHaveAttribute('target', '_blank')
+        expect(link).toHaveAttribute('rel', expect.stringContaining('noopener'))
+      }
+    })
+
+    it("sits after the card's children, not among them", () => {
+      render(
+        <GrooveCard groove={GROOVE} meta={metaFor(GROOVE)}>
+          <button type="button">play</button>
+        </GrooveCard>,
+      )
+      const play = screen.getByRole('button', { name: 'play' })
+      const link = screen.getByRole('link', { name: SOURCE })
+      expect(play.compareDocumentPosition(link) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+      expect(link.closest('p')?.parentElement).toBe(
+        screen.getByRole('heading', { level: 2 }).parentElement,
+      )
+      expect(link.closest('p')?.nextElementSibling).toBeNull()
+    })
+
+    it('stays the quietest thing in the card', () => {
+      render(<GrooveCard groove={GROOVE} meta={metaFor(GROOVE)} />)
+      const paragraph = screen.getByRole('link', { name: SOURCE }).closest('p')
+      expect(paragraph?.className).toContain('text-text-faint')
+      expect(paragraph?.className).toContain('text-[13px]')
+    })
+  })
 })
 
 describe('through the composed page', () => {
@@ -212,5 +264,23 @@ describe('through the composed page', () => {
     expect(
       screen.getByRole("heading", { name: groove.name }),
     ).toBeInTheDocument();
+  })
+
+  it('puts the two credit links inside the groove card, after the play control (F22 E2 R8, AC7)', async () => {
+    await renderFeature()
+    const groove = selectGrooveForDate(new Date(), GROOVES)
+    const card = screen.getByRole('heading', { name: groove.name }).parentElement as HTMLElement
+    const links = within(card).getAllByRole('link')
+    expect(links.map((a) => a.getAttribute('href'))).toEqual([
+      'https://drumgizmo.org',
+      'https://creativecommons.org/licenses/by/4.0/',
+    ])
+    const play = within(card).getByRole('button', { name: puzzle.playName.play })
+    for (const link of links) {
+      expect(play.compareDocumentPosition(link) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+      expect(link).toHaveAttribute('target', '_blank')
+      expect(link).toHaveAttribute('rel', expect.stringContaining('noopener'))
+    }
+    expect(screen.getAllByRole('link', { name: puzzle.drumCredit })).toHaveLength(1)
   })
 })

@@ -37,11 +37,7 @@ tested and verified). Lettered candidates sit at ✏️ **Briefed** until promot
 | [19](feature-19/) | Attempts out of the way | ✅ Done | Drops the three attempt dots — a solve counts however many tries it took, and only giving up or skipping a day breaks the streak. |
 | [20](feature-20/) | Modular architecture | ✅ Done | Draws the boundaries the one feature slice only implied — one shared body of theory, a door onto the coaching modules that the puzzle card feeds itself through, and a map that lint enforces. |
 | [21](feature-21/) | Internationalization | ✅ Done | Gathers every user-facing string into `src/lib/snippets/en/` and gives the app a stored language, so the next language is a folder beside it rather than a second sweep. |
-| [22](feature-22/) | Gentle first round | 🛠 Ready to implement | Meets a first-time player in Simple mode — six roots, Major or Minor — names both ways to play on the switch and in the how-to-play box, moves the listening advice into the hint and the drum credit onto the groove box, and tidies the give-up ending. |
-
-## Bugs
-* when giving up, the "pick a root" button should state "Revealed" (similarly to showing solved when solved)
-* "given up · the day is over" should not be in the SolvedPanel 
+| [22](feature-22/) | Gentle first round | ✅ Done | Meets a first-time player in Simple mode — six roots, Major or Minor — names both ways to play on the switch and in the how-to-play box, moves the listening advice into the hint and the drum credit onto the groove box, and tidies the give-up ending. |
 
 ## Prepared candidates
 

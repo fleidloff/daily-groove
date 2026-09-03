@@ -3,6 +3,9 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { ModeToggle } from './ModeToggle'
 import { puzzle } from '@/lib/snippets'
+import { DISPLAY_NAMES } from '@/lib/theory/names'
+
+const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
 describe('ModeToggle', () => {
   it('is a switch whose name says what it switches (R1, AC1)', () => {
@@ -95,13 +98,50 @@ describe('ModeToggle', () => {
     expect(screen.getByRole('switch')).toHaveAttribute('type', 'button')
   })
 
-  it('names no mode, so neither reading of the row leaks into it (R4)', () => {
-    const { container } = render(<ModeToggle simple onChange={vi.fn()} />)
+  it('says what six roots and two names means while it is on (F22 E2 R2, AC2)', () => {
+    render(<ModeToggle simple onChange={vi.fn()} />)
 
-    expect(container).not.toHaveTextContent(
-      /ionian|dorian|phrygian|lydian|mixolydian|aeolian|locrian/i,
+    const toggle = screen.getByRole('switch', { name: puzzle.simpleMode })
+    expect(toggle).toHaveAccessibleDescription(puzzle.simpleModeOn)
+    expect(screen.getByText(puzzle.simpleModeOn)).toBeVisible()
+    expect(screen.queryByText(puzzle.simpleModeOff)).toBeNull()
+  })
+
+  it('says what the full set is while it is off (F22 E2 R2, AC2)', () => {
+    render(<ModeToggle simple={false} onChange={vi.fn()} />)
+
+    const toggle = screen.getByRole('switch', { name: puzzle.simpleMode })
+    expect(toggle).toHaveAccessibleDescription(puzzle.simpleModeOff)
+    expect(screen.getByText(puzzle.simpleModeOff)).toBeVisible()
+    expect(screen.queryByText(puzzle.simpleModeOn)).toBeNull()
+  })
+
+  it('keeps the description when the day is over (F22 E2 R2)', () => {
+    render(<ModeToggle simple onChange={vi.fn()} disabled />)
+
+    expect(screen.getByRole('switch')).toHaveAccessibleDescription(
+      puzzle.simpleModeOn,
     )
   })
+
+  it.each([true, false])(
+    'names no mode in either state, simple=%s (R4, F22 E2 R3, AC3)',
+    (simple) => {
+      const { container } = render(
+        <ModeToggle simple={simple} onChange={vi.fn()} />,
+      )
+
+      const text = container.textContent ?? ''
+      expect(text).not.toMatch(
+        /ionian|dorian|phrygian|lydian|mixolydian|aeolian|locrian/i,
+      )
+      for (const name of Object.values(DISPLAY_NAMES)) {
+        expect(text, `names ${name}`).not.toMatch(
+          new RegExp(`\\b${escape(name)}\\b`, 'i'),
+        )
+      }
+    },
+  )
 
   it('is live when it is told nothing about the day being over (F11 E4 R3)', async () => {
     const user = userEvent.setup()

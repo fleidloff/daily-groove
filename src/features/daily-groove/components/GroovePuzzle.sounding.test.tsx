@@ -4,16 +4,16 @@ import userEvent from '@testing-library/user-event'
 import type { DailyResult, Flavour, Groove, Root } from '../types'
 import {
   advance,
-  CAPTION,
-  CAPTION_SOUNDS_OFF,
   CHANGES_READ,
   chipAdornment,
   chipLabel,
+  coachingLine,
   flavourGroup,
   flavours,
   GROOVE,
   GROOVE_LOOP_SECONDS,
   guess,
+  hintRegion,
   installPuzzleAudio,
   loopFraction,
   miss,
@@ -23,6 +23,7 @@ import {
   play,
   renderPuzzle,
   resetMockStore,
+  seedFullSet,
   rootGroup,
   settle,
   SOLVING,
@@ -56,7 +57,7 @@ import { dateLine } from '../lib/presentation/date'
 import type { Move } from '../lib/presentation/moves'
 import { COLOUR_MOVES, TONIC_MOVES } from '../lib/presentation/coachingMoves'
 import { barChords } from '@/lib/theory/changes'
-import { puzzle } from '@/lib/snippets'
+import { coaching, puzzle } from '@/lib/snippets'
 import { GROOVES } from '../data/grooves.generated'
 import { NOTES, PITCHES, type PitchSample } from '../data/notes.generated'
 import { renderFeature } from '../testing/renderFeature'
@@ -65,8 +66,9 @@ import type { FakeContext, FakeSourceNode } from '../testing/fakeAudioContext'
 let fake: FakeContext
 
 describe('GroovePuzzle', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     resetMockStore(mockStore)
+    await seedFullSet()
     ;({ fake } = installPuzzleAudio())
   })
 
@@ -218,17 +220,18 @@ describe('GroovePuzzle', () => {
     expect(control).toHaveTextContent(`■ ${puzzle.playText.stop}`)
   })
 
-  it('stacks the caption below the control rather than beside it (E2 R4, AC3)', async () => {
+  const grooveBox = () =>
+    screen.getByRole('heading', { level: 2, name: GROOVE.name }).parentElement as HTMLElement
+
+  it('leaves nothing under the play control — the advice reads in the hint box (F22 E2 R5, AC5)', async () => {
     await renderPuzzle()
 
     const play = screen.getByRole('button', { name: puzzle.playName.play })
-    expect(play).toHaveTextContent(`▶ ${puzzle.playText.play}`)
     expect(play).toHaveClass('w-full')
-
-    const region = play.parentElement as HTMLElement
-    expect(region).toHaveClass('flex-col')
-    expect(region).not.toHaveClass('flex-row')
-    expect(play.nextElementSibling).toHaveTextContent(CAPTION)
+    expect(play.nextElementSibling).toBeNull()
+    expect(within(grooveBox()).queryByText(/feels like home/i)).toBeNull()
+    expect(within(grooveBox()).queryByText(/play along/i)).toBeNull()
+    expect(move()).toBe(coaching.ladder[0].message)
   })
 
   it("moves the bar highlight with the player's position (D5, AC8, AC2, AC3)", async () => {
@@ -1022,7 +1025,7 @@ describe('GroovePuzzle', () => {
     it('offers both rows in one sentence, and names no mode (H5, R25)', async () => {
       await renderPuzzle()
 
-      const text = screen.getByText(CAPTION).textContent as string
+      const text = move() as string
       expect(text).toContain('a root')
       expect(text).toContain('a mode')
       expect(text).not.toContain('\n')
@@ -1149,29 +1152,6 @@ describe('GroovePuzzle', () => {
     const [note] = await soundedNotes(1)
     expect(note.start).toHaveBeenCalledTimes(1)
     expect(fetchedNotes()).toEqual([noteSrc('B')])
-  })
-
-  it('reads the new caption under the play control (E2 R1a, R5, AC6)', async () => {
-    await renderPuzzle()
-
-    expect(screen.getByText(CAPTION)).toBeInTheDocument()
-    expect(
-      screen.queryByText('Play along. Find the note that feels like home.'),
-    ).toBeNull()
-  })
-
-  it('keeps the caption below the control at full width (E2 R1a, AC6a)', async () => {
-    await renderPuzzle()
-
-    const play = screen.getByRole('button', { name: puzzle.playName.play })
-    const caption = screen.getByText(CAPTION)
-
-    expect(play.nextElementSibling).toBe(caption)
-    expect(caption.parentElement).toBe(play.parentElement)
-    expect(play.parentElement).toHaveClass('flex-col')
-    expect(play.parentElement).not.toHaveClass('flex-row')
-    expect(caption.className).toMatch(/text-text-muted/)
-    expect(caption.className).toMatch(/text-\[13px\]/)
   })
 
   it('remembers nothing about the glyph across a reload (E2 R10, AC11)', async () => {
@@ -1301,34 +1281,28 @@ describe('GroovePuzzle', () => {
       expect(rootNames()).toEqual(names)
     })
 
-    it('swaps the caption for the task sentence without the tap clause (F17 E2 R10, R12, AC11, AC12)', async () => {
+    it('rewords the opening move without the tap clause when the sounds go off (F17 E2 R10, R12; F22 E2 R6, AC6)', async () => {
       const user = userEvent.setup()
       await renderPuzzle()
 
-      expect(screen.getByText(CAPTION)).toBeInTheDocument()
+      const [first] = coaching.ladder
+      expect(move()).toBe(first.message)
 
       await turnSoundsOff(user)
 
-      expect(screen.queryByText(CAPTION)).toBeNull()
-      const caption = screen.getByText(CAPTION_SOUNDS_OFF)
-      const control = screen.getByRole('button', { name: puzzle.playName.play })
-      expect(control.nextElementSibling).toBe(caption)
-      expect(caption.parentElement).toBe(control.parentElement)
-      expect(caption.className).toMatch(/text-text-muted/)
-      expect(caption.className).toMatch(/text-\[13px\]/)
-
-      expect(CAPTION.replace(', or tap a root or a mode to hear it', '')).toBe(
-        CAPTION_SOUNDS_OFF,
+      expect(move()).toBe(first.soundsOff)
+      expect(hintRegion()).toContainElement(coachingLine() as HTMLElement)
+      expect(first.message.replace(', or tap a root or a mode to hear it', '')).toBe(
+        first.soundsOff,
       )
-      expect(CAPTION_SOUNDS_OFF).not.toMatch(/switch/i)
-      expect(CAPTION_SOUNDS_OFF).not.toMatch(/tap/i)
-      expect(CAPTION_SOUNDS_OFF).toMatch(/feels like home/i)
-      expect(CAPTION_SOUNDS_OFF).not.toContain('\n')
+      expect(first.soundsOff).not.toMatch(/switch/i)
+      expect(first.soundsOff).not.toMatch(/tap/i)
+      expect(first.soundsOff).toMatch(/feels like home/i)
+      expect(first.soundsOff).not.toContain('\n')
 
       await user.click(soundSwitch())
 
-      expect(screen.getByText(CAPTION)).toBeInTheDocument()
-      expect(screen.queryByText(CAPTION_SOUNDS_OFF)).toBeNull()
+      expect(move()).toBe(first.message)
     })
 
     it('leaves the groove playing, at the same position (E6, R6, AC6)', async () => {
@@ -1368,7 +1342,7 @@ describe('GroovePuzzle', () => {
 
       expect(soundSwitch()).toHaveAttribute('aria-checked', 'false')
       expect(marked().every((glyph) => glyph === null)).toBe(true)
-      expect(screen.getByText(CAPTION_SOUNDS_OFF)).toBeInTheDocument()
+      expect(move()).toBe(coaching.ladder[0].soundsOff)
 
       const written = Array.from(
         { length: localStorage.length },
@@ -1426,7 +1400,7 @@ describe('GroovePuzzle', () => {
         await settle()
         expect(fetchedNotes()).toEqual([])
         expect(fake.sources).toHaveLength(0)
-        expect(screen.getByText(CAPTION_SOUNDS_OFF)).toBeInTheDocument()
+        expect(move()).toBe(coaching.ladder[0].soundsOff)
         expect(marked().every((glyph) => glyph === null)).toBe(true)
 
         expect(screen.queryByRole('alert')).toBeNull()

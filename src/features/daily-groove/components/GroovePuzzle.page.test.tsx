@@ -3,7 +3,6 @@ import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import type { DailyResult, Groove } from '../types'
 import {
-  CAPTION,
   chipLabel,
   control,
   flavourGroup,
@@ -20,6 +19,7 @@ import {
   play,
   renderPuzzle,
   resetMockStore,
+  seedFullSet,
   rootGroup,
   settle,
   SOLVING,
@@ -47,8 +47,9 @@ import { branding, coaching, header, puzzle, routes, solved } from '@/lib/snippe
 const { appName: APP_NAME } = branding
 
 describe('GroovePuzzle', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     resetMockStore(mockStore)
+    await seedFullSet()
     installPuzzleAudio()
   })
 
@@ -910,7 +911,7 @@ describe('GroovePuzzle', () => {
         play: screen.getByRole('button', { name: puzzle.playName.play })
           .textContent,
         transports: screen.getAllByRole('progressbar').length,
-        caption: screen.getByText(CAPTION).textContent,
+        coaching: coachingLine()?.textContent ?? null,
         simple: screen
           .getByRole('switch', { name: puzzle.simpleMode })
           .getAttribute('aria-checked'),

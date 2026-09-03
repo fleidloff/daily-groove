@@ -9,6 +9,7 @@ import {
   installPuzzleAudio,
   renderPuzzle,
   resetMockStore,
+  seedFullSet,
   rootGroup,
   settle,
   SOLVING,
@@ -32,8 +33,9 @@ import { GROOVES } from '../data/grooves.generated'
 import { renderFeature } from '../testing/renderFeature'
 
 describe('GroovePuzzle', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     resetMockStore(mockStore)
+    await seedFullSet()
     installPuzzleAudio()
   })
 

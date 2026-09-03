@@ -13,6 +13,7 @@ import {
   play,
   renderPuzzle,
   resetMockStore,
+  seedFullSet,
   rootGroup,
   SOLVING,
   teardownPuzzleAudio,
@@ -36,8 +37,9 @@ import { branding, coaching, header, puzzle } from '@/lib/snippets'
 const { appName: APP_NAME } = branding
 
 describe('GroovePuzzle', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     resetMockStore(mockStore)
+    await seedFullSet()
     installPuzzleAudio()
   })
 

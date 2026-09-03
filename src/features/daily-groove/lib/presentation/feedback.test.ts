@@ -40,11 +40,11 @@ it('exports no dot state, count or shape (F19 E1 R1)', async () => {
 })
 
 describe('selectFeedback', () => {
-  it('gives opening guidance about listening for the tonic before any guess', () => {
+  it('gives opening guidance about listening for the tonic before any guess (F22 E2 R6)', () => {
     const feedback = selectFeedback([], false)
     expect(feedback.tone).toBe('neutral')
-    expect(feedback.message).toMatch(/rest/i)
-    expect(feedback.message.length).toBeGreaterThan(0)
+    expect(feedback.message).toMatch(/home/i)
+    expect(feedback.message).toBe(coaching.opening)
   })
 
   it('names the root as right when only the root matched', () => {

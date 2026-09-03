@@ -23,6 +23,7 @@ import {
   play,
   renderPuzzle,
   resetMockStore,
+  seedFullSet,
   rootGroup,
   SOLVING,
   teardownPuzzleAudio,
@@ -69,8 +70,9 @@ function rootPattern(root: string) {
 }
 
 describe('GroovePuzzle', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     resetMockStore(mockStore)
+    await seedFullSet()
     installPuzzleAudio()
   })
 
@@ -520,7 +522,7 @@ describe('GroovePuzzle', () => {
       .getByRole('heading', { name: 'C Aeolian' })
       .closest('[role="status"]') as HTMLElement
 
-  it('offers the way out only from the third miss, and ends the day on the second press (F7 E3 R6, R7, R8, AC6, AC8a)', async () => {
+  it('offers the way out only from the third miss, and ends the day on the second press (F7 E3 R6, R7, R8, AC6, AC8a, F22 E3 R1, R4, AC1, AC3)', async () => {
     const user = userEvent.setup()
     await renderPuzzle()
     const wrong = wrongFlavour()
@@ -543,7 +545,8 @@ describe('GroovePuzzle', () => {
     await user.click(giveUp() as HTMLElement)
     const panel = solutionPanel()
     expect(panel).toBeInTheDocument()
-    expect(within(panel).getByText(solved.givenUp)).toBeInTheDocument()
+    expect(panel.textContent).not.toMatch(/given up/i)
+    expect(panel.textContent).not.toMatch(/day is over/i)
     expect(screen.queryByText(/solved in/i)).toBeNull()
     expect(screen.queryByText(/streak now/i)).toBeNull()
     expect(
@@ -555,6 +558,8 @@ describe('GroovePuzzle', () => {
 
     expect(giveUp()).toBeNull()
     expect(control()).toBeDisabled()
+    expect(control()).toHaveAccessibleName(coaching.checkRevealed)
+    expect(control().className).not.toContain('bg-accent-soft')
     await user.click(within(rootGroup()).getByRole('button', { name: 'A' }))
     expect(
       within(rootGroup()).getByRole('button', { name: 'A' }),
@@ -572,7 +577,7 @@ describe('GroovePuzzle', () => {
     expect(saved.revealed).toBe(true)
   })
 
-  it('reopens a revealed day on the terminal state, not a fresh puzzle (F7 E3 R8, AC9)', async () => {
+  it('reopens a revealed day on the terminal state, not a fresh puzzle (F7 E3 R8, AC9, F22 E3 R2, AC2)', async () => {
     const wrong = wrongFlavour()
     const stored: DailyResult = {
       date: TODAY(),
@@ -593,7 +598,8 @@ describe('GroovePuzzle', () => {
 
     const panel = solutionPanel()
     expect(panel).toBeInTheDocument()
-    expect(within(panel).getByText(solved.givenUp)).toBeInTheDocument()
+    expect(panel.textContent).not.toMatch(/given up/i)
+    expect(panel.textContent).not.toMatch(/day is over/i)
     expect(
       within(panel).getByRole('img', { name: CHANGES_READ }),
     ).toBeInTheDocument()
@@ -604,6 +610,7 @@ describe('GroovePuzzle', () => {
 
     expect(giveUp()).toBeNull()
     expect(control()).toBeDisabled()
+    expect(control()).toHaveAccessibleName(coaching.checkRevealed)
     await user.click(within(rootGroup()).getByRole('button', { name: 'A' }))
     expect(
       within(rootGroup()).getByRole('button', { name: 'A' }),
@@ -1089,7 +1096,7 @@ describe('GroovePuzzle', () => {
       everyOffSiteLinkReallyLeaves()
     })
 
-    it('shows the same invitation, worded the same way, when it is given up on (R5b, AC14)', async () => {
+    it('shows the same invitation, worded the same way, when it is given up on (R5b, AC14, F22 E3 R6, AC5)', async () => {
       const user = userEvent.setup()
       const wrong = wrongFlavour()
 
@@ -1107,6 +1114,8 @@ describe('GroovePuzzle', () => {
       await user.click(giveUp() as HTMLElement)
 
       expect(solutionPanel()).toBeInTheDocument()
+      expect(control()).toHaveAccessibleName(coaching.checkRevealed)
+      expect(control()).toBeDisabled()
       expect(invitation()).toHaveAttribute('href', '/')
       expect(invitationLine()).toBe(whenSolved)
     })

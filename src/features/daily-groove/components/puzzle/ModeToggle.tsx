@@ -17,6 +17,7 @@ export function ModeToggle({
   return (
     <Switch
       label={puzzle.simpleMode}
+      description={simple ? puzzle.simpleModeOn : puzzle.simpleModeOff}
       checked={simple}
       onChange={onChange}
       disabled={disabled}

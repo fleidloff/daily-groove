@@ -1,5 +1,5 @@
 export type Preferences = {
-  simpleMode: boolean
+  simpleMode?: boolean
   tapSounds: boolean
 }
 
@@ -11,12 +11,7 @@ export type PreferenceStore = {
 const STORAGE_KEY = 'daily-groove:v1:prefs'
 
 function defaultPreferences(): Preferences {
-  return { simpleMode: false, tapSounds: true }
-}
-
-function booleanField(blob: object, key: keyof Preferences): boolean {
-  const value = (blob as Record<string, unknown>)[key]
-  return typeof value === 'boolean' ? value : defaultPreferences()[key]
+  return { tapSounds: true }
 }
 
 function readPreferences(): Preferences {
@@ -47,9 +42,10 @@ function readPreferences(): Preferences {
     return defaultPreferences()
   }
 
+  const { simpleMode, tapSounds } = parsed as Record<string, unknown>
   return {
-    simpleMode: booleanField(parsed, 'simpleMode'),
-    tapSounds: booleanField(parsed, 'tapSounds'),
+    tapSounds: typeof tapSounds === 'boolean' ? tapSounds : defaultPreferences().tapSounds,
+    ...(typeof simpleMode === 'boolean' ? { simpleMode } : {}),
   }
 }
 

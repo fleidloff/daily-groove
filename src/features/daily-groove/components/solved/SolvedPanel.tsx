@@ -53,11 +53,6 @@ export function SolvedPanel({
                   {solved.modeLine({ flavour: answer.flavour })}
                 </Text>
               )}
-              {revealed && (
-                <Text size="sm" tone="inverted-muted">
-                  {solved.givenUp}
-                </Text>
-              )}
             </Row>
             {nearMiss !== undefined && (
               <Text size="sm" tone="inverted-muted">

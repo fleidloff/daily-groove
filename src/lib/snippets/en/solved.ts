@@ -16,7 +16,6 @@ const MODE_LINES: Record<string, string> = {
 }
 
 export const solved = {
-  givenUp: 'given up · the day is over',
   changes: 'The changes',
   notesToLiveIn: 'Notes to live in',
   modeLine: ({ flavour }) => {

@@ -41,6 +41,7 @@ import {
   renderPuzzle,
   rootGroup,
   seedDay,
+  seedFullSet,
   seedPreferences,
   settle,
   SOLVING,
@@ -165,8 +166,9 @@ async function openDay(over: Partial<DailyResult> = {}) {
 let fake: FakeContext
 
 describe('GuessCard', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     clearStored()
+    await seedFullSet()
     ;({ fake } = installPuzzleAudio())
   })
 
@@ -936,7 +938,7 @@ describe('GuessCard', () => {
 
     expect(pressedIn(rootGroup())).toEqual([])
     expect(pressedIn(flavourGroup())).toEqual([])
-    expect(control()).toHaveAccessibleName(coaching.pickRootAndMode)
+    expect(control()).toHaveAccessibleName(coaching.checkRevealed)
 
     expect(giveUp()).not.toBeInTheDocument()
     expect(confirm()).not.toBeInTheDocument()
@@ -953,8 +955,22 @@ describe('GuessCard', () => {
     await user.click(giveUp() as HTMLElement)
     await user.click(confirm() as HTMLElement)
 
-    expect(control()).toHaveAccessibleName(coaching.checkPair({ root: 'C', flavour: 'Aeolian' }))
+    expect(control()).toHaveAccessibleName(coaching.checkRevealed)
     expect(control()).toBeDisabled()
+  })
+
+  it('closes a revealed day on the idle tone, not the solved one, with a root chosen first (F22 E3 R1, R3, AC1)', async () => {
+    const user = userEvent.setup()
+    await openDay({ attempts: threeMisses() })
+
+    await user.click(rootChip('G'))
+    await user.click(giveUp() as HTMLElement)
+    await user.click(confirm() as HTMLElement)
+
+    expect(control()).toHaveAccessibleName(coaching.checkRevealed)
+    expect(control()).toBeDisabled()
+    expect(control().className).toContain('bg-surface-inset')
+    expect(control().className).not.toContain('bg-accent-soft')
   })
 
   it('carries a simple-mode switch, under the heading and above both rows (R1, AC1)', async () => {
@@ -1635,15 +1651,18 @@ describe('GuessCard', () => {
       }
     })
 
-    it('changes nothing else on the card when it is flipped (R5, AC5)', async () => {
+    it('changes nothing but the opening move’s wording when it is flipped (R5, AC5; F22 E2 R6)', async () => {
       const user = userEvent.setup()
       await openDay()
 
       await user.click(rootChip('G'))
       await user.click(modeChip(wrongFlavour()))
 
+      const [opening] = coaching.ladder
+      expect(cardStatus().textContent).toContain(opening.message)
+
       const before = {
-        line: cardStatus().textContent,
+        line: cardStatus().textContent?.replace(opening.message, opening.soundsOff ?? ''),
         label: control().textContent,
         pressed: within(card())
           .getAllByRole('button')
@@ -2022,8 +2041,9 @@ describe('GuessCard', () => {
 })
 
 describe('through the composed page', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     clearStored()
+    await seedFullSet()
   })
 
   it("offers today's deterministic flavour options", async () => {

@@ -1,7 +1,9 @@
 import type { CoachingSnippets } from '../types'
 
 const opening =
-  'Loop it a few times. Sing the note that feels like rest — that’s usually the root.'
+  'Loop it a few times. Find the note that feels like home — Play along with your instrument, or tap a root or a mode to hear it.'
+const openingSoundsOff =
+  'Loop it a few times. Find the note that feels like home — Play along with your instrument.'
 
 export const coaching = {
   opening,
@@ -11,7 +13,7 @@ export const coaching = {
   neitherMatched: 'Not it. Keep playing and try again.',
 
   ladder: [
-    { message: opening },
+    { message: opening, soundsOff: openingSoundsOff },
     {
       message:
         'Now listen lower. Hum the bass note on the first beat of each bar — the one at the top of the loop is home, and every pass puts it back.',
@@ -75,6 +77,7 @@ export const coaching = {
     `You said ${flavour} — ${notes === 1 ? 'one note' : 'two notes'} apart: ${guessed}, not ${answered}.`,
 
   checkSolved: 'Solved',
+  checkRevealed: 'Revealed',
   checkPair: ({ root, flavour }) => `Check ${root} ${flavour}`,
   pickMode: 'Pick a mode',
   pickRoot: 'Pick a root',
