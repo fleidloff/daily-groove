@@ -10,14 +10,13 @@ work can be picked up independently, and it has never once paid out, because
 ever implied: one body of music theory both halves of the system share, one door
 into the coaching modules, and a written module map with lint behind it.
 
-A fourth boundary came late and belongs with them: every word the app says,
-gathered into one file so the voice can be read in one sitting and changed in
-one edit.
+A fourth epic — every word the app says, gathered into one file — was cut and
+moved to [feature-b](../feature-b/), where translation pays for the same sweep.
+Its settled PRD went with it.
 
-Four epics, each independently useful: a duplication removed, a hub file
-demoted, a rule that stops both growing back, and the app's language lifted out
-of the components that render it. They run one after another rather than in
-parallel — the reason is under Execution waves, and it is the same reason the
+Three epics, each independently useful: a duplication removed, a hub file
+demoted, and a rule that stops both growing back. They run one after another
+rather than in parallel — the reason is under Execution waves, and it is the same reason the
 feature is worth building. Nothing here changes what the app
 does — the app's behaviour is the invariant every epic is judged against, and
 for Epic 1 the generator's *output* is a second invariant just as hard.
@@ -33,7 +32,7 @@ two that can disagree. Every rendered MP3 is byte-identical and
 `grooves.lock.json` is untouched.
 
 **Depends on:** none
-**Parallel with:** none — it is first in a chain of four
+**Parallel with:** none — it is first in a chain of three
 
 **Contract frozen here, for Epic 3 to build against**
 - the path and public surface of `src/lib/theory/` — Epic 3's lint zone names it,
@@ -41,7 +40,7 @@ two that can disagree. Every rendered MP3 is byte-identical and
 - **no shims.** This epic moves every consumer to the new paths itself, so what
   Epic 3 builds against is the final surface rather than a temporary one. The
   cost is that Epic 2 cannot run beside it: both would edit `GroovePuzzle.tsx`,
-  `GuessCard.test.tsx` and `puzzleHarness.tsx`. The four epics run in sequence,
+  `GuessCard.test.tsx` and `puzzleHarness.tsx`. The three epics run in sequence,
   and the parallelism this feature buys is for the *features after it*, not for
   its own epics.
 
@@ -221,8 +220,8 @@ as it does today.
 **Visible when done:** `docs/architecture.md` names the six modules and the
 arrows between them, `docs/coding-guidelines.md` carries the rules, and `npm run
 lint` rejects an import that crosses a boundary the wrong way. `GroovePuzzle.tsx`
-reaches its feature only through narrow entry points, and a structural test fails
-the moment it goes back to reaching past them.
+reaches coaching only through the narrow door Epic 2 builds, and a structural
+test fails the moment it goes back to reaching past it.
 
 **Depends on:** Epics 1 and 2 — it names what they create, and its guards would
 fail against today's tree.
@@ -235,37 +234,54 @@ fail against today's tree.
   already explains why the dependency *direction* is load-bearing; this adds the
   arrows inside the slice, which it currently does not draw
 - **a structural test on fan-in, expressed as a rule rather than a number**
-  (Q4, Q6): assert `GroovePuzzle.tsx` imports nothing from `lib/` directly — only
-  module entry points. `coding-guidelines.md` already names the import list as
-  "the tell": "a composer reaches *down* into the regions it assembles, so a long
-  list of sideways `../lib/` imports means the file is holding logic that belongs
-  behind a seam." The rule states what the count was a proxy for
-- **which means every module in the map needs an entry point, not just
-  coaching.** This is what Q6's answer costs, and it is the largest single item
-  in this epic. Of `GroovePuzzle.tsx`'s 23 sideways imports, **15 name a `lib/`
-  module** across five concern folders — `audio` (3), `presentation` (6), `theory`
-  (4, in `src/lib/` after Epic 1), `puzzle` (1), `persistence` (1). The other 8 are
+  (Q4, Q6): assert `GroovePuzzle.tsx` imports nothing from `lib/presentation/`
+  directly — only the coaching door. `coding-guidelines.md` already names the
+  import list as "the tell": "a composer reaches *down* into the regions it
+  assembles, so a long list of sideways `../lib/` imports means the file is
+  holding logic that belongs behind a seam." The rule states what the count was a
+  proxy for, for the one folder where the count actually grew
+- **which means one entry point, and Epic 2 has already built it** (Q6). Of
+  `GroovePuzzle.tsx`'s 23 sideways imports, **15 name a `lib/` module** across
+  five concern folders — `presentation` (6), `theory` (4, in `src/lib/` after
+  Epic 1), `audio` (3), `puzzle` (1), `persistence` (1). The other 8 are
   `../data/` (2) and `../hooks/` (6), which are not `lib/` and are unaffected, as
-  is `../types`. Epic 2 builds coaching's;
-  the other four are built here. Note the door is per concern *folder*, while the
-  map's `puzzle` module spans two of them — the map is how a reader groups the
-  code, the doors are what the import rule can check
-- **each entry point is narrow, and a test says so** (Q7). It exports what the
-  shell imports through it and nothing more. This is the half of the
+  is `../types`. The rule binds the six that name `lib/presentation/` and no
+  others: that folder went from two modules to eleven, and the other four have
+  been stable across nineteen features. So this epic adds no production file —
+  it puts `metaLine` behind Epic 2's door and rewrites six import lines into one.
+  Note the door is per concern *folder*, while the map's `puzzle` module spans two
+  of them and its `audio` module includes hooks outside any folder — the map is
+  how a reader groups the code, a door is what the import rule can check, and
+  four of the six modules have no door at all
+- **the entry point is narrow, and a test says so** (Q7). It exports what its
+  consumers import through it and nothing more. This is the half of the
   `src/components/` no-barrel rule that transfers: "the grouping would stop
-  telling a reader anything, because every path would end at the barrel." Five
-  wide barrels would let `GroovePuzzle.tsx` read as five imports while reaching
-  exactly as far as it does today — the rule would pass and the coupling would be
-  invisible. Narrow doors move the tell from *how many paths* to *how wide is
-  each door*, which is the question the fan-in count was always a proxy for
+  telling a reader anything, because every path would end at the barrel." A wide
+  barrel would let `GroovePuzzle.tsx` read as one import while reaching exactly
+  as far as it does today — the rule would pass and the coupling would be
+  invisible. A narrow door moves the tell from *how many paths* to *how wide is
+  the door*, which is the question the fan-in count was always a proxy for. The
+  test's one known limit: a test file counts as an importer, so the guard catches
+  carelessness rather than determination
 - so `coding-guidelines.md` gains the entry-point rule next to the no-barrel one,
-  and says why one folder set gets doors and the other does not: the design
+  in two halves. Why one folder set gets doors and the other does not: the design
   system is a flat catalogue of interchangeable primitives, a feature module is a
-  seam with a job
+  seam with a job. And **when a folder earns one: measured growth, not policy** —
+  eleven modules and six of the composer's fifteen direct `lib/` imports bought
+  coaching a door; four, three, one and one bought the others none. That second
+  half is what lets a later feature add a door when its folder grows, instead of
+  reading this epic's scope as a verdict
 - extend the existing ESLint zone config rather than inventing a second
   mechanism. `docs/coding-guidelines.md` §"The five zones" documents what is
-  there; this adds zones, each carrying a `message` naming the rule and the
-  reason, as the existing ones do
+  there; this adds **three** — no `lib/` module imports UI, hooks or the store;
+  audio imports neither coaching nor the puzzle module; the puzzle module imports
+  neither coaching nor audio — each carrying a `message` naming the rule and the
+  reason, as the existing ones do. Writing the first at `lib/` granularity is
+  what collapses four missing arrows into three zones. One of them has a real
+  violation to fire on: `lib/puzzle/narrowing.test.ts:4` imports
+  `'../presentation/ruledOut'`, and the fix moves that assertion into
+  `lib/presentation/ruledOut.test.ts`, whose arrow allows it. The only violation
+  in the tree being in a test file is the case the guidelines say matters most
 - there is nothing to unshim and no import block to fix: Epic 1 did that work
   itself. This epic checks it rather than performs it — no file imports an old
   `lib/theory/` path, and `flavourOptions` is called with its pool everywhere —
@@ -280,6 +296,25 @@ fail against today's tree.
   what a role needs to know
 
 **Out of scope**
+- **doors for the other four concern folders, deliberately.** `src/lib/theory/`,
+  `lib/audio/`, `lib/puzzle/` and `lib/persistence/` get no `index.ts`, and
+  `GroovePuzzle.tsx` keeps importing their modules directly — four, three, one
+  and one specifier. Not an oversight: the guard follows the measured growth.
+  `lib/presentation/` grew from two modules to eleven while supplying six of the
+  shell's fifteen direct `lib/` imports; the other four have been stable across
+  nineteen features, and a door on a folder that has not grown buys a barrel with
+  no measurement behind it. The cost is real and worth naming — nothing guards
+  the shell's imports into those four, so a regrowth there is caught by review
+  alone, which is what failed twice before. The mitigation is the guideline rule:
+  a door is earned by growth, so the next feature to grow one of those folders
+  knows to add one, at the cost of one `index.ts` and one line in the fan-in
+  test's ignore list
+- **anything under `scripts/`.** With no door in `src/lib/theory/` there is
+  nothing generator-side left: Epic 1 already extends
+  `scripts/grooves/boundary.test.ts` with the `src/lib/` channel assertion,
+  rewrites the `Flavour` assertion and narrows the tier trigger. This epic's one
+  generator-adjacent job is documentary — repointing the guidelines' `Flavour`
+  paragraph at `src/lib/theory/names.ts`
 - restructuring `docs/coding-guidelines.md`. It stays the source of truth and
   keeps its shape; this epic adds the entry-point rule, rewrites the `src/lib/`
   "genuinely shared" bar that Q2 invalidated, and touches the `Flavour` paragraph
@@ -294,137 +329,31 @@ fail against today's tree.
   design-system component reaching into coaching, the shell reaching past a
   module's entry point — and watch `npm run lint` reject it with a message that
   says why
-- the fan-in test fails when a direct `lib/` import is added to
-  `GroovePuzzle.tsx`, and passes on the tree this epic leaves. Both directions,
-  or the rule is a claim nobody checked
-- each of the five entry points exports strictly what the shell imports through
-  it, asserted by a structural test that reads both sides from disk. An entry
-  point that re-exports its whole folder passes the fan-in test while defeating
-  it, so this is the assertion that makes the other one mean anything
-- break it deliberately: widen one entry point with an unused re-export and watch
-  the test fail
+- the fan-in test fails when a direct `lib/presentation/` import — or a
+  `vi.mock` of one — is added to `GroovePuzzle.tsx`, and passes on the tree this
+  epic leaves. Both directions, or the rule is a claim nobody checked
+- and a third direction, because the scope is a decision rather than an accident:
+  adding a direct `lib/audio/` import to `GroovePuzzle.tsx` fails **nothing**,
+  asserted by a case in the suite rather than left to be inferred
+- the coaching door exports strictly what its consumers import through it,
+  asserted by a structural test that reads both sides from disk. A door that
+  re-exports its whole folder passes the fan-in test while defeating it, so this
+  is the assertion that makes the other one mean anything
+- break it deliberately: widen the door with an unused re-export and watch the
+  test fail; then replace a line with `export *` and watch it fail on sight
 - each new zone is tested by breaking it deliberately, once. A rule that has
-  never been seen to fire is a comment
+  never been seen to fire is a comment. For both structural tests the
+  demonstration is permanent as well as one-off: each is a pure predicate plus a
+  disk read, and the predicate is unit-tested against a hand-written violation
+- read the arrow list back against the import graph. Three of the arrows first
+  written down are wrong — the shell *is* imported, by the feature's `index.ts`
+  and the test harness; coaching is imported by five region components, not by
+  the shell alone; audio has three hooks, not four — and the map is what changes
 - no file imports the old `lib/theory/` paths
 - the full gate is green: `npm test`, `npm run test:gen`, types, lint, build
 - read `docs/architecture.md` back against the tree. If the map and the folders
   disagree, the map is wrong — it describes a shape that exists, it does not
   propose one
-
-### Epic 4 — Every word in one place
-
-**Visible when done:** every user-facing string is read from one snippets
-module. The whole voice of the app can be read top to bottom without opening a
-component, changing what it says is one edit in one file, and changing a snippet
-breaks no test — the suite imports the snippet instead of asserting the
-sentence.
-
-**Depends on:** Epics 2 and 3
-**Parallel with:** none
-
-**Scope**
-- the size of it: roughly a hundred user-facing strings across about thirty
-  files, written wherever they happen to render. Nobody can currently read what
-  the app says without reading the app
-- **they land in `src/lib/snippets/`, one file per area** — `puzzle.ts`,
-  `coaching.ts`, `header.ts`, `intro.ts` — behind an index, with
-  `src/lib/branding.ts` folded in. The shell already reads two of them, so the
-  strings have a reader outside the feature slice; and Epic 3 is rewriting the
-  `src/lib/` "genuinely shared" paragraph for Q2 regardless, so the same edit
-  admits a module with one caller instead of two
-- **`src/lib/branding.ts` is the precedent and the proof the pattern works.**
-  `APP_NAME` and `TAGLINE` live in one file, and `GrooveHeader.test.tsx`,
-  `page.test.tsx` and `GroovePuzzle.header.test.tsx` already import `APP_NAME`
-  rather than asserting `'Eardle'`. This epic is that file at a hundred strings
-  instead of two, and `branding.ts` folds into it
-- **three shapes, and lifting them is three different jobs.** Static labels in
-  components — `Pick a root`, `Hint`, `Tap sounds`, `No streak yet`, `How to
-  play`, `Share`, `Link copied`, `Groove not found` — are a straight lift. The
-  coaching prose in `feedback.ts`, `moves.ts`, `coachingMoves.ts`, `verdict.ts`
-  and `nearMiss.ts` is already module-level constants (`OPENING`, `SOLVED`,
-  `ROOT_MATCHED`), so it is half-centralised per module and the move is only
-  which file it lives in — and it is the largest block of real prose in the app.
-  The interpolated ones are the awkward third: `nearMiss.ts` picks between
-  `one note` and `two notes` and joins with `' and '`, and the coaching moves
-  take the root and the mode. **Those become functions taking arguments;
-  everything else is a constant.** The compiler then checks every call site, and
-  the pluralisation stays TypeScript rather than becoming a template
-  mini-language
-- **the test rule is the load-bearing half, not a nicety.** There are ~540
-  literal string assertions across 57 test files; `GroovePuzzle.guessing.test.tsx`
-  alone has 79 and `GuessCard.test.tsx` 65. A centralised snippet that the tests
-  do not read from is just a second place the string lives, and the first reword
-  proves it by going red
-- **the design system takes its text as props, never snippets.** `PlayControl`
-  already has the right shape — a `text?` prop with a default — but its default
-  `TEXT` and `NAME` constants (`Play`, `Stop`, `Play the loop`) are app words
-  sitting inside a primitive, and `docs/architecture.md` is explicit: "a
-  primitive that has learned about grooves is no longer a primitive". Those move
-  out to the caller. Design-system tests keep their literals, because a
-  primitive is tested against props it passes itself
-- **what is not a snippet: theory data.** `families.ts`'s `Major`/`Minor`,
-  the flavour display names in `notes.ts` and `licks.ts`, and `numerals.ts`'s
-  `III` and `VII` are identity, and Epic 1 has just made the slug canonical and
-  put the conversion in `src/lib/theory/names.ts`. Giving one value two owners is
-  the opposite of this epic
-- **`character.ts`'s seventeen mode descriptions do come along**, and so do the
-  aria-labels. The line is not "prose versus short strings" but *would a
-  translator translate it*: "major with a ♯4" is the app putting theory into
-  Sam's language and is one of the lines most likely to be reworded, while
-  `Harmonic minor` is the key in `catalogue.json` and `grooves.lock.json` with
-  one owner in `theory/names.ts`. Anything a screen reader speaks is read by a
-  person, so it is language
-- **non-UI strings stay where they are:** the storage keys
-  (`daily-groove:v2:results`, `daily-groove:v1:prefs`), the `en-GB` locale,
-  the error names (`AbortError`, `UnknownNoteError`) and `selectGroove`'s
-  invariant message. A snippets file holding a `localStorage` key has stopped
-  being about language
-- **the test half is guarded by lint, not by a structural test.** A
-  `no-restricted-syntax` rule rejects a string literal inside an assertion —
-  `*ByText`, `*ByRole`'s `name`, `toBe`, `toEqual`, `toContain`,
-  `toHaveTextContent` — so it fires in the editor on the line being typed rather
-  than at the end of a suite run. It carries a `message` naming the rule and the
-  reason, as the existing zones do, and the escape hatch is an
-  `eslint-disable-next-line` with a comment, which is a visible thing to grep
-  for. The matching shapes are many, and enumerating them is part of the epic's
-  work rather than a footnote
-- **whether the components get a guard of their own is still open** and belongs
-  to Epic 4's PRD. Lint stops the second half of the rule (no literal in a test);
-  nothing yet stops the first (no inline label in a component), and this
-  feature's own history says an unguarded rule grows back — Epic 3 makes that
-  argument about `GroovePuzzle.tsx` and it applies identically to the first inline
-  label somebody adds in a hurry
-- **feature-19 shows the cost by paying it.** It ships first and its briefing
-  ends "check every hint and other wording for snippets that need changing now
-  that the three attempts are gone" — one file's work if this had landed, and the
-  hunt this epic exists to end because it had not. It also means the two features
-  must not run at once: feature-19 rewords the very strings this epic moves
-
-**Out of scope**
-- **translation, locales, a second language, and any build-time translation
-  step.** That is feature-B, which keeps them. This epic is the centralisation
-  half and stops there
-- **rewording anything.** Every string moves byte-identical. The ~540 existing
-  assertions passing after the move is exactly what proves it, and it is why
-  they are rewritten to import rather than deleted
-- the generator. `scripts/grooves/` prints to a terminal, not to Sam
-- a translation-shaped file format — JSON catalogues, keys namespaced by locale.
-  Snippets stay TypeScript so the compiler still checks every call site
-
-**Validation**
-- the demo path, and it is the whole feature in one move: change one snippet —
-  `Hint` to `Clue` — and watch the suite stay green and the app say `Clue`. Then
-  revert it. If any test goes red, the epic is not done
-- break the lint rule deliberately: add a literal assertion to a test in each
-  shape the rule matches, and watch `npm run lint` reject it with a message
-  naming the rule and the reason
-- the count reconciles: strings added to the snippets module equals strings
-  removed from components and coaching modules. A `git diff` shows import lines
-  and identifiers, and no changed wording
-- no test asserts a prose literal outside the design system, and the allowlist
-  is short enough to read
-- `structure.test.ts` knows where snippets live
-- the full gate is green: `npm test`, `npm run test:gen`, types, lint, build
 
 ## Dependency map
 
@@ -433,7 +362,6 @@ graph LR
   F18[feature-18 finished] --> E2
   E1[Epic 1 — One body of theory] --> E2[Epic 2 — The puzzle card feeds itself]
   E2 --> E3[Epic 3 — The module map is enforced]
-  E3 --> E4[Epic 4 — Every word in one place]
 ```
 
 A chain, not a fan. Epic 1 hands Epic 2 the rewritten imports in the three files
@@ -442,7 +370,7 @@ contract one.
 
 ## Execution waves
 
-**All four epics run in sequence.** The obvious plan was Epics 1 and 2 at once
+**All three epics run in sequence.** The obvious plan was Epics 1 and 2 at once
 behind re-export shims, and it was rejected while the PRDs were written: a shim
 means two paths to the same module for as long as the epic that removes them
 takes, and if that epic slips the tree is worse than before the move. Epic 1
@@ -462,18 +390,13 @@ Worth naming plainly: this feature buys parallelism for the features that come
   they share, and after feature-18 is finished.
 - **Wave 3:** Epic 3 — its guards describe Epic 2's result and its lint zone
   names Epic 1's path, so it cannot start meaningfully before both land.
-- **Wave 4:** Epic 4 — last, and for file ownership rather than for a contract.
-  It edits nearly every file under `components/`, which is precisely what Epic 2
-  rewrites the props of and Epic 3 rewrites the imports of, and it adds a rule to
-  `coding-guidelines.md` and a zone to the ESLint config that Epic 3 is already
-  editing. Running it beside Epic 3 would have the two colliding on the same
-  three files. Ordering it last costs a wave and saves the merge.
 - **Feature-18 must finish first.** It owns the files under `lib/presentation/`
   that Epic 2 puts behind a door — `coaching.ts`, `coachingFamily.ts`,
-  `coachingMoves.ts`, `moves.ts`, `verdict.ts`. They are committed as of
-  2026-09-03, but the index still has feature-18 at 🔨 In progress, and Epic 2
-  waits on the feature being done rather than on the files existing: refactoring
-  code whose wording is still being chosen is work done twice.
+  `coachingMoves.ts`, `moves.ts`, `verdict.ts`. Feature-18 is done and accepted as
+  of 2026-09-03, so it no longer blocks Epic 2. Variations on the coaching
+  wording may come later; if one is in flight when Epic 2 starts the original
+  rule applies again — refactoring code whose wording is still being chosen is
+  work done twice.
 
 ## Assumptions
 
@@ -498,7 +421,7 @@ Worth naming plainly: this feature buys parallelism for the features that come
   decide, this feature caused it.
 - **No shims, and therefore no parallel wave.** Epic 1 moves every consumer
   itself, so the tree never holds two paths to the same module. The price is that
-  the four epics are serial — stated here because this feature's own pitch is
+  the three epics are serial — stated here because this feature's own pitch is
   parallelism, and it does not deliver any for itself.
 - **`GuessCard` importing the coaching module directly widens what a feature
   component may know.** It is not a design-system primitive, so no architecture
@@ -518,21 +441,6 @@ Worth naming plainly: this feature buys parallelism for the features that come
   wants none of it.
 - Six modules describes the tree as it is, not a target shape. If Epic 3 finds
   one does not survive contact with a lint zone, the map is what changes.
-- **Epic 4 is the fourth epic in a row that Sam cannot see, and the argument for
-  it is one feature away rather than absent.** Feature-20's briefing already ends
-  with "check every hint and other wording", and feature-B is "actually use
-  snippets instead of hardcoded text" — both start by finding every string in the
-  app. It also has the closest thing to a player-facing effect in this feature:
-  a voice spread over thirty files drifts, and a voice you can read in one
-  sitting is the only way it stays one voice.
-- **Snippets have one caller, not two, so Epic 4 bends the `src/lib/` bar the
-  same way Q2 did** — if that is where they land (Q8). `branding.ts` already sits
-  there holding app-only strings that `src/app/layout.tsx` reads, so the
-  precedent is set; Epic 3 is rewriting that paragraph anyway.
-- **Epic 4's counts are measured on today's tree** — ~100 strings, ~540 literal
-  assertions, 57 test files. Feature-20 reworks the hint wording and feature-18's
-  coaching words are recent; if either moves first the numbers move and the shape
-  does not.
 - Nothing here is a rewrite. Every epic rearranges code that already exists and
   already passes.
 
@@ -551,17 +459,22 @@ reopening them.
 4. **The hub file is guarded**, which neither feature-5 nor feature-14 did.
 5. **The generator tier triggers on the five modules the generator imports**, not
    on the `src/lib/` folder name.
-6. **The guard is a rule, not a number:** `GroovePuzzle.tsx` imports no `lib/`
-   module directly, only entry points — which means five entry points, not one.
-7. **Every entry point is narrow, and a test asserts it.** Without this, 6 is a
-   barrel file that hides the coupling it was written to expose.
-8. **Snippets live in `src/lib/snippets/`**, one file per area behind an index,
-   with `branding.ts` folded in.
-9. **The line is "would a translator translate it".** Everything readable
-   including aria-labels and `character.ts`'s mode descriptions is language;
-   theory names, degree labels and numerals stay data with one owner.
-10. **Lint guards the test half** — a `no-restricted-syntax` rule on string
-    literals inside assertions, not a structural test. Whether the components
-    get a guard of their own is Epic 4's PRD to settle.
-11. **Interpolated snippets are functions, everything else a constant**, so the
-    compiler checks the call sites.
+6. **The guard is a rule, not a number, and it is scoped to the folder that
+   grew:** `GroovePuzzle.tsx` imports no `lib/presentation/` module directly,
+   only the coaching door Epic 2 builds — one entry point, not five. The doors
+   for theory, audio, puzzle and persistence were priced and cut: that folder
+   went from 2 modules to 11 and supplies 6 of the shell's 15 direct `lib/`
+   imports, while the other four have been stable across nineteen features. The
+   choice is additive to reverse — one `index.ts` and one line in the fan-in
+   test's ignore list per folder — and the guideline rule is written so a later
+   feature knows when to.
+7. **The coaching door is narrow, and a test asserts it.** Without this, 6 is a
+   barrel file that hides the coupling it was written to expose. The test's
+   limit is known and recorded: a test file counts as an importer, so it catches
+   carelessness rather than determination — which matters more at one door than
+   it would at five.
+8. **The snippets decisions moved with Epic 4 to feature-b** — where they
+   land, the "would a translator translate it" line, how the test half is
+   guarded, and constants versus functions. They are recorded in
+   [feature-b/every-word-in-one-place.md](../feature-b/every-word-in-one-place.md)
+   rather than reopened here.

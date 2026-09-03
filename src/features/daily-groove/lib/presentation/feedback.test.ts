@@ -4,7 +4,6 @@ import {
   selectFeedback,
   shouldShowNudge,
   shouldOfferReveal,
-  dotStates,
   missCount,
 } from './feedback'
 
@@ -28,6 +27,16 @@ const EXACT = attempt('G', 'Dorian', true, true)
 
 const misses = (n: number): Attempt[] =>
   Array.from({ length: n }, (_, i) => [NEITHER, ROOT_ONLY, FLAVOUR_ONLY][i % 3])
+
+it('exports no dot state, count or shape (F19 E1 R1)', async () => {
+  const feedback = await import('./feedback')
+  expect(Object.keys(feedback).sort()).toEqual([
+    'missCount',
+    'selectFeedback',
+    'shouldOfferReveal',
+    'shouldShowNudge',
+  ])
+})
 
 describe('selectFeedback', () => {
   it('gives opening guidance about listening for the tonic before any guess', () => {
@@ -148,58 +157,6 @@ describe('shouldShowNudge', () => {
   it('is withdrawn once the root is confirmed (F18 E3 R1, AC1)', () => {
     expect(shouldShowNudge(2, false, true)).toBe(false)
     expect(shouldShowNudge(4, false, true)).toBe(false)
-  })
-})
-
-describe('dotStates', () => {
-  it('is three unspent dots before any guess', () => {
-    expect(dotStates([], false)).toEqual(['unspent', 'unspent', 'unspent'])
-  })
-
-  it('spends one dot after one failed guess', () => {
-    expect(dotStates([NEITHER], false)).toEqual(['spent', 'unspent', 'unspent'])
-  })
-
-  it('spends two dots after two failed guesses', () => {
-    expect(dotStates([NEITHER, ROOT_ONLY], false)).toEqual([
-      'spent',
-      'spent',
-      'unspent',
-    ])
-  })
-
-  it('caps at three spent dots after five failed guesses', () => {
-    const five = [NEITHER, ROOT_ONLY, FLAVOUR_ONLY, NEITHER, ROOT_ONLY]
-    expect(dotStates(five, false)).toEqual(['spent', 'spent', 'spent'])
-  })
-
-  it('turns every dot solved once the day is solved', () => {
-    expect(dotStates([NEITHER, EXACT], true)).toEqual([
-      'solved',
-      'solved',
-      'solved',
-    ])
-    expect(dotStates([], true)).toEqual(['solved', 'solved', 'solved'])
-  })
-
-  it('is always exactly three entries long', () => {
-    const attempts: Attempt[] = []
-    for (let i = 0; i <= 8; i++) {
-      expect(dotStates(attempts, false)).toHaveLength(3)
-      expect(dotStates(attempts, true)).toHaveLength(3)
-      attempts.push(NEITHER)
-    }
-  })
-
-  it('does not mutate the attempts it is given', () => {
-    const attempts = [NEITHER, ROOT_ONLY]
-    dotStates(attempts, false)
-    expect(attempts).toHaveLength(2)
-  })
-  it('leaves the row full, and three wide, after a fourth miss', () => {
-    const four = dotStates(misses(4), false)
-    expect(four).toHaveLength(3)
-    expect(four.every((dot) => dot === 'spent')).toBe(true)
   })
 })
 

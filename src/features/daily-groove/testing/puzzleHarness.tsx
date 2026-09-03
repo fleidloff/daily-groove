@@ -159,10 +159,6 @@ export const rootGroup = () => screen.getByRole('radiogroup', { name: 'Root' })
 export const flavourGroup = () => screen.getByRole('radiogroup', { name: 'Mode' })
 export const control = () =>
   screen.getByRole('button', { name: /^(Pick a |Check |Solved$)/ })
-export const dotStates = () =>
-  Array.from(document.querySelectorAll('[data-dot-state]')).map((el) =>
-    el.getAttribute('data-dot-state'),
-  )
 export const nudge = () => screen.queryByRole('complementary', { name: 'Hint' })
 export const nudgeLine = () => screen.queryByText(/roots ruled out/i)
 export const hintRegion = () => nudge()?.querySelector('[role="status"]') ?? null

@@ -8,7 +8,6 @@ import {
   chipLabel,
   coachingLine,
   control,
-  dotStates,
   flavourGroup,
   flavours,
   GROOVE,
@@ -194,27 +193,38 @@ describe('GroovePuzzle', () => {
     expect(pressed.map(chipLabel)).toEqual(['G'])
   })
 
-  it('opens with three unspent dots and the opening guidance (E3 R1, R4, AC1, AC4)', async () => {
+  it('opens clean with the opening guidance (E3 R1, R4, AC1, AC4)', async () => {
     await renderPuzzle()
 
-    expect(dotStates()).toEqual(['unspent', 'unspent', 'unspent'])
     expect(nudge()).toContainElement(screen.getByText(/feels like rest/i))
     expect(nudgeLine()).not.toBeInTheDocument()
   })
 
-  it('spends a dot and names the half that matched on each wrong guess (E3 R1, R3, AC2, AC5, AC7)', async () => {
+  it('records the guess and names the half that matched on each wrong guess (E3 R1, R3, AC2, AC5, AC7)', async () => {
     const user = userEvent.setup()
     await renderPuzzle()
     const wrong = wrongFlavour()
 
     await guess(user, 'G', wrong)
-    expect(dotStates()).toEqual(['spent', 'unspent', 'unspent'])
+    expect(mockStore.save.mock.calls.at(-1)?.[0].attempts).toHaveLength(1)
     expect(screen.getByText(/not it\. keep playing/i)).toBeInTheDocument()
     expect(nudgeLine()).not.toBeInTheDocument()
 
     await guess(user, 'C', otherWrongFlavour())
-    expect(dotStates()).toEqual(['spent', 'spent', 'unspent'])
+    expect(mockStore.save.mock.calls.at(-1)?.[0].attempts).toHaveLength(2)
     expect(screen.getByText(/right home note/i)).toBeInTheDocument()
+  })
+
+  it('counts nothing on the card after two misses (F19 E1 R1, AC2)', async () => {
+    const user = userEvent.setup()
+    await renderPuzzle()
+
+    await guess(user, 'G', wrongFlavour())
+    await guess(user, 'D', otherWrongFlavour())
+
+    expect(document.querySelectorAll('[data-dot-state]')).toHaveLength(0)
+    expect(nudgeLine()).toBeInTheDocument()
+    expect(giveUp()).toBeNull()
   })
 
   it('narrows the row instead of naming the root, from the second miss (R1, R11, R17, R18, AC1, AC6, AC12, AC17)', async () => {
@@ -396,7 +406,7 @@ describe('GroovePuzzle', () => {
     expect(control()).toHaveAccessibleName(`Check ${fresh} ${third}`)
 
     await user.click(control())
-    expect(dotStates()).toEqual(['spent', 'spent', 'spent'])
+    expect(giveUp()).toHaveAccessibleName('Give up and show the answer')
     expect(dimmedIn(rootGroup())).toContain(fresh)
     expect(
       within(rootGroup()).queryByRole('button', { pressed: true }),
@@ -413,7 +423,7 @@ describe('GroovePuzzle', () => {
     await guess(user, 'D', other)
     await guess(user, liveRoot(), thirdWrongFlavour())
 
-    expect(dotStates()).toEqual(['spent', 'spent', 'spent'])
+    expect(giveUp()).toHaveAccessibleName('Give up and show the answer')
     expect(control()).toBeDisabled()
     await user.click(
       within(rootGroup()).getByRole('button', { name: liveRoot() }),
@@ -424,7 +434,7 @@ describe('GroovePuzzle', () => {
     expect(control()).toBeEnabled()
 
     await user.click(control())
-    expect(dotStates()).toEqual(['spent', 'spent', 'spent'])
+    expect(mockStore.save.mock.calls.at(-1)?.[0].attempts).toHaveLength(4)
     expect(nudgeLine()).toBeInTheDocument()
   })
 
@@ -455,7 +465,7 @@ describe('GroovePuzzle', () => {
     expect(nudgeLine()).not.toBeInTheDocument()
   })
 
-  it('withdraws the whole hint box and turns the dots on the solve (E3 R9, AC13)', async () => {
+  it('withdraws the whole hint box on the solve (E3 R9, AC13)', async () => {
     const user = userEvent.setup()
     await renderPuzzle()
     const wrong = wrongFlavour()
@@ -470,7 +480,7 @@ describe('GroovePuzzle', () => {
     expect(nudge()).not.toBeInTheDocument()
     expect(nudgeLine()).not.toBeInTheDocument()
     expect(screen.queryByText(/the groove is yours now/i)).toBeNull()
-    expect(dotStates()).toEqual(['solved', 'solved', 'solved'])
+    expect(control()).toHaveAccessibleName('Solved')
     expect(
       screen.getByRole('heading', { name: 'C Aeolian' }),
     ).toBeInTheDocument()
@@ -552,7 +562,6 @@ describe('GroovePuzzle', () => {
       within(flavourGroup()).getByRole('button', { name: 'Aeolian' }),
     ).toHaveAttribute('aria-pressed', 'false')
 
-    expect(dotStates()).toEqual(['spent', 'spent', 'spent'])
     const saved = mockStore.save.mock.calls.at(-1)?.[0] as DailyResult
     expect(saved.attempts).toHaveLength(3)
     expect(saved.solved).toBe(false)
@@ -595,7 +604,6 @@ describe('GroovePuzzle', () => {
     expect(
       within(rootGroup()).getByRole('button', { name: 'A' }),
     ).toHaveAttribute('aria-pressed', 'false')
-    expect(dotStates()).toEqual(['spent', 'spent', 'spent'])
     expect(mockStore.save).not.toHaveBeenCalled()
   })
 
@@ -629,7 +637,6 @@ describe('GroovePuzzle', () => {
     expect(panel.textContent).toMatch(/the plain minor scale/i)
     expect(panel.textContent).not.toMatch(/tr(y|ies)/i)
     expect(panel.textContent).not.toMatch(/streak/i)
-    expect(screen.getByRole('img', { name: 'Solved' })).toBeInTheDocument()
     expect(
       within(panel).queryByText(new RegExp(`^You said ${wrong} — `)),
     ).toBeNull()
@@ -751,7 +758,7 @@ describe('GroovePuzzle', () => {
     await guess(user, 'C', 'Minor')
 
     expect(screen.queryByText(/the groove is yours now/i)).toBeNull()
-    expect(dotStates()).toEqual(['spent', 'unspent', 'unspent'])
+    expect(mockStore.save.mock.calls.at(-1)?.[0].attempts).toHaveLength(1)
     expect(screen.getByText(/right home note/i)).toBeInTheDocument()
 
     await user.click(within(flavourGroup()).getByRole('button', { name: 'Major' }))
@@ -771,7 +778,7 @@ describe('GroovePuzzle', () => {
 
     await guess(user, outsideSix, wrong)
     await guess(user, inSix, otherWrongFlavour())
-    expect(dotStates()).toEqual(['spent', 'spent', 'unspent'])
+    expect(mockStore.save.mock.calls.at(-1)?.[0].attempts).toHaveLength(2)
     expect(nudgeLine()).toBeInTheDocument()
     const dimmedInTwelve = dimmedIn(rootGroup())
     expect(dimmedInTwelve).toHaveLength(4)
@@ -784,7 +791,6 @@ describe('GroovePuzzle', () => {
     await user.click(modeSwitch())
     expect(modeSwitch()).toHaveAttribute('aria-checked', 'true')
 
-    expect(dotStates()).toEqual(['spent', 'spent', 'unspent'])
     expect(mockStore.save.mock.calls).toHaveLength(writes)
     expect(mockStore.save.mock.calls.at(-1)?.[0].attempts).toHaveLength(2)
     expect(
@@ -804,7 +810,7 @@ describe('GroovePuzzle', () => {
     await user.click(within(rootGroup()).getByRole('button', { name: 'C' }))
     await user.click(within(flavourGroup()).getByRole('button', { name: 'Minor' }))
     await user.click(control())
-    expect(dotStates()).toEqual(['solved', 'solved', 'solved'])
+    expect(control()).toHaveAccessibleName('Solved')
     expect(
       screen.getByRole('heading', { name: 'C Aeolian' }),
     ).toBeInTheDocument()
@@ -840,7 +846,6 @@ describe('GroovePuzzle', () => {
     expect(giveUp()).toBeNull()
 
     await guess(user, thirdWrongRoot, 'Minor')
-    expect(dotStates()).toEqual(['spent', 'spent', 'spent'])
     expect(giveUp()).toHaveAccessibleName('Give up and show the answer')
     expect(nudgeLine()).not.toBeInTheDocument()
   })
@@ -880,7 +885,7 @@ describe('GroovePuzzle', () => {
     await guess(user, wrongRoot, 'Major')
     await guess(user, otherWrongRoot, 'Minor')
     await guess(user, thirdWrongRoot, 'Minor')
-    expect(dotStates()).toEqual(['spent', 'spent', 'spent'])
+    expect(giveUp()).toHaveAccessibleName('Give up and show the answer')
 
     await user.click(giveUp() as HTMLElement)
     await user.click(giveUp() as HTMLElement)
@@ -920,9 +925,7 @@ describe('GroovePuzzle', () => {
       expect(control()).toHaveAccessibleName(`Check C ${wrong}`)
       expect(control()).toBeEnabled()
 
-      expect(dotStates()).toEqual(['unspent', 'unspent', 'unspent'])
       await user.click(control())
-      expect(dotStates()).toEqual(['spent', 'unspent', 'unspent'])
       expect(screen.getByText(/right home note/i)).toBeInTheDocument()
 
       expect(nudgeLine()).not.toBeInTheDocument()
@@ -980,7 +983,6 @@ describe('GroovePuzzle', () => {
       expect(framing.textContent ?? '').toMatch(
         /not today's puzzle|not today’s puzzle/i,
       )
-      expect(dotStates()).toEqual(['unspent', 'unspent', 'unspent'])
       expect(control()).toHaveAccessibleName('Pick a root and a mode')
     })
 
@@ -1160,19 +1162,17 @@ describe('GroovePuzzle', () => {
         .filter((chip) => chip.getAttribute('aria-pressed') === 'true')
         .map(chipLabel)
 
-    const dotsWere = dotStates()
     const feedbackWas = feedbackReads()
     const labelWas = control().textContent
     const rootsWere = pressed(rootGroup())
     const flavoursWere = pressed(flavourGroup())
 
-    expect(dotsWere.filter((state) => state === 'spent')).toHaveLength(1)
+    expect(mockStore.save.mock.calls.at(-1)?.[0].attempts).toHaveLength(1)
     expect(feedbackWas).not.toBe('')
 
     await user.click(soundSwitch())
     await user.click(soundSwitch())
 
-    expect(dotStates()).toEqual(dotsWere)
     expect(feedbackReads()).toBe(feedbackWas)
     expect(control().textContent).toBe(labelWas)
     expect(pressed(rootGroup())).toEqual(rootsWere)
@@ -1180,7 +1180,7 @@ describe('GroovePuzzle', () => {
 
     await user.click(control())
 
-    expect(dotStates().filter((state) => state === 'spent')).toHaveLength(2)
+    expect(mockStore.save.mock.calls.at(-1)?.[0].attempts).toHaveLength(2)
   })
 
   describe('the row locks once a check confirms a half (F17 E2)', () => {
@@ -1273,7 +1273,7 @@ describe('GroovePuzzle', () => {
       await user.click(within(rootGroup()).getByRole('button', { name: 'C' }))
       expect(dimmedIn(rootGroup())).toEqual([])
       expect(dimmedIn(flavourGroup())).toEqual([])
-      expect(dotStates()).toEqual(['unspent', 'unspent', 'unspent'])
+      expect(mockStore.save).not.toHaveBeenCalled()
     })
 
     it('keeps the lock when the confirming check is not the last one, from a stored day alone (R3, R5, AC5, AC7)', async () => {
@@ -1314,7 +1314,6 @@ describe('GroovePuzzle', () => {
       const user = userEvent.setup()
       await renderPuzzle()
 
-      expect(dotStates()).toEqual(['spent', 'spent', 'unspent'])
       expect(liveRoots()).toEqual(['C'])
 
       const g = () => within(rootGroup()).getByRole('button', { name: 'G' })
@@ -1331,7 +1330,7 @@ describe('GroovePuzzle', () => {
       )
       await user.click(control())
 
-      expect(dotStates()).toEqual(['spent', 'spent', 'spent'])
+      expect(giveUp()).toHaveAccessibleName('Give up and show the answer')
       expect(liveRoots()).toEqual(['C'])
     })
 
@@ -1499,7 +1498,6 @@ describe('GroovePuzzle', () => {
       await guess(user, 'G', wrongFlavour())
 
       const before = move()
-      const dotsBefore = dotStates()
       const verdictBefore = verdictLine()?.textContent ?? null
       expect(before).toBe(LADDER[1].message)
       expect(verdictBefore).not.toBeNull()
@@ -1510,7 +1508,6 @@ describe('GroovePuzzle', () => {
       )
 
       expect(move()).toBe(before)
-      expect(dotStates()).toEqual(dotsBefore)
       expect(verdictLine()?.textContent ?? null).toBe(verdictBefore)
     })
 

@@ -1,3 +1,10 @@
+> Moved here from feature-20, where it was Epic 4. It is kept as reference, not
+> as a PRD: feature-b is a lettered candidate and has no roadmap yet. Centralising
+> every string is the first half of internationalisation, so it is cheaper here —
+> the same sweep that gathers the strings is the one translation needs. When
+> feature-b is promoted, `/roadmap` turns this into epics and `/brainstorm`
+> rewrites it as a PRD.
+
 # PRD — Epic 4: Every word in one place
 
 Feature: [briefing.md](../briefing.md) · [roadmap.md](../roadmap.md)

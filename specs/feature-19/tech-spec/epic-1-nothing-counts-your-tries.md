@@ -406,7 +406,7 @@ Covers: R1, R2, AC1
   `REGRESSION GUARD` cases), and add one in their place:
 
   ```ts
-  it('renders no count of the player’s guesses (F20 E1 R1, R2, AC1)', () => {
+  it('renders no count of the player’s guesses (F19 E1 R1, R2, AC1)', () => {
     render(<GuessCard {...props()} />)
 
     expect(document.querySelectorAll('[data-dot-state]')).toHaveLength(0)
@@ -481,7 +481,7 @@ Covers: R1
   add, at the top level of the file,
 
   ```ts
-  it('exports no dot state, count or shape (F20 E1 R1)', async () => {
+  it('exports no dot state, count or shape (F19 E1 R1)', async () => {
     const module = await import('./feedback')
     expect(Object.keys(module).sort()).toEqual([
       'missCount',
@@ -547,7 +547,7 @@ Covers: R1, R3, R9, AC2, AC11
   - Add one page-level positive, in `GroovePuzzle.guessing.test.tsx`:
 
     ```ts
-    it('counts nothing on the card after two misses (F20 E1 R1, AC2)', async () => {
+    it('counts nothing on the card after two misses (F19 E1 R1, AC2)', async () => {
       const user = userEvent.setup()
       await renderPuzzle()
 
@@ -620,11 +620,11 @@ Covers: R4, AC5
   in the `isQualifying` describe and the anchor describe:
 
   ```ts
-  it('qualifies a day solved on the seventh guess (F20 E1 R4, AC5)', () => {
+  it('qualifies a day solved on the seventh guess (F19 E1 R4, AC5)', () => {
     expect(isQualifying(result(FRI, true, 7))).toBe(true)
   })
 
-  it('counts a seventh-guess solve as one more than yesterday (F20 E1 R4, AC5)', () => {
+  it('counts a seventh-guess solve as one more than yesterday (F19 E1 R4, AC5)', () => {
     expect(computeStreak([result(THU, true)], FRI)).toBe(1)
     expect(computeStreak([result(THU, true), result(FRI, true, 7)], FRI)).toBe(2)
   })
@@ -645,7 +645,7 @@ Covers: R5, AC6
 - **Test first** — same file, in the *a given-up day* describe:
 
   ```ts
-  it('reads 0 when a run ending yesterday meets a day given up on (F20 E1 R5, AC6)', () => {
+  it('reads 0 when a run ending yesterday meets a day given up on (F19 E1 R5, AC6)', () => {
     const results = [result(WED, true), result(THU, true), revealed(FRI)]
     expect(computeStreak(results, FRI)).toBe(0)
   })
@@ -686,7 +686,7 @@ Covers: R5, AC7
 - **Test first** —
 
   ```ts
-  it('reads 1 when today is solved and yesterday has no result at all (F20 E1 R5, AC7)', () => {
+  it('reads 1 when today is solved and yesterday has no result at all (F19 E1 R5, AC7)', () => {
     expect(computeStreak([result(FRI, true)], FRI)).toBe(1)
     expect(computeStreak([result(WED, true), result(FRI, true)], FRI)).toBe(1)
   })
@@ -706,7 +706,7 @@ Covers: R5, AC8
 - **Test first** —
 
   ```ts
-  it('reads 1 when yesterday was guessed at, never solved and never given up (F20 E1 R5, AC8)', () => {
+  it('reads 1 when yesterday was guessed at, never solved and never given up (F19 E1 R5, AC8)', () => {
     const yesterday = result(THU, false, 6)
     expect(yesterday.revealed).toBeUndefined()
     expect(computeStreak([yesterday, result(FRI, true, 2)], FRI)).toBe(1)
@@ -728,7 +728,7 @@ Covers: R6
 - **Test first** —
 
   ```ts
-  it('never restores a run an unsolved day broke (F20 E1 R6)', () => {
+  it('never restores a run an unsolved day broke (F19 E1 R6)', () => {
     const before = [result(MON, true), result(TUE, true), result(WED, true)]
     expect(computeStreak([...before, result(THU, false, 2)], THU)).toBe(3)
     expect(
@@ -752,7 +752,7 @@ Covers: R5
 - **Test first** —
 
   ```ts
-  it('keeps yesterday’s run while today is unopened or still playable (F20 E1 R5)', () => {
+  it('keeps yesterday’s run while today is unopened or still playable (F19 E1 R5)', () => {
     const run = [result(WED, true), result(THU, true)]
     expect(computeStreak(run, FRI)).toBe(2)
     expect(computeStreak([...run, result(FRI, false, 2)], FRI)).toBe(2)
@@ -784,7 +784,7 @@ Covers: R3, AC4
 - **Test first** —
 
   ```ts
-  it('brings five attempts back in order after a reload, flags intact (F20 E1 R3, AC4)', async () => {
+  it('brings five attempts back in order after a reload, flags intact (F19 E1 R3, AC4)', async () => {
     const today = isoDate(new Date())
     const spent: Attempt[] = [
       { root: 'D', flavour: 'Dorian', correct: false, rootMatched: false, flavourMatched: true },
@@ -828,7 +828,7 @@ Covers: R3
 - **Test first** —
 
   ```ts
-  it('stores an attempt with exactly its five fields (F20 E1 R3)', async () => {
+  it('stores an attempt with exactly its five fields (F19 E1 R3)', async () => {
     const loaded = second.result.current.todayResult
     expect(Object.keys(loaded!.attempts[0]).sort()).toEqual([
       'correct',
@@ -893,7 +893,7 @@ Covers: R8, AC10
   and its own sensitivity as the first case:
 
   ```ts
-  it('catches copy that names a count, however it is worded (F20 E1 R8, AC10)', () => {
+  it('catches copy that names a count, however it is worded (F19 E1 R8, AC10)', () => {
     expect(offendingCopy(['2 of 3 attempts spent · 3 is par, not a limit'])).toEqual(
       expect.arrayContaining(['attempts', 'par']),
     )
@@ -919,7 +919,7 @@ Covers: R1, R8, AC1, AC10
 - **Test first** — same file:
 
   ```ts
-  it('counts nothing before the first guess (F20 E1 R1, R8, AC1, AC10)', async () => {
+  it('counts nothing before the first guess (F19 E1 R1, R8, AC1, AC10)', async () => {
     const user = userEvent.setup()
     await renderPuzzle()
 
@@ -948,7 +948,7 @@ Covers: R1, R8, R9, AC2, AC10, AC11
 - **Test first** —
 
   ```ts
-  it('counts nothing while the guessing is going on (F20 E1 R1, R8, AC2, AC10)', async () => {
+  it('counts nothing while the guessing is going on (F19 E1 R1, R8, AC2, AC10)', async () => {
     const user = userEvent.setup()
     await renderPuzzle()
 
@@ -981,7 +981,7 @@ Covers: R1, R7, R8, AC3, AC9, AC10
 - **Test first** —
 
   ```ts
-  it('counts nothing once the day is solved (F20 E1 R1, AC3, AC10)', async () => {
+  it('counts nothing once the day is solved (F19 E1 R1, AC3, AC10)', async () => {
     const user = userEvent.setup()
     await renderPuzzle()
 
@@ -992,7 +992,7 @@ Covers: R1, R7, R8, AC3, AC9, AC10
     expect(offendingCopy(readablePage())).toEqual([])
   })
 
-  it('counts nothing, and says nothing about the streak, on a day given up on (F20 E1 R1, R7, AC3, AC9, AC10)', async () => {
+  it('counts nothing, and says nothing about the streak, on a day given up on (F19 E1 R1, R7, AC3, AC9, AC10)', async () => {
     const user = userEvent.setup()
     await renderPuzzle()
 
@@ -1042,7 +1042,7 @@ Covers: R7, AC9
   in the describe that already reads the streak line:
 
   ```ts
-  it('reads the recomputed streak, unannounced, once the day is given up on (F20 E1 R7, AC9)', async () => {
+  it('reads the recomputed streak, unannounced, once the day is given up on (F19 E1 R7, AC9)', async () => {
     mockStore.getAll.mockResolvedValue([solvedDaysAgo(1), solvedDaysAgo(2), solvedDaysAgo(3)])
     const user = userEvent.setup()
     await renderPuzzle()

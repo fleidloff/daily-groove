@@ -184,7 +184,7 @@ it is not `persistence/`; and it decides nothing about the game, so it is not
 **Group feature components by the screen region that renders them, and let the
 grouping follow the composition tree.** `src/features/daily-groove/components/`
 holds `header/` (`GrooveHeader`, `StreakBadge`), `puzzle/` (`GrooveCard`,
-`TransportPanel`, `GuessCard`, `AttemptDots`, `FeedbackLine`, `NudgeBox`,
+`TransportPanel`, `GuessCard`, `FeedbackLine`, `NudgeBox`,
 `SolvedPanel`) and `archive/` (`ArchiveStrip`). Each region is a subtree of one
 composer, which is why no component appears in two of them. The root composer
 `GroovePuzzle.tsx` sits above the regions at the `components/` root and belongs
@@ -396,12 +396,11 @@ constructor call, not an import, so `import/no-restricted-paths` cannot see it.
 **A test lives beside the code it covers, and asserts that code's subject.**
 [testing.md](testing.md) asks for colocation; the deep imports in
 `src/app/page.test.tsx` were the symptom of breaking it. Thirteen assertions
-about flavour options, root chips, attempt dots, the archive strip and the
+about flavour options, root chips, the archive strip and the
 transport sat in the route's test file, where nobody looking at
 `components/puzzle/GuessCard.tsx` would find them and where deleting the feature
 orphaned them. They now sit in the file that owns each subject —
 `components/puzzle/GuessCard.test.tsx`,
-`components/puzzle/AttemptDots.test.tsx`,
 `components/archive/ArchiveStrip.test.tsx`, `lib/theory/music.test.ts` and the
 rest. Relocating an assertion does not license rewriting it: one written against
 the whole page keeps that render, in a

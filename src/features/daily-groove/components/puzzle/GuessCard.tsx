@@ -2,8 +2,7 @@
 
 import { useState } from 'react'
 import type { Flavour, Root } from '../../types'
-import type { DotState, Feedback } from '../../lib/presentation/feedback'
-import { AttemptDots } from './AttemptDots'
+import type { Feedback } from '../../lib/presentation/feedback'
 import { NudgeBox } from './NudgeBox'
 import { ModeToggle } from './ModeToggle'
 import { TapSoundsToggle } from './TapSoundsToggle'
@@ -45,7 +44,6 @@ type GuessCardProps = {
   coaching: Feedback
   showVerdict: boolean
   showNudge: boolean
-  dots: DotState[]
   ruledOutRoots: Root[]
   ruledOutFlavours: Flavour[]
   confirmedRoots: Root[]
@@ -76,7 +74,6 @@ export function GuessCard({
   coaching,
   showVerdict,
   showNudge,
-  dots,
   ruledOutRoots,
   ruledOutFlavours,
   confirmedRoots,
@@ -166,10 +163,6 @@ export function GuessCard({
             confirmedFlavours,
           )}
         />
-
-        <div className="flex justify-end">
-          <AttemptDots states={dots} />
-        </div>
 
         <Button
           onPress={disarming(onCheck)}

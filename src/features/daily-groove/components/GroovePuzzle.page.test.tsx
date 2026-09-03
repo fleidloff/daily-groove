@@ -6,7 +6,6 @@ import {
   CAPTION,
   chipLabel,
   control,
-  dotStates,
   flavourGroup,
   flavours,
   GROOVE,
@@ -173,14 +172,13 @@ describe('GroovePuzzle', () => {
     render(<GroovePuzzle groove={GROOVE} />)
 
     expect(screen.getByText(/loading/i)).toBeInTheDocument()
-    expect(dotStates()).toEqual([])
     expect(screen.queryByRole('radiogroup', { name: 'Root' })).not.toBeInTheDocument()
     expect(
       screen.queryByRole('heading', { name: 'C Aeolian' }),
     ).not.toBeInTheDocument()
   })
 
-  it('restores the attempts spent on a reload mid-game (E5 R3, AC1, AC2)', async () => {
+  it('restores the attempts on a reload mid-game (E5 R3, AC1, AC2)', async () => {
     const wrong = wrongFlavour()
     const stored: DailyResult = {
       date: TODAY(),
@@ -194,7 +192,6 @@ describe('GroovePuzzle', () => {
     const user = userEvent.setup()
     await renderPuzzle()
 
-    expect(dotStates()).toEqual(['spent', 'spent', 'unspent'])
     expect(verdictLine()).toBeNull()
     expect(coachingLine()).toBeInTheDocument()
     expect(nudgeLine()).toBeInTheDocument()
@@ -208,7 +205,6 @@ describe('GroovePuzzle', () => {
     )
     await user.click(control())
 
-    expect(dotStates()).toEqual(['spent', 'spent', 'spent'])
     expect(mockStore.save).toHaveBeenCalledTimes(1)
     expect(mockStore.save.mock.calls[0][0].attempts).toHaveLength(3)
   })
@@ -258,7 +254,6 @@ describe('GroovePuzzle', () => {
     expect(panel.querySelectorAll('[role="status"]')).toHaveLength(0)
 
     expect(panel.textContent).not.toMatch(/streak/i)
-    expect(screen.getByRole('img', { name: 'Solved' })).toBeInTheDocument()
     expect(screen.getByLabelText(/current streak/i)).toHaveTextContent(
       '3 days streak',
     )
@@ -293,7 +288,7 @@ describe('GroovePuzzle', () => {
 
     await renderPuzzle()
 
-    expect(dotStates()).toEqual(['unspent', 'unspent', 'unspent'])
+    expect(mockStore.save).not.toHaveBeenCalled()
     expect(control()).toHaveAccessibleName('Pick a root and a mode')
     expect(screen.getByLabelText(/current streak/i)).toHaveTextContent(
       /no streak yet/i,
@@ -308,7 +303,7 @@ describe('GroovePuzzle', () => {
 
     await guess(user, 'C', wrongFlavour())
 
-    expect(dotStates()).toEqual(['spent', 'unspent', 'unspent'])
+    expect(mockStore.save.mock.calls.at(-1)?.[0].attempts).toHaveLength(1)
     expect(screen.getByText(/right home note/i)).toBeInTheDocument()
   })
 
@@ -482,7 +477,7 @@ describe('GroovePuzzle', () => {
     expect(within(flavourGroup()).getAllByRole('button')).toHaveLength(
       flavours().length,
     )
-    expect(dotStates()).toHaveLength(3)
+    expect(control()).toHaveAccessibleName('Solved')
     expect(guessRoot.querySelectorAll('[aria-live]')).toHaveLength(0)
     expect(nudge()).toBeNull()
   })
@@ -607,7 +602,7 @@ describe('GroovePuzzle', () => {
         await user.click(wrongChips(flavourGroup(), groove.flavour)[spend]);
         await user.click(control());
       }
-      expect(dotStates().filter((state) => state !== 'unspent')).toHaveLength(2);
+      expect(mockStore.save.mock.calls.at(-1)?.[0].attempts).toHaveLength(2);
 
       expect(container.textContent).not.toContain(groove.chord);
       expect(container.textContent).not.toContain(groove.progression);
@@ -634,7 +629,6 @@ describe('GroovePuzzle', () => {
       expect(
         screen.queryByRole("radiogroup", { name: "Root" }),
       ).not.toBeInTheDocument();
-      expect(document.querySelectorAll("[data-dot-state]")).toHaveLength(0);
     })
   })
 
@@ -722,12 +716,13 @@ describe('GroovePuzzle', () => {
 
       await guess(user, 'C', wrongFlavour())
       await guess(user, 'C', otherWrongFlavour())
-      expect(dotStates()).toEqual(['spent', 'spent', 'unspent'])
+      const midCoaching = coachingLine()?.textContent ?? null
+      expect(midCoaching).not.toBeNull()
       first.unmount()
 
       await renderShared()
 
-      expect(dotStates()).toEqual(['unspent', 'unspent', 'unspent'])
+      expect(coachingLine()?.textContent ?? null).not.toBe(midCoaching)
       expect(control()).toHaveAccessibleName('Pick a root and a mode')
       expect(control()).toBeDisabled()
       expect(
@@ -763,7 +758,7 @@ describe('GroovePuzzle', () => {
         expect(localStorage.getItem('daily-groove:v2:results')).toBeNull()
 
         await renderPuzzle()
-        expect(dotStates()).toEqual(['unspent', 'unspent', 'unspent'])
+        expect(control()).toHaveAccessibleName('Pick a root and a mode')
         expect(
           screen.queryByRole('heading', { name: 'C Aeolian' }),
         ).not.toBeInTheDocument()
@@ -901,7 +896,6 @@ describe('GroovePuzzle', () => {
         checkName: control().getAttribute('aria-label'),
         play: screen.getByRole('button', { name: 'Play the loop' }).textContent,
         transports: screen.getAllByRole('progressbar').length,
-        dots: dotStates(),
         caption: screen.getByText(CAPTION).textContent,
         simple: screen.getByRole('switch', { name: /simple mode/i }).getAttribute(
           'aria-checked',
@@ -932,8 +926,11 @@ describe('GroovePuzzle', () => {
       ])
 
       const before = await renderPuzzle()
-      const dayBefore = { dots: dotStates(), streak: streakLine() }
-      expect(dayBefore.dots).toEqual(['spent', 'spent', 'unspent'])
+      const dayBefore = {
+        coaching: coachingLine()?.textContent ?? null,
+        streak: streakLine(),
+      }
+      expect(dayBefore.coaching).not.toBeNull()
       before.unmount()
 
       const user = userEvent.setup()
@@ -944,7 +941,10 @@ describe('GroovePuzzle', () => {
       shared.unmount()
 
       await renderPuzzle()
-      expect({ dots: dotStates(), streak: streakLine() }).toEqual(dayBefore)
+      expect({
+        coaching: coachingLine()?.textContent ?? null,
+        streak: streakLine(),
+      }).toEqual(dayBefore)
     })
   })
 })

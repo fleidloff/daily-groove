@@ -8,7 +8,7 @@ import { ROOTS, flavourOptions } from '../../lib/theory/music'
 import { GROOVES } from '../../data/grooves.generated'
 import { selectGrooveForDate } from '../../lib/puzzle/selectGroove'
 import { renderFeature } from '../../testing/renderFeature'
-import type { DotState, Feedback } from '../../lib/presentation/feedback'
+import type { Feedback } from '../../lib/presentation/feedback'
 import { PlayControl } from '@/components/controls/PlayControl'
 import { GuessCard } from './GuessCard'
 
@@ -31,7 +31,6 @@ const MOVE: Feedback = {
   tone: 'neutral',
 }
 
-const UNSPENT: DotState[] = ['unspent', 'unspent', 'unspent']
 
 type Props = Parameters<typeof GuessCard>[0]
 
@@ -52,7 +51,6 @@ function props(overrides: Partial<Props> = {}): Props {
     coaching: MOVE,
     showVerdict: true,
     showNudge: false,
-    dots: UNSPENT,
     ruledOutRoots: [],
     ruledOutFlavours: [],
     confirmedRoots: [],
@@ -100,10 +98,6 @@ const FAMILIES: Flavour[] = ['Major', 'Minor']
 const LONGEST_FLAVOUR = [...new Set(GROOVES.map((g) => g.flavour))].sort(
   (a, b) => b.length - a.length,
 )[0]
-const dotStates = () =>
-  Array.from(document.querySelectorAll('[data-dot-state]')).map((el) =>
-    el.getAttribute('data-dot-state'),
-  )
 
 describe('GuessCard', () => {
   it('labels the second chip row "Mode", not "Flavour" (R1, AC1)', () => {
@@ -209,7 +203,6 @@ describe('GuessCard', () => {
         selectedRoot: 'G' as Root,
         selectedFlavour: 'Dorian',
         solved: true,
-        dots: ['solved', 'solved', 'solved'],
         feedback: SOLVED,
       },
       'Solved',
@@ -243,18 +236,15 @@ describe('GuessCard', () => {
     expect(onCheck).toHaveBeenCalledTimes(1)
   })
 
-  it('renders the attempt dots it is given (R1, AC1)', () => {
+  it('renders no count of the player’s guesses (F19 E1 R1, R2, AC1)', () => {
     render(<GuessCard {...props()} />)
 
-    expect(screen.getByRole('img')).toHaveAccessibleName(
-      expect.stringContaining('0 of 3 attempts spent'),
-    )
-    expect(dotStates()).toEqual(UNSPENT)
-  })
-
-  it('renders exactly the dot states it is handed (R2, AC2, AC3)', () => {
-    render(<GuessCard {...props({ dots: ['spent', 'spent', 'unspent'] })} />)
-    expect(dotStates()).toEqual(['spent', 'spent', 'unspent'])
+    expect(document.querySelectorAll('[data-dot-state]')).toHaveLength(0)
+    expect(screen.queryByRole('img')).toBeNull()
+    expect(
+      screen.getByRole('button', { name: 'Pick a root and a mode' })
+        .previousElementSibling,
+    ).toBe(flavourGroup())
   })
 
   it('shows the feedback it is given in a live region (R3, R4, AC4, AC14)', () => {
@@ -271,7 +261,6 @@ describe('GuessCard', () => {
         {...props({
           feedback: ROOT_MATCHED,
           coaching: MOVE,
-          dots: ['spent', 'unspent', 'unspent'],
         })}
       />,
     )
@@ -293,7 +282,6 @@ describe('GuessCard', () => {
           showVerdict: false,
           feedback: ROOT_MATCHED,
           coaching: MOVE,
-          dots: ['spent', 'spent', 'unspent'],
         })}
       />,
     )
@@ -308,7 +296,6 @@ describe('GuessCard', () => {
         {...props({
           selectedRoot: 'G' as Root,
           selectedFlavour: 'Mixolydian',
-          dots: ['spent', 'unspent', 'unspent'],
           feedback: ROOT_MATCHED,
         })}
       />,
@@ -326,14 +313,12 @@ describe('GuessCard', () => {
           selectedRoot: 'G' as Root,
           selectedFlavour: 'Dorian',
           solved: true,
-          dots: ['solved', 'solved', 'solved'],
           feedback: SOLVED,
           showNudge: false,
         })}
       />,
     )
 
-    expect(dotStates()).toEqual(['solved', 'solved', 'solved'])
     expect(hintQuery()).not.toBeInTheDocument()
     expect(screen.queryByText(SOLVED.message)).not.toBeInTheDocument()
     expect(screen.queryByText(MOVE.message)).not.toBeInTheDocument()
@@ -342,14 +327,7 @@ describe('GuessCard', () => {
   })
 
   it.each([
-    [
-      'solved',
-      {
-        solved: true,
-        dots: ['solved', 'solved', 'solved'] as DotState[],
-        feedback: SOLVED,
-      },
-    ],
+    ['solved', { solved: true, feedback: SOLVED }],
     ['revealed', { revealed: true, feedback: ROOT_MATCHED }],
   ])(
     'renders no hint box at all on a %s day, however much it could say',
@@ -374,13 +352,12 @@ describe('GuessCard', () => {
     },
   )
 
-  it('keeps the hint box on a playable day with attempts spent (R8, AC17)', () => {
+  it('keeps the hint box on a playable day with misses behind it (R8, AC17)', () => {
     render(
       <GuessCard
         {...props({
           showNudge: true,
           eliminated: 2,
-          dots: ['spent', 'spent', 'unspent'],
           feedback: ROOT_MATCHED,
         })}
       />,
@@ -407,7 +384,7 @@ describe('GuessCard', () => {
   })
 
   it('shows no nudge sentence until it is asked for (R5, AC8)', () => {
-    render(<GuessCard {...props({ dots: ['spent', 'unspent', 'unspent'] })} />)
+    render(<GuessCard {...props()} />)
 
     expect(nudgeLine()).not.toBeInTheDocument()
     expect(hintBox()).toContainElement(screen.getByText(OPENING.message))
@@ -419,7 +396,6 @@ describe('GuessCard', () => {
         {...props({
           showNudge: true,
           eliminated: 2,
-          dots: ['spent', 'spent', 'unspent'],
           feedback: ROOT_MATCHED,
         })}
       />,
@@ -469,7 +445,6 @@ describe('GuessCard', () => {
           showNudge: true,
           eliminated: 2,
           feedback: ROOT_MATCHED,
-          dots: ['spent', 'spent', 'unspent'],
         })}
       />,
     )
@@ -490,7 +465,6 @@ describe('GuessCard', () => {
           showNudge: true,
           eliminated: 2,
           ruledOutRoots: [],
-          dots: ['spent', 'spent', 'unspent'],
           feedback: ROOT_MATCHED,
         })}
       />,
@@ -517,7 +491,6 @@ describe('GuessCard', () => {
           eliminated: 2,
           ruledOutRoots: [],
           onSelectRoot,
-          dots: ['spent', 'spent', 'unspent'],
           feedback: ROOT_MATCHED,
         })}
       />,
@@ -539,7 +512,6 @@ describe('GuessCard', () => {
           selectedRoot: 'G' as Root,
           selectedFlavour: 'Mixolydian',
           canCheck: false,
-          dots: ['spent', 'unspent', 'unspent'],
           feedback: ROOT_MATCHED,
         })}
       />,
@@ -561,7 +533,6 @@ describe('GuessCard', () => {
           selectedRoot: 'G' as Root,
           selectedFlavour: 'Dorian',
           canCheck: true,
-          dots: ['spent', 'unspent', 'unspent'],
           feedback: ROOT_MATCHED,
         })}
       />,
@@ -581,7 +552,6 @@ describe('GuessCard', () => {
           solved: true,
           onSelectRoot,
           onSelectFlavour,
-          dots: ['solved', 'solved', 'solved'],
           feedback: SOLVED,
         })}
       />,
@@ -621,7 +591,6 @@ describe('GuessCard', () => {
           selectedRoot: 'G' as Root,
           selectedFlavour: 'Dorian',
           solved: true,
-          dots: ['solved', 'solved', 'solved'],
           feedback: SOLVED,
         })}
       />,
@@ -734,7 +703,6 @@ describe('GuessCard', () => {
       selectedRoot: 'G' as Root,
       selectedFlavour: 'Dorian',
       solved: true,
-      dots: ['solved', 'solved', 'solved'],
       feedback: SOLVED,
     })
 
@@ -743,47 +711,6 @@ describe('GuessCard', () => {
       expect(state.className, state.name).toContain(state.token)
       expect(state.className, state.name).toContain('py-[22px]')
     }
-  })
-
-  it('puts the attempt dots directly above the check button, not beside the heading (R7, AC7)', () => {
-    render(<GuessCard {...props()} />)
-
-    const control = screen.getByRole('button', {
-      name: 'Pick a root and a mode',
-    })
-    const dotsRow = control.previousElementSibling as HTMLElement
-
-    expect(dotsRow.querySelectorAll('[data-dot-state]')).toHaveLength(3)
-    expect(within(dotsRow).getByRole('img')).toHaveAccessibleName(
-      expect.stringContaining('0 of 3 attempts spent'),
-    )
-
-    expect(
-      flavourGroup().compareDocumentPosition(dotsRow) &
-        Node.DOCUMENT_POSITION_FOLLOWING,
-    ).toBeTruthy()
-    expect(
-      screen.getByRole('heading', { level: 3, name: 'What is it?' })
-        .nextElementSibling,
-    ).not.toBe(dotsRow)
-  })
-
-  it('REGRESSION GUARD: the dot row carries no counter text or label (R7a, AC7)', () => {
-    render(<GuessCard {...props({ dots: ['spent', 'spent', 'unspent'] })} />)
-
-    const dotsRow = screen.getByRole('button', {
-      name: 'Pick a root and a mode',
-    }).previousElementSibling as HTMLElement
-
-    expect(dotsRow.textContent).toBe('')
-  })
-
-  it('REGRESSION GUARD: the moved dots keep their accessible name (R8, AC8)', () => {
-    render(<GuessCard {...props({ dots: ['spent', 'spent', 'unspent'] })} />)
-
-    expect(
-      screen.getByRole('img', { name: /2 of 3 attempts spent/ }),
-    ).toBeInTheDocument()
   })
 
   it('lays the twelve roots out on 4 columns, rising to 6 (R2a, R4, AC4)', () => {
@@ -838,7 +765,6 @@ describe('GuessCard', () => {
   const REVEAL_READY = {
     selectedRoot: 'G' as Root,
     selectedFlavour: 'Dorian' as Flavour,
-    dots: ['spent', 'spent', 'spent'] as DotState[],
     feedback: ROOT_MATCHED,
     showNudge: true,
     showReveal: true,
@@ -947,7 +873,7 @@ describe('GuessCard', () => {
   })
 
   it.each([
-    ['solved', { solved: true, dots: ['solved', 'solved', 'solved'] as DotState[], feedback: SOLVED }],
+    ['solved', { solved: true, feedback: SOLVED }],
     ['revealed', { revealed: true }],
   ])(
     'silences a ruled-out chip once the day is %s (R4b, AC5b)',
@@ -1003,7 +929,7 @@ describe('GuessCard', () => {
   })
 
   it('offers no way to give up until it is asked for (R6, AC6)', () => {
-    render(<GuessCard {...props({ dots: ['spent', 'spent', 'unspent'] })} />)
+    render(<GuessCard {...props()} />)
 
     expect(giveUp()).not.toBeInTheDocument()
     expect(confirm()).not.toBeInTheDocument()
@@ -1111,7 +1037,6 @@ describe('GuessCard', () => {
         {...props({
           selectedRoot: 'G' as Root,
           selectedFlavour: 'Dorian',
-          dots: ['spent', 'spent', 'spent'],
           feedback: ROOT_MATCHED,
           revealed: true,
           showReveal: false,
@@ -1194,13 +1119,12 @@ describe('GuessCard', () => {
     expect(onToggleSimple).toHaveBeenCalledWith(false)
   })
 
-  it('keeps the switch live on a playable day with attempts spent (F11 E4 R3, AC3)', async () => {
+  it('keeps the switch live on a playable day with misses behind it (F11 E4 R3, AC3)', async () => {
     const user = userEvent.setup()
     const onToggleSimple = vi.fn()
     render(
       <GuessCard
         {...props({
-          dots: ['spent', 'spent', 'unspent'],
           feedback: ROOT_MATCHED,
           onToggleSimple,
         })}
@@ -1273,7 +1197,6 @@ describe('GuessCard', () => {
           selectedRoot: 'G' as Root,
           selectedFlavour: 'Dorian',
           feedback: SOLVED,
-          dots: ['spent', 'spent', 'unspent'],
           onToggleSimple,
         })}
       />,
@@ -1282,7 +1205,6 @@ describe('GuessCard', () => {
     const before = {
       roots: within(rootGroup()).getAllByRole('button').map(chipLabel),
       flavours: within(flavourGroup()).getAllByRole('button').map(chipLabel),
-      dots: dotStates(),
     }
 
     await user.click(modeSwitch())
@@ -1293,7 +1215,6 @@ describe('GuessCard', () => {
     expect(
       within(flavourGroup()).getAllByRole('button').map(chipLabel),
     ).toEqual(before.flavours)
-    expect(dotStates()).toEqual(before.dots)
     expect(onToggleSimple).not.toHaveBeenCalled()
   })
 
@@ -1460,7 +1381,6 @@ describe('GuessCard', () => {
           selectedRoot: 'G' as Root,
           selectedFlavour: 'Dorian',
           solved: true,
-          dots: ['solved', 'solved', 'solved'],
           feedback: SOLVED,
           onSelectRoot,
           onHearRoot,
@@ -1571,7 +1491,7 @@ describe('GuessCard', () => {
     expect(chip).toHaveAttribute('aria-pressed', 'true')
   })
 
-  it('leaves the dots, the line and the control untouched by mode taps (R3, AC3)', async () => {
+  it('leaves the line and the control untouched by mode taps (R3, AC3)', async () => {
     const user = userEvent.setup()
     const onCheck = vi.fn()
     render(
@@ -1583,7 +1503,6 @@ describe('GuessCard', () => {
     const control = () =>
       screen.getByRole('button', { name: /^(Pick a |Check |Solved$)/ })
     const before = {
-      dots: dotStates(),
       line: screen.getByText(OPENING.message).textContent,
       label: control().textContent,
       disabled: (control() as HTMLButtonElement).disabled,
@@ -1595,7 +1514,6 @@ describe('GuessCard', () => {
       )
     }
 
-    expect(dotStates()).toEqual(before.dots)
     expect(screen.getByText(OPENING.message).textContent).toBe(before.line)
     expect(control().textContent).toBe(before.label)
     expect((control() as HTMLButtonElement).disabled).toBe(before.disabled)
@@ -1603,7 +1521,7 @@ describe('GuessCard', () => {
   })
 
   it.each([
-    ['solved', { solved: true, dots: ['solved', 'solved', 'solved'] as DotState[], feedback: SOLVED }],
+    ['solved', { solved: true, feedback: SOLVED }],
     ['revealed', { revealed: true }],
   ])('stays silent on a %s day (R22, AC15)', async (_name, over) => {
     const user = userEvent.setup()
@@ -1853,7 +1771,7 @@ describe('GuessCard', () => {
     })
 
     it.each([
-      ['solved', { solved: true, dots: ['solved', 'solved', 'solved'] as DotState[], feedback: SOLVED }],
+      ['solved', { solved: true, feedback: SOLVED }],
       ['revealed', { revealed: true }],
     ])('stays live on a %s day while the mode switch settles (R5a, AC11b)', async (_name, over) => {
       const user = userEvent.setup()
@@ -1963,7 +1881,6 @@ describe('GuessCard', () => {
       render(
         <GuessCard
           {...props({
-            dots: ['spent', 'unspent', 'unspent'],
             feedback: ROOT_MATCHED,
             selectedRoot: 'G' as Root,
             selectedFlavour: 'Dorian',
@@ -1978,7 +1895,6 @@ describe('GuessCard', () => {
       const control = () =>
         screen.getByRole('button', { name: /^(Pick a |Check |Solved$)/ })
       const before = {
-        dots: dotStates(),
         line: screen.getByRole('status').textContent,
         label: control().textContent,
         pressed: screen
@@ -1989,7 +1905,6 @@ describe('GuessCard', () => {
 
       await user.click(soundSwitch())
 
-      expect(dotStates()).toEqual(before.dots)
       expect(screen.getByRole('status').textContent).toBe(before.line)
       expect(control().textContent).toBe(before.label)
       expect(

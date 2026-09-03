@@ -181,7 +181,13 @@ zone 4 rejects.
 
 - **AC1** (R1, R2) — Given the tree after this epic, when
   `src/features/daily-groove/lib/` is listed, then `theory/` is absent and every
-  one of the thirteen modules and its test lives under `src/lib/theory/`.
+  one of the thirteen modules and its test **file** lives under
+  `src/lib/theory/`. The criterion is graded on those twenty-six files, not on
+  every assertion inside them: a moved test may not import the feature, so the
+  cases whose subject is the shipped catalogue live with the catalogue, in
+  `src/features/daily-groove/data/grooves.generated.test.ts`. Cases that needed
+  only a mode pool or a `Groove` value move with their module and take a local
+  one.
 - **AC2** (R3) — Given `scripts/grooves/theory/`, when its files are listed, then
   `notes.ts` and `scales.ts` are absent and `harmony.ts`, `pitches.ts` and
   `validity.ts` remain, importing the shared module by relative path; and

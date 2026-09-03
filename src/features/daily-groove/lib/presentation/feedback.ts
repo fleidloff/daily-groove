@@ -4,10 +4,6 @@ export type FeedbackTone = 'neutral' | 'warm' | 'solved'
 
 export type Feedback = { message: string; tone: FeedbackTone }
 
-export type DotState = 'unspent' | 'spent' | 'solved'
-
-const DOT_COUNT = 3
-
 const REVEAL_AFTER_MISSES = 3
 
 const OPENING: Feedback = {
@@ -77,13 +73,4 @@ export function shouldOfferReveal(
   revealed: boolean,
 ): boolean {
   return !solved && !revealed && missCount(attempts) >= REVEAL_AFTER_MISSES
-}
-
-export function dotStates(attempts: Attempt[], solved: boolean): DotState[] {
-  if (solved) return Array<DotState>(DOT_COUNT).fill('solved')
-
-  const spent = Math.min(missCount(attempts), DOT_COUNT)
-  return Array.from({ length: DOT_COUNT }, (_, index) =>
-    index < spent ? 'spent' : 'unspent',
-  )
 }

@@ -5,6 +5,10 @@ export function isQualifying(r: DailyResult): boolean {
   return r.solved
 }
 
+function isOver(r: DailyResult | undefined): boolean {
+  return r !== undefined && (r.solved || r.revealed === true)
+}
+
 function previousDay(iso: string): string {
   const date = parseIsoDate(iso)
   date.setDate(date.getDate() - 1)
@@ -15,8 +19,7 @@ export function computeStreak(results: DailyResult[], today: string): number {
   const byDate = new Map<string, DailyResult>()
   for (const r of results) byDate.set(r.date, r)
 
-  const todayResult = byDate.get(today)
-  const anchor = todayResult && isQualifying(todayResult) ? today : previousDay(today)
+  const anchor = isOver(byDate.get(today)) ? today : previousDay(today)
 
   let streak = 0
   const cursor = parseIsoDate(anchor)

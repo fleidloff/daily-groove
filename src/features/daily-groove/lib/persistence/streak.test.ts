@@ -44,6 +44,10 @@ describe('isQualifying (R3, R3b)', () => {
   it('is false for a day with no attempts at all', () => {
     expect(isQualifying(result(WED, false, 0))).toBe(false)
   })
+
+  it('qualifies a day solved on the seventh guess (F19 E1 R4, AC5)', () => {
+    expect(isQualifying(result(FRI, true, 7))).toBe(true)
+  })
 })
 
 describe('computeStreak — the anchor shift (R1, R2)', () => {
@@ -87,6 +91,16 @@ describe('computeStreak — the anchor shift (R1, R2)', () => {
     const results = [result(MON, true), result(TUE, true), result(WED, true)]
     expect(computeStreak(results, THU)).toBe(3)
   })
+
+  it('counts a seventh-guess solve as one more than yesterday (F19 E1 R4, AC5)', () => {
+    expect(computeStreak([result(THU, true)], FRI)).toBe(1)
+    expect(computeStreak([result(THU, true), result(FRI, true, 7)], FRI)).toBe(2)
+  })
+
+  it('reads 1 when today is solved and yesterday has no result at all (F19 E1 R5, AC7)', () => {
+    expect(computeStreak([result(FRI, true)], FRI)).toBe(1)
+    expect(computeStreak([result(WED, true), result(FRI, true)], FRI)).toBe(1)
+  })
 })
 
 describe('computeStreak — days that break the run (R3, R3a, R3b)', () => {
@@ -117,6 +131,20 @@ describe('computeStreak — days that break the run (R3, R3a, R3b)', () => {
       result(FRI, true),
     ]
     expect(computeStreak(results, FRI)).toBe(2)
+  })
+
+  it('reads 1 when yesterday was guessed at, never solved and never given up (F19 E1 R5, AC8)', () => {
+    const yesterday = result(THU, false, 6)
+    expect(yesterday.revealed).toBeUndefined()
+    expect(computeStreak([yesterday, result(FRI, true, 2)], FRI)).toBe(1)
+  })
+
+  it('never restores a run an unsolved day broke (F19 E1 R6)', () => {
+    const before = [result(MON, true), result(TUE, true), result(WED, true)]
+    expect(computeStreak([...before, result(THU, false, 2)], THU)).toBe(3)
+    expect(
+      computeStreak([...before, result(THU, false, 2), result(FRI, true)], FRI),
+    ).toBe(1)
   })
 })
 
@@ -152,9 +180,9 @@ describe('computeStreak — a given-up day (E3 R10, AC11)', () => {
     expect(isQualifying(revealed(WED))).toBe(false)
   })
 
-  it('neither extends the run nor is skipped over', () => {
+  it('ends the run on the day it happens', () => {
     const results = [result(WED, true), result(THU, true), revealed(FRI)]
-    expect(computeStreak(results, FRI)).toBe(2)
+    expect(computeStreak(results, FRI)).toBe(0)
   })
 
   it('breaks the run when it is in the past', () => {
@@ -162,9 +190,20 @@ describe('computeStreak — a given-up day (E3 R10, AC11)', () => {
     expect(computeStreak(results, FRI)).toBe(1)
   })
 
-  it('reads identically to the same day without the flag', () => {
-    const withFlag = [result(THU, true), revealed(FRI)]
-    const without = [result(THU, true), result(FRI, false, 3)]
-    expect(computeStreak(withFlag, FRI)).toBe(computeStreak(without, FRI))
+  it('a given-up day ends the run now; the same day left unfinished waits until tomorrow', () => {
+    expect(computeStreak([result(THU, true), revealed(FRI)], FRI)).toBe(0)
+    expect(computeStreak([result(THU, true), result(FRI, false, 3)], FRI)).toBe(1)
+  })
+
+  it('reads 0 when a run ending yesterday meets a day given up on (F19 E1 R5, AC6)', () => {
+    const results = [result(WED, true), result(THU, true), revealed(FRI)]
+    expect(computeStreak(results, FRI)).toBe(0)
+  })
+
+  it('keeps yesterday’s run while today is unopened or still playable (F19 E1 R5)', () => {
+    const run = [result(WED, true), result(THU, true)]
+    expect(computeStreak(run, FRI)).toBe(2)
+    expect(computeStreak([...run, result(FRI, false, 2)], FRI)).toBe(2)
+    expect(computeStreak([...run, revealed(FRI)], FRI)).toBe(0)
   })
 })

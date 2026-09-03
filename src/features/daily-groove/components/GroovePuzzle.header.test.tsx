@@ -5,7 +5,6 @@ import type { DailyResult, Groove } from '../types'
 import {
   advance,
   control,
-  dotStates,
   GROOVE,
   guess,
   installPuzzleAudio,
@@ -49,6 +48,14 @@ describe('GroovePuzzle', () => {
     screen.queryByRole('button', {
       name: /give up and show the answer|end the day and show the answer/i,
     })
+
+  const solvedDaysAgo = (daysAgo: number): DailyResult => ({
+    date: isoDate(new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000)),
+    answer: { root: 'C', flavour: 'Aeolian' },
+    attempts: [SOLVING],
+    solved: true,
+    grooveId: 'groove-02',
+  })
 
   const solutionPanel = () =>
     screen
@@ -95,6 +102,33 @@ describe('GroovePuzzle', () => {
     )
   })
 
+  it('reads the recomputed streak, unannounced, once the day is given up on (F19 E1 R7, AC9)', async () => {
+    mockStore.getAll.mockResolvedValue([
+      solvedDaysAgo(1),
+      solvedDaysAgo(2),
+      solvedDaysAgo(3),
+    ])
+    const user = userEvent.setup()
+    await renderPuzzle()
+    expect(screen.getByLabelText(/current streak/i)).toHaveTextContent(
+      '3 days streak',
+    )
+
+    await guess(user, 'G', wrongFlavour())
+    await guess(user, 'D', otherWrongFlavour())
+    await guess(user, 'A', thirdWrongFlavour())
+    await user.click(giveUp() as HTMLElement)
+    await user.click(giveUp() as HTMLElement)
+
+    expect(screen.getByLabelText(/current streak/i)).toHaveTextContent(
+      /no streak yet/i,
+    )
+    expect(screen.queryByRole('alert')).toBeNull()
+    expect(document.body.textContent).not.toMatch(
+      /streak (?:lost|broken|reset|over|ended)/i,
+    )
+  })
+
   describe('sharing the groove (F12 E2)', () => {
     const shareControl = () => screen.getByRole('button', { name: 'Share' })
 
@@ -119,7 +153,8 @@ describe('GroovePuzzle', () => {
 
       expect(shareControl()).toBeInTheDocument()
       expect(shareControl()).toHaveAccessibleName('Share')
-      expect(dotStates()).toEqual(['unspent', 'unspent', 'unspent'])
+      expect(control()).toHaveAccessibleName('Pick a root and a mode')
+      expect(mockStore.save).not.toHaveBeenCalled()
     })
 
     it('still offers it after a solve, under the same label (R2, AC1)', async () => {
@@ -192,7 +227,6 @@ describe('GroovePuzzle', () => {
         screen.getByRole('button', { name: 'Stop the loop' }),
       ).toBeInTheDocument()
 
-      expect(dotStates()).toEqual(['unspent', 'unspent', 'unspent'])
       expect(
         within(rootGroup()).getByRole('button', { name: 'C' }),
       ).toHaveAttribute('aria-pressed', 'true')
@@ -217,14 +251,6 @@ describe('GroovePuzzle', () => {
   describe('the framing on a shared groove (F12 E3)', () => {
     const renderShared = (groove: Groove = GROOVE) =>
       renderPuzzle(<GroovePuzzle groove={groove} mode="shared" />)
-
-    const solvedDaysAgo = (daysAgo: number): DailyResult => ({
-      date: isoDate(new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000)),
-      answer: { root: 'C', flavour: 'Aeolian' },
-      attempts: [SOLVING],
-      solved: true,
-      grooveId: 'groove-02',
-    })
 
     const streakLine = () =>
       screen.getByLabelText(/current streak/i).textContent

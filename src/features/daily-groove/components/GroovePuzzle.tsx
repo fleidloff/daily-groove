@@ -11,7 +11,6 @@ import {
 import type { Flavour, Groove, Root } from '../types'
 import type { PlayableSource } from '../lib/audio/transport'
 import {
-  dotStates,
   selectFeedback,
   shouldOfferReveal,
   shouldShowNudge,
@@ -190,7 +189,6 @@ function GroovePuzzleView({
     [attempts, tapSounds, simple],
   )
   const showVerdict = useMemo(() => shouldShowVerdict(attempts), [attempts])
-  const dots = useMemo(() => dotStates(attempts, solved), [attempts, solved])
   const showReveal = useMemo(
     () => shouldOfferReveal(attempts, solved, revealed),
     [attempts, solved, revealed],
@@ -295,7 +293,6 @@ function GroovePuzzleView({
       coaching={coaching}
       showVerdict={showVerdict}
       showNudge={showNudge}
-      dots={dots}
       ruledOutRoots={narrowing.roots}
       ruledOutFlavours={narrowing.flavours}
       eliminated={narrowing.eliminatedCount}

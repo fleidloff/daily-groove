@@ -110,7 +110,6 @@ describe('feature components sit in screen regions', () => {
       'GuessCard',
       'ModeToggle',
       'TapSoundsToggle',
-      'AttemptDots',
       'FeedbackLine',
       'NudgeBox',
       'SharedGrooveNotice',
@@ -141,6 +140,7 @@ describe('feature components sit in screen regions', () => {
       'GroovePuzzle.sounding.test.tsx',
       'GroovePuzzle.intro.test.tsx',
       'GroovePuzzle.header.test.tsx',
+      'GroovePuzzle.copy.test.tsx',
     ]
     const absent = composedTests.filter((name) => !existsSync(join(COMPONENTS, name)))
     expect(absent).toEqual([])
