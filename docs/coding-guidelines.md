@@ -104,6 +104,11 @@ import pull in the whole design system — every consumer of `Button` would drag
 in `ProgressTrack`, `Panel` and the rest, and the grouping would stop telling a
 reader anything, because every path would end at the barrel.
 
+A feature's `lib/` folder is the case where the opposite holds — see
+[A concern folder earns a door](#feature-slices). A primitive is one of twenty
+interchangeable pieces; a concern folder is one seam with a job, and naming the
+job is what its `index.ts` is for.
+
 *human-checked* — motivated by the absence of any `index.ts` under
 `src/components/`, locked in by the "has no barrel files" case in
 `src/components/structure.test.ts`.
@@ -118,20 +123,61 @@ A feature folder separates its concerns by folder, not by convention:
 
 **Reach a feature only through its `index.ts` — tests included.** From outside
 `src/features/<feature>/`, import `@/features/daily-groove` and nothing deeper.
-Today that surface is `GroovePuzzle` plus the `Answer`, `Attempt`,
-`DailyResult`, `Flavour`, `Groove` and `Root` types. If you need something the
-index does not export, export it there rather than reaching past it.
+Today that surface is five values — `GroovePuzzle`, `grooveByUuid`,
+`isTodaysGroove`, `grooveHref` and `shareUrlOf` — plus the `Answer`, `Attempt`,
+`DailyResult`, `Flavour`, `Groove` and `Root` types. Read
+`src/features/daily-groove/index.ts` rather than this sentence if the two
+disagree; the file is the surface, and this list has been wrong before. If you
+need something the index does not export, export it there rather than reaching
+past it.
 
 The rule binds consumers, not the feature itself: inside its own folder a
 feature's files import each other freely by relative path, which is why
-`components/puzzle/GuessCard.tsx` importing `../../lib/presentation/feedback` is
+`components/puzzle/NudgeBox.tsx` importing `../../lib/presentation/feedback` is
 fine. `index.ts` is the surface for the outside world, not an internal routing
 table.
+
+**One file is the exception, for one folder.**
+`src/features/daily-groove/components/GroovePuzzle.tsx` may not import a module
+inside `lib/presentation/`; it reaches coaching through
+`lib/presentation/index.ts` and nothing else. The reason is that it is the
+composer: it assembles every region, so its import list is the one place the
+whole slice's graph is visible, and it is the one file that has been cut and has
+grown back. Measured: 362 lines at feature-4, cut to 288 by feature-5's split,
+488 by feature-12, 750 after the mode playback landed, 406 when feature-20 began.
+Its imports into `lib/presentation/` went 2 → 3 → 4 → 6 over the four releases
+since feature-12 and never once down.
+
+The exception stops there, in both directions. Its four other concern
+imports — `@/lib/theory/*`, `../lib/audio/*`, `../lib/puzzle/selectGroove` and
+`../lib/persistence/storage` — are ordinary intra-slice imports and no rule
+touches them, because those folders have no door (see *A concern folder earns a
+door* below). And no other file in the slice is bound. The population a
+slice-wide rule would have to bind is countable, and here is the count with the
+command that produces it — 64 specifiers reach from outside `lib/` into a module
+inside one of its concern folders, 28 of them in non-test files:
+
+```
+grep -rhoE "from '(\.\./)+lib/[a-z]+/[A-Za-z]+'" \
+  src/features/daily-groove --include=*.ts --include=*.tsx | wc -l
+```
+
+Binding all 64 would be guarding a collision that has never happened between two
+region components. (The number moves with the tree, so re-run the command rather
+than trusting it; what should not move is the reasoning, which is that the
+measured pain is in one file and one folder.)
+
+*human-checked* — motivated by
+`src/features/daily-groove/components/GroovePuzzle.tsx`; asserted by the "holds
+the shell to the door" case in `src/features/daily-groove/structure.test.ts`,
+which reads that one file from disk. The routes are covered separately, by
+`src/app/route-boundary.test.ts`.
 
 A test is a consumer, and the violation that motivated this rule was in one.
 `src/app/page.test.tsx` deep-imported
 `@/features/daily-groove/lib/puzzle/selectGroove`,
-`@/features/daily-groove/lib/theory/music` and
+`@/features/daily-groove/lib/theory/music` — the theory module has since moved
+out of the feature to `src/lib/theory/music.ts` — and
 `@/features/daily-groove/data/grooves.generated`, and `vi.mock`ed a fourth path,
 `@/features/daily-groove/lib/audio/audio`. None of the four was an import the
 route needed; all four were there to assert on puzzle behaviour from the route
@@ -139,10 +185,10 @@ layer, which meant deleting `src/features/daily-groove/` would break the route's
 *tests* however clean `page.tsx` was. A mocked path counts: `vi.mock` names a
 module by path and breaks with it, while looking like setup rather than
 coupling. Those assertions moved into the feature in Epic 3; the route test is
-now 92 lines and imports only `./page`. `src/app/route-boundary.test.ts` reads
-both route files and fails on any specifier — or `vi.mock` path — that is not
-exactly `@/features/daily-groove`, catching the mock case that an import rule
-structurally cannot.
+now 70 lines and imports only `./page` and `@/lib/branding`.
+`src/app/route-boundary.test.ts` reads both route files and fails on any
+specifier — or `vi.mock` path — that is not exactly `@/features/daily-groove`,
+catching the mock case that an import rule structurally cannot.
 
 *lint-enforced* (zone 2) — motivated by the four specifiers formerly in
 `src/app/page.test.tsx` and by `src/features/daily-groove/index.ts`.
@@ -159,37 +205,83 @@ slice inherits it with no config edit.
 being the single inbound reference the route uses today.
 
 **Put a `lib/` module in the concern folder that matches what it computes.**
-`lib/` holds business logic only, split six ways:
+`lib/` holds business logic only, split five ways:
 
 | Folder | Holds today | Motivated by |
 | :-- | :-- | :-- |
-| `theory/` | `notes`, `music`, `options` | `lib/theory/notes.ts` — how a diatonic scale spells itself; pure music theory with no puzzle in it |
-| `puzzle/` | `selectGroove`, `scoring`, `resolveGroove` | `lib/puzzle/scoring.ts` — the rules of the game: which groove today plays, whether a guess is right |
-| `persistence/` | `storage`, `streak`, `lapsed` | `lib/persistence/storage.ts` — the one seam onto stored results; nothing else touches `localStorage` |
-| `presentation/` | `feedback`, `archive` | `lib/presentation/feedback.ts` — turning state into what the UI says, without rendering anything |
-| `audio/` | `audio`, `transport` | `lib/audio/transport.ts` — the browser audio element and who is currently sounding |
+| `puzzle/` | `selectGroove`, `scoring`, `narrowing`, `grooveByUuid`, `isTodaysGroove` | `lib/puzzle/scoring.ts` — the rules of the game: which groove today plays, whether a guess is right |
+| `persistence/` | `storage`, `streak`, `lapsed`, `preferences` | `lib/persistence/storage.ts` — the one seam onto stored results; nothing else touches `localStorage` |
+| `presentation/` | `feedback`, `coaching`, `verdict`, `moves` and their siblings | `lib/presentation/feedback.ts` — turning state into what the UI says, without rendering anything |
+| `audio/` | `audio`, `transport`, `loop`, `lick`, `reference` and their siblings | `lib/audio/transport.ts` — the browser audio element and who is currently sounding |
 | `share/` | `url`, `share` | `lib/share/share.ts` — handing a link to the world outside the page: which of the share sheet, the clipboard or the screen gets it |
 
-A module that does not fit one of the six is a signal, not an exception: it is
-either two modules, or it belongs in `state/` or `data/`. `share/` is what that
-signal looks like when it turns out to be a genuine sixth concern: feature-12's
-`shareUrlOf` renders nothing, so it is not `presentation/`; it stores nothing, so
-it is not `persistence/`; and it decides nothing about the game, so it is not
-`puzzle/`.
+There was a sixth, `theory/`. Feature-20 Epic 1 moved all thirteen of its
+modules to `src/lib/theory/`, because the generator was rendering from a second
+copy of the same scales; § [Shared code](#shared-code-srclib) says on what terms
+they live there and what that cost. It is not a precedent for the other five.
 
-*human-checked* — motivated by the fourteen modules under
+A module that does not fit one of the five is a signal, not an exception: it is
+either two modules, or it belongs in `state/` or `data/`. `share/` is what that
+signal looks like when it turns out to be a genuinely separate concern:
+feature-12's `shareUrlOf` renders nothing, so it is not `presentation/`; it
+stores nothing, so it is not `persistence/`; and it decides nothing about the
+game, so it is not `puzzle/`.
+
+*human-checked* — motivated by the thirty-two modules under
 `src/features/daily-groove/lib/`; the folder set is asserted by
 `src/features/daily-groove/structure.test.ts`.
 
+**A concern folder earns a door, and a door lists its exports by name.** A
+*door* is a concern folder's `index.ts`, and there is exactly one in this repo:
+`src/features/daily-groove/lib/presentation/index.ts`, which fronts the eleven
+coaching modules. It exports precisely the names its consumers import through
+it, written out one by one — never `export *`. An export nobody imports is a
+line to delete, and a barrel is worse than no door at all: it would let the
+composer read as one tidy import while reaching exactly as far as before, so the
+fan-in rule above would pass and the coupling would be invisible.
+
+**A door is earned by measured growth, not granted by policy.**
+`lib/presentation/` earned one: it went from two modules to eleven, and the
+composer's imports into it went 2 → 3 → 4 → 6 without ever coming back down —
+the shape this document calls "the tell" under
+[Anti-patterns](#anti-patterns-and-their-fixes). The other four concern folders
+supply the composer four, three, one and one specifier and have stayed flat or
+come back down, so they have no `index.ts`, and the composer imports their
+modules directly. If you are adding a twelfth module to `lib/audio/`, that is
+the question to ask: has the fan-in into this folder only gone up? A door added
+before the growth is a barrel with no measurement behind it.
+
+Be clear about what this costs. Nothing guards the composer's imports into the
+four undoored folders — no zone, no structural test — so a regrowth there is
+caught by review alone, which is exactly what failed the two times this file was
+cut and grew back. Adding a door later is one `index.ts` plus one entry in the
+guard's ignore list, so the cheap thing to do is add it when a folder grows, not
+to write four doors now.
+
+This is the half of the [no-barrel rule](#the-design-system) that does *not*
+transfer, and the difference is worth stating: `src/components/` is a flat
+catalogue of interchangeable primitives, so a barrel there would make every path
+end at the same place and tell a reader nothing about what they were importing.
+A feature's concern folder is a seam with a job, so its `index.ts` is the thing
+that names the job.
+
+*human-checked* — motivated by
+`src/features/daily-groove/lib/presentation/index.ts`; asserted by the "the
+coaching door is narrow" cases in
+`src/features/daily-groove/structure.test.ts`, which compare the door's export
+list against every importer in the repo. A test file counts as an importer, so
+the guard catches carelessness rather than determination.
+
 **Group feature components by the screen region that renders them, and let the
 grouping follow the composition tree.** `src/features/daily-groove/components/`
-holds `header/` (`GrooveHeader`, `StreakBadge`), `puzzle/` (`GrooveCard`,
-`TransportPanel`, `GuessCard`, `FeedbackLine`, `NudgeBox`,
-`SolvedPanel`) and `archive/` (`ArchiveStrip`). Each region is a subtree of one
+holds `header/` (`GrooveHeader`, `StreakBadge`, `ShareGroove`, `HelpToggle`),
+`intro/` (`HowToPlay`), `puzzle/` (`GrooveCard`, `TransportPanel`, `GuessCard`,
+`FeedbackLine`, `NudgeBox`, `ModeToggle` and their siblings) and `solved/`
+(`SolvedPanel`, `LeadSheet`, `ScaleStaff`). Each region is a subtree of one
 composer, which is why no component appears in two of them. The root composer
 `GroovePuzzle.tsx` sits above the regions at the `components/` root and belongs
 to none: it is the thing that assembles them, reaching down with
-`./header/GrooveHeader`, `./puzzle/GuessCard`, `./archive/ArchiveStrip`. A
+`./header/GrooveHeader`, `./puzzle/GuessCard`, `./solved/SolvedPanel`. A
 component used by two regions has stopped being regional — move it up to the
 `components/` root, or out to `src/components/` if the domain naming can be
 stripped.
@@ -246,32 +338,77 @@ which are hooks. A `use` prefix is not the test; calling React hooks is.
 ## Shared code (`src/lib/`)
 
 `src/lib/` is not a second junk drawer beside `src/features/<feature>/lib/`. It
-holds one thing: code that both the app *and* the groove generator under
-`scripts/` must run, and must run identically. `src/lib/hash.ts` and
-`src/lib/groove.ts` are the whole of it today.
+holds the code that sits *below* the app: what the app and the groove generator
+under `scripts/` must both run and run identically, plus the body of domain
+logic that shared core was cut out of. Today that is `hash.ts`, `groove.ts`,
+`date.ts`, `branding.ts` and the sixteen modules of `theory/`.
 
-**A module earns a place in `src/lib/` only if it is pure, dependency-free,
-runtime-safe and genuinely shared.** All four bars, and each is load-bearing:
+**A module earns a place in `src/lib/` only if it is pure, dependency-free of
+app code, runtime-safe TypeScript, and either shared across the app/generator
+boundary or part of a body of domain logic that has to stay in one piece for the
+shared half to be coherent.** The first three bars are absolute. The fourth is
+the one feature-20 widened, and the paragraph after this list says what that
+cost:
 
 - **Pure** — a function of its arguments, with no state, no clock, no
   `localStorage`, no DOM. `hashString` returns the same integer for the same
   string in a browser, in jsdom and in Node.
-- **Dependency-free** — it imports nothing.
-  `src/lib/groove.test.ts` asserts that `src/lib/groove.ts` has zero import
-  specifiers, because that is the property the generator depends on.
+- **Dependency-free of app code** — it imports nothing outside `src/lib/`, and
+  nothing at all where it can manage that. `src/lib/groove.test.ts` asserts that
+  `src/lib/groove.ts` has zero import specifiers, because that is the property
+  the generator depends on; the `theory/` modules import each other and
+  `../groove`, `../date` and `../hash`, and nothing else.
 - **Runtime-safe TypeScript** — a plain function or a type: no enums, no
   namespaces, no decorators, and no `@/` imports of its own. The generator runs
   under Node's type stripping, which erases annotations but neither resolves the
   alias nor emits the runtime code an enum needs. Type-only crossings are exempt
   because they vanish; a value import like `hashString` is not.
-- **Genuinely shared** — two callers on opposite sides of the app/generator
-  boundary. Something only the feature uses belongs in
-  `src/features/<feature>/lib/`, where deleting the feature deletes it.
+- **Domain, not product** — the module is knowledge about the domain, not
+  knowledge about this product. What a Dorian scale spells and how a chord is
+  derived from a scale are domain; the ladder, the nudge, the streak and the
+  stored result are product. `src/lib/theory/` qualifies whether or not the
+  generator happens to call any given module, which is why all sixteen live
+  here: `phrase.ts` needs `licks.ts`, `numerals.ts` and `degrees.ts` spell
+  accidentals against the same ionian ruler the generator renders from,
+  `music.ts` reaches `options.ts`, which seeds the day's shuffle from `../hash`.
+  `lib/puzzle/scoring.ts`, `lib/puzzle/narrowing.ts`,
+  `lib/persistence/streak.ts` and `lib/presentation/coaching.ts` never will,
+  however reusable they look — they are rules and wording this product chose.
+
+  **Two callers across the app/generator boundary is sufficient evidence, not
+  the test.** It is what made `hash.ts` and `groove.ts` obvious, and it is what
+  `theory/names.ts`, `roots.ts` and `scales.ts` meet outright: those five are
+  exactly what `scripts/grooves/` imports. The other thirteen `theory/` modules
+  have only app callers — nothing under `scripts/` calls `licks.ts` or
+  `staff.ts` — and they belong here anyway, because the subject does. The bar
+  the old wording set, *genuinely shared*, would have split one body of theory
+  across the boundary, which is precisely what feature-20 Epic 1 undid.
+
+**What the fourth bar costs, said plainly.** After feature-20 Epic 1, deleting
+`src/features/daily-groove/` and its route folder leaves fourteen modules in
+`src/lib/` that nothing imports: thirteen of the sixteen under `theory/` — every
+one but `names.ts`, `roots.ts` and `scales.ts` — and `date.ts` with them. The
+app still builds, so [architecture.md](architecture.md)'s removability standard
+holds literally, but the cut is no longer clean. That is the price of one body of
+theory instead of two, and it was paid once, for one named subject whose
+canonical tables the generator renders from.
+
+It is not a general licence, and *domain* is the word that will be stretched.
+The test is not "reusable", not "used in more than one place", and not "hard to
+file" — it is whether the knowledge would still be true if this product did not
+exist. A Dorian scale spells the same notes in an app that has no ladder and no
+streak; `shouldShowNudge` does not. Before moving anything else down here, answer
+that question out loud. If `src/lib/` becomes where a module goes because nobody
+wanted to decide which slice owns it, this is the paragraph that let it happen.
 
 *human-checked* — motivated by `src/lib/hash.ts`, `src/lib/groove.ts`,
 `scripts/grooves/rng.ts` and
 `src/features/daily-groove/lib/puzzle/selectGroove.ts`, which held the second
-copy of the hash.
+copy of the hash; and by `src/lib/theory/scales.ts`, which held the second copy
+of the twelve interval sets. `src/lib/theory/roots.test.ts` and
+`src/lib/theory/scales.test.ts` each assert that their table is declared in
+exactly one non-test file under `src/` and `scripts/`, the way
+`src/lib/hash.test.ts` does for the FNV prime.
 
 **`src/lib/` is a leaf: nothing in it may import `src/features/` or
 `src/components/`.** Being a leaf is not tidiness, it is the mechanism. Because
@@ -289,25 +426,44 @@ imports app code through the alias, the generator stops being able to run it.
 **The generator's only channel into the app is `src/lib/`. Nothing under
 `scripts/` may import `src/features/` or `src/components/`.** The generator
 produces grooves, so `Groove`, `Root` and `Flavour` are the contract between the
-two halves of the system and live in `src/lib/groove.ts`; `Answer`, `Attempt`
-and `DailyResult` are gameplay and persistence concepts the generator has never
-heard of and stay in `src/features/daily-groove/types.ts`, which re-exports the
-three shared types so the feature's own modules keep importing `'../types'`
-unchanged. Before Epic 4 the generator deep-imported the feature's `types.ts`
-from `cli.ts`, `manifest.ts`, `pools.ts` and two of their tests.
+two halves of the system and live in `src/lib/groove.ts`, along with `Answer`
+and `Attempt`, which moved down with the theory in feature-20 Epic 1.
+`DailyResult` is a persistence concept the generator has never heard of and
+stays in `src/features/daily-groove/types.ts`, which re-exports the five shared
+types so the feature's own modules keep importing `'../types'` unchanged. Before
+Epic 4 the generator deep-imported the feature's `types.ts` from `cli.ts`,
+`manifest.ts`, `pools.ts` and two of their tests.
 
 Two consequences worth knowing before you "tidy" anything:
 
-- **`scripts/grooves/types.ts` still declares its own `Flavour`, and that is not
-  a duplicate.** The generator's `Flavour` is a union of eight internal
-  lowercase mode names (`'dorian'`, `'harmonic-minor'`); the app's
-  `Flavour` in `src/lib/groove.ts` is a display string (`'Dorian'`).
-  `displayFlavour()` in `scripts/grooves/cli.ts` is the single conversion point
-  between them. Unifying the two would be a behaviour change wearing a
-  de-duplication's clothes. The generator's `Root`, which *was* genuinely the
-  same type declared twice, has been deleted;
-  `scripts/grooves/boundary.test.ts` asserts that `types.ts` declares no `Root`
-  and still declares `Flavour`.
+- **There are still two flavour types, and now neither is declared twice.** The
+  slug union is `FlavourSlug` in `src/lib/theory/names.ts` — twelve lowercase
+  mode names, `'dorian'`, `'harmonic-minor'`. The display string is `Flavour` in
+  `src/lib/groove.ts` (`'Dorian'`, `'Harmonic minor'`). `scripts/grooves/types.ts`
+  declares neither: it re-exports `FlavourSlug` under the name `Flavour` that the
+  rest of the generator already uses, so `select.ts`, `theory/harmony.ts` and
+  `theory/validity.ts` are untouched by where the union lives. The single
+  conversion point is `displayFlavour()` in `src/lib/theory/names.ts`, beside the
+  thirteen-entry map it reads, and it now has an exact inverse, `slugOf()`.
+
+  What must not be "tidied" is no longer a second declaration — there isn't one.
+  It is the **two-name arrangement itself.** Collapsing `FlavourSlug` into
+  `Flavour`, or pointing `types.ts` at `src/lib/groove.ts`'s `Flavour`, is still
+  a behaviour change wearing a de-duplication's clothes: the app's `Flavour` is
+  `string`, so it would widen every generator signature, and
+  `VALIDITY: Record<Flavour, ValidityRule>` in `theory/validity.ts` — the table
+  that decides whether a rendered chord is legal in its named scale — would stop
+  being exhaustive. Two things catch that today, and it is worth knowing which
+  does what. `intervalsFor`, `pitchesOf` and `scaleName` take `ScaleSlug`, so a
+  widened `Flavour` fails to type-check at their call sites in
+  `theory/harmony.ts` and `theory/validity.ts`: the mistake does not compile.
+  And `scripts/grooves/boundary.test.ts` asserts that `types.ts` declares no
+  `Root`, declares no `Flavour` union of its own, imports the union from
+  `src/lib/theory/names.ts`, and does **not** take `Flavour` from
+  `src/lib/groove.ts` — which is the guard that names the mistake, in the tier
+  that runs on every generator change, in milliseconds rather than a repo-wide
+  type check. The generator's `Root`, which *was* genuinely the same type
+  declared twice, has been deleted.
 - **The manifest's own output path is not a crossing.** `scripts/` names
   `src/features/daily-groove/data/grooves.generated.ts` in four places —
   `cli.ts`, `verify-cli.ts` and their tests — as the file it *writes*. That is a
@@ -399,22 +555,27 @@ constructor call, not an import, so `import/no-restricted-paths` cannot see it.
 about flavour options, root chips, the archive strip and the
 transport sat in the route's test file, where nobody looking at
 `components/puzzle/GuessCard.tsx` would find them and where deleting the feature
-orphaned them. They now sit in the file that owns each subject —
-`components/puzzle/GuessCard.test.tsx`,
-`components/archive/ArchiveStrip.test.tsx`, `lib/theory/music.test.ts` and the
-rest. Relocating an assertion does not license rewriting it: one written against
-the whole page keeps that render, in a
+orphaned them. They went to the file that owned each subject —
+`components/puzzle/GuessCard.test.tsx`, the archive strip's own test (the strip
+and its test were both deleted with the archive region in a later feature), and
+the theory test that has since moved down to `src/lib/theory/music.test.ts` with
+its module. Relocating an assertion does not license rewriting it: one written
+against the whole page keeps that render, in a
 `describe('through the composed page', ...)` block that says so, via
 `src/features/daily-groove/testing/renderFeature.tsx`. Rewriting it as an
 isolated render with hand-made props is a different assertion wearing the old
-one's name.
+one's name. Colocation survives a move: when a module changes folder its test
+goes with it, and an assertion whose subject does not fit the new folder — a
+case about the shipped catalogue, in a test that may no longer import the
+feature — goes to the file that owns *that* subject, not into the nearest file
+that still compiles.
 
 *human-checked* — motivated by `src/app/page.test.tsx` and the destination table
 in `specs/feature-5/prd/epic-3-god-component.md`.
 
 **A component that imports most of its own feature's modules is doing too much.**
 `src/features/daily-groove/components/GroovePuzzle.tsx` reached 362 lines
-importing eight `lib/` modules, the data file, both hooks and every region
+importing six `lib/` modules, the data file, both hooks and every region
 component, and carried a 1,226-line test — three times the next largest file in
 `src/`. The import list is the tell, and it is countable: a composer reaches
 *down* into the regions it assembles, so a long list of sideways `../lib/`
@@ -422,10 +583,18 @@ imports means the file is holding logic that belongs behind a seam. The fix is
 to name the seams the file already has and lift them out:
 `hooks/usePuzzleSession.ts` took store creation, hydration and the check;
 `hooks/useTransport.ts` took the transport's lifetime and its error flag; what
-was left is the date, the derived view data and the JSX — 274 lines. Extract
+was left is the date, the derived view data and the JSX — 288 lines. Extract
 along seams the tests are already organised around: if the existing assertions
 have to be rewritten to fit the new shape, the split has gone past a refactor
 and into a redesign.
+
+And know that this one has not held on its own. The file went back to 488 lines
+by feature-12 and 750 once mode playback landed, and its imports into
+`lib/presentation/` climbed 2 → 3 → 4 → 6 while nothing was watching. Two of the
+three features that cut it shipped with no guard at all. What guards it now is
+one folder's worth of its fan-in — the door rule under
+[Feature slices](#feature-slices) — and nothing guards the rest, so the tell is
+still something a reviewer has to count.
 
 *human-checked* — motivated by
 `src/features/daily-groove/components/GroovePuzzle.tsx` versus
@@ -460,7 +629,9 @@ graph LR
   gen["scripts/grooves/"] --> lib
 ```
 
-### The five zones
+### The eight zones
+
+`F` below is `src/features/daily-groove`.
 
 | # | Zone | Rule it encodes | How it is expressed |
 | :-- | :-- | :-- | :-- |
@@ -469,8 +640,28 @@ graph LR
 | 3 | `target:` the sibling features, `from: src/features/<f>`, no `except` | No feature imports another, not even its `index.ts` | one zone **per feature**, generated |
 | 4 | `target: src/lib`, `from: ['src/features', 'src/components']` | `src/lib/` is a leaf | one static zone |
 | 5 | `target: scripts`, `from: ['src/features', 'src/components']`, no `except` | `src/lib/` is the generator's only channel | one static zone |
+| 6 | `target: F/lib`, `from: ['src/components', 'F/components', 'F/hooks', 'F/state']` | No `lib/` module imports UI, a hook or the store. Business logic does not depend on what renders it | one static zone |
+| 7 | `target: F/lib/audio`, `from:` coaching, puzzle, persistence | `lib/audio/` imports neither coaching nor the puzzle module. It plays sound; it does not know the game | one static zone |
+| 8 | `target: [F/lib/puzzle, F/lib/persistence]`, `from:` coaching, audio | The puzzle module imports neither coaching nor audio. The rules of the game do not depend on how they are described or heard | one static zone |
 
-Five things about that table are easy to get wrong:
+Zones 6–8 are the first zones whose `target` and `from` are both *inside* one
+slice: they encode the arrows between a feature's concern folders, which zones
+1–5 say nothing about. [architecture.md](architecture.md#the-arrows-inside-a-slice)
+draws that graph and names what holds each arrow. Two consequences of writing
+them at folder granularity: zone 6 subsumes "coaching does not import the design
+system or the shell" as one case of a stronger rule, which is why four missing
+arrows became three zones; and `F/testing` is deliberately absent from zone 6's
+`from`, because five `lib/audio/*.test.ts` files import
+`../../testing/fakeAudioContext`, which is a test double rather than app UI.
+
+**The composer's rule is not a zone.** `GroovePuzzle.tsx` reaching coaching only
+through `lib/presentation/index.ts` is about one file's specifiers resolving to
+an `index.ts` rather than to a sibling in the same folder, and
+`import/no-restricted-paths` has no way to express that: the file and the door
+are inside the same `target`. It is a structural test instead — the "holds the
+shell to the door" case in `src/features/daily-groove/structure.test.ts`.
+
+Five more things about that table are easy to get wrong:
 
 **Zones 2 and 3 are generated from `readdirSync('src/features')`, not
 hard-coded.** Add a second slice and it gets both boundaries with no config
@@ -496,6 +687,19 @@ is meant to be the generator's only channel into the app, not a preferred one.
 `globalIgnores` are `.next/**`, `out/**`, `build/**`, `next-env.d.ts` and
 `specs/**` — nothing exempts `*.test.ts(x)`. This is the part that matters most:
 both violations this project actually found were in tests.
+
+**But only what lint can see, which in a test file is less than you would
+hope.** No zone exempts a test, and every *static* `import` in one is checked —
+that part is unqualified. What is not checked is the shape a test reaches for
+first: `import/no-restricted-paths` reads import and require specifiers, so
+`vi.mock('../presentation/coaching')` in a file under `lib/puzzle/` passes lint
+with zero errors, though it violates zone 8 exactly as the import would. The
+rule still binds it; the linter is simply not the thing that catches it. That is
+why `src/app/route-boundary.test.ts` and
+`src/features/daily-groove/structure.test.ts` both read source from disk and
+match `vi.mock` paths themselves — see
+[What lint structurally cannot see](#what-lint-structurally-cannot-see). When a
+boundary matters in a test, the guard is a structural test, not a zone.
 
 **Every zone carries a `message` that names the rule and the reason**, not just
 the restricted path, because a lint error is where most people meet these rules

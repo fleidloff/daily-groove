@@ -10,7 +10,7 @@ import {
   type FakeContext,
 } from '../../testing/fakeAudioContext'
 import type { PitchSample } from '../../data/notes.generated'
-import type { ScheduledNote } from '../theory/phrase'
+import type { ScheduledNote } from '@/lib/theory/phrase'
 
 const THREE: PitchSample[] = [
   { id: 'C4', root: 'C', octave: 4, midi: 60, audioSrc: '/notes/note-c.mp3' },

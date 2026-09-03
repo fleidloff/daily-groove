@@ -1,6 +1,6 @@
 import type { Root } from '../../src/lib/groove.ts'
 import { mixTracks } from './mix.ts'
-import { ROOTS, midiOf } from './theory/notes.ts'
+import { ROOTS, midiOf } from '../../src/lib/theory/roots.ts'
 import type { FeelTemplate, NoteEvent, Pcm, SamplePack } from './types.ts'
 import { renderVoices } from './voices.ts'
 

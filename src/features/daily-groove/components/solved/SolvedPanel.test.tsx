@@ -3,7 +3,7 @@ import { relative, resolve, sep } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { render, screen, within } from '@testing-library/react'
 import { SolvedPanel } from './SolvedPanel'
-import { barChords } from '../../lib/theory/changes'
+import { barChords } from '@/lib/theory/changes'
 import { GROOVES } from '../../data/grooves.generated'
 import type { Answer, Attempt } from '../../types'
 

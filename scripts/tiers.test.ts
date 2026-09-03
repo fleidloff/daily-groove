@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs'
 
 import { describe, expect, it } from 'vitest'
 
-import { tierReason, tiersFor } from './tiers.ts'
+import { GENERATOR_IMPORTS, tierReason, tiersFor } from './tiers.ts'
 
 const globSync = (
   fs as unknown as {
@@ -52,8 +52,14 @@ describe('src/lib is a shared leaf', () => {
     expect(tiersFor(['src/lib/groove.ts'])).toContain('generator')
   })
 
-  it('selects the generator tier for a src/lib file the generator does not import today', () => {
-    expect(tiersFor(['src/lib/branding.ts'])).toContain('generator')
+  it('does not select the generator tier for a src/lib file the generator never imports', () => {
+    expect(tiersFor(['src/lib/branding.ts'])).toEqual(['app', 'tooling'])
+    expect(tiersFor(['src/lib/theory/licks.ts'])).toEqual(['app', 'tooling'])
+    expect(tiersFor(['src/lib/date.ts'])).toEqual(['app', 'tooling'])
+  })
+
+  it.each(GENERATOR_IMPORTS)('selects the generator tier for %s', (path) => {
+    expect(tiersFor([path])).toContain('generator')
   })
 })
 
@@ -70,7 +76,19 @@ describe('an unresolved scope', () => {
 describe('tierReason', () => {
   it('says why the generator tier was not run for an app-only scope', () => {
     expect(tierReason(['src/app/page.tsx'], 'generator')).toMatch(
-      /not run.*no path under `scripts\/` or `src\/lib\/`/,
+      /not run.*no path under `scripts\/` and no module the generator imports/,
+    )
+  })
+
+  it('names the module that selected the generator tier', () => {
+    expect(tierReason(['src/lib/theory/scales.ts'], 'generator')).toMatch(
+      /selected.*src\/lib\/theory\/scales\.ts/,
+    )
+  })
+
+  it('says the generator tier was not run for a src/lib module it never imports', () => {
+    expect(tierReason(['src/lib/theory/licks.ts'], 'generator')).toMatch(
+      /not run.*no path under `scripts\/` and no module the generator imports/,
     )
   })
 

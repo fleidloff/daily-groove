@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { deriveLoopWindow, loopPosition } from './loop'
 import { GROOVES } from '../../data/grooves.generated'
-import { loopSecondsOf } from '../theory/music'
+import { loopSecondsOf } from '@/lib/theory/music'
 
 const ONE_SAMPLE = 1 / 44100
 

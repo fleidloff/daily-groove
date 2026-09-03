@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { Flavour, VoiceName } from '../types.ts'
-import { FLAVOURS, INTERVALS } from '../theory/scales.ts'
+import { FLAVOURS } from '../../../src/lib/theory/names.ts'
+import { INTERVALS } from '../../../src/lib/theory/scales.ts'
 import { TEMPLATES, allTemplates, templateById } from './index.ts'
 
 function halfStepMs(subdivision: number, topBpm: number): number {
@@ -99,6 +100,16 @@ describe('flavour coverage — R2, R5, AC15', () => {
     expect(union).toHaveLength(2 * TEMPLATE_COUNT)
     expect(union).toHaveLength(FLAVOURS.length)
     expect([...new Set(union)].sort()).toEqual([...(FLAVOURS as Flavour[])].sort())
+  })
+
+  it('renders twelve of the thirteen scales the shared table carries', () => {
+    expect(Object.keys(INTERVALS)).toHaveLength(13)
+    expect(Object.keys(INTERVALS)).toContain('locrian')
+    expect(FLAVOURS).toHaveLength(12)
+    expect(FLAVOURS as string[]).not.toContain('locrian')
+    expect(allTemplates().flatMap((t) => t.flavours as string[])).not.toContain(
+      'locrian',
+    )
   })
 
   it('splits the twelve evenly between the two families', () => {

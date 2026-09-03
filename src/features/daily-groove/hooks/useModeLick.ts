@@ -9,7 +9,7 @@ import {
   type PhraseClock,
   type ReferenceOutput,
 } from '../lib/audio/lick'
-import { scheduleLick } from '../lib/theory/phrase'
+import { scheduleLick } from '@/lib/theory/phrase'
 
 export type UseModeLick = {
   playMode: (flavour: Flavour) => void

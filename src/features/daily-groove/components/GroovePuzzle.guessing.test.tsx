@@ -45,18 +45,19 @@ import { GroovePuzzle } from './GroovePuzzle'
 import {
   answerOf,
   flavourOptions,
-  ROOTS,
   simpleRootOptions,
-} from '../lib/theory/music'
+} from '@/lib/theory/music'
+import { ROOTS } from '@/lib/theory/roots'
 import { LADDER } from '../lib/presentation/moves'
 import {
   COLOUR_MOVES,
   SIMPLE_COLOUR_MOVES,
   TONIC_MOVES,
 } from '../lib/presentation/coachingMoves'
-import { FAMILIES } from '../lib/theory/families'
+import { FAMILIES } from '@/lib/theory/families'
 import { createLocalPreferenceStore } from '../lib/persistence/preferences'
-import { isoDate, selectGrooveForDate } from '../lib/puzzle/selectGroove'
+import { selectGrooveForDate } from '../lib/puzzle/selectGroove'
+import { isoDate } from '@/lib/date'
 import { GROOVES } from '../data/grooves.generated'
 
 const NOTE_CHARS = 'A-Za-z♭♯'
@@ -110,7 +111,11 @@ describe('GroovePuzzle', () => {
       vi.setSystemTime(new Date(2026, 7, 29, 12, 0, 0))
       await renderPuzzle()
 
-      const expected = flavourOptions(new Date(2026, 7, 29, 12, 0, 0), GROOVE)
+      const expected = flavourOptions(
+        new Date(2026, 7, 29, 12, 0, 0),
+        GROOVE,
+        GROOVES,
+      )
       const rendered = within(flavourGroup())
         .getAllByRole('button')
         .map(chipLabel)
@@ -732,7 +737,9 @@ describe('GroovePuzzle', () => {
     await renderPuzzle(<GroovePuzzle groove={DORIAN} />)
 
     expect(chipTexts(rootGroup())).toEqual(ROOTS)
-    expect(chipTexts(flavourGroup())).toEqual(flavourOptions(new Date(), DORIAN))
+    expect(chipTexts(flavourGroup())).toEqual(
+      flavourOptions(new Date(), DORIAN, GROOVES),
+    )
     expect(chipTexts(flavourGroup())).toHaveLength(4)
     expect(chipTexts(flavourGroup())).not.toContain('Minor')
     expect(chipTexts(flavourGroup())).not.toContain('Major')

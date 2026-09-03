@@ -83,16 +83,25 @@ describe('the generator/app boundary', () => {
         `scripts/ may only import src/lib/, not ${specifier}`,
       ).toBe(true)
     }
-    expect([...crossings].sort()).toEqual([
-      '../../src/lib/groove.ts',
-      '../../src/lib/hash.ts',
-      '../../../src/lib/groove.ts',
-    ].sort())
+    const shared = [...crossings]
+      .map((specifier) => specifier.slice(specifier.indexOf('src/lib/')))
+      .sort()
+    expect([...new Set(shared)]).toEqual([
+      'src/lib/groove.ts',
+      'src/lib/hash.ts',
+      'src/lib/theory/names.ts',
+      'src/lib/theory/roots.ts',
+      'src/lib/theory/scales.ts',
+    ])
   })
 
-  it('does not redeclare Root in the generator, it imports the shared one', () => {
+  it('declares neither Root nor the Flavour union, it imports both', () => {
     const source = readFileSync(join(SCRIPTS_DIR, 'grooves/types.ts'), 'utf8')
     expect(source).not.toMatch(/\bexport\s+type\s+Root\b/)
-    expect(source).toMatch(/\bexport\s+type\s+Flavour\b/)
+    expect(source).not.toMatch(/\bexport\s+type\s+Flavour\s*=/)
+    expect(source).toMatch(
+      /export\s+type\s*\{\s*FlavourSlug\s+as\s+Flavour\s*\}\s*from\s*'[^']*src\/lib\/theory\/names\.ts'/,
+    )
+    expect(source).not.toMatch(/\bFlavour\b[^\n]*src\/lib\/groove\.ts/)
   })
 })

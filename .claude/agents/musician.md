@@ -77,7 +77,7 @@ master-trim one.
 | Area | Where it lives |
 | :-- | :-- |
 | tempo range, subdivision, swing, flavours, voices, passes, density band, gain, pan, humanize lean and drift of a feel | `templates/<feel>.ts` |
-| scales and modes, chord vocabulary, progression rules, the event-level pitch rule, words-versus-audio validity | `theory/scales.ts`, `theory/harmony.ts`, `theory/pitches.ts`, `theory/notes.ts`, `theory/validity.ts` |
+| scales and modes, chord vocabulary, progression rules, the event-level pitch rule, words-versus-audio validity | `src/lib/theory/names.ts`, `src/lib/theory/scales.ts`, `src/lib/theory/roots.ts`, and `theory/harmony.ts`, `theory/pitches.ts`, `theory/validity.ts` under `scripts/grooves/` |
 | kick, hat, ride, ghost, bongo, bass and comp figures; backbeat, open-hat and rim placement; fills; bass register and behaviour; comp register, voicing and spread | the pattern pools, placement tables and `BASS_*` / `COMP_*` constants in `events.ts` |
 | how note events plus a sample pack become audio — round-robin alternates, velocity layers, note-off and hat choke | `voices.ts` |
 | timing feel, lean, drift | `humanize.ts` and the template's `humanize` block |
@@ -111,9 +111,12 @@ already hold, so proposing one is a decision to escalate, never a tidy-up.
   exact string, drawn in exactly that order. Nothing may be added to the stream —
   new randomness goes on its own labelled stream, which is why the bongos and the
   ride each got one.
-- **The order of `FLAVOURS`.** A seed's flavour draw indexes into it, so
-  reordering re-renders the whole catalogue under unchanged entries. New flavours
-  are appended, never interleaved.
+- **The order of `FLAVOURS`** in `src/lib/theory/names.ts`, and **each
+  template's own `flavours` list**. The draw is `pick(musicRng,
+  template.flavours)` — it indexes the template's own two-mode list, not
+  `FLAVOURS` — so that list is the one that re-renders when it is reordered or
+  edited. `FLAVOURS` is append-only because it is the vocabulary every other
+  list is checked against.
 - **A groove's `uuid`**, minted once into `catalogue.json`. Shared links point at
   it.
 
@@ -134,19 +137,27 @@ carried into the unit's single status file by the implementer who applies it.
 ## The generator's boundary
 
 **`scripts/grooves/` reaches `src/lib/` by relative, extension-bearing path, and
-reaches nothing else in the app.** `src/lib/groove.ts` holds `Groove`, `Root` and
-`Flavour` as the contract between the two halves of the system; gameplay and
-persistence types stay in the app and the generator has never heard of them. The
-relative path is the mechanism: the generator runs under Node's type stripping,
-which resolves no `@/` alias and has no bundler in between.
+reaches nothing else in the app.** Five files are the whole crossing:
+`src/lib/groove.ts` and `src/lib/hash.ts`, plus
+`src/lib/theory/{names,roots,scales}.ts`, which hold the twelve roots, the
+thirteen interval sets and the slug↔display map the app and the generator now
+share. `src/features/daily-groove/` holds the gameplay and persistence types the
+generator has never heard of. The relative path is the mechanism: the generator
+runs under Node's type stripping, which resolves no `@/` alias and has no
+bundler in between.
 
 Two things not to "tidy":
 
-- **`scripts/grooves/types.ts` declares its own `Flavour`, and it is not a
-  duplicate.** The generator's is a union of internal lowercase mode names; the
-  app's is a display string. `displayFlavour()` in `cli.ts` is the single
-  conversion point. Unifying them would be a behaviour change wearing a
-  de-duplication's clothes.
+- **The two flavour types are not a duplicate.** The slug union is
+  `FlavourSlug` in `src/lib/theory/names.ts` — twelve lowercase mode names —
+  and `scripts/grooves/types.ts` re-exports it under the name `Flavour` the
+  generator already uses. The app's `Flavour` in `src/lib/groove.ts` is a
+  display string. `displayFlavour()` in `names.ts` is the single conversion
+  point, and `slugOf()` is its inverse. Collapsing the two, or pointing
+  `types.ts` at `src/lib/groove.ts`'s `Flavour`, would be a behaviour change
+  wearing a de-duplication's clothes: the app's is `string`, so
+  `VALIDITY: Record<Flavour, ValidityRule>` in `theory/validity.ts` would stop
+  being exhaustive.
 - **The manifest's output path is not a crossing.** The generator names the
   file it *writes* as a string in a named constant. That is a write target, not a
   dependency.
@@ -155,6 +166,13 @@ Two things not to "tidy":
 name the app's feature tree, and the literal path may appear only in that one
 named constant. It string-scans every `.ts` under `scripts/`, so a `readFileSync`
 or a `vi.mock` is caught too.
+
+There is **no `index.ts` in `src/lib/theory/`** and none is planned: the
+generator imports `names.ts`, `roots.ts` and `scales.ts` by their own relative
+paths, which is what the leaf rule is for. The app slice has exactly one module
+door, `lib/presentation/index.ts`, and it is on the other side of a boundary you
+never cross. `docs/architecture.md` § *The arrows inside a slice* draws the map
+if you need it.
 
 ## The placement floor
 
@@ -171,7 +189,10 @@ touch.
 3. **`src/lib/` is a leaf: it imports nothing from the app**, and it is the only
    channel `scripts/` has into `src/`. This is your boundary rule stated from the
    other side, and it is why `src/lib/` modules must stay pure, dependency-free
-   and runtime-safe — no enums, no namespaces, no alias imports.
+   and runtime-safe — no enums, no namespaces, no alias imports. What earns a
+   place there is **domain rather than product**: `src/lib/theory/` holds all
+   sixteen theory modules because the subject belongs there, not because the
+   generator calls each one — it calls three.
 4. **A test sits beside the thing it tests** — colocated. A generator module's
    test is its neighbour: `gate.test.ts` beside `gate.ts`,
    `theory/harmony.test.ts` beside `theory/harmony.ts`.

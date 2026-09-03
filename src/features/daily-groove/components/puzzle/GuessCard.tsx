@@ -2,7 +2,8 @@
 
 import { useState } from 'react'
 import type { Flavour, Root } from '../../types'
-import type { Feedback } from '../../lib/presentation/feedback'
+import { guessCardView, type OptionView } from '../../lib/presentation'
+import { usePuzzleSessionContext } from '../../state/PuzzleSessionContext'
 import { NudgeBox } from './NudgeBox'
 import { ModeToggle } from './ModeToggle'
 import { TapSoundsToggle } from './TapSoundsToggle'
@@ -13,80 +14,37 @@ import type { ChipOptionState } from '@/components/controls/ChipGroup'
 import { Heading } from '@/components/typography/Heading'
 import { Stack } from '@/components/layout/Stack'
 
-const optionStatesFor = (
-  options: readonly string[],
-  ruledOut: readonly string[],
-  confirmed: readonly string[],
-): Record<string, ChipOptionState> => {
+const chipStates = (options: readonly OptionView[]) => {
   const states: Record<string, ChipOptionState> = {}
-  const locked = options.filter((option) => confirmed.includes(option))
-  const out =
-    locked.length > 0
-      ? options.filter((option) => !locked.includes(option))
-      : ruledOut
-  for (const option of out) states[option] = { unavailable: true }
+  for (const option of options) {
+    if (option.state === 'out') states[option.value] = { unavailable: true }
+  }
   return states
 }
 
 type GuessCardProps = {
-  roots: Root[]
-  flavours: Flavour[]
-  selectedRoot: Root | null
-  selectedFlavour: Flavour | null
-  onSelectRoot(r: Root): void
   onHearRoot(r: Root): void
-  onSelectFlavour(f: Flavour): void
   onHearMode(f: Flavour): void
-  canCheck: boolean
-  onCheck(): void
-  solved: boolean
-  feedback: Feedback
-  coaching: Feedback
-  showVerdict: boolean
-  showNudge: boolean
-  ruledOutRoots: Root[]
-  ruledOutFlavours: Flavour[]
-  confirmedRoots: Root[]
-  confirmedFlavours: Flavour[]
-  eliminated: number
-  revealed: boolean
-  showReveal: boolean
-  onReveal(): void
-  simple: boolean
-  onToggleSimple(simple: boolean): void
-  tapSounds: boolean
-  onToggleTapSounds(on: boolean): void
 }
 
-export function GuessCard({
-  roots,
-  flavours,
-  selectedRoot,
-  selectedFlavour,
-  onSelectRoot,
-  onHearRoot,
-  onSelectFlavour,
-  onHearMode,
-  canCheck,
-  onCheck,
-  solved,
-  feedback,
-  coaching,
-  showVerdict,
-  showNudge,
-  ruledOutRoots,
-  ruledOutFlavours,
-  confirmedRoots,
-  confirmedFlavours,
-  eliminated,
-  revealed,
-  showReveal,
-  onReveal,
-  simple,
-  onToggleSimple,
-  tapSounds,
-  onToggleTapSounds,
-}: GuessCardProps) {
+export function GuessCard({ onHearRoot, onHearMode }: GuessCardProps) {
+  const { groove, today, session, simple, setSimple, tapSounds, setTapSounds } =
+    usePuzzleSessionContext()
+
+  const view = guessCardView({
+    groove,
+    date: today,
+    answer: session.answer,
+    attempts: session.attempts,
+    selectedRoot: session.selectedRoot,
+    selectedFlavour: session.selectedFlavour,
+    solved: session.solved,
+    revealed: session.revealed,
+    canCheck: session.canCheck,
+    simple,
+    tapSounds,
+  })
+
   const [armed, setArmed] = useState(false)
 
   const disarming =
@@ -95,22 +53,6 @@ export function GuessCard({
       setArmed(false)
       fn(...args)
     }
-
-  const bothChosen = selectedRoot !== null && selectedFlavour !== null
-
-  const over = solved || revealed
-
-  const label = solved
-    ? 'Solved'
-    : bothChosen
-      ? `Check ${selectedRoot} ${selectedFlavour}`
-      : selectedRoot !== null
-        ? 'Pick a mode'
-        : selectedFlavour !== null
-          ? 'Pick a root'
-          : 'Pick a root and a mode'
-
-  const tone = solved ? 'solved' : canCheck && !revealed ? 'ready' : 'idle'
 
   return (
     <Card>
@@ -122,68 +64,63 @@ export function GuessCard({
         <Stack gap="sm">
           <ModeToggle
             simple={simple}
-            onChange={disarming(onToggleSimple)}
-            disabled={over}
+            onChange={disarming(setSimple)}
+            disabled={view.over}
           />
 
-          <TapSoundsToggle
-            on={tapSounds}
-            onChange={disarming(onToggleTapSounds)}
-          />
+          <TapSoundsToggle on={tapSounds} onChange={disarming(setTapSounds)} />
         </Stack>
 
         <ChipGroup
           label="Root"
           name="root"
-          options={roots}
-          value={selectedRoot}
-          onSelect={disarming((option: string) => onSelectRoot(option as Root))}
+          options={view.roots.map((option) => option.value)}
+          value={view.selectedRoot}
+          onSelect={disarming((option: string) =>
+            session.selectRoot(option as Root),
+          )}
           onPress={disarming((option: string) => onHearRoot(option as Root))}
-          disabled={over}
+          disabled={view.over}
           columns={{ base: 4, wide: 6 }}
           adornment={tapSounds ? '♪' : undefined}
-          optionStates={optionStatesFor(roots, ruledOutRoots, confirmedRoots)}
+          optionStates={chipStates(view.roots)}
         />
 
         <ChipGroup
           label="Mode"
           name="flavour"
-          options={flavours}
-          value={selectedFlavour}
+          options={view.flavours.map((option) => option.value)}
+          value={view.selectedFlavour}
           onSelect={disarming((option: string) =>
-            onSelectFlavour(option as Flavour),
+            session.selectFlavour(option as Flavour),
           )}
           onPress={disarming((option: string) => onHearMode(option as Flavour))}
-          disabled={over}
+          disabled={view.over}
           columns={{ base: 2, wide: 4 }}
           adornment={tapSounds ? '♪' : undefined}
-          optionStates={optionStatesFor(
-            flavours,
-            ruledOutFlavours,
-            confirmedFlavours,
-          )}
+          optionStates={chipStates(view.flavours)}
         />
 
         <Button
-          onPress={disarming(onCheck)}
-          disabled={!canCheck || revealed}
-          tone={tone}
+          onPress={disarming(session.check)}
+          disabled={!view.check.enabled}
+          tone={view.check.tone}
           size="lg"
         >
-          {label}
+          {view.check.label}
         </Button>
 
-        {!over && (
+        {view.hint.show && (
           <NudgeBox
-            feedback={showVerdict ? feedback : null}
-            coaching={coaching}
-            eliminated={showNudge ? eliminated : null}
+            feedback={view.hint.feedback}
+            coaching={view.hint.coaching}
+            eliminated={view.hint.eliminated}
           />
         )}
 
-        {showReveal && !revealed && (
+        {view.giveUp && (
           <Button
-            onPress={armed ? onReveal : () => setArmed(true)}
+            onPress={armed ? session.reveal : () => setArmed(true)}
             disabled={false}
             tone="idle"
           >

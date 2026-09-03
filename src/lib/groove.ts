@@ -30,3 +30,13 @@ export type Groove = {
   loopBars?: number
   headDelaySeconds: number
 }
+
+export type Answer = { root: Root; flavour: Flavour }
+
+export type Attempt = {
+  root: Root
+  flavour: Flavour
+  correct: boolean
+  rootMatched: boolean
+  flavourMatched: boolean
+}

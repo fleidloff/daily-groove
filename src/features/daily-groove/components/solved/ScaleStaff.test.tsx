@@ -3,7 +3,7 @@ import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { cleanup, render, screen } from '@testing-library/react'
 import { ScaleStaff } from './ScaleStaff'
-import type { StaffNote } from '../../lib/theory/staff'
+import type { StaffNote } from '@/lib/theory/staff'
 
 function fixture(...pairs: [step: number, accidental: string][]): StaffNote[] {
   return pairs.map(([step, accidental]) => ({ step, accidental }))
@@ -873,7 +873,7 @@ describe('ScaleStaff', () => {
         source.matchAll(/(?:from|import|require)\s*\(?\s*'([^']+)'/g),
         (match) => match[1],
       )
-      expect(specifiers).toEqual(['../../lib/theory/staff'])
+      expect(specifiers).toEqual(['@/lib/theory/staff'])
 
       for (const forbidden of [
         'degrees',

@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import type { Groove } from '../../src/lib/groove.ts'
 import { renderManifest, writeManifest } from './manifest.ts'
 import { allTemplates } from './templates/index.ts'
-import { displayFlavour } from './cli.ts'
+import { displayFlavour } from '../../src/lib/theory/names.ts'
 
 const ENTRY: Groove = {
   id: 'groove-01',

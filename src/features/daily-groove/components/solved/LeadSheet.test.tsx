@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { render, screen, within } from '@testing-library/react'
 import { LeadSheet } from './LeadSheet'
 import { GROOVES } from '../../data/grooves.generated'
-import { barChords } from '../../lib/theory/changes'
+import { barChords } from '@/lib/theory/changes'
 
 const CHANGES = ['C7', 'Em7♭5', 'B♭maj7', 'Fmaj7']
 

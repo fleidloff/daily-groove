@@ -1,7 +1,7 @@
 import type { Answer, Attempt } from '../../types'
-import { FAMILIES } from '../theory/families'
-import { degreeDifferences, type DegreeDifference } from '../theory/difference'
-import { FLAVOUR_INTERVALS } from '../theory/notes'
+import { FAMILIES } from '@/lib/theory/families'
+import { degreeDifferences, type DegreeDifference } from '@/lib/theory/difference'
+import { FLAVOUR_INTERVALS } from '@/lib/theory/scales'
 
 const NOTE_COUNT: Record<number, string> = {
   1: 'one note',

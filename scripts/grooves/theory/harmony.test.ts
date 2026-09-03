@@ -3,8 +3,9 @@ import type { Root } from '../../../src/lib/groove.ts'
 import type { Flavour, MusicMeta } from '../types.ts'
 import { rngFor } from '../rng.ts'
 import { buildHarmony, chordNameFor, pitchClassesOf } from './harmony.ts'
-import { FLAVOURS, intervalsFor, pitchesOf, scaleName } from './scales.ts'
-import { ROOTS, pitchClassOf } from './notes.ts'
+import { FLAVOURS } from '../../../src/lib/theory/names.ts'
+import { intervalsFor, pitchesOf, scaleName } from '../../../src/lib/theory/scales.ts'
+import { ROOTS, pitchClassOf } from '../../../src/lib/theory/roots.ts'
 import { VALIDITY, isValidHarmony, scaleDegreePitchClasses } from './validity.ts'
 
 function pitchClassesOfMidi(midi: number[]): number[] {

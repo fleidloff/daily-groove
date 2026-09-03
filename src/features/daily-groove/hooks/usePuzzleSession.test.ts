@@ -19,8 +19,9 @@ import {
   createReadOnlyStore,
   type ResultStore,
 } from '../lib/persistence/storage'
-import { flavourOptions } from '../lib/theory/music'
-import { isoDate } from '../lib/puzzle/selectGroove'
+import { flavourOptions } from '@/lib/theory/music'
+import { isoDate } from '@/lib/date'
+import { GROOVES } from '../data/grooves.generated'
 
 const GROOVE: Groove = {
   id: 'groove-01',
@@ -41,7 +42,7 @@ const DAY = new Date(2026, 7, 29, 12, 0, 0)
 const TODAY = () => isoDate(DAY)
 const YESTERDAY = () => isoDate(new Date(2026, 7, 28, 12, 0, 0))
 
-const flavours = () => flavourOptions(DAY, GROOVE)
+const flavours = () => flavourOptions(DAY, GROOVE, GROOVES)
 const wrongFlavour = () => flavours().find((f) => f !== 'Minor') as string
 const otherWrongFlavour = () =>
   flavours().filter((f) => f !== 'Minor' && f !== wrongFlavour())[0]

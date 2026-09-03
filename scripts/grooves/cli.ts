@@ -2,6 +2,7 @@ import { existsSync, mkdirSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import type { Groove } from '../../src/lib/groove.ts'
+import { displayFlavour } from '../../src/lib/theory/names.ts'
 import { CATALOGUE_PATH, readCatalogue } from './catalogue.ts'
 import { encodeMp3 } from './encode.ts'
 import { buildEvents } from './events.ts'
@@ -27,11 +28,6 @@ export const DEFAULT_MANIFEST_PATH = join(
 export const DEFAULT_LOCK_PATH = join(HERE, 'grooves.lock.json')
 export const SAMPLE_RATE = 44100
 export const OVERHANG_BARS = 1
-
-export function displayFlavour(flavour: string): string {
-  const words = flavour.replace(/-/g, ' ')
-  return words.charAt(0).toUpperCase() + words.slice(1)
-}
 
 export function toGroove(
   spec: GrooveSpec,

@@ -1,5 +1,5 @@
 import type { DailyResult } from '../../types'
-import { parseIsoDate } from '../puzzle/selectGroove'
+import { parseIsoDate } from '@/lib/date'
 
 const MS_PER_DAY = 86_400_000
 

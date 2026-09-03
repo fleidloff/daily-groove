@@ -9,7 +9,7 @@ import {
   type BeatSource,
 } from './beat'
 import { GROOVES } from '../../data/grooves.generated'
-import { loopSecondsOf } from '../theory/music'
+import { loopSecondsOf } from '@/lib/theory/music'
 
 function fakeSource(startTime: number | null = null) {
   const listeners = new Set<() => void>()

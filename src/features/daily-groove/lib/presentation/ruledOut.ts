@@ -1,6 +1,6 @@
 import type { Answer, Attempt, Flavour, Root } from '../../types'
 import { eliminatedRoots } from '../puzzle/narrowing'
-import { isoDate } from '../puzzle/selectGroove'
+import { isoDate } from '@/lib/date'
 
 export type RuledOut = {
   roots: Root[]

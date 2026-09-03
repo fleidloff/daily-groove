@@ -1,8 +1,20 @@
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
+import type { Flavour, Root } from '@/lib/groove'
+import { isoDate } from '@/lib/date'
+import { BAR_COUNT, barChords } from '@/lib/theory/changes'
+import {
+  answerOf,
+  flavourOptions,
+  flavourPool,
+  loopSecondsOf,
+} from '@/lib/theory/music'
+import { scaleNotes } from '@/lib/theory/notes'
+import { ROOTS } from '@/lib/theory/roots'
+import { STAFF_FLOOR_STEP, staffNotes } from '@/lib/theory/staff'
 import { GROOVES } from './grooves.generated'
-import { isoDate, selectGrooveForDate } from '../lib/puzzle/selectGroove'
+import { selectGrooveForDate } from '../lib/puzzle/selectGroove'
 
 const PUBLIC = join(process.cwd(), 'public')
 const SRC = join(process.cwd(), 'src')
@@ -178,7 +190,7 @@ describe('the answer comes from its own fields, never from the scale string', ()
 
 describe('every groove in the catalogue can be spelled', () => {
   it('has an interval entry for every flavour the catalogue uses', async () => {
-    const { scaleNotes } = await import('../lib/theory/notes')
+    const { scaleNotes } = await import('@/lib/theory/notes')
     for (const g of GROOVES) {
       expect(
         () => scaleNotes({ root: g.root, flavour: g.flavour }),
@@ -188,12 +200,12 @@ describe('every groove in the catalogue can be spelled', () => {
   })
 
   it('spells the blues scale with its flat fifth and natural fifth', async () => {
-    const { scaleNotes } = await import('../lib/theory/notes')
+    const { scaleNotes } = await import('@/lib/theory/notes')
     expect(scaleNotes({ root: 'C', flavour: 'Blues' })).toEqual(['C', 'E♭', 'F', 'G♭', 'G', 'B♭'])
   })
 
   it('spells harmonic minor with its raised seventh', async () => {
-    const { scaleNotes } = await import('../lib/theory/notes')
+    const { scaleNotes } = await import('@/lib/theory/notes')
     expect(scaleNotes({ root: 'A', flavour: 'Harmonic minor' })).toEqual([
       'A', 'B', 'C', 'D', 'E', 'F', 'G♯',
     ])
@@ -217,8 +229,8 @@ describe('the changes of every groove read as degrees', () => {
   })
 
   it('names a numeral in all four bars of every groove', async () => {
-    const { barNumerals } = await import('../lib/theory/numerals')
-    const { barChords, BAR_COUNT } = await import('../lib/theory/changes')
+    const { barNumerals } = await import('@/lib/theory/numerals')
+    const { barChords, BAR_COUNT } = await import('@/lib/theory/changes')
     const NUMERAL = /^[♭♯]{0,2}(I|II|III|IV|V|VI|VII)$/
 
     for (const g of GROOVES) {
@@ -251,7 +263,7 @@ describe('the catalogue is a real rotation', () => {
   })
 
   it('carries every mode its own family table can grade', async () => {
-    const { familyOf } = await import('../lib/theory/families')
+    const { familyOf } = await import('@/lib/theory/families')
     for (const g of GROOVES) {
       expect(() => familyOf(g.flavour), `${g.id} (${g.flavour}) cannot be graded`).not.toThrow()
     }
@@ -325,4 +337,124 @@ describe('the answers feature-9 must not move', () => {
       }).toEqual({ ...pinned })
     },
   )
+})
+
+describe('over the shipped catalogue', () => {
+  it('covers all 30 catalogued grooves', () => {
+    expect(GROOVES).toHaveLength(30)
+  })
+
+  it.each(GROOVES.map((groove) => [groove.id, groove] as const))(
+    'maps %s to four non-empty bars headed by its tonic chord',
+    (_id, groove) => {
+      const bars = barChords(groove.progression)
+      expect(bars).toHaveLength(BAR_COUNT)
+      expect(bars).not.toContain('')
+      expect(bars[0]).toBe(groove.chord)
+    },
+  )
+})
+
+const steps = (root: Root, flavour: Flavour) =>
+  staffNotes(scaleNotes({ root, flavour })).map((n) => n.step)
+
+describe('STAFF_FLOOR_STEP', () => {
+  it('holds for every groove the shipped manifest can play', () => {
+    expect(GROOVES.length).toBeGreaterThan(0)
+
+    for (const groove of GROOVES) {
+      const label = `${groove.id} — ${groove.root} ${groove.flavour}`
+      const lowest = Math.min(...steps(groove.root, groove.flavour))
+
+      expect(lowest, label).toBeGreaterThanOrEqual(STAFF_FLOOR_STEP)
+    }
+  })
+})
+
+describe('every groove in the catalogue', () => {
+  it.each(GROOVES.map((g) => [g.id, g] as const))(
+    '%s answers to a known root and a non-empty flavour',
+    (_id, groove) => {
+      const answer = answerOf(groove)
+      expect(ROOTS).toContain(answer.root)
+      expect(answer.flavour.length).toBeGreaterThan(0)
+    },
+  )
+})
+
+describe('the flavour pool over the shipped catalogue', () => {
+  it('is exactly the set of flavours the catalogue actually uses', () => {
+    const used = GROOVES.map((g) => g.flavour)
+    expect(flavourPool(GROOVES)).toEqual([...new Set(used)].sort())
+  })
+
+  it('omits a flavour no groove uses', () => {
+    expect(flavourPool(GROOVES)).not.toContain('Whole tone')
+  })
+
+  it('has no duplicates', () => {
+    const pool = flavourPool(GROOVES)
+    expect(new Set(pool).size).toBe(pool.length)
+  })
+
+  it('widens automatically when a groove uses a new flavour', () => {
+    const extra = { ...GROOVES[0], id: 'extra', scale: 'C whole tone', flavour: 'Whole tone' }
+    expect(flavourPool(GROOVES)).not.toContain('Whole tone')
+    expect(flavourPool([...GROOVES, extra])).toContain('Whole tone')
+  })
+
+  it('carries exactly the twelve flavours the theory module names (F20 E1 R4)', async () => {
+    const { FLAVOURS, displayFlavour } = await import('@/lib/theory/names')
+    expect(flavourPool(GROOVES)).toEqual(FLAVOURS.map(displayFlavour).sort())
+  })
+})
+
+describe("today's options, as the page resolves them", () => {
+  it("offers today's deterministic flavour options, including the answer", () => {
+    const today = new Date();
+    const groove = selectGrooveForDate(today, GROOVES);
+    const expected = flavourOptions(today, groove, GROOVES);
+
+    expect(expected).toContain(groove.flavour);
+  })
+})
+
+describe('loopSecondsOf', () => {
+  it('is positive and finite for every groove in the catalogue', () => {
+    for (const groove of GROOVES) {
+      const seconds = loopSecondsOf(groove)
+      expect(Number.isFinite(seconds)).toBe(true)
+      expect(seconds).toBeGreaterThan(0)
+    }
+  })
+})
+
+describe('the rotation is the generated catalogue', () => {
+  it('drops nothing the real catalogue carries (R7)', () => {
+    expect(flavourPool(GROOVES)).toHaveLength(
+      new Set(GROOVES.map((g) => g.flavour)).size,
+    )
+  })
+
+  it("keeps the day's row at four options including the answer (R9, AC2)", () => {
+    for (let i = 0; i < 40; i++) {
+      const date = new Date(2026, 0, 1 + i)
+      const groove = GROOVES[i % GROOVES.length]
+      const options = flavourOptions(date, groove, GROOVES)
+
+      expect(options).toHaveLength(4)
+      expect(options).toContain(groove.flavour)
+      expect(new Set(options).size).toBe(4)
+    }
+  })
+
+  it('is stable across repeated calls for the same date (R9, AC2)', () => {
+    const date = new Date(2026, 8, 14)
+    const groove = GROOVES[5]
+    const first = flavourOptions(date, groove, GROOVES)
+
+    for (let i = 0; i < 5; i++) {
+      expect(flavourOptions(date, groove, GROOVES)).toEqual(first)
+    }
+  })
 })

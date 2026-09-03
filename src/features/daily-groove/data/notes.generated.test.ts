@@ -3,7 +3,7 @@ import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { NOTES, PITCHES } from './notes.generated'
 import { GROOVES } from './grooves.generated'
-import { ROOTS } from '../lib/theory/music'
+import { ROOTS } from '@/lib/theory/roots'
 
 const PUBLIC = join(process.cwd(), 'public')
 

@@ -17,10 +17,10 @@ import {
 } from './events.ts'
 import { intBetween, pick, rngFor } from './rng.ts'
 import { readCatalogue } from './catalogue.ts'
-import { ROOTS } from './theory/notes.ts'
+import { ROOTS } from '../../src/lib/theory/roots.ts'
 import { allTemplates, templateById } from './templates/index.ts'
 import { buildHarmony, pitchClassesOf } from './theory/harmony.ts'
-import { pitchesOf, scaleName } from './theory/scales.ts'
+import { pitchesOf, scaleName } from '../../src/lib/theory/scales.ts'
 import { offScalePitches } from './theory/pitches.ts'
 
 const template = templateById('straight-funk')

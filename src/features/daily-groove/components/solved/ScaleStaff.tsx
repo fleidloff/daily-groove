@@ -1,4 +1,4 @@
-import { STAFF_FLOOR_STEP, type StaffNote } from '../../lib/theory/staff'
+import { STAFF_FLOOR_STEP, type StaffNote } from '@/lib/theory/staff'
 
 type ScaleStaffProps = {
   notes: StaffNote[]

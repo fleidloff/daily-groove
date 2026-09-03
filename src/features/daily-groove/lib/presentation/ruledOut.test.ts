@@ -1,13 +1,69 @@
 import { describe, it, expect } from 'vitest'
 import type { Attempt, Flavour, Root } from '../../types'
-import { ROOTS, simpleRootOptions } from '../theory/music'
-import { ELIMINATED_PER_MISS } from '../puzzle/narrowing'
+import { ROOTS } from '@/lib/theory/roots'
+import { simpleRootOptions } from '@/lib/theory/music'
+import { ELIMINATED_PER_MISS, eliminatedRoots } from '../puzzle/narrowing'
 import { ruledOut } from './ruledOut'
 
 const DATE = new Date(2026, 8, 2, 12, 0, 0, 0)
+const SEED = '2026-09-02'
+const OTHER_DATE = new Date(2026, 0, 1, 12, 0, 0, 0)
+const OTHER_SEED = '2026-01-01'
 const ANSWER = { root: 'C' as Root, flavour: 'Dorian' as Flavour }
 
 const MODES = ['Mixolydian', 'Aeolian', 'Ionian', 'Lydian']
+const SHAPED_MODES = ['Dorian', 'Mixolydian', 'Aeolian', 'Ionian']
+
+type Shape = 'wrong' | 'right' | 'mixed'
+
+function dimmedAfter(
+  attempts: Attempt[],
+  answer: Root,
+  pool: readonly Root[],
+  seed: string,
+): Set<Root> {
+  return new Set<Root>([
+    ...eliminatedRoots(pool, answer, attempts, seed),
+    ...attempts.filter((a) => a.rootMatched === false).map((a) => a.root),
+  ])
+}
+
+function playShaped(
+  count: number,
+  answer: Root,
+  pool: readonly Root[] = ROOTS,
+  seed: string = SEED,
+  shape: Shape = 'wrong',
+): Attempt[] {
+  const attempts: Attempt[] = []
+  const wrong = pool.filter((root) => root !== answer)
+
+  for (let index = 0; index < count; index++) {
+    const rootRight = shape === 'right' || (shape === 'mixed' && index % 2 === 1)
+    if (rootRight) {
+      attempts.push({
+        root: answer,
+        flavour: SHAPED_MODES[index % SHAPED_MODES.length],
+        correct: false,
+        rootMatched: true,
+        flavourMatched: false,
+      })
+      continue
+    }
+
+    const dimmed = dimmedAfter(attempts, answer, pool, seed)
+    const live = wrong.filter((root) => !dimmed.has(root))
+    attempts.push({
+      root: live[0] ?? wrong[index % wrong.length],
+      flavour: SHAPED_MODES[index % SHAPED_MODES.length],
+      correct: false,
+      rootMatched: false,
+      flavourMatched: false,
+    })
+  }
+
+  return attempts
+}
 
 function play(
   count: number,
@@ -198,5 +254,40 @@ describe('ruledOut', () => {
 
     expect(roots).toEqual(ROOTS)
     expect(JSON.stringify(attempts)).toBe(before)
+  })
+
+  describe('the answer is never a candidate (R7, AC8)', () => {
+    const CASES: { date: Date; seed: string }[] = [
+      { date: DATE, seed: SEED },
+      { date: OTHER_DATE, seed: OTHER_SEED },
+    ]
+
+    it.each(ROOTS)('never eliminates %s when it is the day’s answer', (root) => {
+      for (const { date, seed } of CASES) {
+        const pools: readonly Root[][] = [
+          ROOTS,
+          simpleRootOptions(date, { root, flavour: 'Dorian' }),
+        ]
+
+        for (const pool of pools) {
+          const shapes = [
+            playShaped(8, root, pool, seed, 'wrong'),
+            playShaped(8, root, pool, seed, 'right'),
+            playShaped(8, root, pool, seed, 'mixed'),
+          ]
+
+          for (const attempts of shapes) {
+            expect(
+              ruledOut({
+                attempts,
+                answer: { root, flavour: 'Dorian' },
+                roots: pool,
+                date,
+              }).roots,
+            ).not.toContain(root)
+          }
+        }
+      }
+    })
   })
 })

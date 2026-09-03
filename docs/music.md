@@ -55,7 +55,8 @@ CC0. See `scripts/grooves/samples/README.md`.
 
 ## Scales: the twelve flavours
 
-`FLAVOURS` and `INTERVALS` in `theory/scales.ts`.
+`FLAVOURS` in `src/lib/theory/names.ts` and `INTERVALS` in
+`src/lib/theory/scales.ts`.
 
 | Flavour | Semitones | Third |
 | :-- | :-- | :-- |
@@ -72,18 +73,29 @@ CC0. See `scripts/grooves/samples/README.md`.
 | phrygian-dominant | 0 1 4 5 7 8 10 | major |
 | harmonic-major | 0 2 4 5 7 8 11 | major |
 
+`INTERVALS` carries **thirteen** scales. The thirteenth is locrian, and it is
+the app's: it is spelled, quizzed and drawn on the staff, but never rendered. It
+is absent from `FLAVOURS` for the reason constraint 1 gives.
+
 Three constraints govern this list, and a new flavour has to satisfy all three:
 
-1. **Every scale must contain a perfect fifth.** Without one, `chordsForScale`
-   finds no quality the scale wholly contains, `buildHarmony` throws, and the
-   groove cannot state its own harmony. Locrian and the symmetric scales fail
-   here, which is why they are absent.
+1. **Every scale must contain a perfect fifth.** A tonic without one cannot
+   state itself. The best chord `chordsForScale` can name on a locrian tonic is
+   `m7♭5` — a half-diminished the ear hears as somebody else's ii — so a groove
+   in it never establishes the key its own words claim. This is a musical
+   exclusion, not a mechanical one: nothing throws. What keeps locrian out of
+   the render is the twelve-member `FlavourSlug` union and the fact that no
+   template names it.
 2. **Six major thirds, six minor.** The app's simple mode grades by family, so
    an uneven split would make one answer the better blind guess — exactly the
    elimination strategy the wider pool defeats.
-3. **The order is frozen.** A seed's flavour draw indexes into `FLAVOURS`, so
-   reordering it re-renders the whole catalogue under unchanged entries. New
-   flavours are appended, never interleaved.
+3. **The order is frozen.** New flavours are appended, never interleaved. The
+   draw is `pick(musicRng, template.flavours)` — it indexes the template's own
+   two-mode list, not `FLAVOURS` — so what re-renders is reordering or editing a
+   template's `flavours`, which re-rolls that feel's mode for every seed on it.
+   `FLAVOURS` stays append-only because it is the declared vocabulary that the
+   app's derived `FLAVOUR_INTERVALS`, every twelve-ness test and any future draw
+   are graded against.
 
 `blues` is the awkward one by design: six notes, not seven, so anything that
 assumes seven degrees has to cope.
@@ -301,7 +313,10 @@ already hold.
   the bongos and the ride each got one — inserting a draw into `rhythmRng` would
   have re-rolled the rhythm of all thirty grooves, including the feels that play
   neither voice.
-- **The order of `FLAVOURS`.**
+- **The order of `FLAVOURS`** in `src/lib/theory/names.ts`, and **each
+  template's own `flavours` list**. The draw indexes the template's list, so
+  that is the one that re-renders; `FLAVOURS` is append-only because it is the
+  vocabulary every other list is checked against.
 - **A groove's `uuid`**, minted once into `catalogue.json`. Links point at it.
 
 `grooves.lock.json` and `npm run grooves:verify` (which runs on `prebuild`) exist
@@ -313,7 +328,7 @@ to catch a violation.
 | :-- | :-- |
 | tempo, swing, voices, passes, density, gain, pan of a feel | `templates/<feel>.ts` |
 | which modes a feel carries | `templates/<feel>.ts` → `flavours` |
-| add a mode | `theory/scales.ts` (append only), `theory/validity.ts` |
+| add a mode | `src/lib/theory/names.ts` (append only), `src/lib/theory/scales.ts`, `theory/validity.ts`, and one template's `flavours` |
 | chord vocabulary or progression rules | `theory/harmony.ts` |
 | kick / hat / bass / ghost / bongo / comp figures | pattern pools in `events.ts` |
 | backbeat, open hat, rim placement | `DEFAULT_PLACEMENT` / `PLACEMENTS` in `events.ts` |

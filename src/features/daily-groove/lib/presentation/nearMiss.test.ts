@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import { selectNearMiss } from './nearMiss'
-import { degreeDifferences } from '../theory/difference'
-import { FAMILIES, familyOf } from '../theory/families'
-import { UnknownFlavourError } from '../theory/notes'
+import { degreeDifferences } from '@/lib/theory/difference'
+import { FAMILIES, familyOf } from '@/lib/theory/families'
+import { UnknownFlavourError } from '@/lib/theory/notes'
 import { GROOVES } from '../../data/grooves.generated'
 import type { Answer, Attempt, Flavour, Root } from '../../types'
 

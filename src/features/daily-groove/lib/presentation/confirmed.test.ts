@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import type { Answer, Attempt } from '../../types'
-import { FAMILIES, familyOf } from '../theory/families'
-import { ROOTS } from '../theory/music'
+import { FAMILIES, familyOf } from '@/lib/theory/families'
+import { ROOTS } from '@/lib/theory/roots'
 import { exactMatch, familyMatch, scoreAttempt } from '../puzzle/scoring'
 import { confirmedHalves } from './confirmed'
 

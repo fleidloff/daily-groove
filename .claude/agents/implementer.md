@@ -32,9 +32,10 @@ Six rules that hold no matter what you are building.
    generator reaches `src/lib/` by relative, extension-bearing path under Node's
    type stripping, which resolves no `@/` alias, so one alias import inside
    `src/lib/` breaks the generator. A module earns a place there only if it is
-   pure, dependency-free, runtime-safe TypeScript (no enums, namespaces,
-   decorators or `@/` imports) and genuinely shared across the app/generator
-   boundary.
+   pure, dependency-free of app code, runtime-safe TypeScript (no enums,
+   namespaces, decorators or `@/` imports), and **domain rather than product** —
+   knowledge that would still be true if this product did not exist. Two callers
+   across the app/generator boundary is sufficient evidence, not the test.
 4. **A test sits beside the thing it tests.** Colocation is the rule; a test file
    lives next to its subject, in the folder that owns that subject.
 5. **The import boundaries bind test files exactly as they bind source.** No
@@ -46,7 +47,7 @@ Six rules that hold no matter what you are building.
    builds. Before you finish, ask whether `rm -rf` of the slice would still give
    a clean build. If not, something leaked.
 
-## The five lint zones
+## The eight lint zones
 
 All of them are one ESLint rule, `import/no-restricted-paths`, configured as an
 error in `eslint.config.mjs`. An arrow not drawn below is an error.
@@ -65,10 +66,23 @@ scripts/grooves/ → src/lib/
 | 3 | target the sibling features, from a slice, no `except` | no feature imports another |
 | 4 | target `src/lib`, from features and components | `src/lib/` is a leaf |
 | 5 | target `scripts`, from features and components, no `except` | `src/lib/` is the generator's only channel |
+| 6 | target `F/lib`, from `src/components`, `F/components`, `F/hooks`, `F/state` | no `lib/` module imports UI, a hook or the store |
+| 7 | target `F/lib/audio`, from coaching, puzzle, persistence | audio imports neither coaching nor the puzzle module |
+| 8 | target `F/lib/puzzle` and `F/lib/persistence`, from coaching, audio | the puzzle module imports neither coaching nor audio |
 
-Zones 2 and 3 are generated from the feature list, so a new slice inherits both
-with no config edit. Zone 5 deliberately has no `except`: `scripts/` cannot reach
-a feature even through its index.
+`F` is `src/features/daily-groove`. Zones 2 and 3 are generated from the feature
+list, so a new slice inherits both with no config edit. Zone 5 deliberately has
+no `except`: `scripts/` cannot reach a feature even through its index. Zones 6–8
+are the only ones with `target` and `from` both inside one slice; the graph they
+encode is drawn in `docs/architecture.md` § *The arrows inside a slice*.
+
+**One rule there is not a zone.** `components/GroovePuzzle.tsx` must reach
+coaching only through `lib/presentation/index.ts` — the slice's one module
+door — and never a module inside that folder. Lint cannot express it, because the
+composer and the door sit in the same `target`; the "holds the shell to the door"
+case in `src/features/daily-groove/structure.test.ts` reads the file from disk
+instead. The other four concern folders have no `index.ts`, so the composer
+imports their modules directly and that is correct, not a violation to fix.
 
 Lint reads import and require specifiers only. It cannot see a path string, a
 `readFileSync`, a `vi.mock` or a dynamic import — which is why
@@ -109,10 +123,15 @@ it.
 A feature separates concerns by folder: `components/`, `hooks/`, `state/`,
 `data/`, `lib/`, with `types.ts` and `index.ts` at the root.
 
-- **`lib/` holds business logic only**, split by concern — `theory/`, `puzzle/`,
-  `persistence/`, `presentation/`, `audio/`, `share/`. A module that fits none of
-  them is a signal, not an exception: it is either two modules, or it belongs in
+- **`lib/` holds business logic only**, split by concern — `puzzle/`,
+  `persistence/`, `presentation/`, `audio/`, `share/`. There is no `theory/`:
+  feature-20 moved it to `src/lib/theory/`. A module that fits none of the five
+  is a signal, not an exception: it is either two modules, or it belongs in
   `state/` or `data/`.
+- **`lib/presentation/index.ts` is the slice's one module door.** It exports the
+  names its consumers use, by name, never `export *`, and a structural test fails
+  on an export nobody imports. Adding an export before its consumer is expected —
+  add the consumer in the same change.
 - **`hooks/` holds only genuine hooks** — modules that call React hooks and are
   called during render. A `use` prefix is not the test; calling React hooks is. A
   vanilla store factory belongs in `state/`.
@@ -138,6 +157,8 @@ A feature separates concerns by folder: `components/`, `hooks/`, `state/`,
   sideways `../lib/` imports means logic that belongs behind a seam. Extract along
   seams the tests are already organised around — if the existing assertions have
   to be rewritten to fit the new shape, the split has become a redesign.
+  `GroovePuzzle.tsx` is the file this grew in, and it grew back twice: 362 lines,
+  cut to 288, then 488 and 750. Only its coaching imports are guarded.
 - **`src/lib/hash.ts` is frozen.** Editing it is a re-release, not a refactor: it
   seeds the generator's RNG *and* picks the player's groove of the day, so one
   changed character reassigns every past date a different puzzle. When

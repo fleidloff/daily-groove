@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import type { Answer } from '../../types'
-import { FAMILIES, familyOf } from '../theory/families'
+import { FAMILIES, familyOf } from '@/lib/theory/families'
 import { exactMatch, familyMatch, scoreAttempt } from './scoring'
 
 const ANSWER: Answer = { root: 'G', flavour: 'Dorian' }

@@ -1,5 +1,5 @@
 import type { Answer, Attempt, Flavour } from '../../types'
-import { familyOf } from '../theory/families'
+import { familyOf } from '@/lib/theory/families'
 
 export type FlavourMatcher = (answer: Flavour, guess: Flavour) => boolean
 

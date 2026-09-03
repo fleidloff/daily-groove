@@ -12,8 +12,8 @@ import {
   familyMatch,
   type FlavourMatcher,
 } from '../lib/puzzle/scoring'
-import { answerOf } from '../lib/theory/music'
-import { isoDate } from '../lib/puzzle/selectGroove'
+import { answerOf } from '@/lib/theory/music'
+import { isoDate } from '@/lib/date'
 import { useProgress } from './useProgress'
 import type { ResultStore } from '../lib/persistence/storage'
 

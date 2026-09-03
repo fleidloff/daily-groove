@@ -1,13 +1,20 @@
 import type { ReactElement } from 'react'
-import { vi, type Mock } from 'vitest'
-import { act, render, screen, within } from '@testing-library/react'
+import { expect, vi, type Mock } from 'vitest'
+import { act, render, screen, waitFor, within } from '@testing-library/react'
 import type userEvent from '@testing-library/user-event'
-import type { Attempt, Groove, Root } from '../types'
-import { flavourOptions } from '../lib/theory/music'
-import { isoDate } from '../lib/puzzle/selectGroove'
+import type { Answer, Attempt, DailyResult, Groove, Root } from '../types'
+import { flavourOptions } from '@/lib/theory/music'
+import { isoDate } from '@/lib/date'
+import { GROOVES } from '../data/grooves.generated'
+import { createLocalStore } from '../lib/persistence/storage'
+import {
+  createLocalPreferenceStore,
+  type Preferences,
+} from '../lib/persistence/preferences'
 import {
   installFakeAudioContext,
   type FakeContext,
+  type FakeSourceNode,
 } from './fakeAudioContext'
 
 export const GROOVE: Groove = {
@@ -27,7 +34,9 @@ export const GROOVE: Groove = {
 
 export const CHANGES_READ = 'Cm · Fm · G7 · Cm'
 
-export const flavours = () => flavourOptions(new Date(), GROOVE)
+export const ANSWER: Answer = { root: 'C', flavour: 'Aeolian' }
+
+export const flavours = () => flavourOptions(new Date(), GROOVE, GROOVES)
 export const wrongFlavour = () => flavours().find((f) => f !== 'Aeolian') as string
 export const otherWrongFlavour = () =>
   flavours().filter((f) => f !== 'Aeolian' && f !== wrongFlavour())[0]
@@ -37,6 +46,31 @@ export const thirdWrongFlavour = () =>
   )[0]
 
 export const TODAY = () => isoDate(new Date())
+
+export function clearStored(): void {
+  localStorage.clear()
+}
+
+export function storedDay(over: Partial<DailyResult> = {}): DailyResult {
+  return {
+    date: TODAY(),
+    answer: ANSWER,
+    attempts: [],
+    solved: false,
+    grooveId: GROOVE.id,
+    ...over,
+  }
+}
+
+export async function seedDay(result: DailyResult): Promise<void> {
+  await createLocalStore().save(result)
+}
+
+export async function seedPreferences(
+  patch: Partial<Preferences>,
+): Promise<void> {
+  await createLocalPreferenceStore().update(patch)
+}
 
 export function miss(root: Root, flavour: string, rootMatched: boolean): Attempt {
   return { root, flavour, correct: false, rootMatched, flavourMatched: false }
@@ -105,6 +139,14 @@ export function installPuzzleAudio(): { fake: FakeContext; frame: () => void } {
 export function teardownPuzzleAudio(): void {
   vi.unstubAllGlobals()
 }
+
+export const soundedNotes = async (count: number) => {
+  await waitFor(() => expect(fake.sources).toHaveLength(count))
+  return fake.sources
+}
+
+export const startedAt = (node: FakeSourceNode) =>
+  (node.start.mock.calls[0] as [number])[0]
 
 export const loopFraction = (fraction: number) => GROOVE_LOOP_SECONDS * fraction
 

@@ -1,7 +1,7 @@
 import type { Root } from '../../../src/lib/groove.ts'
 import type { Flavour } from '../types.ts'
-import { ROOTS, pitchClassOf } from './notes.ts'
-import { intervalsFor, pitchesOf } from './scales.ts'
+import { ROOTS, pitchClassOf } from '../../../src/lib/theory/roots.ts'
+import { intervalsFor, pitchesOf } from '../../../src/lib/theory/scales.ts'
 
 const CHORD_OCTAVE = 4
 

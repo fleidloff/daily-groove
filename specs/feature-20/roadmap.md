@@ -11,7 +11,7 @@ ever implied: one body of music theory both halves of the system share, one door
 into the coaching modules, and a written module map with lint behind it.
 
 A fourth epic — every word the app says, gathered into one file — was cut and
-moved to [feature-b](../feature-b/), where translation pays for the same sweep.
+moved to [feature-21](../feature-21/), where translation pays for the same sweep.
 Its settled PRD went with it.
 
 Three epics, each independently useful: a duplication removed, a hub file
@@ -473,8 +473,8 @@ reopening them.
    limit is known and recorded: a test file counts as an importer, so it catches
    carelessness rather than determination — which matters more at one door than
    it would at five.
-8. **The snippets decisions moved with Epic 4 to feature-b** — where they
+8. **The snippets decisions moved with Epic 4 to feature-21** — where they
    land, the "would a translator translate it" line, how the test half is
    guarded, and constants versus functions. They are recorded in
-   [feature-b/every-word-in-one-place.md](../feature-b/every-word-in-one-place.md)
+   [feature-21/every-word-in-one-place.md](../feature-21/every-word-in-one-place.md)
    rather than reopened here.

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { cleanup, render, screen } from '@testing-library/react'
 import { NudgeBox } from './NudgeBox'
-import { ROOTS } from '../../lib/theory/music'
+import { ROOTS } from '@/lib/theory/roots'
 import type { Feedback } from '../../lib/presentation/feedback'
 
 const NOTE_CHARS = 'A-Za-z♭♯'

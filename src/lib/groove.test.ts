@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import type { Flavour, Groove, Root } from '@/lib/groove'
+import type { Answer, Attempt, Flavour, Groove, Root } from './groove'
 
 describe('src/lib/groove', () => {
   it('accepts a fully-populated Groove literal', () => {
@@ -122,7 +122,32 @@ describe('src/lib/groove', () => {
     expect(flavour).toBe('Harmonic minor')
   })
 
-  it('imports nothing — the generator resolves it without the @/ alias', () => {
+  it('carries the answer and the attempt the puzzle is graded on', () => {
+    const answer = {
+      root: 'C♯',
+      flavour: 'Harmonic minor',
+    } satisfies Answer
+
+    expect(Object.keys(answer).sort()).toEqual(['flavour', 'root'])
+
+    const attempt = {
+      root: 'C♯',
+      flavour: 'Dorian',
+      correct: false,
+      rootMatched: true,
+      flavourMatched: false,
+    } satisfies Attempt
+
+    expect(Object.keys(attempt).sort()).toEqual([
+      'correct',
+      'flavour',
+      'flavourMatched',
+      'root',
+      'rootMatched',
+    ])
+  })
+
+  it('imports nothing at all, aliased or relative', () => {
     const source = readFileSync(
       resolve(process.cwd(), 'src/lib/groove.ts'),
       'utf8',

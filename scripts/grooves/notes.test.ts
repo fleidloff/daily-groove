@@ -8,7 +8,7 @@ import {
   noteSpecs,
   renderNote,
 } from './notes.ts'
-import { ROOTS } from './theory/notes.ts'
+import { ROOTS } from '../../src/lib/theory/roots.ts'
 import type { SamplePack, VoiceName } from './types.ts'
 
 const SAMPLE_RATE = 44100

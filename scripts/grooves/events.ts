@@ -1,10 +1,10 @@
 import type { FeelTemplate, GrooveSpec, MusicMeta, NoteEvent, VoiceName } from './types.ts'
 import { intBetween, pick, rngFor } from './rng.ts'
 import { applyDrift, applySwing, fitToLoop, humanize } from './humanize.ts'
-import { ROOTS } from './theory/notes.ts'
+import { ROOTS } from '../../src/lib/theory/roots.ts'
 import { buildHarmony } from './theory/harmony.ts'
 import type { Harmony } from './theory/harmony.ts'
-import { scaleName } from './theory/scales.ts'
+import { scaleName } from '../../src/lib/theory/scales.ts'
 
 const BEATS_PER_BAR = 4
 

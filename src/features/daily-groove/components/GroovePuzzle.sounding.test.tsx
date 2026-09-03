@@ -26,6 +26,8 @@ import {
   rootGroup,
   settle,
   SOLVING,
+  soundedNotes,
+  startedAt,
   teardownPuzzleAudio,
   thirdWrongFlavour,
   TODAY,
@@ -45,15 +47,15 @@ import { GroovePuzzle } from './GroovePuzzle'
 import { beatSeconds } from '../lib/audio/beat'
 import { REFERENCE_FADE_SECONDS } from '../lib/audio/level'
 import { referenceOutput } from '../lib/audio/output'
-import { answerOf, flavourPool, simpleRootOptions } from '../lib/theory/music'
-import { FAMILIES, familyOf, type Family } from '../lib/theory/families'
-import { scheduleLick, type ScheduledNote } from '../lib/theory/phrase'
-import { simpleLickMode } from '../lib/theory/simpleModes'
+import { answerOf, flavourPool, simpleRootOptions } from '@/lib/theory/music'
+import { FAMILIES, familyOf, type Family } from '@/lib/theory/families'
+import { scheduleLick, type ScheduledNote } from '@/lib/theory/phrase'
+import { simpleLickMode } from '@/lib/theory/simpleModes'
 import { createLocalPreferenceStore } from '../lib/persistence/preferences'
 import { dateLine } from '../lib/presentation/date'
 import type { Move } from '../lib/presentation/moves'
 import { COLOUR_MOVES, TONIC_MOVES } from '../lib/presentation/coachingMoves'
-import { barChords } from '../lib/theory/changes'
+import { barChords } from '@/lib/theory/changes'
 import { GROOVES } from '../data/grooves.generated'
 import { NOTES, PITCHES, type PitchSample } from '../data/notes.generated'
 import { renderFeature } from '../testing/renderFeature'
@@ -355,17 +357,9 @@ describe('GroovePuzzle', () => {
   const fetchedNotes = () =>
     fetchedUrls().filter((url) => url.startsWith('/notes/'))
 
-  const soundedNotes = async (count: number) => {
-    await waitFor(() => expect(fake.sources).toHaveLength(count))
-    return fake.sources
-  }
-
   const BEAT = beatSeconds(GROOVE.bpm)
 
   const OFF_BEAT = BEAT * 0.25
-
-  const startedAt = (node: (typeof fake.sources)[number]) =>
-    (node.start.mock.calls[0] as [number])[0]
 
   const progressReads = () =>
     screen.getByRole('progressbar').getAttribute('aria-valuenow')

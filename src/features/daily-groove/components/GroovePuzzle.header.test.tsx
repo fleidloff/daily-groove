@@ -31,7 +31,7 @@ vi.mock('../lib/persistence/storage', async (importOriginal) => ({
 }))
 
 import { GroovePuzzle } from './GroovePuzzle'
-import { isoDate } from '../lib/puzzle/selectGroove'
+import { isoDate } from '@/lib/date'
 import { APP_NAME } from '@/lib/branding'
 
 describe('GroovePuzzle', () => {

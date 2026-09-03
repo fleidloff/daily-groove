@@ -1,16 +1,6 @@
-export type { Flavour, Groove, Root } from '@/lib/groove'
+export type { Answer, Attempt, Flavour, Groove, Root } from '@/lib/groove'
 
-import type { Flavour, Root } from '@/lib/groove'
-
-export type Answer = { root: Root; flavour: Flavour }
-
-export type Attempt = {
-  root: Root
-  flavour: Flavour
-  correct: boolean
-  rootMatched: boolean
-  flavourMatched: boolean
-}
+import type { Answer, Attempt } from '@/lib/groove'
 
 export type DailyResult = {
   date: string

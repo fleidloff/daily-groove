@@ -10,26 +10,11 @@ import {
 } from 'react'
 import type { Flavour, Groove, Root } from '../types'
 import type { PlayableSource } from '../lib/audio/transport'
-import {
-  selectFeedback,
-  shouldOfferReveal,
-  shouldShowNudge,
-} from '../lib/presentation/feedback'
-import {
-  flavourOptions,
-  flavourPool,
-  ROOTS,
-  loopSecondsOf,
-  simpleRootOptions,
-} from '../lib/theory/music'
-import { FAMILIES, type Family } from '../lib/theory/families'
-import { simpleLickMode } from '../lib/theory/simpleModes'
-import { barChords } from '../lib/theory/changes'
-import { selectCoaching } from '../lib/presentation/coaching'
-import { shouldShowVerdict } from '../lib/presentation/verdict'
-import { confirmedHalves } from '../lib/presentation/confirmed'
-import { ruledOut } from '../lib/presentation/ruledOut'
-import { metaLine } from '../lib/presentation/date'
+import { flavourPool, loopSecondsOf } from '@/lib/theory/music'
+import type { Family } from '@/lib/theory/families'
+import { simpleLickMode } from '@/lib/theory/simpleModes'
+import { barChords } from '@/lib/theory/changes'
+import { metaLine } from '../lib/presentation'
 import { selectGrooveForDate } from '../lib/puzzle/selectGroove'
 import { GROOVES } from '../data/grooves.generated'
 import { NOTES, PITCHES } from '../data/notes.generated'
@@ -42,6 +27,10 @@ import {
   createLocalStore,
   createReadOnlyStore,
 } from '../lib/persistence/storage'
+import {
+  PuzzleSessionProvider,
+  type PuzzleSessionValue,
+} from '../state/PuzzleSessionContext'
 import { useModeLick } from '../hooks/useModeLick'
 import { usePuzzleSession } from '../hooks/usePuzzleSession'
 import { useReferenceNote } from '../hooks/useReferenceNote'
@@ -142,22 +131,23 @@ function GroovePuzzleView({
 
   const { playRoot, warm } = useReferenceNote(NOTES, { clock })
 
-  const {
-    selectedRoot,
-    selectedFlavour,
-    attempts,
-    solved,
-    hydrated,
-    selectRoot,
-    selectFlavour,
-    canCheck,
-    check,
-    revealed,
-    reveal,
-    answer,
-    streak,
-    newOrLapsed,
-  } = usePuzzleSession(groove, today, simple, resultStore)
+  const session = usePuzzleSession(groove, today, simple, resultStore)
+
+  const { attempts, solved, hydrated, revealed, answer, streak, newOrLapsed } =
+    session
+
+  const sessionValue = useMemo<PuzzleSessionValue>(
+    () => ({
+      groove,
+      today,
+      session,
+      simple,
+      setSimple,
+      tapSounds,
+      setTapSounds,
+    }),
+    [groove, today, session, simple, setSimple, tapSounds, setTapSounds],
+  )
 
   const { playMode, warm: warmLicks } = useModeLick({
     pitches: PITCHES,
@@ -179,57 +169,6 @@ function GroovePuzzleView({
     () => Math.max(1, Math.round((groove.loopBars ?? groove.bars) / groove.bars)),
     [groove],
   )
-
-  const feedback = useMemo(
-    () => selectFeedback(attempts, solved),
-    [attempts, solved],
-  )
-  const coaching = useMemo(
-    () => selectCoaching({ attempts, tapSounds, simple }),
-    [attempts, tapSounds, simple],
-  )
-  const showVerdict = useMemo(() => shouldShowVerdict(attempts), [attempts])
-  const showReveal = useMemo(
-    () => shouldOfferReveal(attempts, solved, revealed),
-    [attempts, solved, revealed],
-  )
-
-  const roots = useMemo(
-    () => (simple ? simpleRootOptions(today, answer) : ROOTS),
-    [simple, today, answer],
-  )
-
-  const flavours = useMemo(
-    () => (simple ? FAMILIES : flavourOptions(today, groove)),
-    [simple, today, groove],
-  )
-
-  const narrowing = useMemo(
-    () => ruledOut({ attempts, answer, roots, date: today }),
-    [attempts, answer, roots, today],
-  )
-
-  const confirmed = useMemo(() => confirmedHalves(attempts), [attempts])
-
-  const showNudge = useMemo(
-    () =>
-      shouldShowNudge(
-        narrowing.eliminatedCount,
-        solved,
-        confirmed.roots.length > 0,
-      ),
-    [narrowing, solved, confirmed],
-  )
-
-  const offeredRoot = selectedRoot !== null && roots.includes(selectedRoot)
-    ? selectedRoot
-    : null
-  const offeredFlavour =
-    selectedFlavour !== null && flavours.includes(selectedFlavour)
-      ? selectedFlavour
-      : null
-  const canCheckOffered =
-    canCheck && offeredRoot !== null && offeredFlavour !== null
 
   const handleToggle = useCallback(() => {
     void toggle()
@@ -277,40 +216,13 @@ function GroovePuzzleView({
   if (!hydrated) return <PuzzleLoading />
 
   const guessCard = (
-    <GuessCard
-      roots={roots}
-      flavours={flavours}
-      selectedRoot={offeredRoot}
-      selectedFlavour={offeredFlavour}
-      onSelectRoot={selectRoot}
-      onHearRoot={hearRoot}
-      onSelectFlavour={selectFlavour}
-      onHearMode={handleHearMode}
-      canCheck={canCheckOffered}
-      onCheck={check}
-      solved={solved}
-      feedback={feedback}
-      coaching={coaching}
-      showVerdict={showVerdict}
-      showNudge={showNudge}
-      ruledOutRoots={narrowing.roots}
-      ruledOutFlavours={narrowing.flavours}
-      eliminated={narrowing.eliminatedCount}
-      confirmedRoots={confirmed.roots}
-      confirmedFlavours={confirmed.flavours}
-      revealed={revealed}
-      showReveal={showReveal}
-      onReveal={reveal}
-      simple={simple}
-      onToggleSimple={setSimple}
-      tapSounds={tapSounds}
-      onToggleTapSounds={setTapSounds}
-    />
+    <GuessCard onHearRoot={hearRoot} onHearMode={handleHearMode} />
   )
 
   return (
-    <section aria-label={REGION_LABEL}>
-      <Stack gap="xl">
+    <PuzzleSessionProvider value={sessionValue}>
+      <section aria-label={REGION_LABEL}>
+        <Stack gap="xl">
         <GrooveHeader
           streak={streak}
           onShowHelp={showHelp ? null : handleShowHelp}
@@ -400,7 +312,8 @@ function GroovePuzzleView({
             <div aria-hidden="true" className="hidden flex-1 md:block" />
           </Row>
         )}
-      </Stack>
-    </section>
+        </Stack>
+      </section>
+    </PuzzleSessionProvider>
   )
 }

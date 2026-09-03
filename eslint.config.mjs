@@ -22,6 +22,45 @@ const features = readdirSync(join(rootDir, "src", "features"), {
 // feature through its public surface.
 const outsideFeatures = ["src/app", "src/components", "src/lib", "scripts"];
 
+// The module map inside the one slice that has grown one: unlike the feature
+// boundaries above, these arrows are this feature's own concerns, so the path
+// is named rather than derived.
+const F = "src/features/daily-groove";
+
+const moduleMapZones = [
+  {
+    target: `${F}/lib`,
+    from: ["src/components", `${F}/components`, `${F}/hooks`, `${F}/state`],
+    message:
+      "A lib/ module must not import UI, a hook or the store. lib/ is where " +
+      "the feature's logic lives so it can be tested as plain functions and " +
+      "reused by any component; importing what renders it makes it " +
+      "untestable in isolation and couples the seam to the screen. Take what " +
+      "you need as an argument, or move the logic into the component.",
+  },
+  {
+    target: `${F}/lib/audio`,
+    from: [`${F}/lib/presentation`, `${F}/lib/puzzle`, `${F}/lib/persistence`],
+    message:
+      "lib/audio/ must not import coaching or the puzzle module. Audio plays " +
+      "sound; it does not know the rules of the game or how they are " +
+      "described. Its one arrow out is to theory — lib/audio/lick.ts takes " +
+      "ScheduledNote from src/lib/theory/phrase — and a second arrow would " +
+      "make the player unusable outside this puzzle.",
+  },
+  {
+    target: [`${F}/lib/puzzle`, `${F}/lib/persistence`],
+    from: [`${F}/lib/presentation`, `${F}/lib/audio`],
+    message:
+      "The puzzle module must not import coaching or audio. lib/puzzle/ and " +
+      "lib/persistence/ are the rules of the game and the record of it; how " +
+      "a state is described (lib/presentation/) and how it sounds " +
+      "(lib/audio/) both depend on those rules, never the other way. If a " +
+      "coaching helper is what you want to assert against, the assertion " +
+      "belongs in the coaching module's own test.",
+  },
+];
+
 const featureBoundaryZones = features.flatMap((feature) => {
   const others = features.filter((other) => other !== feature);
 
@@ -118,6 +157,8 @@ const eslintConfig = defineConfig([
                 "shared contract in src/lib/ (see src/lib/groove.ts) and " +
                 "import it from there.",
             },
+            // The module map inside the daily-groove slice.
+            ...moduleMapZones,
           ],
         },
       ],

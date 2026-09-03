@@ -294,8 +294,13 @@ not a ceiling. Step C12 records the real ones.
 
 ### What must not move
 
-- `lib/presentation/date.ts` and `staffLabel.ts`. Not coaching, not behind the
-  door, not imported by the view model. `metaLine` stays a `GroovePuzzle` import.
+- `lib/presentation/date.ts` and `staffLabel.ts`. Not coaching, not imported by
+  the view model. **Superseded for `date.ts` by Epic 3 (2026-09-03):** its
+  per-folder door rule (R2) makes `metaLine` the shell's last presentation
+  residue, so the door now re-exports it and `GroovePuzzle.tsx` imports
+  `'../lib/presentation'` rather than `'../lib/presentation/date'`. It is one
+  named function, pinned by its own case; `staffLabel.ts` is unaffected and
+  stays outside the door.
 - `lib/presentation/nearMiss.ts`. Read by the solved panel, not the guess card.
 - Every module behind the door keeps its name, its exports and its own test file.
   The epic adds `index.ts` beside them and changes none of them.
@@ -330,6 +335,18 @@ Frozen before Track C starts. C1 and C2 are the two that A, B and C would
 otherwise disagree about.
 
 ### C1 — `lib/presentation/index.ts`, the door
+
+**Amended by Epic 3 (2026-09-03).** This contract froze eight type exports.
+Five of them — `CheckTone`, `CheckView`, `HintView`, `GuessCardView` and the
+`Feedback` re-export — turned out to have no importer anywhere in the repo, and
+Epic 3's narrow-door guard (its R4 and C4) makes an unimported export exactly
+the failure condition. Epic 3 dropped the `export` keyword from those five;
+their declarations are untouched and still type `guessCardView`'s signature.
+The door also gained one runtime export, `metaLine`, which Epic 3's R2
+sanctions as the shell's last presentation residue. So the surface is
+`guessCardView`, `metaLine`, `OptionState`, `OptionView` and
+`GuessCardViewInput` — each with a live importer. Epic 2's AC10 still holds:
+its load-bearing clause is that the door re-exports nothing from *behind* it.
 
 ```ts
 // src/features/daily-groove/lib/presentation/index.ts

@@ -1,6 +1,6 @@
 import type { MusicMeta, NoteEvent, VoiceName } from '../types.ts'
 import type { Harmony } from './harmony.ts'
-import { pitchesOf } from './scales.ts'
+import { pitchesOf } from '../../../src/lib/theory/scales.ts'
 
 export type PitchFailure = { voice: VoiceName; midi: number; timeSec: number }
 

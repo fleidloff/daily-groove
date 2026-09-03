@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs'
 import { join, relative } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { hashString } from '@/lib/hash'
+import { hashString } from './hash'
 
 // A change-detector. When this table fails, restore hashString — never
 // regenerate the table.

@@ -33,7 +33,10 @@ Six rules that hold no matter what you are testing.
 3. **`src/lib/` is a leaf: it imports nothing from the app**, and it is the only
    channel `scripts/` has into `src/`. Its modules are pure, dependency-free and
    runtime-safe, which is exactly what lets the generator import them by relative
-   path with no bundler. Test them as plain functions.
+   path with no bundler. Test them as plain functions. What earns a place there
+   is **domain rather than product** — knowledge that would still be true if this
+   product did not exist; two callers across the app/generator boundary is
+   sufficient evidence, not the test.
 4. **A test sits beside the thing it tests.** Colocation is the rule, and it is
    the one you will be tempted to break: an assertion about a card's behaviour
    goes in that card's test file, not in the route's.
@@ -51,6 +54,15 @@ Zone 1 of the lint config is the mirror of rule 2 for the design system:
 **nothing under `src/components/` may import a feature**, so a primitive's test
 never reaches for a feature's type or fixture either. If a primitive can only be
 tested through a feature, it has stopped being a primitive.
+
+Inside `src/features/daily-groove/` three more zones (6–8) bind the arrows
+between the slice's concern folders, and they bind test files like any other: a
+test under `lib/puzzle/` may not import `../presentation/`, and the fix is to
+move the assertion to the file whose arrow allows it, never to weaken the zone.
+`docs/architecture.md` § *The arrows inside a slice* draws that graph. **Exactly
+one concern folder has a door**, `lib/presentation/index.ts`, and only
+`components/GroovePuzzle.tsx` is held to it — the other four have no `index.ts`,
+so a test that imports `../lib/audio/output` directly is correct.
 
 ## What must be tested
 

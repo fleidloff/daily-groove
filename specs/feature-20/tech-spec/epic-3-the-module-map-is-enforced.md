@@ -765,17 +765,48 @@ Covers: R7, R10, AC6
 For each zone: add the violating import, run `npm run lint`, record the message,
 delete the import, confirm lint clean.
 
-| Zone | Throwaway import | In | Expect |
-| :-- | :-- | :-- | :-- |
-| 6 | `import { GuessCard } from '../../components/puzzle/GuessCard'` | `lib/presentation/coaching.ts` | zone 6's message |
-| 6 | `import { useProgress } from '../../hooks/useProgress'` | `lib/puzzle/scoring.ts` | zone 6's message |
-| 7 | `import { selectCoaching } from '../presentation/coaching'` | `lib/audio/output.ts` | zone 7's message |
-| 8 | `import { selectFeedback } from '../presentation/feedback'` | `lib/puzzle/scoring.ts` | zone 8's message |
-| 8 | `import { referenceOutput } from '../audio/output'` | `lib/persistence/streak.ts` | zone 8's message |
+| Zone | Throwaway import | In | Expect | **Observed (Track D, 2026-09-03)** |
+| :-- | :-- | :-- | :-- | :-- |
+| 6 | `import { GuessCard } from '../../components/puzzle/GuessCard'` | `lib/presentation/coaching.ts` | zone 6's message | **fired.** `1:27 error Unexpected path "../../components/puzzle/GuessCard" imported in restricted zone. A lib/ module must not import UI, a hook or the store. lib/ is where the feature's logic lives so it can be tested as plain functions and reused by any component; importing what renders it makes it untestable in isolation and couples the seam to the screen. Take what you need as an argument, or move the logic into the component  import/no-restricted-paths` |
+| 6 | `import { useProgress } from '../../hooks/useProgress'` | `lib/puzzle/scoring.ts` | zone 6's message | **fired.** Same message, `1:29`, path `"../../hooks/useProgress"` |
+| 7 | `import { selectCoaching } from '../presentation/coaching'` | `lib/audio/output.ts` | zone 7's message | **fired.** `1:32 error … lib/audio/ must not import coaching or the puzzle module. Audio plays sound; it does not know the rules of the game or how they are described. Its one arrow out is to theory — lib/audio/lick.ts takes ScheduledNote from src/lib/theory/phrase — and a second arrow would make the player unusable outside this puzzle` |
+| 8 | `import { selectFeedback } from '../presentation/feedback'` | `lib/puzzle/scoring.ts` | zone 8's message | **fired.** `1:32 error … The puzzle module must not import coaching or audio. lib/puzzle/ and lib/persistence/ are the rules of the game and the record of it; how a state is described (lib/presentation/) and how it sounds (lib/audio/) both depend on those rules, never the other way. If a coaching helper is what you want to assert against, the assertion belongs in the coaching module's own test` |
+| 8 | `import { referenceOutput } from '../audio/output'` | `lib/persistence/streak.ts` | zone 8's message | **fired.** Same message, `1:33`, path `"../audio/output"` |
+| 8 | *the real violation:* `import { ruledOut } from '../presentation/ruledOut'` | `lib/puzzle/narrowing.test.ts` | zone 8's message, on a **test** file | **fired.** Same message, `1:26`. Re-created and re-measured by Track D: the zone was not weakened to let the original import stand |
 
 Each message must name the rule and the reason, not just the path (R7).
 Track B's B3 already saw zone 8 fire on a real violation; the row above is the
 second direction, in source rather than a test.
+
+**Track D's result: all three zones fire, every message names the rule and the
+reason.** Every mutation was reverted and confirmed byte-identical with `cmp`.
+`npm run lint` on the tree left behind: 0 errors, 1 pre-existing warning
+(`scripts/grooves/gate.test.ts:7` unused `placeholderPack`, byte-identical to
+HEAD).
+
+**Two gaps Track D found that no track reported.**
+
+- **A `vi.mock` of a cross-boundary path is invisible to zones 6–8.**
+  `vi.mock('../../components/puzzle/GuessCard')` added to
+  `lib/puzzle/narrowing.test.ts` produced **zero** lint errors:
+  `import/no-restricted-paths` reads static `import`/`export` declarations only.
+  The guidelines' claim that "the zones bind test files exactly as they bind
+  source" holds for the static form and not for the mock form. The fan-in
+  structural guard does catch `vi.mock`, but only for the shell reaching
+  coaching. Not a defect in any track's work — a limit of the mechanism, worth
+  a line in the guidelines.
+- **`data/` is in no zone.** `import { selectCoaching } from
+  '../lib/presentation/coaching'` added to `data/notes.generated.ts` produced
+  zero lint errors. See D6 for why this matters to the map.
+
+### D1a — The narrow-door and fan-in mutations that are *not* in D2
+
+Track D ran one break beyond D2's list, to close the gap the Epic 2 verifier
+found from the other side:
+
+| Break | Observed |
+| :-- | :-- |
+| add `export const doorFiller = 1` to `lib/presentation/index.ts` | the narrow-door case names `` `doorFiller` `` with the one-line-fix message — the bare-declaration branch of `doorExports`, which D2's rows exercise only through the re-export branch |
 
 ### D2 — The two structural guards fire
 
@@ -784,18 +815,33 @@ Covers: R3, R4, R10, AC3, AC4
 The permanent half is already in the suite: A1's cases 1–2 and A2's cases 1–2
 feed the predicates a violation and assert they report it. The one-time half:
 
-| Break | Expect from `npm test` |
-| :-- | :-- |
-| add `import { selectCoaching } from '../lib/presentation/coaching'` to `GroovePuzzle.tsx` | the fan-in case fails naming `'../lib/presentation/coaching'` |
-| add `vi.mock('../lib/presentation/verdict')` to `GroovePuzzle.tsx` | the same case fails naming the mocked path |
-| add `import { referenceOutput } from '../lib/audio/output'` to `GroovePuzzle.tsx` | **nothing fails.** The scope is deliberate: audio has no door, and A1's case 2 asserts this in the suite |
-| add `export { staffLabel } from './staffLabel'` to `lib/presentation/index.ts` | the narrow-door case names `staffLabel` with the one-line-fix message |
-| replace a line of `lib/presentation/index.ts` with `export * from './date'` | the narrow-door case fails on sight, message naming `export *` and R4a |
-| add `import { GuessCard } from '../../components/puzzle/GuessCard'` to `lib/presentation/index.ts` | zone 6 rejects it |
+| Break | Expect from `npm test` | **Observed (Track D, 2026-09-03)** |
+| :-- | :-- | :-- |
+| add `import { selectCoaching } from '../lib/presentation/coaching'` to `GroovePuzzle.tsx` | the fan-in case fails naming `'../lib/presentation/coaching'` | **fired.** `holds the shell to the door (F20 E3 R3, AC3)` → `AssertionError: expected [ '../lib/presentation/coaching' ] to deeply equal []`. Epic 2's narrower `imports none of the coaching modules` case fired too: 2 failed / 29 passed |
+| add `vi.mock('../lib/presentation/verdict')` to `GroovePuzzle.tsx` | the same case fails naming the mocked path | **fired.** Same case → `AssertionError: expected [ '../lib/presentation/verdict' ] to deeply equal []`. **1 failed / 30 passed — Epic 2's case did *not* fire**, which is the proof that the new guard is strictly stronger: it reads `vi.mock` specifiers and Epic 2's did not |
+| add `import { referenceOutput } from '../lib/audio/output'` to `GroovePuzzle.tsx` | **nothing fails.** The scope is deliberate: audio has no door, and A1's case 2 asserts this in the suite | **nothing failed**, as designed. Run with a *fourth* `lib/audio/` specifier (`import { createGrooveClock } from '../lib/audio/beat'`, since the shell already imports `referenceOutput` from `output`): full `npm test` → **121 files, 2504 passed, 0 failed** |
+| add `export { staffLabel } from './staffLabel'` to `lib/presentation/index.ts` | the narrow-door case names `staffLabel` with the one-line-fix message | **fired.** `exports nothing the repo does not import through it (F20 E3 R4, AC4)` → ``lib/presentation/index.ts exports `staffLabel`, and nothing in the repo imports it through the door. Import it through the door or delete the line — a door exports what its consumers use and nothing more (R4). This is a one-line fix.`` |
+| add `export type { Move } from './moves'` to `lib/presentation/index.ts` | *(added by Track D — the hole Epic 2's verifier found)* the same case names `Move` | **fired.** Same case, same message, naming `` `Move` ``. The type-only re-export form is caught identically to the value form — **Epic 2's verifier's hole is closed** |
+| replace a line of `lib/presentation/index.ts` with `export * from './date'` | the narrow-door case fails on sight, message naming `export *` and R4a | **fired, by throwing.** `Error: lib/presentation/index.ts uses \`export *\`. A door lists its exports by name, or it is a barrel and the fan-in rule it serves means nothing (R4a).` |
+| add `import { GuessCard } from '../../components/puzzle/GuessCard'` to `lib/presentation/index.ts` | zone 6 rejects it | **fired.** `1:27 error Unexpected path "../../components/puzzle/GuessCard" imported in restricted zone. A lib/ module must not import UI, a hook or the store. …` — the door file is inside zone 6's `target`, so the door is bound like any other `lib/` module |
 
 Revert each before the next. Row three is not a gap in the record — it is the
 record of what this epic chose not to guard, and the reason a later feature
 adding a fourth module to `lib/audio/` should re-read Step C2's rule.
+
+**Track D's result: both guards fire in every direction claimed, and the "audio
+fails nothing" row holds.** Seven mutations, each reverted from a pre-pass
+snapshot and confirmed byte-identical with `cmp`; no stray `.orig`, `.bak` or
+throwaway file remains under `src/` or `scripts/`.
+
+**The namespace-import logic holds (Track A's note, re-checked).**
+`lib/presentation/index.test.ts:14` contains `import * as door from './index'`.
+`importedNamesFrom` credits a namespace import only with names actually
+referenced as `door.X`, and the file's only use is `Object.keys(door)`, which
+names nothing — so the namespace import credits **nothing**. That is why the
+`staffLabel`, `Move` and `doorFiller` mutations all fire despite it existing.
+Had a namespace import been treated as importing everything, it would have
+legalised a door of any width for free.
 
 ### D3 — R8's two checks
 
@@ -810,6 +856,22 @@ Covers: R8, AC7, AC8
   shell's.
 - A failure in either is Epic 1 unfinished, not work for this epic. Report it as
   a blocker.
+
+**Observed (Track D, 2026-09-03) — both checks pass; nothing to collect.**
+
+| Check | Result |
+| :-- | :-- |
+| A6 case `has no theory folder under lib/ (F20 E3 R8, AC7)` | passes |
+| A6 case `has no import anywhere resolving to it (F20 E3 R8, AC7)` | passes |
+| `ls src/features/daily-groove/lib/` | five folders: `audio`, `persistence`, `presentation`, `puzzle`, `share` |
+| every quoted specifier naming `lib/theory` under `src/` + `scripts/` | all resolve to `src/lib/theory/…`. The `./theory/…` specifiers under `scripts/grooves/` are `scripts/grooves/theory/`, a different folder, and none names the slice |
+| `flavourOptions` call sites | 11 sites; **every one passes a pool as its third argument** (`GROOVES`, or `CATALOGUE` in `src/lib/theory/music.test.ts`). The parameter is required — `flavourOptions(date: Date, groove: Groove, grooves: Groove[])` in `src/lib/theory/music.ts:14` has no default, so an omission would not compile |
+
+The spec's "second argument" is a wording slip: the pool is the **third**
+argument. And D3's predicted call sites are stale in the way the step
+anticipated — Epic 2 moved the shell's call into the door, so the production
+sites are now `lib/presentation/index.ts:111` and `testing/puzzleHarness.tsx:39`,
+with nine more in tests.
 
 ### D4 — The demo path
 
@@ -827,6 +889,29 @@ Also confirm `npm run grooves:verify` passes and `git status` shows
 `grooves.lock.json`, `catalogue.json` and `public/grooves/*.mp3` unchanged. This
 epic renders nothing, so a dirty output tree means something else is wrong.
 
+**Observed (Track D, 2026-09-03) — the browser half was NOT run, and this is the
+epic's one genuinely ungraded criterion.**
+
+There is no browser driver in this environment and this repo has no functional
+or e2e tier — no Playwright, no Cypress, nothing in `package.json` beyond the
+three vitest projects. So the before/after comparison D4 asks for was not made
+and AC9 cannot be graded **done**. Saying it plainly rather than inferring it
+from a green unit suite: **nobody has looked at this epic's tree in a browser.**
+
+What *was* established, which is the strongest available substitute and is not
+the same thing:
+
+| | |
+| :-- | :-- |
+| the diff | `GroovePuzzle.tsx`'s Epic-3 change is **one import line** — `'../lib/presentation/date'` → `'../lib/presentation'`. Line 253's `meta={metaLine(…)}` call site is untouched. No expression that produces output changed |
+| the binding | the door's `export { metaLine } from './date'` re-exports the same function object; `metaLine` is declared once in the repo, at `lib/presentation/date.ts:13`, and no other module exports that name. The "resolved to a different module through the door" failure D4 warns about has no candidate to resolve to |
+| rendered behaviour | 212 rendered cases across the six composed shell tests cover the nudge, the lock-in, the solve, the give-up and the shared link. The `metaLine` output specifically is asserted through the rendered shell by `GroovePuzzle.guessing.test.tsx` — "frames today's own groove as shared, and still records nothing (R13, R14)" — which compares `cardMeta().textContent` to `` `${todays.bpm} bpm · ${answer.root} ${answer.flavour} · shared groove` ``, i.e. `metaLine`'s exact composition |
+| generated output | `npm run grooves:verify` passes (as `prebuild`): *30 grooves, 24 notes, the manifests and the catalogue all match the lock*. `git status` shows `grooves.lock.json`, `scripts/grooves/catalogue.json`, `public/grooves/*.mp3`, `data/grooves.generated.ts` and `data/notes.generated.ts` all **unchanged** — only the two manifests' *test* files are modified, by Epic 1 |
+
+"First visit" and "a wrong guess at each rung" are the two steps with no case
+named for them; the ladder is exercised across `guessing`'s 82 cases but not as
+one named walk. A human still has to play the session.
+
 ### D5 — The full gate
 
 Covers: AC10
@@ -837,6 +922,51 @@ despite this epic owning no file under `scripts/` — Track C repoints a
 guidelines paragraph the generator's boundary test reads about, and Epic 1's
 narrowed tier trigger means a green generator tier is no longer implied by a
 green app tier.
+
+**Observed (Track D, 2026-09-03) — all five green, run by Track D itself.**
+
+`tiersFor` was called with this epic's file scope (the union of Tracks A–C's
+`Owns` lists) and returned **all three tiers** — `['app', 'generator',
+'tooling']` — because the scope contains paths outside `src/`
+(`eslint.config.mjs`, `docs/*`, `.claude/agents/*`). `tierReason`'s sentence:
+*"selected — the scope includes a path outside `src/`, so tier selection takes
+the safe default."* So no tier is unrun and no AC rests on one.
+
+| Check | Command | Result |
+| :-- | :-- | :-- |
+| Type check | `npx tsc --noEmit` | **pass** — 0 errors, no output |
+| Lint | `npm run lint` | **pass** — 0 errors, 1 warning (`scripts/grooves/gate.test.ts:7` unused `placeholderPack`, byte-identical to HEAD, outside this epic) |
+| Unit, app + tooling | `npm test` | **pass** — 121 files, 2504 tests |
+| Unit, generator | `npm run test:gen` | **pass** — 37 files, 807 tests |
+| Unit, all three | `npm run test:all` | **pass** — 158 files, 3311 tests, 152s |
+| Build | `npm run build` | **pass** — `grooves:verify` clean, compiled in 1084ms, 4 static pages, 3 routes |
+
+Re-run after the whole break pass and confirmed identical, on a tree `cmp`-proved
+byte-identical to the pre-pass snapshot.
+
+**One intermittent failure seen, in a file this epic does not own.** On the
+second of three full `npm run test:all` runs,
+`scripts/grooves/add.test.ts > addGrooves > never reuses an id or a seed across
+successive runs` failed (1 failed / 3310 passed). It did not reproduce:
+
+| Run | Result |
+| :-- | :-- |
+| `npm run test:all` #1 | 3311 passed |
+| `npm run test:all` #2 | **1 failed** — the case above |
+| `npm run test:all` #3 | 3311 passed |
+| `npm run test:gen` alone | 807 passed |
+| `npx vitest run --project generator scripts/grooves/add.test.ts` ×3 | 17 passed, 17 passed, 17 passed |
+
+Diagnosis: **timeout headroom under load, not a defect.** The case carries an
+explicit `MINT_TIMEOUT_MS = 30_000` and mints three grooves twice, rendering
+audio each time; `test:all` reports 460–510s of test time inside a 144–152s wall
+clock, so the generator tier runs against heavy contention that `test:gen` alone
+does not create. `scripts/grooves/add.test.ts` and `add.ts` are **byte-identical
+to HEAD** — feature-20 Epic 3 owns nothing under `scripts/` at all (see
+*Execution waves*), and the file imports nothing this epic touched. Recorded
+here because it is the second timeout-headroom flake feature-20 has hit (Track A
+named one in `GroovePuzzle.header.test.tsx`), which is worth a look on its own
+some time; it is not this epic's.
 
 ### D6 — The map, read back against the tree
 
@@ -854,6 +984,125 @@ Take `docs/architecture.md`'s new section and check it line by line:
 If the map and the folders disagree, the **map** changes (R1a), and the change
 goes back to Track C. Report any correction, so the roadmap's "six modules
 describes the tree as it is" assumption can be checked against what was found.
+
+**Observed (Track D, 2026-09-03).** The map was re-measured independently: a
+script resolved every `from`, dynamic-`import` and `vi.mock` specifier across
+`src/` and `scripts/`, grouped both endpoints into the six modules by the map's
+own membership table, and produced the module-to-module edge list. Track C's
+five corrections all hold. **One row of the map is wrong, and one arrow it does
+not draw exists.**
+
+*Folders and placement — clean.*
+
+| Question | Answer |
+| :-- | :-- |
+| every folder the map names exists | yes. `lib/{audio,persistence,presentation,puzzle,share}`, `components/{header,intro,puzzle,solved}`, `data/`, `hooks/`, `state/`, `testing/`, `src/lib/theory/`, `scripts/grooves/` |
+| every folder under the slice and under `src/lib/theory/` is in exactly one module | yes. All 7 hooks are placed (3 audio, 4 puzzle) with none double-counted; `testing/`, `types.ts` and `index.ts` are explicitly placed in *no* module, with reasons |
+| `src/lib/theory/` — "sixteen modules, of which the generator imports `names`, `roots`, `scales`" | **exact.** 32 files ÷ 2 = 16 modules; the only relative `src/lib/` specifiers under `scripts/` are `theory/{names,roots,scales}.ts`, `groove.ts`, `hash.ts` |
+| `lib/presentation/` — "eleven modules behind one `index.ts`" | **exact.** 12 files, one of them the door |
+
+*Arrows drawn — every one has an import behind it.*
+
+`catalogue → theory` (41), `catalogue` writes both manifests (read by shell 13,
+puzzle 5, audio 11, coaching 5), `theory → nothing in the app` (0 edges out of
+`src/lib/theory/`), `audio → theory` (8), `audio → catalogue` (11),
+`puzzle → theory` (8), `puzzle → catalogue` (5), `coaching → theory` (23),
+`coaching → puzzle` (3), `coaching → catalogue` (5), `shell → audio` (9),
+`shell → puzzle` (30), `shell → coaching` (18), `shell → theory` (28),
+`shell → catalogue` (13), `shell → design system` (58), and 0 design-system
+edges into any module.
+
+*Arrows not drawn — all absent except one.* `audio → coaching`,
+`audio → puzzle`, `puzzle → coaching`, `puzzle → audio`, `coaching → audio`,
+`coaching → design system`, `persistence → puzzle` and every arrow out of
+`theory` are all **0 edges**, confirmed.
+
+### The one defect: `catalogue → puzzle`, and the zone that does not hold it
+
+The map's *What is not drawn* table says:
+
+> | catalogue → any module but theory | zone 5, plus the string scan in `scripts/grooves/boundary.test.ts` |
+
+Two things are wrong with that row, and they are the same mistake:
+
+1. **The tree draws `catalogue → puzzle`.**
+   `src/features/daily-groove/data/grooves.generated.test.ts:17` contains
+   `import { selectGrooveForDate } from '../lib/puzzle/selectGroove'`. The map
+   puts `data/` in the catalogue module, so this is a catalogue → puzzle edge
+   the map does not list. AC1 requires that every arrow the map omits has no
+   import behind it; this one has one.
+2. **Zone 5 does not hold it.** Zone 5 is
+   `target: "scripts", from: ["src/features", "src/components"]` — it binds
+   `scripts/` only. The catalogue module straddles `scripts/grooves/` **and**
+   `data/`, and `data/` is in no zone at all. Demonstrated: adding
+   `import { selectCoaching } from '../lib/presentation/coaching'` to
+   `data/notes.generated.ts` produces **0 lint errors**.
+
+Neither track reported this. It is not a code defect — nothing needs to move —
+it is the map claiming an enforcement it does not have, which is precisely the
+failure mode R1a and this step exist to catch. **The correction goes back to
+Track C**, and it is two edits: split the row so the `scripts/grooves/` half
+names zone 5 and the `data/` half reads **"nothing. Review only."**, and either
+draw `catalogue → puzzle` or note that the one edge is a manifest test asserting
+its subject against the selector that reads it.
+
+A smaller version of the same looseness, worth one clause rather than a row: the
+drawn arrow **`catalogue → theory`** is described as five files, two of which —
+`src/lib/groove.ts` and `src/lib/hash.ts` — are not in the theory module and are
+in no module the map defines. The arrow is real; its label is broad.
+
+### Two file-granularity claims that are complete only at module granularity
+
+Both survive AC1's module-level test and both would fail a reader re-measuring
+them literally, which is what the map invites:
+
+- **"Nothing imports the shell except the slice's `index.ts` … and the two test
+  helpers."** There is a fourth importer:
+  `components/puzzle/GuessCard.test.tsx:52` has
+  `import { GroovePuzzle } from '../GroovePuzzle'`. It is intra-shell (the map
+  files all of `components/` under the shell), so no *arrow* is missing — but the
+  sentence enumerates files, and the enumeration is short by one.
+- **"Coaching is imported by the shell and by nothing else. Five files: …"** The
+  five production files are exactly right. Six *test* files under `components/`
+  also import `lib/presentation/` modules directly, and the sentence does not say
+  so; Track C's own report said "five production files, plus region-component
+  tests" and the document dropped the second half.
+
+### Track C's five corrections and two numbers, all re-measured
+
+| Claim | Track D's measurement | Verdict |
+| :-- | :-- | :-- |
+| two test helpers render the shell, not one | `testing/puzzleHarness.tsx:174` (`await import`) and `testing/renderFeature.tsx:2` (static) | **holds** |
+| C7's coaching line: four files called five, and the type-only parenthetical falsified | 5 production importers; `GuessCard.tsx` imports `guessCardView`, a **value**, through the door; `FeedbackLine.tsx` and `NudgeBox.tsx` are the type-only pair | **holds** |
+| `audio → theory` is not one type import | `hooks/useModeLick.ts:5` imports `scheduleLick` (a **value**) from `@/lib/theory/phrase`; `lib/audio/lick.ts:2` imports the `ScheduledNote` type | **holds** |
+| `persistence → puzzle` no longer exists | `lapsed.ts` and `streak.ts` import only `../../types` and `@/lib/date`. 0 edges | **holds** |
+| audio has three hooks, not four | `useTapSounds` and `useSimpleMode` import `lib/persistence/preferences` and no audio module | **holds** |
+| the regrowth chain is 362 → 288 → 488 → **750** → 395 → 406, not the roadmap's 362 → 274 → 488 → 395 | `git show` at each commit: `69ac67a` 362, `84d9f74` **288**, `d060792` 488, `a93400e` **750**, `905df07` 395, `d45013d`/HEAD **406**; worktree now **319** | **holds, exactly** |
+| fourteen orphaned `src/lib/` modules, not eleven | reachability from `scripts/` + `src/components/` + `src/app/` with the slice and its route removed, tests excluded as roots: **14** — 13 of the 16 under `theory/` (all but `names`, `roots`, `scales`) plus `date.ts` | **holds, exactly** |
+
+**Zone 7's lint message is defensible, not an understatement.** Track C flagged
+it for saying audio's one arrow out is `ScheduledNote`. Zone 7's `target` is
+`${F}/lib/audio`, and within that folder the claim is true — `useModeLick.ts` is
+in `hooks/`, outside the zone. The message and the map disagree only because
+"audio" means the folder in one and the module in the other. Not worth an edit;
+worth knowing before someone "fixes" it.
+
+**One number in `docs/coding-guidelines.md` I could not reproduce.** The shell
+exception says *"86 specifiers reach inside a `lib/` concern folder from another
+concern today, 31 of them in production code."* Three natural readings give
+83/26 (concern-folder to concern-folder within `lib/`), 151/59 (any slice file
+into `lib/`) and 41/17 (map-module grouping, into a module inside a concern
+folder). None is 86/31. Nothing rests on it — it is a rhetorical statistic in a
+prose paragraph, and AC5 asks for the rule and its reason, both of which are
+there — but it is the same class of drift Track C spent the unit correcting, and
+it argues for the documentation path-and-number sweep Track C recommends
+promoting to a tooling-tier test.
+
+**The roadmap's assumption, checked as this step asks.** "Six modules describes
+the tree as it is" **holds** for membership — every folder is placed, exactly
+once — and holds for the arrows with the one exception above. The map is
+accurate to the tree at module granularity; it is the *enforcement* column, not
+the arrow list, that carries the error.
 
 ## Requirement coverage
 

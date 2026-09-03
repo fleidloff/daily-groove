@@ -1,5 +1,5 @@
 import type { Attempt, Root } from '../../types'
-import { seededShuffle } from '../theory/options'
+import { seededShuffle } from '@/lib/theory/options'
 
 export const ELIMINATE_AFTER_MISSES = 2
 export const ELIMINATED_PER_MISS = 2

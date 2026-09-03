@@ -25,7 +25,8 @@ vi.mock('../lib/persistence/storage', async (importOriginal) => ({
 }))
 
 import { GroovePuzzle } from './GroovePuzzle'
-import { isoDate, selectGrooveForDate } from '../lib/puzzle/selectGroove'
+import { selectGrooveForDate } from '../lib/puzzle/selectGroove'
+import { isoDate } from '@/lib/date'
 import { GROOVES } from '../data/grooves.generated'
 import { renderFeature } from '../testing/renderFeature'
 

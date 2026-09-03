@@ -5,8 +5,9 @@ import {
   SIMPLE_COLOUR_MOVES,
   TONIC_MOVES,
 } from './coachingMoves'
-import { ROOTS, flavourPool } from '../theory/music'
-import { FAMILIES } from '../theory/families'
+import { ROOTS } from '@/lib/theory/roots'
+import { flavourPool } from '@/lib/theory/music'
+import { FAMILIES } from '@/lib/theory/families'
 import { GROOVES } from '../../data/grooves.generated'
 
 const NOTE_CHARS = 'A-Za-z♭♯'

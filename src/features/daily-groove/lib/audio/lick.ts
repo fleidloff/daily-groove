@@ -1,5 +1,5 @@
 import type { PitchSample } from '../../data/notes.generated'
-import type { ScheduledNote } from '../theory/phrase'
+import type { ScheduledNote } from '@/lib/theory/phrase'
 import { sharedAudioContext } from './context'
 import { REFERENCE_FADE_SECONDS, REFERENCE_LEVEL } from './level'
 

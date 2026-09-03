@@ -1,22 +1,9 @@
 import type { Groove } from '../../types'
-import { seededShuffle } from '../theory/options'
-
-export function isoDate(date: Date): string {
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
-}
-
-export function parseIsoDate(iso: string): Date {
-  const [year, month, day] = iso.split('-').map(Number)
-  return new Date(year, month - 1, day, 12, 0, 0, 0)
-}
+import { isoDate, parseIsoDate } from '@/lib/date'
+import { seededShuffle } from '@/lib/theory/options'
 
 export function dayIndexOf(iso: string): number {
-  const [year, month, day] = iso.split('-').map(Number)
-  const noon = new Date(year, month - 1, day, 12, 0, 0, 0)
-  return Math.floor(noon.getTime() / 86_400_000)
+  return Math.floor(parseIsoDate(iso).getTime() / 86_400_000)
 }
 
 function orderFor(lap: number, grooves: Groove[]): Groove[] {

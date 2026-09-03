@@ -91,7 +91,10 @@ Six rules you check work against, and never violate yourself.
    never across.
 3. **`src/lib/` is a leaf: it imports nothing from the app**, and it is the only
    channel `scripts/` has into `src/`. An app import that appears there breaks
-   the generator, which runs those modules by relative path with no bundler.
+   the generator, which runs those modules by relative path with no bundler. What
+   earns a place there is **domain rather than product** — knowledge that would
+   still be true if this product did not exist; two callers across the
+   app/generator boundary is sufficient evidence, not the test.
 4. **A test sits beside the thing it tests** — colocated, in the folder that owns
    its subject. An assertion filed away from its subject is a coverage gap in
    waiting — nobody looking at the subject will find
@@ -111,6 +114,16 @@ Several of these are guarded by structural tests that read the tree from disk �
 `src/lib/hash.test.ts`. They run under `npm test`, not `npm run lint`. They exist
 to catch work that did not know a rule, so a failure in one is a real finding
 about the epic, not noise.
+
+Inside `src/features/daily-groove/` there is a second import graph, drawn in
+`docs/architecture.md` § *The arrows inside a slice* and enforced by lint zones
+6–8 plus two cases in the slice's `structure.test.ts`. Two things to check
+rather than assume when an epic touched it: **exactly one concern folder has a
+door** (`lib/presentation/index.ts`) and only `components/GroovePuzzle.tsx` is
+held to it, so a direct import of `../lib/audio/output` from that file is
+unguarded by design and not a finding; and the map in `architecture.md` is meant
+to describe the tree, so an arrow it draws with no import behind it — or an
+import with no arrow — is a finding in its own right.
 
 ## How you work
 

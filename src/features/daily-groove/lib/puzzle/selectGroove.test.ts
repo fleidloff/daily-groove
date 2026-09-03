@@ -1,32 +1,13 @@
 import { describe, it, expect } from 'vitest'
 import type { Groove } from '../../types'
-import { selectGrooveForDate, isoDate, dayIndexOf, parseIsoDate } from './selectGroove'
+import { isoDate } from '@/lib/date'
+import { selectGrooveForDate, dayIndexOf } from './selectGroove'
 
 const grooves: Groove[] = [
   { id: 'a', uuid: '4eaa88e8-267d-49d0-a2d9-b6d2db848d3e', audioSrc: '/grooves/a.mp3', name: 'Test Groove', bpm: 90, root: 'C', flavour: 'Minor', bars: 4, scale: 'C minor', chord: 'Cm', progression: 'Cm–F–G', headDelaySeconds: 0.025057 },
   { id: 'b', uuid: '189022bc-852b-4228-b6f8-6bef9117f166', audioSrc: '/grooves/b.mp3', name: 'Test Groove', bpm: 90, root: 'A', flavour: 'Dorian', bars: 4, scale: 'A dorian', chord: 'Am7', progression: 'Am–D–G', headDelaySeconds: 0.025057 },
   { id: 'c', uuid: 'a5de9f44-30d7-46bb-914d-830a31b7133e', audioSrc: '/grooves/c.mp3', name: 'Test Groove', bpm: 90, root: 'E', flavour: 'Phrygian', bars: 4, scale: 'E phrygian', chord: 'Em', progression: 'Em–Am–B7', headDelaySeconds: 0.025057 },
 ]
-
-describe('isoDate', () => {
-  it('formats the local calendar day as YYYY-MM-DD', () => {
-    expect(isoDate(new Date('2026-08-21T23:00'))).toBe('2026-08-21')
-  })
-
-  it('pads single-digit months and days', () => {
-    expect(isoDate(new Date('2026-01-05T10:00'))).toBe('2026-01-05')
-  })
-})
-
-describe('parseIsoDate', () => {
-  it('parses a YYYY-MM-DD string as a local calendar day at noon', () => {
-    const date = parseIsoDate('2026-08-30')
-    expect(date.getFullYear()).toBe(2026)
-    expect(date.getMonth()).toBe(7)
-    expect(date.getDate()).toBe(30)
-    expect(date.getHours()).toBe(12)
-  })
-})
 
 describe('selectGrooveForDate', () => {
   it('returns the same groove across repeated calls for a fixed date', () => {

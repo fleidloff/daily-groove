@@ -1327,14 +1327,24 @@ Covers: R5, R14
 Covers: R14
 
 - **Test first** — no new test. Run `npm run test:gen` in full: `events.test.ts`,
-  `gate.test.ts`, `harmony.test.ts`, `validity.test.ts`, `lock.test.ts`,
-  `manifest.test.ts` and `pack.test.ts` are the ones that would catch a changed
-  interval, root order or scale name.
+  `gate.test.ts`, `validity.test.ts`, `lock.test.ts` and `pack.test.ts` are the
+  ones that would catch a changed interval, root order or scale name.
+  **`harmony.test.ts` is not one of them** — it compares
+  `harmony.fixture.json` against the *committed* manifest read from disk, two
+  static files with no render between them, so it is green by construction
+  whatever `displayFlavour` returns. A wrong display string is caught by
+  `cli.test.ts`'s in-memory `toGroove` cases and by `manifest.test.ts`'s *names
+  only modes the templates offer*, and exhaustively — over all thirty grooves
+  and every field — only by `rerender-check.ts`'s `manifestSha256` (Step D6, §5
+  of Track D's work order), because a changed `flavour` field moves no audio
+  byte at all.
 - **Implement** — nothing.
 - **Green when** — the whole generator tier is green with no snapshot or fixture
-  updated. **If `harmony.fixture.json` needs regenerating, stop the epic** —
-  that file is derived from the interval table and the root order, and a diff in
-  it means a value moved.
+  updated, **and Step D6's scratch render reports a matching `manifestSha256`**
+  — the tier alone does not establish this step's claim. **If
+  `harmony.fixture.json` needs regenerating, stop the epic** — that file is
+  derived from the interval table and the root order, and a diff in it means a
+  value moved.
 - **Refactor** — none.
 
 #### Step D5 — The docs name files that exist

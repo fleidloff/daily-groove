@@ -10,7 +10,7 @@ import { fileURLToPath } from 'node:url'
 import { renderVoices } from './voices.ts'
 import { gateCandidate, LOUDNESS_CEILING_DB, LOUDNESS_FLOOR_DB } from './gate.ts'
 import { offScalePitches } from './theory/pitches.ts'
-import { pitchesOf } from './theory/scales.ts'
+import { pitchesOf } from '../../src/lib/theory/scales.ts'
 import type { FeelTemplate, MusicMeta, NoteEvent, Pcm } from './types.ts'
 import type { Harmony } from './theory/harmony.ts'
 

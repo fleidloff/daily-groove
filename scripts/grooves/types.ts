@@ -1,18 +1,6 @@
 import type { Root } from '../../src/lib/groove.ts'
-
-export type Flavour =
-  | 'ionian'
-  | 'aeolian'
-  | 'dorian'
-  | 'mixolydian'
-  | 'lydian'
-  | 'phrygian'
-  | 'harmonic-minor'
-  | 'blues'
-  | 'melodic-minor'
-  | 'lydian-dominant'
-  | 'phrygian-dominant'
-  | 'harmonic-major'
+import type { FlavourSlug as Flavour } from '../../src/lib/theory/names.ts'
+export type { FlavourSlug as Flavour } from '../../src/lib/theory/names.ts'
 
 export type VoiceName =
   | 'kick'

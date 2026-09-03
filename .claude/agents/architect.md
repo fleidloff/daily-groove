@@ -48,8 +48,9 @@ Six rules every plan you write has to be buildable inside.
 Two directories carry the weight: `src/components/` is the design system —
 generic, reusable building blocks; `src/features/<feature>/` is one
 self-contained feature per folder. Everything else is glue: `src/app/` for
-routing, `src/lib/` for the small set of code the app and the groove generator
-under `scripts/` must both run.
+routing, `src/lib/` for the code that sits below the app — what the app and the
+groove generator under `scripts/` must both run, plus the theory that shared
+core was cut out of.
 
 ```
 src/app/         → a feature's index.ts, src/components/, src/lib/
@@ -58,8 +59,11 @@ src/components/  → src/lib/
 scripts/grooves/ → src/lib/
 ```
 
-Every pair not drawn is an error, enforced by five
-`import/no-restricted-paths` zones in `eslint.config.mjs`.
+Every pair not drawn is an error, enforced by eight
+`import/no-restricted-paths` zones in `eslint.config.mjs`. Zones 1–5 are the
+graph above; zones 6–8 are inside the one slice that has grown a module map, and
+`docs/architecture.md` § *The arrows inside a slice* is the authority on that
+graph — read it before specifying work inside `src/features/daily-groove/`.
 
 The direction is the load-bearing part:
 
@@ -71,14 +75,24 @@ The direction is the load-bearing part:
 - **Features do not reach each other**, so anything two slices need moves up
   rather than making one slice a dependency of the other.
 - **`src/lib/` imports nothing from the app.** A module earns a place there only
-  if it is pure, dependency-free, runtime-safe TypeScript and genuinely shared
-  across the app/generator boundary. All four bars, or it belongs inside the
-  slice.
+  if it is pure, dependency-free of app code, runtime-safe TypeScript, and
+  **domain rather than product** — knowledge that would still be true if this
+  product did not exist. Two callers across the app/generator boundary is
+  sufficient evidence, not the test. A rule, a wording or a stored shape this
+  product chose belongs inside the slice, where deleting the feature deletes it.
 
 A feature owns everything it needs in one folder — UI, hooks, state, generated
 data, business logic — and exposes one public surface, `index.ts`. Its tests live
 inside it. Its inbound references are countable on one hand: its route(s) under
 `src/app/`, and, where it must appear in shared UI, a single registration point.
+
+Inside `src/features/daily-groove/` there is a second graph: six concerns, drawn
+in `docs/architecture.md`. **Exactly one of them has a door** —
+`lib/presentation/index.ts`, the coaching module's — and only
+`components/GroovePuzzle.tsx` is held to it. The other four concern folders have
+no `index.ts` and their modules are imported directly, so do not specify a plan
+that assumes a barrel it would have to invent. A door is earned by measured
+growth: if a spec adds one, it says which folder grew and by how much.
 
 ## The decomposition method
 

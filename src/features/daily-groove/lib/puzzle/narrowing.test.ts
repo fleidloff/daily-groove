@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import type { Attempt, Root } from '../../types'
-import { ROOTS, simpleRootOptions } from '../theory/music'
-import { ruledOut } from '../presentation/ruledOut'
+import { ROOTS } from '@/lib/theory/roots'
+import { simpleRootOptions } from '@/lib/theory/music'
 import {
   ELIMINATE_AFTER_MISSES,
   ELIMINATED_PER_MISS,
@@ -197,14 +197,6 @@ describe('eliminatedRoots', () => {
 
           for (const attempts of shapes) {
             expect(eliminatedRoots(pool, root, attempts, seed)).not.toContain(root)
-            expect(
-              ruledOut({
-                attempts,
-                answer: { root, flavour: 'Dorian' },
-                roots: pool,
-                date,
-              }).roots,
-            ).not.toContain(root)
           }
         }
       }

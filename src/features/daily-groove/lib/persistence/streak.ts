@@ -1,5 +1,5 @@
 import type { DailyResult } from '../../types'
-import { isoDate, parseIsoDate } from '../puzzle/selectGroove'
+import { isoDate, parseIsoDate } from '@/lib/date'
 
 export function isQualifying(r: DailyResult): boolean {
   return r.solved

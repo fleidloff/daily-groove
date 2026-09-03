@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { renderHook, act, waitFor } from "@testing-library/react";
 import type { Answer, Attempt, DailyResult } from "../types";
 import { createLocalStore } from "../lib/persistence/storage";
-import { isoDate, parseIsoDate } from "../lib/puzzle/selectGroove";
+import { isoDate, parseIsoDate } from "@/lib/date";
 import { useProgress } from "./useProgress";
 
 describe("useProgress + createLocalStore (real storage)", () => {
