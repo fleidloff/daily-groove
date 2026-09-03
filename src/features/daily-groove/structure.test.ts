@@ -148,6 +148,36 @@ function repoSources(root: string): string[] {
     .map((file) => file.slice(process.cwd().length + 1))
 }
 
+const SNIPPETS_ROOT = ['src', 'lib', 'snippets'].join('/')
+const THEORY_ROOT = ['src', 'lib', 'theory'].join('/')
+
+function isUnder(path: string, root: string): boolean {
+  return path === root || path.startsWith(`${root}/`)
+}
+
+function siblingLeafOffenders(
+  files: readonly { path: string; source: string }[],
+): string[] {
+  const offenders: string[] = []
+  for (const { path, source } of files) {
+    const home = isUnder(path, SNIPPETS_ROOT)
+      ? SNIPPETS_ROOT
+      : isUnder(path, THEORY_ROOT)
+        ? THEORY_ROOT
+        : null
+    if (home === null) continue
+    const sibling = home === SNIPPETS_ROOT ? THEORY_ROOT : SNIPPETS_ROOT
+    for (const specifier of [
+      ...importSpecifiers(source),
+      ...mockSpecifiers(source),
+    ]) {
+      const resolved = resolveSpecifier(specifier, path) ?? toRepoPath(specifier)
+      if (isUnder(resolved, sibling)) offenders.push(`${path} -> ${specifier}`)
+    }
+  }
+  return offenders
+}
+
 describe('lib holds no loose modules', () => {
   const entries = () => readdirSync(LIB, { withFileTypes: true })
 
@@ -502,5 +532,44 @@ describe('Epic 1 left no theory residue in the slice', () => {
       }
     }
     expect(offenders).toEqual([])
+  })
+})
+
+describe('snippets and theory are siblings', () => {
+  it('reports an arrow in either direction, import or mock (F21 E1 R7a, R10, AC9)', () => {
+    const offenders = siblingLeafOffenders([
+      {
+        path: `${SNIPPETS_ROOT}/index.ts`,
+        source: `import { FLAVOURS } from '../theory/names'`,
+      },
+      {
+        path: `${THEORY_ROOT}/character.ts`,
+        source: `import { solved } from '../snippets'`,
+      },
+      {
+        path: `${THEORY_ROOT}/character.test.ts`,
+        source: `vi.mock('@${'/'}lib/snippets')`,
+      },
+    ])
+    expect(offenders).toEqual([
+      `${SNIPPETS_ROOT}/index.ts -> ../theory/names`,
+      `${THEORY_ROOT}/character.ts -> ../snippets`,
+      `${THEORY_ROOT}/character.test.ts -> @${'/'}lib/snippets`,
+    ])
+  })
+
+  it('finds neither arrow on the real tree (F21 E1 R7a, R10, AC9)', () => {
+    const files = repoSources('src')
+      .filter((path) => path !== GUARD_FILE)
+      .map((path) => ({
+        path,
+        source: readFileSync(join(process.cwd(), path), 'utf8'),
+      }))
+    const scanned = (root: string) =>
+      files.filter((file) => isUnder(file.path, root)).length
+
+    expect(scanned(SNIPPETS_ROOT)).toBeGreaterThan(0)
+    expect(scanned(THEORY_ROOT)).toBeGreaterThan(0)
+    expect(siblingLeafOffenders(files)).toEqual([])
   })
 })

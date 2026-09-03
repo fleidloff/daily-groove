@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
 import { DM_Sans, Newsreader } from "next/font/google";
 import localFont from "next/font/local";
-import { APP_NAME, TAGLINE } from "@/lib/branding";
+import { branding } from "@/lib/snippets";
+import { LanguageProvider } from "./LanguageContext";
 import "./globals.css";
+
+const { appName: APP_NAME, tagline: TAGLINE } = branding;
 
 const newsreader = Newsreader({
   variable: "--font-newsreader",
@@ -35,7 +38,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="en"
       className={`${newsreader.variable} ${dmSans.variable} ${jazzHand.variable} antialiased`}
     >
-      <body>{children}</body>
+      <body>
+        <LanguageProvider>{children}</LanguageProvider>
+      </body>
     </html>
   );
 }

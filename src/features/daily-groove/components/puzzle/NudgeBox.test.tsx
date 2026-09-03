@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { cleanup, render, screen } from '@testing-library/react'
 import { NudgeBox } from './NudgeBox'
+import { puzzle } from '@/lib/snippets'
 import { ROOTS } from '@/lib/theory/roots'
 import type { Feedback } from '../../lib/presentation/feedback'
 
@@ -27,7 +28,7 @@ const MOVE: Feedback = {
 }
 
 function box() {
-  return screen.getByRole('complementary', { name: 'Hint' })
+  return screen.getByRole('complementary', { name: puzzle.hint })
 }
 
 function line() {
@@ -37,7 +38,7 @@ function line() {
 describe('NudgeBox', () => {
   it('carries the "Hint" eyebrow, and never the old "A nudge" wording (R6, AC9)', () => {
     render(<NudgeBox feedback={ROOT_MATCHED} coaching={MOVE} eliminated={2} />)
-    expect(screen.getByText('Hint')).toBeInTheDocument()
+    expect(screen.getByText(puzzle.hint)).toBeInTheDocument()
     expect(screen.queryByText(/a nudge/i)).not.toBeInTheDocument()
     expect(
       screen.queryByRole('complementary', { name: 'A nudge' }),
@@ -60,12 +61,12 @@ describe('NudgeBox', () => {
 
   it('names how many roots the app ruled out, and says the row is narrowing (R17, AC17)', () => {
     render(<NudgeBox feedback={ROOT_MATCHED} coaching={MOVE} eliminated={2} />)
-    expect(line()).toHaveTextContent('2 roots ruled out. Narrowing as you go.')
+    expect(line()).toHaveTextContent(puzzle.ruledOut({ roots: 2 }))
   })
 
   it('names the count it is given (R17, AC17)', () => {
     render(<NudgeBox feedback={ROOT_MATCHED} coaching={MOVE} eliminated={4} />)
-    expect(line()).toHaveTextContent('4 roots ruled out. Narrowing as you go.')
+    expect(line()).toHaveTextContent(puzzle.ruledOut({ roots: 4 }))
   })
 
   it('names no root anywhere in the box — neither the answer nor the ones removed (R18, AC17)', () => {
@@ -127,7 +128,7 @@ describe('NudgeBox', () => {
     )
     expect(container).toBeEmptyDOMElement()
     expect(
-      screen.queryByRole('complementary', { name: 'Hint' }),
+      screen.queryByRole('complementary', { name: puzzle.hint }),
     ).not.toBeInTheDocument()
   })
 

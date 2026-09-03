@@ -1,6 +1,7 @@
 'use client'
 
 import { Switch } from '@/components/controls/Switch'
+import { puzzle } from '@/lib/snippets'
 
 type TapSoundsToggleProps = {
   on: boolean
@@ -8,5 +9,5 @@ type TapSoundsToggleProps = {
 }
 
 export function TapSoundsToggle({ on, onChange }: TapSoundsToggleProps) {
-  return <Switch label="Tap sounds" checked={on} onChange={onChange} />
+  return <Switch label={puzzle.tapSounds} checked={on} onChange={onChange} />
 }

@@ -32,7 +32,8 @@ vi.mock('../lib/persistence/storage', async (importOriginal) => ({
 
 import { GroovePuzzle } from './GroovePuzzle'
 import { isoDate } from '@/lib/date'
-import { APP_NAME } from '@/lib/branding'
+import { branding, coaching, header, puzzle } from '@/lib/snippets'
+const { appName: APP_NAME } = branding
 
 describe('GroovePuzzle', () => {
   beforeEach(() => {
@@ -46,7 +47,7 @@ describe('GroovePuzzle', () => {
 
   const giveUp = () =>
     screen.queryByRole('button', {
-      name: /give up and show the answer|end the day and show the answer/i,
+      name: (name) => name === puzzle.giveUp || name === puzzle.giveUpArmed,
     })
 
   const solvedDaysAgo = (daysAgo: number): DailyResult => ({
@@ -77,8 +78,8 @@ describe('GroovePuzzle', () => {
       ).toBeInTheDocument()
       expect(screen.queryByText('Saturday')).not.toBeInTheDocument()
       expect(screen.queryByText('daily-groove')).not.toBeInTheDocument()
-      expect(screen.getByLabelText(/current streak/i)).toHaveTextContent(
-        /no streak yet/i,
+      expect(screen.getByLabelText(header.currentStreakName)).toHaveTextContent(
+        header.noStreakYet,
       )
     } finally {
       vi.useRealTimers()
@@ -97,8 +98,8 @@ describe('GroovePuzzle', () => {
 
     await renderPuzzle()
 
-    expect(screen.getByLabelText(/current streak/i)).toHaveTextContent(
-      '1 day streak',
+    expect(screen.getByLabelText(header.currentStreakName)).toHaveTextContent(
+      header.streakDays({ days: 1 }),
     )
   })
 
@@ -110,8 +111,8 @@ describe('GroovePuzzle', () => {
     ])
     const user = userEvent.setup()
     await renderPuzzle()
-    expect(screen.getByLabelText(/current streak/i)).toHaveTextContent(
-      '3 days streak',
+    expect(screen.getByLabelText(header.currentStreakName)).toHaveTextContent(
+      header.streakDays({ days: 3 }),
     )
 
     await guess(user, 'G', wrongFlavour())
@@ -120,8 +121,8 @@ describe('GroovePuzzle', () => {
     await user.click(giveUp() as HTMLElement)
     await user.click(giveUp() as HTMLElement)
 
-    expect(screen.getByLabelText(/current streak/i)).toHaveTextContent(
-      /no streak yet/i,
+    expect(screen.getByLabelText(header.currentStreakName)).toHaveTextContent(
+      header.noStreakYet,
     )
     expect(screen.queryByRole('alert')).toBeNull()
     expect(document.body.textContent).not.toMatch(
@@ -130,7 +131,7 @@ describe('GroovePuzzle', () => {
   })
 
   describe('sharing the groove (F12 E2)', () => {
-    const shareControl = () => screen.getByRole('button', { name: 'Share' })
+    const shareControl = () => screen.getByRole('button', { name: header.share })
 
     const link = () => `${window.location.origin}/groove/${GROOVE.uuid}`
 
@@ -152,8 +153,8 @@ describe('GroovePuzzle', () => {
       await renderPuzzle()
 
       expect(shareControl()).toBeInTheDocument()
-      expect(shareControl()).toHaveAccessibleName('Share')
-      expect(control()).toHaveAccessibleName('Pick a root and a mode')
+      expect(shareControl()).toHaveAccessibleName(header.share)
+      expect(control()).toHaveAccessibleName(coaching.pickRootAndMode)
       expect(mockStore.save).not.toHaveBeenCalled()
     })
 
@@ -162,11 +163,11 @@ describe('GroovePuzzle', () => {
       await renderPuzzle()
 
       await guess(user, 'C', wrongFlavour())
-      expect(shareControl()).toHaveAccessibleName('Share')
+      expect(shareControl()).toHaveAccessibleName(header.share)
 
       await guess(user, 'C', 'Aeolian')
-      expect(control()).toHaveAccessibleName('Solved')
-      expect(shareControl()).toHaveAccessibleName('Share')
+      expect(control()).toHaveAccessibleName(coaching.checkSolved)
+      expect(shareControl()).toHaveAccessibleName(header.share)
     })
 
     it('still offers it after a reveal, under the same label (R2, AC1)', async () => {
@@ -181,7 +182,7 @@ describe('GroovePuzzle', () => {
       await user.click(giveUp() as HTMLElement)
 
       expect(solutionPanel()).toBeInTheDocument()
-      expect(shareControl()).toHaveAccessibleName('Share')
+      expect(shareControl()).toHaveAccessibleName(header.share)
     })
 
     it("offers this groove's own link, and nothing else in it (R3, R7, AC2, AC3)", async () => {
@@ -220,17 +221,17 @@ describe('GroovePuzzle', () => {
       await waitFor(() => expect(share).toHaveBeenCalledTimes(1))
 
       expect(
-        screen.getByRole('button', { name: 'Stop the loop' }),
+        screen.getByRole('button', { name: puzzle.playName.stop }),
       ).toBeInTheDocument()
       await advance(loopFraction(0.25))
       expect(
-        screen.getByRole('button', { name: 'Stop the loop' }),
+        screen.getByRole('button', { name: puzzle.playName.stop }),
       ).toBeInTheDocument()
 
       expect(
         within(rootGroup()).getByRole('button', { name: 'C' }),
       ).toHaveAttribute('aria-pressed', 'true')
-      expect(control()).toHaveAccessibleName('Pick a mode')
+      expect(control()).toHaveAccessibleName(coaching.pickMode)
       expect(mockStore.save).not.toHaveBeenCalled()
       expect(screen.queryByRole('alert')).toBeNull()
     })
@@ -240,7 +241,7 @@ describe('GroovePuzzle', () => {
       const user = userEvent.setup()
       await renderPuzzle(<GroovePuzzle groove={GROOVE} mode="shared" />)
 
-      expect(shareControl()).toHaveAccessibleName('Share')
+      expect(shareControl()).toHaveAccessibleName(header.share)
 
       await user.click(shareControl())
       await waitFor(() => expect(share).toHaveBeenCalledTimes(1))
@@ -253,7 +254,7 @@ describe('GroovePuzzle', () => {
       renderPuzzle(<GroovePuzzle groove={groove} mode="shared" />)
 
     const streakLine = () =>
-      screen.getByLabelText(/current streak/i).textContent
+      screen.getByLabelText(header.currentStreakName).textContent
 
     it('renders the header with the player’s real streak, as on / (R7a, AC12)', async () => {
       mockStore.getAll.mockResolvedValue([
@@ -263,7 +264,7 @@ describe('GroovePuzzle', () => {
       ])
 
       const shared = await renderShared()
-      expect(streakLine()).toMatch(/3 days streak/)
+      expect(streakLine()).toMatch(header.streakDays({ days: 3 }))
       const sharedHeader = streakLine()
       shared.unmount()
 

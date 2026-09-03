@@ -3,7 +3,8 @@ import { resolve } from "node:path";
 import { describe, it, expect } from "vitest";
 import { act, render, screen } from "@testing-library/react";
 import Home from "./page";
-import { APP_NAME } from "@/lib/branding";
+import { branding } from "@/lib/snippets";
+const { appName: APP_NAME } = branding;
 
 async function renderHome() {
   const result = render(<Home />);

@@ -3,8 +3,12 @@ import { expect, vi, type Mock } from 'vitest'
 import { act, render, screen, waitFor, within } from '@testing-library/react'
 import type userEvent from '@testing-library/user-event'
 import type { Answer, Attempt, DailyResult, Groove, Root } from '../types'
-import { flavourOptions } from '@/lib/theory/music'
+import { flavourOptions, flavourPool } from '@/lib/theory/music'
+import { barChords } from '@/lib/theory/changes'
 import { isoDate } from '@/lib/date'
+import { FAMILIES } from '@/lib/theory/families'
+import { ROOTS } from '@/lib/theory/roots'
+import { coaching, puzzle } from '@/lib/snippets'
 import { GROOVES } from '../data/grooves.generated'
 import { createLocalStore } from '../lib/persistence/storage'
 import {
@@ -32,7 +36,7 @@ export const GROOVE: Groove = {
   headDelaySeconds: 0.025057,
 }
 
-export const CHANGES_READ = 'Cm · Fm · G7 · Cm'
+export const CHANGES_READ = barChords(GROOVE.progression).join(' · ')
 
 export const ANSWER: Answer = { root: 'C', flavour: 'Aeolian' }
 
@@ -158,8 +162,8 @@ export async function advance(seconds: number) {
 }
 
 export async function play(user: ReturnType<typeof userEvent.setup>) {
-  await user.click(screen.getByRole('button', { name: 'Play the loop' }))
-  await screen.findByRole('button', { name: 'Stop the loop' })
+  await user.click(screen.getByRole('button', { name: puzzle.playName.play }))
+  await screen.findByRole('button', { name: puzzle.playName.stop })
 }
 
 export async function settle() {
@@ -179,11 +183,9 @@ export async function renderPuzzle(ui?: ReactElement) {
 
 export const NOTE_GLYPH = '♪'
 
-export const CAPTION =
-  'Find the note that feels like home — Play along with your instrument, or tap a root or a mode to hear it.'
+export const CAPTION = puzzle.captionSoundsOn
 
-export const CAPTION_SOUNDS_OFF =
-  'Find the note that feels like home — Play along with your instrument.'
+export const CAPTION_SOUNDS_OFF = puzzle.captionSoundsOff
 
 export const chipLabel = (chip: Element) =>
   Array.from(chip.childNodes)
@@ -197,12 +199,32 @@ export const chipLabel = (chip: Element) =>
 export const chipAdornment = (chip: Element) =>
   chip.querySelector('[aria-hidden="true"]')?.textContent ?? null
 
-export const rootGroup = () => screen.getByRole('radiogroup', { name: 'Root' })
-export const flavourGroup = () => screen.getByRole('radiogroup', { name: 'Mode' })
+const CONTROL_NAMES = new Set<string>([
+  coaching.checkSolved,
+  coaching.pickRoot,
+  coaching.pickMode,
+  coaching.pickRootAndMode,
+  ...ROOTS.flatMap((root) =>
+    [...flavourPool(GROOVES), ...FAMILIES].map((flavour) =>
+      coaching.checkPair({ root, flavour }),
+    ),
+  ),
+])
+
+const RULED_OUT_LINES = new Set<string>(
+  ROOTS.map((_, index) => puzzle.ruledOut({ roots: index + 1 })),
+)
+
+export const rootGroup = () =>
+  screen.getByRole('radiogroup', { name: puzzle.rootGroup })
+export const flavourGroup = () =>
+  screen.getByRole('radiogroup', { name: puzzle.modeGroup })
 export const control = () =>
-  screen.getByRole('button', { name: /^(Pick a |Check |Solved$)/ })
-export const nudge = () => screen.queryByRole('complementary', { name: 'Hint' })
-export const nudgeLine = () => screen.queryByText(/roots ruled out/i)
+  screen.getByRole('button', { name: (name) => CONTROL_NAMES.has(name) })
+export const nudge = () =>
+  screen.queryByRole('complementary', { name: puzzle.hint })
+export const nudgeLine = () =>
+  screen.queryByText((text) => RULED_OUT_LINES.has(text))
 export const hintRegion = () => nudge()?.querySelector('[role="status"]') ?? null
 export const verdictLine = () => nudge()?.querySelector('[data-tone="warm"]') ?? null
 export const coachingLine = () =>

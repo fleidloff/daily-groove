@@ -308,10 +308,15 @@ and must stay green. Four checks, all mechanical, all cheap.
 **1. The assertion inventory is byte-identical.** `vitest list` prints
 `[app] <file> > <describe> > <it>` for all 2,446 app-tier cases.
 
+**Sort both sides.** `vitest list` emits files in discovery order, which varies
+between runs, so a raw diff of two runs over an *untouched* tree is ~3000 lines.
+The case set is stable; the ordering is not. Found independently by Tracks A and
+D during feature-21 after both chased a diff that meant nothing.
+
 ```
-npx vitest list --project app > .verify/inventory.before   # before the track
-npx vitest list --project app > .verify/inventory.after    # after
-diff .verify/inventory.before .verify/inventory.after      # must be empty
+sort .verify/inventory.before > /tmp/inv.before          # before the track
+npx vitest list --project app | sort > /tmp/inv.after    # after
+diff /tmp/inv.before /tmp/inv.after                      # must be empty
 ```
 
 An empty diff is R2's *relocated* and *deleted* halves, proven: no case moved

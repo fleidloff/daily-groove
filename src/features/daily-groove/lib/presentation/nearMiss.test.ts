@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest'
+import { coaching } from '@/lib/snippets'
 import { selectNearMiss } from './nearMiss'
 import { degreeDifferences } from '@/lib/theory/difference'
 import { FAMILIES, familyOf } from '@/lib/theory/families'
@@ -92,7 +93,7 @@ describe('selectNearMiss', () => {
 
   it('says the colour was right where only the root was wrong', () => {
     expect(selectNearMiss([wrong('Mixolydian', 'C')], mixolydianDay, true)).toBe(
-      'You said Mixolydian — the colour was right, not the home note.',
+      coaching.nearMissColourRight({ flavour: 'Mixolydian' }),
     )
   })
 
@@ -112,32 +113,42 @@ describe('selectNearMiss', () => {
 
   it('names the single degree that separates the guess from the answer', () => {
     expect(selectNearMiss([wrong('Dorian', 'G')], mixolydianDay, true)).toBe(
-      'You said Dorian — one note apart: ♭3, not 3.',
+      coaching.nearMissApart({
+        flavour: 'Dorian',
+        notes: 1,
+        guessed: '♭3',
+        answered: '3',
+      }),
     )
   })
 
   it('names both degrees, in degree order, where two of them differ', () => {
     expect(selectNearMiss([wrong('Lydian', 'G')], mixolydianDay, true)).toBe(
-      'You said Lydian — two notes apart: ♯4 and 7, not 4 and ♭7.',
+      coaching.nearMissApart({
+        flavour: 'Lydian',
+        notes: 2,
+        guessed: '♯4 and 7',
+        answered: '4 and ♭7',
+      }),
     )
   })
 
   it('says plainly that a distant guess is far off, and names no degree', () => {
     const line = selectNearMiss([wrong('Phrygian', 'G')], mixolydianDay, true)
 
-    expect(line).toBe('You said Phrygian — a long way from this one, not a near miss.')
+    expect(line).toBe(coaching.nearMissFar({ flavour: 'Phrygian' }))
     expect(line).not.toMatch(/[0-9]/)
   })
 
   it('gives a blues day the same plain wording, in both directions', () => {
     const bluesDay: Answer = { root: 'C', flavour: 'Blues' }
     expect(selectNearMiss([wrong('Dorian', 'C', bluesDay)], bluesDay, true)).toBe(
-      'You said Dorian — a long way from this one, not a near miss.',
+      coaching.nearMissFar({ flavour: 'Dorian' }),
     )
 
     const dorianDay: Answer = { root: 'C', flavour: 'Dorian' }
     expect(selectNearMiss([wrong('Blues', 'C', dorianDay)], dorianDay, true)).toBe(
-      'You said Blues — a long way from this one, not a near miss.',
+      coaching.nearMissFar({ flavour: 'Blues' }),
     )
   })
 
@@ -161,7 +172,12 @@ describe('selectNearMiss', () => {
     const spent = [wrong('Ionian', 'C'), wrong('Lydian', 'A'), wrong('Dorian', 'G')]
 
     expect(selectNearMiss(spent, mixolydianDay, true)).toBe(
-      'You said Dorian — one note apart: ♭3, not 3.',
+      coaching.nearMissApart({
+        flavour: 'Dorian',
+        notes: 1,
+        guessed: '♭3',
+        answered: '3',
+      }),
     )
   })
 

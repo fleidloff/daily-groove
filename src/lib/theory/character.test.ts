@@ -32,7 +32,6 @@ describe('characterOf', () => {
   it('names Mixolydian by its ♭7', () => {
     const character = characterOf('Mixolydian')
     expect(character?.degrees).toEqual(['♭7'])
-    expect(character?.line).toContain('♭7')
   })
 
   it.each(['mixolydian', 'MIXOLYDIAN', ' Mixolydian '])(
@@ -72,40 +71,5 @@ describe('MODE_CHARACTERS', () => {
 
   it.each(ENTRIES)('%s claims exactly the degrees its intervals differ by', (flavour, entry) => {
     expect(entry.degrees).toEqual(differingDegrees(flavour))
-  })
-
-  it.each(ENTRIES)('%s names every one of those degrees in its line', (flavour, entry) => {
-    for (const degree of entry.degrees) {
-      expect(entry.line, `"${entry.line}" never names ${degree}`).toContain(degree)
-    }
-  })
-
-  it.each(ENTRIES)('%s states what the mode is and stops', (_flavour, entry) => {
-    expect(entry.line).not.toContain('doing it')
-    expect(entry.line).not.toContain('the sound of it')
-  })
-
-  it.each(ENTRIES)('%s says it in one clause with no sentence break', (_flavour, entry) => {
-    expect(entry.line).not.toMatch(/[.!?]\s/)
-  })
-
-  it.each(ENTRIES)('%s fits in one line of prose', (_flavour, entry) => {
-    expect(entry.line.length).toBeLessThanOrEqual(72)
-  })
-
-  it.each(ENTRIES)('%s uses no word the player would have to look up', (_flavour, entry) => {
-    expect(entry.line).not.toMatch(/characteristic|tonality|seventh|sixth|second|fourth|fifth/i)
-    expect(entry.line).not.toMatch(/\b(?:I{1,3}|IV|VI{0,2}|VII)\b/)
-  })
-})
-
-describe('the blues scale', () => {
-  it('names its ♭5 and does not call itself a mode', () => {
-    const blues = characterOf('Blues')
-    expect(blues?.degrees).toEqual(['♭5'])
-    expect(blues?.line).toContain('♭5')
-    expect(blues?.line).toContain('4')
-    expect(blues?.line).toContain('5')
-    expect(blues?.line.toLowerCase()).not.toContain('mode')
   })
 })

@@ -4,8 +4,10 @@ import { describe, expect, it, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { GrooveHeader } from './GrooveHeader'
-import { APP_NAME, TAGLINE } from '@/lib/branding'
+import { branding, header } from '@/lib/snippets'
 import { renderFeature } from '../../testing/renderFeature'
+
+const { appName: APP_NAME, tagline: TAGLINE } = branding
 
 describe('GrooveHeader', () => {
   it('drops the wordmark, and the date with it (F8 E1 R11, AC9)', () => {
@@ -69,7 +71,7 @@ describe('GrooveHeader', () => {
     const onShowHelp = vi.fn()
     render(<GrooveHeader streak={12} onShowHelp={onShowHelp} />)
 
-    const help = screen.getByRole('button', { name: 'How to play' })
+    const help = screen.getByRole('button', { name: header.helpToggleName })
     expect(help).toBeInTheDocument()
 
     await userEvent.click(help)
@@ -79,7 +81,7 @@ describe('GrooveHeader', () => {
   it('offers the question mark to every player, whatever their streak (F8 E3 R10)', () => {
     render(<GrooveHeader streak={0} onShowHelp={() => {}} />)
     expect(
-      screen.getByRole('button', { name: 'How to play' }),
+      screen.getByRole('button', { name: header.helpToggleName }),
     ).toBeInTheDocument()
   })
 
@@ -87,7 +89,7 @@ describe('GrooveHeader', () => {
     render(<GrooveHeader streak={12} onShowHelp={() => {}} />)
 
     const tagline = screen.getByText(TAGLINE)
-    const help = screen.getByRole('button', { name: 'How to play' })
+    const help = screen.getByRole('button', { name: header.helpToggleName })
 
     expect(tagline.tagName).toBe('P')
     expect(tagline).toContainElement(help)
@@ -97,14 +99,14 @@ describe('GrooveHeader', () => {
   it('drops the question mark when there is nothing to ask for (F8 E3 R10)', () => {
     render(<GrooveHeader streak={12} onShowHelp={null} />)
 
-    expect(screen.queryByRole('button', { name: 'How to play' })).toBeNull()
+    expect(screen.queryByRole('button', { name: header.helpToggleName })).toBeNull()
     expect(screen.getByText(TAGLINE)).toBeInTheDocument()
   })
 
   it('keeps the streak at the right even when the header stacks (F8 E2 R10a, AC9a)', () => {
     render(<GrooveHeader streak={12} onShowHelp={() => {}} />)
 
-    const anchor = screen.getByLabelText(/current streak/i)
+    const anchor = screen.getByLabelText(header.currentStreakName)
       .parentElement as HTMLElement
     expect(anchor.className).toContain('self-end')
     expect(anchor.className).toContain('sm:self-auto')
@@ -121,8 +123,8 @@ describe('GrooveHeader', () => {
 
   it('carries the streak pill (R3)', () => {
     render(<GrooveHeader streak={12} onShowHelp={() => {}} />)
-    const badge = screen.getByLabelText(/current streak/i)
-    expect(badge).toHaveTextContent('12 days streak')
+    const badge = screen.getByLabelText(header.currentStreakName)
+    expect(badge).toHaveTextContent(header.streakDays({ days: 12 }))
   })
 })
 
@@ -130,7 +132,7 @@ describe('through the composed page', () => {
   it("shows the streak badge alongside the puzzle (AC6)", async () => {
     await renderFeature();
 
-    expect(screen.getByLabelText(/current streak/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(header.currentStreakName)).toBeInTheDocument();
   })
 })
 
@@ -164,7 +166,7 @@ describe('the share slot (F12 E2)', () => {
     render(<GrooveHeader streak={12} onShowHelp={() => {}} share={slot()} />)
 
     const share = screen.getByRole('button', { name: 'Share' })
-    const badge = screen.getByLabelText(/current streak/i)
+    const badge = screen.getByLabelText(header.currentStreakName)
 
     expect(share.closest('header')).not.toBeNull()
     const anchor = badge.closest('.self-end') as HTMLElement
@@ -176,7 +178,7 @@ describe('the share slot (F12 E2)', () => {
     render(<GrooveHeader streak={12} onShowHelp={() => {}} share={slot()} />)
 
     const anchor = screen
-      .getByLabelText(/current streak/i)
+      .getByLabelText(header.currentStreakName)
       .closest('.self-end') as HTMLElement
     expect(anchor.className).toContain('self-end')
     expect(anchor.className).toContain('sm:self-auto')
@@ -191,8 +193,8 @@ describe('the share slot (F12 E2)', () => {
       screen.getByRole('heading', { level: 1, name: APP_NAME }),
     ).toBeInTheDocument()
     expect(screen.getByText(TAGLINE)).toBeInTheDocument()
-    const badge = screen.getByLabelText(/current streak/i)
-    expect(badge).toHaveTextContent('12 days streak')
+    const badge = screen.getByLabelText(header.currentStreakName)
+    expect(badge).toHaveTextContent(header.streakDays({ days: 12 }))
     expect((badge.parentElement as HTMLElement).className).toContain('self-end')
   })
 

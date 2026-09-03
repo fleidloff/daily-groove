@@ -94,7 +94,7 @@ describe('design system structure', () => {
     expect(unlisted.sort()).toEqual([])
   })
 
-  it('gives PlayControl only the four props its one caller can reach', () => {
+  it('gives PlayControl only the five props its one caller can reach', () => {
     const source = readFileSync(join(componentsDir, 'controls/PlayControl.tsx'), 'utf8')
 
     const block = source.match(/type PlayControlProps = \{([\s\S]*?)\n\}/)
@@ -103,12 +103,27 @@ describe('design system structure', () => {
     const props = [...(block as RegExpMatchArray)[1].matchAll(/^\s{2}(\w+)\??:/gm)].map(
       (match) => match[1],
     )
-    expect(props).toEqual(['isPlaying', 'onToggle', 'busy', 'text'])
+    expect(props).toEqual(['isPlaying', 'onToggle', 'busy', 'text', 'name'])
 
     expect(source).not.toContain('PlayControlSize')
     expect(source).not.toContain('IconButton')
     expect(source).not.toMatch(/^\s{2}size\??:/m)
     expect(source).toContain('size="lg"')
+  })
+
+  it('holds no snippet import (F21 E1 R10, AC10)', () => {
+    const offenders: string[] = []
+
+    for (const file of sourceFiles) {
+      const source = readFileSync(file, 'utf8')
+      for (const specifier of importSpecifiers(source)) {
+        if (specifier.includes('lib/snippets')) {
+          offenders.push(`${file.slice(componentsDir.length + 1)} -> ${specifier}`)
+        }
+      }
+    }
+
+    expect(offenders).toEqual([])
   })
 
   it('has no tooltip component', () => {

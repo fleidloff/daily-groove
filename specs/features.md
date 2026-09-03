@@ -36,7 +36,8 @@ tested and verified). Lettered candidates sit at ✏️ **Briefed** until promot
 | [18](feature-18/) | Coach the ear | ✅ Done | Keeps a how-to-listen line in the hint box for the whole day — changing with each miss and with what the miss showed — and gives it the slot the verdict line used to hold; drops the narrowing count once the root is confirmed. |
 | [19](feature-19/) | Attempts out of the way | ✅ Done | Drops the three attempt dots — a solve counts however many tries it took, and only giving up or skipping a day breaks the streak. |
 | [20](feature-20/) | Modular architecture | ✅ Done | Draws the boundaries the one feature slice only implied — one shared body of theory, a door onto the coaching modules that the puzzle card feeds itself through, and a map that lint enforces. |
-| [21](feature-21/) | Internationalization | 🛠 Ready to implement | Gathers every user-facing string into `src/lib/snippets/en/` and gives the app a stored language, so the next language is a folder beside it rather than a second sweep. |
+| [21](feature-21/) | Internationalization | ✅ Done | Gathers every user-facing string into `src/lib/snippets/en/` and gives the app a stored language, so the next language is a folder beside it rather than a second sweep. |
+| [22](feature-22/) | Gentle first round | 📋 Planned | Meets a first-time player in Simple mode — six roots, Major or Minor — and names both ways to play, so day one is a puzzle they can hear rather than a wall of mode names. |
 
 ## Bugs
 * when giving up, the "pick a root" button should state "Revealed" (similarly to showing solved when solved)
@@ -49,7 +50,6 @@ briefing. Rename the folder to the next free number to put one on the plan.
 
 | # | Feature | Status | Summary |
 | :-- | :-- | :-- | :-- |
-| [A](feature-a/) | Vercel & Supabase | ✏️ Briefed | Deploys to Vercel and moves user data to Supabase behind an anonymous, non-stealable local ID, with data export/import between browsers. |
 
 ---
 

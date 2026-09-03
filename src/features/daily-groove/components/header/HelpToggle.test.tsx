@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { header } from '@/lib/snippets'
 import { HelpToggle } from './HelpToggle'
 
 describe('HelpToggle', () => {
@@ -8,7 +9,7 @@ describe('HelpToggle', () => {
     render(<HelpToggle onShow={vi.fn()} />)
 
     expect(
-      screen.getByRole('button', { name: 'How to play' }),
+      screen.getByRole('button', { name: header.helpToggleName }),
     ).toBeInTheDocument()
   })
 
@@ -16,14 +17,14 @@ describe('HelpToggle', () => {
     render(<HelpToggle onShow={vi.fn()} />)
 
     expect(
-      screen.getByRole('button', { name: 'How to play' }).textContent?.trim(),
+      screen.getByRole('button', { name: header.helpToggleName }).textContent?.trim(),
     ).toBe('?')
   })
 
   it('never submits a form by accident (R9)', () => {
     render(<HelpToggle onShow={vi.fn()} />)
 
-    expect(screen.getByRole('button', { name: 'How to play' })).toHaveAttribute(
+    expect(screen.getByRole('button', { name: header.helpToggleName })).toHaveAttribute(
       'type',
       'button',
     )
@@ -34,7 +35,7 @@ describe('HelpToggle', () => {
     const onShow = vi.fn()
     render(<HelpToggle onShow={onShow} />)
 
-    await user.click(screen.getByRole('button', { name: 'How to play' }))
+    await user.click(screen.getByRole('button', { name: header.helpToggleName }))
 
     expect(onShow).toHaveBeenCalledTimes(1)
   })
@@ -45,7 +46,7 @@ describe('HelpToggle', () => {
 
     await user.tab()
 
-    expect(screen.getByRole('button', { name: 'How to play' })).toHaveFocus()
+    expect(screen.getByRole('button', { name: header.helpToggleName })).toHaveFocus()
   })
 
   it('is operable by the enter key (R9, AC10)', async () => {
@@ -75,7 +76,7 @@ describe('HelpToggle', () => {
     const onShow = vi.fn()
     render(<HelpToggle onShow={onShow} />)
 
-    const toggle = screen.getByRole('button', { name: 'How to play' })
+    const toggle = screen.getByRole('button', { name: header.helpToggleName })
     await user.click(toggle)
     await user.click(toggle)
 

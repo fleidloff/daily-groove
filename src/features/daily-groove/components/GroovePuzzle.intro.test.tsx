@@ -27,6 +27,7 @@ vi.mock('../lib/persistence/storage', async (importOriginal) => ({
 import { GroovePuzzle } from './GroovePuzzle'
 import { selectGrooveForDate } from '../lib/puzzle/selectGroove'
 import { isoDate } from '@/lib/date'
+import { header, intro, puzzle } from '@/lib/snippets'
 import { GROOVES } from '../data/grooves.generated'
 import { renderFeature } from '../testing/renderFeature'
 
@@ -42,11 +43,11 @@ describe('GroovePuzzle', () => {
 
   describe('how to play (F8 E3)', () => {
     const box = () =>
-      screen.queryByRole('heading', { level: 2, name: 'How to play' })
+      screen.queryByRole('heading', { level: 2, name: intro.title })
     const helpToggle = () =>
-      screen.queryByRole('button', { name: 'How to play' })
+      screen.queryByRole('button', { name: header.helpToggleName })
     const closeBox = () =>
-      screen.getByRole('button', { name: 'Close how to play' })
+      screen.getByRole('button', { name: intro.closeName })
 
     function daysAgo(n: number): string {
       const day = new Date()
@@ -122,19 +123,19 @@ describe('GroovePuzzle', () => {
         headings.findIndex((h) => h.textContent === text)
 
       const masthead = headings.findIndex((h) => h.tagName === 'H1')
-      const intro = at('How to play')
+      const introHeading = at(intro.title)
       const card = at(groove.name)
 
       expect(masthead).toBeGreaterThanOrEqual(0)
-      expect(intro).toBeGreaterThan(masthead)
-      expect(card).toBeGreaterThan(intro)
+      expect(introHeading).toBeGreaterThan(masthead)
+      expect(card).toBeGreaterThan(introHeading)
     })
 
     it('is not in the first painted frame, before the records load (F8 E3 R11, AC11)', async () => {
       const { unmount } = render(<GroovePuzzle />)
 
-      expect(screen.getByText(/loading/i)).toBeInTheDocument()
-      expect(screen.queryByText('How to play')).toBeNull()
+      expect(screen.getByText(puzzle.loading)).toBeInTheDocument()
+      expect(screen.queryByText(intro.title)).toBeNull()
 
       await settle()
       unmount()
@@ -270,8 +271,9 @@ describe('GroovePuzzle', () => {
     })
 
     const helpBox = () =>
-      screen.queryByRole('heading', { level: 2, name: 'How to play' })
-    const helpToggle = () => screen.queryByRole('button', { name: 'How to play' })
+      screen.queryByRole('heading', { level: 2, name: intro.title })
+    const helpToggle = () =>
+      screen.queryByRole('button', { name: header.helpToggleName })
 
     it('follows the same new-or-lapsed rule for how to play in both modes (R7b, AC13)', async () => {
       const user = userEvent.setup()

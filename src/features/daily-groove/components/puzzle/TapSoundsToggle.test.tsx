@@ -4,13 +4,14 @@ import { describe, expect, it, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { TapSoundsToggle } from './TapSoundsToggle'
+import { puzzle } from '@/lib/snippets'
 
 describe('TapSoundsToggle', () => {
   it('is a switch whose name says what it switches (R1, AC12)', () => {
     render(<TapSoundsToggle on onChange={vi.fn()} />)
 
     expect(
-      screen.getByRole('switch', { name: /tap sounds/i }),
+      screen.getByRole('switch', { name: puzzle.tapSounds }),
     ).toBeInTheDocument()
   })
 

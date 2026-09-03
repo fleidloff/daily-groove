@@ -3,6 +3,7 @@ import { relative, resolve, sep } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { render, screen, within } from '@testing-library/react'
 import { SolvedPanel } from './SolvedPanel'
+import { coaching, solved } from '@/lib/snippets'
 import { barChords } from '@/lib/theory/changes'
 import { GROOVES } from '../../data/grooves.generated'
 import type { Answer, Attempt } from '../../types'
@@ -32,8 +33,8 @@ function renderPanel(overrides: Partial<Parameters<typeof SolvedPanel>[0]> = {})
   )
 }
 
-const CHANGES = /the changes/i
-const NOTES = /notes to live in/i
+const CHANGES = solved.changes
+const NOTES = solved.notesToLiveIn
 
 function leadSheet(): HTMLElement {
   return within(screen.getByRole('group', { name: CHANGES })).getByRole('img')
@@ -112,14 +113,14 @@ describe('SolvedPanel', () => {
     const panel = screen.getByRole('status')
     expect(panel.textContent).not.toMatch(/tr(y|ies)/i)
     expect(panel.textContent).not.toMatch(/streak/i)
-    expect(screen.queryByText(/given up/i)).toBeNull()
+    expect(screen.queryByText(solved.givenUp)).toBeNull()
   })
 
   it('gives a day given up on the same line (F15 E1 R7, R7a, AC3)', () => {
     renderPanel({ answer: { root: 'C', flavour: 'Mixolydian' }, revealed: true })
 
     expect(within(header()).getByText(/♭7/)).toBeInTheDocument()
-    expect(screen.getByText(/given up · the day is over/i)).toBeInTheDocument()
+    expect(screen.getByText(solved.givenUp)).toBeInTheDocument()
   })
 
   it('renders a mode the table has no line for, without the line (F15 E1 R3a, AC8)', () => {
@@ -274,7 +275,12 @@ describe('SolvedPanel', () => {
     })
 
     const line = within(headerBlock()).getByText(
-      /^You said Dorian — one note apart/,
+      coaching.nearMissApart({
+        flavour: 'Dorian',
+        notes: 1,
+        guessed: '♭3',
+        answered: '3',
+      }),
     )
     const character = within(header()).getByText(/♭7/)
     expect(
@@ -324,9 +330,23 @@ describe('SolvedPanel', () => {
     const attempts = [miss('Phrygian'), miss('Aeolian', false), miss('Dorian')]
 
     renderPanel({ answer: G_MIXOLYDIAN, attempts, revealed: true })
-    const line = within(headerBlock()).getByText(/^You said/)
+    const line = within(headerBlock()).getByText(
+      coaching.nearMissApart({
+        flavour: 'Dorian',
+        notes: 1,
+        guessed: '♭3',
+        answered: '3',
+      }),
+    )
 
-    expect(line.textContent).toMatch(/^You said Dorian — /)
+    expect(line.textContent).toMatch(
+      coaching.nearMissApart({
+        flavour: 'Dorian',
+        notes: 1,
+        guessed: '♭3',
+        answered: '3',
+      }),
+    )
     expect(line.textContent).not.toMatch(/given up/i)
   })
 
@@ -341,7 +361,14 @@ describe('SolvedPanel', () => {
     const region = screen.getByRole('status')
     expect(region).toContainElement(within(header()).getByText(/♭7/))
     expect(region).toContainElement(
-      within(headerBlock()).getByText(/^You said Dorian/),
+      within(headerBlock()).getByText(
+        coaching.nearMissApart({
+          flavour: 'Dorian',
+          notes: 1,
+          guessed: '♭3',
+          answered: '3',
+        }),
+      ),
     )
   })
 
@@ -416,12 +443,12 @@ describe('SolvedPanel', () => {
 
   it('names the day as given up instead (R10, AC10)', () => {
     renderPanel({ revealed: true })
-    expect(screen.getByText(/given up/i)).toBeInTheDocument()
+    expect(screen.getByText(solved.givenUp)).toBeInTheDocument()
   })
 
   it('draws the given-up line in the existing muted inverted tone, adding no token (R10)', () => {
     renderPanel({ revealed: true })
-    expect(screen.getByText(/given up/i).className).toContain('on-accent/75')
+    expect(screen.getByText(solved.givenUp).className).toContain('on-accent/75')
   })
 
   it('passes no fixed width to what its columns draw (R6, AC7)', () => {

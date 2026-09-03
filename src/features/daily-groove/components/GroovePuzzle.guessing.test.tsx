@@ -58,6 +58,7 @@ import { FAMILIES } from '@/lib/theory/families'
 import { createLocalPreferenceStore } from '../lib/persistence/preferences'
 import { selectGrooveForDate } from '../lib/puzzle/selectGroove'
 import { isoDate } from '@/lib/date'
+import { coaching, header, puzzle, routes, solved } from '@/lib/snippets'
 import { GROOVES } from '../data/grooves.generated'
 
 const NOTE_CHARS = 'A-Za-z♭♯'
@@ -99,7 +100,7 @@ describe('GroovePuzzle', () => {
   it('renders a play control and the guessing card (R1, R2, AC1)', async () => {
     await renderPuzzle()
 
-    expect(screen.getByRole('button', { name: /^play the loop$/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: puzzle.playName.play })).toBeInTheDocument()
     expect(within(rootGroup()).getAllByRole('button')).toHaveLength(12)
     expect(within(flavourGroup()).getAllByRole('button')).toHaveLength(4)
     expect(screen.queryAllByRole('checkbox')).toHaveLength(0)
@@ -140,19 +141,19 @@ describe('GroovePuzzle', () => {
 
     const wrong = wrongFlavour()
 
-    expect(control()).toHaveAccessibleName('Pick a root and a mode')
+    expect(control()).toHaveAccessibleName(coaching.pickRootAndMode)
     expect(control()).toBeDisabled()
 
     await user.click(within(rootGroup()).getByRole('button', { name: 'C' }))
-    expect(control()).toHaveAccessibleName('Pick a mode')
+    expect(control()).toHaveAccessibleName(coaching.pickMode)
     expect(control()).toBeDisabled()
 
     await user.click(within(flavourGroup()).getByRole('button', { name: wrong }))
-    expect(control()).toHaveAccessibleName(`Check C ${wrong}`)
+    expect(control()).toHaveAccessibleName(coaching.checkPair({ root: 'C', flavour: wrong }))
     expect(control()).toBeEnabled()
 
     await user.click(control())
-    expect(screen.getByText(/right home note/i)).toBeInTheDocument()
+    expect(screen.getByText(coaching.rootMatched)).toBeInTheDocument()
     expect(
       within(rootGroup()).getByRole('button', { name: 'C' }),
     ).toHaveAttribute('aria-pressed', 'true')
@@ -165,7 +166,7 @@ describe('GroovePuzzle', () => {
     expect(control()).toBeDisabled()
 
     await user.click(within(flavourGroup()).getByRole('button', { name: 'Aeolian' }))
-    expect(control()).toHaveAccessibleName('Check C Aeolian')
+    expect(control()).toHaveAccessibleName(coaching.checkPair({ root: 'C', flavour: 'Aeolian' }))
     expect(control()).toBeEnabled()
 
     await user.click(control())
@@ -173,7 +174,7 @@ describe('GroovePuzzle', () => {
       screen.getByRole('heading', { name: 'C Aeolian' }),
     ).toBeInTheDocument()
     expect(nudge()).not.toBeInTheDocument()
-    expect(control()).toHaveAccessibleName('Solved')
+    expect(control()).toHaveAccessibleName(coaching.checkSolved)
     expect(control()).toBeDisabled()
 
     await user.click(within(rootGroup()).getByRole('button', { name: 'G' }))
@@ -201,7 +202,7 @@ describe('GroovePuzzle', () => {
   it('opens clean with the opening guidance (E3 R1, R4, AC1, AC4)', async () => {
     await renderPuzzle()
 
-    expect(nudge()).toContainElement(screen.getByText(/feels like rest/i))
+    expect(nudge()).toContainElement(screen.getByText(coaching.opening))
     expect(nudgeLine()).not.toBeInTheDocument()
   })
 
@@ -212,12 +213,12 @@ describe('GroovePuzzle', () => {
 
     await guess(user, 'G', wrong)
     expect(mockStore.save.mock.calls.at(-1)?.[0].attempts).toHaveLength(1)
-    expect(screen.getByText(/not it\. keep playing/i)).toBeInTheDocument()
+    expect(screen.getByText(coaching.neitherMatched)).toBeInTheDocument()
     expect(nudgeLine()).not.toBeInTheDocument()
 
     await guess(user, 'C', otherWrongFlavour())
     expect(mockStore.save.mock.calls.at(-1)?.[0].attempts).toHaveLength(2)
-    expect(screen.getByText(/right home note/i)).toBeInTheDocument()
+    expect(screen.getByText(coaching.rootMatched)).toBeInTheDocument()
   })
 
   it('counts nothing on the card after two misses (F19 E1 R1, AC2)', async () => {
@@ -243,8 +244,8 @@ describe('GroovePuzzle', () => {
 
     const box = nudge() as HTMLElement
     expect(box).toBeInTheDocument()
-    expect(box).toHaveTextContent(/2 roots ruled out/)
-    expect(box.textContent).toMatch(/narrowing as you go/i)
+    expect(box).toHaveTextContent(puzzle.ruledOut({ roots: 2 }))
+    expect(box.textContent).toMatch(puzzle.ruledOut({ roots: 2 }))
     expect(box).toContainElement(coachingLine() as HTMLElement)
 
     const line = box.textContent ?? ''
@@ -343,7 +344,7 @@ describe('GroovePuzzle', () => {
     expect(
       within(flavourGroup()).queryByRole('button', { pressed: true }),
     ).toBeNull()
-    expect(control()).toHaveAccessibleName('Pick a mode')
+    expect(control()).toHaveAccessibleName(coaching.pickMode)
     kept.unmount()
 
     await renderPuzzle()
@@ -354,7 +355,7 @@ describe('GroovePuzzle', () => {
     expect(
       within(flavourGroup()).queryByRole('button', { pressed: true }),
     ).toBeNull()
-    expect(control()).toHaveAccessibleName('Pick a root and a mode')
+    expect(control()).toHaveAccessibleName(coaching.pickRootAndMode)
   })
 
   it('still diagnoses a mode-right, root-wrong check (R3, AC3)', async () => {
@@ -364,7 +365,7 @@ describe('GroovePuzzle', () => {
     await guess(user, 'G', 'Aeolian')
 
     expect(
-      screen.getByText(/the mode is right\. but the tonic is somewhere else/i),
+      screen.getByText(coaching.flavourMatched),
     ).toBeInTheDocument()
     expect(
       within(flavourGroup()).getByRole('button', { name: 'Aeolian' }),
@@ -405,13 +406,13 @@ describe('GroovePuzzle', () => {
     expect(
       within(rootGroup()).getByRole('button', { name: fresh }),
     ).toHaveAttribute('aria-pressed', 'true')
-    expect(control()).toHaveAccessibleName('Pick a mode')
+    expect(control()).toHaveAccessibleName(coaching.pickMode)
 
     await user.click(within(flavourGroup()).getByRole('button', { name: third }))
-    expect(control()).toHaveAccessibleName(`Check ${fresh} ${third}`)
+    expect(control()).toHaveAccessibleName(coaching.checkPair({ root: fresh, flavour: third }))
 
     await user.click(control())
-    expect(giveUp()).toHaveAccessibleName('Give up and show the answer')
+    expect(giveUp()).toHaveAccessibleName(puzzle.giveUp)
     expect(dimmedIn(rootGroup())).toContain(fresh)
     expect(
       within(rootGroup()).queryByRole('button', { pressed: true }),
@@ -428,7 +429,7 @@ describe('GroovePuzzle', () => {
     await guess(user, 'D', other)
     await guess(user, liveRoot(), thirdWrongFlavour())
 
-    expect(giveUp()).toHaveAccessibleName('Give up and show the answer')
+    expect(giveUp()).toHaveAccessibleName(puzzle.giveUp)
     expect(control()).toBeDisabled()
     await user.click(
       within(rootGroup()).getByRole('button', { name: liveRoot() }),
@@ -484,8 +485,8 @@ describe('GroovePuzzle', () => {
 
     expect(nudge()).not.toBeInTheDocument()
     expect(nudgeLine()).not.toBeInTheDocument()
-    expect(screen.queryByText(/the groove is yours now/i)).toBeNull()
-    expect(control()).toHaveAccessibleName('Solved')
+    expect(screen.queryByText(coaching.solved)).toBeNull()
+    expect(control()).toHaveAccessibleName(coaching.checkSolved)
     expect(
       screen.getByRole('heading', { name: 'C Aeolian' }),
     ).toBeInTheDocument()
@@ -505,13 +506,13 @@ describe('GroovePuzzle', () => {
 
     expect(nudge()).not.toBeInTheDocument()
     expect(nudgeLine()).not.toBeInTheDocument()
-    expect(screen.queryByText('Hint')).toBeNull()
+    expect(screen.queryByText(puzzle.hint)).toBeNull()
     expect(solutionPanel()).toBeInTheDocument()
   })
 
   const giveUp = () =>
     screen.queryByRole('button', {
-      name: /give up and show the answer|end the day and show the answer/i,
+      name: (name) => name === puzzle.giveUp || name === puzzle.giveUpArmed,
     })
 
   const solutionPanel = () =>
@@ -531,12 +532,10 @@ describe('GroovePuzzle', () => {
 
     const third = thirdWrongFlavour()
     await guess(user, liveRoot(), third)
-    expect(giveUp()).toHaveAccessibleName('Give up and show the answer')
+    expect(giveUp()).toHaveAccessibleName(puzzle.giveUp)
 
     await user.click(giveUp() as HTMLElement)
-    expect(giveUp()).toHaveAccessibleName(
-      'Yes \u2014 end the day and show the answer',
-    )
+    expect(giveUp()).toHaveAccessibleName(puzzle.giveUpArmed)
     expect(
       screen.queryByRole('heading', { name: 'C Aeolian' }),
     ).not.toBeInTheDocument()
@@ -544,7 +543,7 @@ describe('GroovePuzzle', () => {
     await user.click(giveUp() as HTMLElement)
     const panel = solutionPanel()
     expect(panel).toBeInTheDocument()
-    expect(within(panel).getByText(/given up/i)).toBeInTheDocument()
+    expect(within(panel).getByText(solved.givenUp)).toBeInTheDocument()
     expect(screen.queryByText(/solved in/i)).toBeNull()
     expect(screen.queryByText(/streak now/i)).toBeNull()
     expect(
@@ -594,12 +593,12 @@ describe('GroovePuzzle', () => {
 
     const panel = solutionPanel()
     expect(panel).toBeInTheDocument()
-    expect(within(panel).getByText(/given up/i)).toBeInTheDocument()
+    expect(within(panel).getByText(solved.givenUp)).toBeInTheDocument()
     expect(
       within(panel).getByRole('img', { name: CHANGES_READ }),
     ).toBeInTheDocument()
     expect(
-      within(panel).getByRole('group', { name: /notes to live in/i }),
+      within(panel).getByRole('group', { name: solved.notesToLiveIn }),
     ).toBeInTheDocument()
     expect(screen.queryByText(/solved in/i)).toBeNull()
 
@@ -639,21 +638,23 @@ describe('GroovePuzzle', () => {
       screen.getByRole('heading', { name: 'C Aeolian' }),
     ).toBeInTheDocument()
     const panel = solutionPanel()
-    expect(panel.textContent).toMatch(/the plain minor scale/i)
+    expect(panel.textContent).toMatch(
+      solved.modeLine({ flavour: 'Aeolian' }) as string,
+    )
     expect(panel.textContent).not.toMatch(/tr(y|ies)/i)
     expect(panel.textContent).not.toMatch(/streak/i)
     expect(
       within(panel).queryByText(new RegExp(`^You said ${wrong} — `)),
     ).toBeNull()
     expect(within(panel).queryByText(/^You said /)).toBeNull()
-    expect(screen.getByLabelText('Current streak')).toHaveTextContent(
-      '1 day streak',
+    expect(screen.getByLabelText(header.currentStreakName)).toHaveTextContent(
+      header.streakDays({ days: 1 }),
     )
     expect(
       within(container).getByRole('img', { name: CHANGES_READ }),
     ).toBeInTheDocument()
     expect(
-      screen.getByRole('group', { name: /notes to live in/i }),
+      screen.getByRole('group', { name: solved.notesToLiveIn }),
     ).toBeInTheDocument()
   })
 
@@ -669,7 +670,7 @@ describe('GroovePuzzle', () => {
     await createLocalPreferenceStore().update({ simpleMode: true })
   }
 
-  const modeSwitch = () => screen.getByRole('switch', { name: /simple mode/i })
+  const modeSwitch = () => screen.getByRole('switch', { name: puzzle.simpleMode })
 
   const simpleRoots = () => simpleRootOptions(new Date(), answerOf(DORIAN))
 
@@ -685,7 +686,7 @@ describe('GroovePuzzle', () => {
     const staleRoot = ROOTS.find((r) => !simpleRoots().includes(r)) as Root
     await user.click(within(rootGroup()).getByRole('button', { name: staleRoot }))
     await user.click(within(flavourGroup()).getByRole('button', { name: 'Dorian' }))
-    expect(control()).toHaveAccessibleName(`Check ${staleRoot} Dorian`)
+    expect(control()).toHaveAccessibleName(coaching.checkPair({ root: staleRoot, flavour: 'Dorian' }))
     expect(control()).toBeEnabled()
 
     await user.click(modeSwitch())
@@ -697,11 +698,11 @@ describe('GroovePuzzle', () => {
     expect(
       within(flavourGroup()).queryByRole('button', { pressed: true }),
     ).toBeNull()
-    expect(control()).toHaveAccessibleName('Pick a root and a mode')
+    expect(control()).toHaveAccessibleName(coaching.pickRootAndMode)
     expect(control()).toBeDisabled()
 
     await user.click(modeSwitch())
-    expect(control()).toHaveAccessibleName(`Check ${staleRoot} Dorian`)
+    expect(control()).toHaveAccessibleName(coaching.checkPair({ root: staleRoot, flavour: 'Dorian' }))
     expect(control()).toBeEnabled()
   })
 
@@ -753,7 +754,7 @@ describe('GroovePuzzle', () => {
     await guess(user, 'C', 'Minor')
 
     expect(nudge()).not.toBeInTheDocument()
-    expect(control()).toHaveAccessibleName('Solved')
+    expect(control()).toHaveAccessibleName(coaching.checkSolved)
     expect(screen.getByRole('heading', { name: 'C Dorian' })).toBeInTheDocument()
   })
 
@@ -764,13 +765,13 @@ describe('GroovePuzzle', () => {
 
     await guess(user, 'C', 'Minor')
 
-    expect(screen.queryByText(/the groove is yours now/i)).toBeNull()
+    expect(screen.queryByText(coaching.solved)).toBeNull()
     expect(mockStore.save.mock.calls.at(-1)?.[0].attempts).toHaveLength(1)
-    expect(screen.getByText(/right home note/i)).toBeInTheDocument()
+    expect(screen.getByText(coaching.rootMatched)).toBeInTheDocument()
 
     await user.click(within(flavourGroup()).getByRole('button', { name: 'Major' }))
     await user.click(control())
-    expect(control()).toHaveAccessibleName('Solved')
+    expect(control()).toHaveAccessibleName(coaching.checkSolved)
     expect(
       screen.getByRole('heading', { name: 'C Mixolydian' }),
     ).toBeInTheDocument()
@@ -817,7 +818,7 @@ describe('GroovePuzzle', () => {
     await user.click(within(rootGroup()).getByRole('button', { name: 'C' }))
     await user.click(within(flavourGroup()).getByRole('button', { name: 'Minor' }))
     await user.click(control())
-    expect(control()).toHaveAccessibleName('Solved')
+    expect(control()).toHaveAccessibleName(coaching.checkSolved)
     expect(
       screen.getByRole('heading', { name: 'C Aeolian' }),
     ).toBeInTheDocument()
@@ -853,7 +854,7 @@ describe('GroovePuzzle', () => {
     expect(giveUp()).toBeNull()
 
     await guess(user, thirdWrongRoot, 'Minor')
-    expect(giveUp()).toHaveAccessibleName('Give up and show the answer')
+    expect(giveUp()).toHaveAccessibleName(puzzle.giveUp)
     expect(nudgeLine()).not.toBeInTheDocument()
   })
 
@@ -868,8 +869,8 @@ describe('GroovePuzzle', () => {
     expect(saved.solved).toBe(true)
     expect(saved.revealed).toBeUndefined()
     expect(saved.answer).toEqual({ root: 'C', flavour: 'Dorian' })
-    expect(screen.getByLabelText('Current streak')).toHaveTextContent(
-      '1 day streak',
+    expect(screen.getByLabelText(header.currentStreakName)).toHaveTextContent(
+      header.streakDays({ days: 1 }),
     )
   })
 
@@ -892,7 +893,7 @@ describe('GroovePuzzle', () => {
     await guess(user, wrongRoot, 'Major')
     await guess(user, otherWrongRoot, 'Minor')
     await guess(user, thirdWrongRoot, 'Minor')
-    expect(giveUp()).toHaveAccessibleName('Give up and show the answer')
+    expect(giveUp()).toHaveAccessibleName(puzzle.giveUp)
 
     await user.click(giveUp() as HTMLElement)
     await user.click(giveUp() as HTMLElement)
@@ -901,7 +902,7 @@ describe('GroovePuzzle', () => {
     expect(
       within(panel).getByRole('heading', { name: 'C Aeolian' }),
     ).toBeInTheDocument()
-    expect(within(panel).getByText(/the plain minor scale/i)).toBeInTheDocument()
+    expect(within(panel).getByText(solved.modeLine({ flavour: 'Aeolian' }) as string)).toBeInTheDocument()
     expect(screen.queryByText(/you said/i)).toBeNull()
   })
 
@@ -923,17 +924,17 @@ describe('GroovePuzzle', () => {
           .map(chipLabel),
       ).toEqual(flavours())
 
-      expect(control()).toHaveAccessibleName('Pick a root and a mode')
+      expect(control()).toHaveAccessibleName(coaching.pickRootAndMode)
       expect(control()).toBeDisabled()
       await user.click(within(rootGroup()).getByRole('button', { name: 'C' }))
       await user.click(
         within(flavourGroup()).getByRole('button', { name: wrong }),
       )
-      expect(control()).toHaveAccessibleName(`Check C ${wrong}`)
+      expect(control()).toHaveAccessibleName(coaching.checkPair({ root: 'C', flavour: wrong }))
       expect(control()).toBeEnabled()
 
       await user.click(control())
-      expect(screen.getByText(/right home note/i)).toBeInTheDocument()
+      expect(screen.getByText(coaching.rootMatched)).toBeInTheDocument()
 
       expect(nudgeLine()).not.toBeInTheDocument()
       await guess(user, 'C', otherWrongFlavour())
@@ -942,9 +943,9 @@ describe('GroovePuzzle', () => {
 
       expect(giveUp()).toBeNull()
       await guess(user, 'C', thirdWrongFlavour())
-      expect(giveUp()).toHaveAccessibleName('Give up and show the answer')
+      expect(giveUp()).toHaveAccessibleName(puzzle.giveUp)
 
-      await user.click(screen.getByRole('switch', { name: /simple mode/i }))
+      await user.click(screen.getByRole('switch', { name: puzzle.simpleMode }))
       expect(
         within(rootGroup()).getAllByRole('button').map(chipLabel),
       ).toEqual(simpleRootOptions(new Date(), answerOf(GROOVE)))
@@ -960,9 +961,9 @@ describe('GroovePuzzle', () => {
     const renderShared = (groove: Groove = GROOVE) =>
       renderPuzzle(<GroovePuzzle groove={groove} mode="shared" />)
 
-    const notice = () => screen.queryByText(/this is a shared groove/i)
+    const notice = () => screen.queryByText(puzzle.sharedNotice)
 
-    const wayBack = () => screen.getByRole('link', { name: /back to today/i })
+    const wayBack = () => screen.getByRole('link', { name: puzzle.backToToday })
 
     const cardMeta = () =>
       screen.getByText(
@@ -980,17 +981,15 @@ describe('GroovePuzzle', () => {
     })
 
     const streakLine = () =>
-      screen.getByLabelText(/current streak/i).textContent
+      screen.getByLabelText(header.currentStreakName).textContent
 
     it('says this is a shared groove rather than today’s puzzle, before any press (R1, R3, AC1)', async () => {
       await renderShared()
 
       const framing = notice() as HTMLElement
       expect(framing).toBeInTheDocument()
-      expect(framing.textContent ?? '').toMatch(
-        /not today's puzzle|not today’s puzzle/i,
-      )
-      expect(control()).toHaveAccessibleName('Pick a root and a mode')
+      expect(framing.textContent ?? '').toMatch(puzzle.sharedNotice)
+      expect(control()).toHaveAccessibleName(coaching.pickRootAndMode)
     })
 
     it('says playing it leaves the streak and the day alone (R2, AC2)', async () => {
@@ -1029,7 +1028,7 @@ describe('GroovePuzzle', () => {
       ).toBeInTheDocument()
       expect(notice()).toBeInTheDocument()
       expect(cardMeta().textContent).toBe(
-        `${todays.bpm} bpm · ${answer.root} ${answer.flavour} · shared groove`,
+        `${puzzle.bpm({ bpm: todays.bpm })} · ${answer.root} ${answer.flavour} · ${puzzle.sharedGroove}`,
       )
       expect(wayBack()).toHaveAttribute('href', '/')
       expect(mockStore.save).not.toHaveBeenCalled()
@@ -1050,7 +1049,7 @@ describe('GroovePuzzle', () => {
     }
 
     const invitation = () =>
-      screen.queryByRole('link', { name: /play today/i })
+      screen.queryByRole('link', { name: routes.playTodayLink })
     const invitationLine = () => invitation()?.closest('p')?.textContent ?? null
 
     it('shows no invitation while the shared groove is still in play (R5a, AC15)', async () => {
@@ -1120,7 +1119,7 @@ describe('GroovePuzzle', () => {
       expect(invitation()).toBeInTheDocument()
 
       await play(user)
-      await user.click(screen.getByRole('switch', { name: /simple mode/i }))
+      await user.click(screen.getByRole('switch', { name: puzzle.simpleMode }))
       expect(invitation()).toBeInTheDocument()
     })
 
@@ -1160,7 +1159,7 @@ describe('GroovePuzzle', () => {
       within(flavourGroup()).getByRole('button', { name: otherWrongFlavour() }),
     )
 
-    const soundSwitch = () => screen.getByRole('switch', { name: /tap sounds/i })
+    const soundSwitch = () => screen.getByRole('switch', { name: puzzle.tapSounds })
     const feedbackReads = () =>
       document.querySelector('[data-tone]')?.textContent ?? null
     const pressed = (group: HTMLElement) =>
@@ -1229,7 +1228,7 @@ describe('GroovePuzzle', () => {
       await guess(user, liveRoot(), 'Aeolian')
       expect(liveIn(flavourGroup())).toEqual(['Aeolian'])
 
-      await user.click(screen.getByRole('switch', { name: /simple mode/i }))
+      await user.click(screen.getByRole('switch', { name: puzzle.simpleMode }))
 
       expect(liveIn(flavourGroup())).toEqual(['Major', 'Minor'])
       expect(dimmedIn(flavourGroup())).toEqual([])
@@ -1239,11 +1238,11 @@ describe('GroovePuzzle', () => {
       const user = userEvent.setup()
       await renderPuzzle()
 
-      await user.click(screen.getByRole('switch', { name: /simple mode/i }))
+      await user.click(screen.getByRole('switch', { name: puzzle.simpleMode }))
       await guess(user, liveRoot(), 'Minor')
       expect(liveIn(flavourGroup())).toEqual(['Minor'])
 
-      await user.click(screen.getByRole('switch', { name: /simple mode/i }))
+      await user.click(screen.getByRole('switch', { name: puzzle.simpleMode }))
 
       expect(dimmedIn(flavourGroup())).toEqual([])
       expect(liveIn(flavourGroup())).toHaveLength(4)
@@ -1337,7 +1336,7 @@ describe('GroovePuzzle', () => {
       )
       await user.click(control())
 
-      expect(giveUp()).toHaveAccessibleName('Give up and show the answer')
+      expect(giveUp()).toHaveAccessibleName(puzzle.giveUp)
       expect(liveRoots()).toEqual(['C'])
     })
 
@@ -1390,7 +1389,7 @@ describe('GroovePuzzle', () => {
 
       await guess(user, 'C', wrongFlavour())
 
-      expect(screen.getByText(/right home note/i)).toBeInTheDocument()
+      expect(screen.getByText(coaching.rootMatched)).toBeInTheDocument()
       expect(screen.queryByText(/keep the root/i)).toBeNull()
       expect(screen.queryByText(/another flavour/i)).toBeNull()
       expect(liveRoots()).toEqual(['C'])
@@ -1400,7 +1399,7 @@ describe('GroovePuzzle', () => {
   describe('the listening move (F18 E1)', () => {
     const soundsOffRung = LADDER.findIndex((rung) => rung.soundsOff !== undefined)
 
-    const tapSwitch = () => screen.getByRole('switch', { name: /tap sounds/i })
+    const tapSwitch = () => screen.getByRole('switch', { name: puzzle.tapSounds })
 
     const missOnce = async (user: ReturnType<typeof userEvent.setup>) => {
       await guess(user, liveRoot(), liveWrongFlavour() ?? 'Aeolian')
@@ -1412,7 +1411,7 @@ describe('GroovePuzzle', () => {
       expect(nudge()).toContainElement(coachingLine() as HTMLElement)
       expect(hintRegion()).toContainElement(coachingLine() as HTMLElement)
       expect(move()).toBe(LADDER[0].message)
-      expect(nudge()).toHaveTextContent(/feels like rest/i)
+      expect(nudge()).toHaveTextContent(coaching.opening)
       expect(verdictLine()).toBeNull()
       expect(nudgeLine()).not.toBeInTheDocument()
     })
@@ -1424,7 +1423,7 @@ describe('GroovePuzzle', () => {
       const before = move()
       await guess(user, 'G', wrongFlavour())
 
-      expect(screen.getByText(/not it\. keep playing/i)).toBeInTheDocument()
+      expect(screen.getByText(coaching.neitherMatched)).toBeInTheDocument()
       expect(verdictLine()).not.toBeNull()
       expect(move()).not.toBe(before)
       expect(move()).toBe(LADDER[1].message)
@@ -1449,7 +1448,7 @@ describe('GroovePuzzle', () => {
       for (let played = 0; played < 3; played += 1) await missOnce(user)
 
       expect(move()).toBe(LADDER[3].message)
-      expect(giveUp()).toHaveAccessibleName(/give up/i)
+      expect(giveUp()).toHaveAccessibleName(puzzle.giveUp)
     })
 
     it('holds the last move once the misses outrun the ladder (R4, AC5)', async () => {
@@ -1483,12 +1482,12 @@ describe('GroovePuzzle', () => {
 
       await guess(user, liveRoot(), liveWrongFlavour())
       expect(verdictLine()).toBeNull()
-      expect(screen.queryByText(/not it\. keep playing/i)).toBeNull()
+      expect(screen.queryByText(coaching.neitherMatched)).toBeNull()
       expect(nudge()).toHaveTextContent(move() as string)
 
       await guess(user, liveRoot(), 'Aeolian')
       expect(
-        screen.getByText(/the mode is right\. but the tonic is somewhere else/i),
+        screen.getByText(coaching.flavourMatched),
       ).toBeInTheDocument()
       expect(verdictLine()).not.toBeNull()
 
@@ -1583,7 +1582,7 @@ describe('GroovePuzzle', () => {
       await play(user)
       expect(move()).toBe(before)
 
-      await user.click(screen.getByRole('button', { name: 'Stop the loop' }))
+      await user.click(screen.getByRole('button', { name: puzzle.playName.stop }))
       expect(move()).toBe(before)
     })
 
@@ -1628,7 +1627,7 @@ describe('GroovePuzzle', () => {
 
       expect(nudge()).not.toBeInTheDocument()
       expect(screen.queryByText(LADDER[1].message)).toBeNull()
-      expect(screen.queryByText(/not it\. keep playing/i)).toBeNull()
+      expect(screen.queryByText(coaching.neitherMatched)).toBeNull()
     })
 
     it('reads verdict, then coaching, then count (R12, R13, AC11)', async () => {
@@ -1669,9 +1668,9 @@ describe('GroovePuzzle', () => {
       expect(box.querySelectorAll('[aria-live]')).toHaveLength(1)
 
       const region = within(box).getByRole('status')
-      expect(region).toHaveTextContent(/the mode is right/i)
+      expect(region).toHaveTextContent(coaching.flavourMatched)
       expect(region).toHaveTextContent(move() as string)
-      expect(region).toHaveTextContent(/roots ruled out/i)
+      expect(region).toHaveTextContent(puzzle.ruledOut({ roots: 4 }))
       expect(box.querySelectorAll('[data-tone][role="status"]')).toHaveLength(0)
     })
   })

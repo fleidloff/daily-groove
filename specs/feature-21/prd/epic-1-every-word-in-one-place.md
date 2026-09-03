@@ -177,8 +177,11 @@ The pattern already works at a scale of two: `src/lib/branding.ts` holds
   a formulation that leaves it untouched: `src/lib/theory/character.test.ts`,
   whose cases read the `line` field R7 deletes, and
   `src/components/controls/PlayControl.test.tsx`, whose cases render the defaults
-  R8 removes. The two structure tests change because R10 adds cases to them. Every
-  other test file may change only its import specifiers.
+  R8 removes. `src/app/layout.test.ts` changes because it scans `layout.tsx`'s
+  source for the literal specifier `@/lib/branding`, which R1d repoints and this
+  epic deletes — an assertion about an import path, not about a rendered string.
+  The two structure tests change because R10 adds cases to them. Every other test
+  file may change only its import specifiers.
 - **R12b** — The exceptions are audited from the diff line by line, not asserted
   by policy. Any edit outside the named files, or any edit inside them that is not
   the consequence R12a names, is a failure.

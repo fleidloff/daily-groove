@@ -4,6 +4,7 @@ import { PageShell } from "@/components/layout/PageShell";
 import { Stack } from "@/components/layout/Stack";
 import { Heading } from "@/components/typography/Heading";
 import { Text } from "@/components/typography/Text";
+import { routes } from "@/lib/snippets";
 
 export default function GrooveNotFound() {
   return (
@@ -12,14 +13,11 @@ export default function GrooveNotFound() {
         <main>
           <Stack gap="md">
             <Heading level={1} size="lg">
-              Groove not found
+              {routes.notFoundTitle}
             </Heading>
-            <Text tone="muted">
-              We couldn&apos;t find the groove that link points at. It may have
-              been mistyped, or the groove may no longer be around.
-            </Text>
+            <Text tone="muted">{routes.notFoundBody}</Text>
             <Text>
-              <Link href="/">Play today&apos;s groove</Link>
+              <Link href="/">{routes.playTodayLink}</Link>
             </Text>
           </Stack>
         </main>

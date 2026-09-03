@@ -1,3 +1,4 @@
+import { coaching } from '@/lib/snippets'
 import type { Attempt } from '../../types'
 
 export type FeedbackTone = 'neutral' | 'warm' | 'solved'
@@ -7,28 +8,27 @@ export type Feedback = { message: string; tone: FeedbackTone }
 const REVEAL_AFTER_MISSES = 3
 
 const OPENING: Feedback = {
-  message:
-    'Loop it a few times. Sing the note that feels like rest — that’s usually the root.',
+  message: coaching.opening,
   tone: 'neutral',
 }
 
 const SOLVED: Feedback = {
-  message: 'That’s it. The groove is yours now — stay in it as long as you like.',
+  message: coaching.solved,
   tone: 'solved',
 }
 
 const ROOT_MATCHED: Feedback = {
-  message: 'Right home note, wrong colour.',
+  message: coaching.rootMatched,
   tone: 'warm',
 }
 
 const FLAVOUR_MATCHED: Feedback = {
-  message: 'The mode is right. But the tonic is somewhere else.',
+  message: coaching.flavourMatched,
   tone: 'warm',
 }
 
 const NEITHER_MATCHED: Feedback = {
-  message: 'Not it. Keep playing and try again.',
+  message: coaching.neitherMatched,
   tone: 'warm',
 }
 

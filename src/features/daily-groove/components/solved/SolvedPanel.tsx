@@ -11,6 +11,7 @@ import { ScaleStaff } from './ScaleStaff'
 import { barChords } from '@/lib/theory/changes'
 import { barNumerals } from '@/lib/theory/numerals'
 import { characterOf } from '@/lib/theory/character'
+import { solved } from '@/lib/snippets'
 import { scaleDegrees } from '@/lib/theory/degrees'
 import { scaleNotes } from '@/lib/theory/notes'
 import { selectNearMiss } from '../../lib/presentation/nearMiss'
@@ -49,12 +50,12 @@ export function SolvedPanel({
               </Heading>
               {character !== undefined && (
                 <Text size="sm" tone="inverted-muted">
-                  {character.line}
+                  {solved.modeLine({ flavour: answer.flavour })}
                 </Text>
               )}
               {revealed && (
                 <Text size="sm" tone="inverted-muted">
-                  given up · the day is over
+                  {solved.givenUp}
                 </Text>
               )}
             </Row>
@@ -66,13 +67,13 @@ export function SolvedPanel({
           </Stack>
         </div>
         <Stack gap="xl">
-          <LabelledColumn label="The changes">
+          <LabelledColumn label={solved.changes}>
             <LeadSheet
               chords={barChords(progression)}
               numerals={barNumerals(answer.flavour, progressionDegrees)}
             />
           </LabelledColumn>
-          <LabelledColumn label="Notes to live in">
+          <LabelledColumn label={solved.notesToLiveIn}>
             <ScaleStaff
               notes={staffNotes(notes)}
               degrees={degrees}

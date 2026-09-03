@@ -3,7 +3,7 @@ import { Heading } from '@/components/typography/Heading'
 import { Text } from '@/components/typography/Text'
 import { Row } from '@/components/layout/Row'
 import { Stack } from '@/components/layout/Stack'
-import { APP_NAME, TAGLINE } from '@/lib/branding'
+import { branding } from '@/lib/snippets'
 import { HelpToggle } from './HelpToggle'
 import { StreakBadge } from './StreakBadge'
 
@@ -20,10 +20,10 @@ export function GrooveHeader({ streak, onShowHelp, share }: GrooveHeaderProps) {
         <div className="min-w-0 self-start sm:self-auto">
           <Stack gap="xs">
             <Heading level={1} size="xl">
-              {APP_NAME}
+              {branding.appName}
             </Heading>
             <Text tone="muted">
-              {TAGLINE}{' '}
+              {branding.tagline}{' '}
               {onShowHelp && <HelpToggle onShow={onShowHelp} />}
             </Text>
           </Stack>

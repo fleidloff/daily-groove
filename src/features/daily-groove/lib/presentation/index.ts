@@ -1,3 +1,4 @@
+import { coaching } from '@/lib/snippets'
 import type { Answer, Attempt, Flavour, Groove, Root } from '../../types'
 import { ROOTS } from '@/lib/theory/roots'
 import { FAMILIES } from '@/lib/theory/families'
@@ -120,14 +121,14 @@ export function guessCardView(input: GuessCardViewInput): GuessCardView {
   const enabled = canCheck && bothOffered && !revealed
 
   const label = solved
-    ? 'Solved'
+    ? coaching.checkSolved
     : bothOffered
-      ? `Check ${selectedRoot} ${selectedFlavour}`
+      ? coaching.checkPair({ root: selectedRoot, flavour: selectedFlavour })
       : selectedRoot !== null
-        ? 'Pick a mode'
+        ? coaching.pickMode
         : selectedFlavour !== null
-          ? 'Pick a root'
-          : 'Pick a root and a mode'
+          ? coaching.pickRoot
+          : coaching.pickRootAndMode
 
   const over = solved || revealed
 

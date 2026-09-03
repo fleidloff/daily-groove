@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, type Mock } from 'vitest'
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import type { Attempt, DailyResult, Flavour, Groove, Root } from '../../types'
+import { coaching, puzzle } from '@/lib/snippets'
 import { flavourOptions, flavourPool, simpleRootOptions } from '@/lib/theory/music'
 import { ROOTS } from '@/lib/theory/roots'
 import { FAMILIES, type Family } from '@/lib/theory/families'
@@ -62,14 +63,14 @@ const CARD_SOURCE = readFileSync(
 const card = () => rootGroup().closest('div.rounded-card') as HTMLElement
 const chipList = (group: HTMLElement) =>
   group.querySelector('[data-testid="chip-list"]') as HTMLElement
-const hintBox = () => screen.getByRole('complementary', { name: 'Hint' })
-const hintQuery = () => screen.queryByRole('complementary', { name: 'Hint' })
+const hintBox = () => screen.getByRole('complementary', { name: puzzle.hint })
+const hintQuery = () => screen.queryByRole('complementary', { name: puzzle.hint })
 const cardStatus = () => within(card()).getByRole('status')
 const cardStatusQuery = () => within(card()).queryByRole('status')
 const modeSwitch = () => screen.getByRole('switch', { name: /simple mode/i })
 const soundSwitch = () => screen.getByRole('switch', { name: /tap sounds/i })
 const cardHeading = () =>
-  screen.getByRole('heading', { name: 'What is it?' })
+  screen.getByRole('heading', { name: puzzle.guessTitle })
 const precedes = (a: Element, b: Element) =>
   Boolean(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING)
 const MODE_NAME = /ionian|dorian|phrygian|lydian|mixolydian|aeolian|locrian/i
@@ -121,8 +122,8 @@ const rootChip = (name: string) =>
 const modeChip = (name: string) =>
   within(flavourGroup()).getByRole('button', { name })
 
-const GIVE_UP = 'Give up and show the answer'
-const CONFIRM = 'Yes — end the day and show the answer'
+const GIVE_UP = puzzle.giveUp
+const CONFIRM = puzzle.giveUpArmed
 const giveUp = () => screen.queryByRole('button', { name: GIVE_UP })
 const confirm = () => screen.queryByRole('button', { name: CONFIRM })
 const ended = () => screen.queryByRole('img', { name: CHANGES_READ })
@@ -195,7 +196,7 @@ describe('GuessCard', () => {
     await user.click(modeChip('Aeolian'))
     await user.click(control())
 
-    expect(control()).toHaveAccessibleName('Solved')
+    expect(control()).toHaveAccessibleName(coaching.checkSolved)
     expect(
       screen.getByRole('img', { name: CHANGES_READ }),
     ).toBeInTheDocument()
@@ -257,7 +258,7 @@ describe('GuessCard', () => {
   it('labels the second chip row "Mode", not "Flavour" (R1, AC1)', async () => {
     await openDay()
 
-    expect(screen.getByRole('radiogroup', { name: 'Mode' })).toBeInTheDocument()
+    expect(screen.getByRole('radiogroup', { name: puzzle.modeGroup })).toBeInTheDocument()
     expect(screen.queryByRole('radiogroup', { name: 'Flavour' })).toBeNull()
   })
 
@@ -301,7 +302,7 @@ describe('GuessCard', () => {
     await openDay()
 
     expect(
-      screen.getByRole('button', { name: 'Pick a root and a mode' }),
+      screen.getByRole('button', { name: coaching.pickRootAndMode }),
     ).toBeDisabled()
   })
 
@@ -313,10 +314,10 @@ describe('GuessCard', () => {
     await user.click(modeChip(wrongFlavour()))
 
     expect(
-      screen.getByRole('button', { name: `Check G ${wrongFlavour()}` }),
+      screen.getByRole('button', { name: coaching.checkPair({ root: 'G', flavour: wrongFlavour() }) }),
     ).toBeEnabled()
     expect(
-      screen.queryByRole('button', { name: 'Pick a root and a mode' }),
+      screen.queryByRole('button', { name: coaching.pickRootAndMode }),
     ).not.toBeInTheDocument()
   })
 
@@ -326,7 +327,7 @@ describe('GuessCard', () => {
 
     await user.click(rootChip('G'))
 
-    expect(screen.getByRole('button', { name: 'Pick a mode' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: coaching.pickMode })).toBeDisabled()
   })
 
   it('scores the guess when the enabled control is pressed (R7)', async () => {
@@ -335,7 +336,7 @@ describe('GuessCard', () => {
 
     await user.click(rootChip('G'))
     await user.click(modeChip(wrongFlavour()))
-    await user.click(screen.getByRole('button', { name: `Check G ${wrongFlavour()}` }))
+    await user.click(screen.getByRole('button', { name: coaching.checkPair({ root: 'G', flavour: wrongFlavour() }) }))
 
     expect(cardStatus()).toHaveTextContent(
       verdictOf([miss('G', wrongFlavour(), false)]),
@@ -349,7 +350,7 @@ describe('GuessCard', () => {
     expect(document.querySelectorAll('[data-dot-state]')).toHaveLength(0)
     expect(within(card()).queryByRole('img')).toBeNull()
     expect(
-      screen.getByRole('button', { name: 'Pick a root and a mode' })
+      screen.getByRole('button', { name: coaching.pickRootAndMode })
         .previousElementSibling,
     ).toBe(flavourGroup())
   })
@@ -412,7 +413,7 @@ describe('GuessCard', () => {
       await openDay(over())
 
       expect(hintQuery()).not.toBeInTheDocument()
-      expect(screen.queryByText('Hint')).not.toBeInTheDocument()
+      expect(screen.queryByText(puzzle.hint)).not.toBeInTheDocument()
       expect(nudgeLine()).not.toBeInTheDocument()
       expect(cardStatusQuery()).not.toBeInTheDocument()
       expect(screen.queryByText(LADDER[2].message)).toBeNull()
@@ -468,7 +469,7 @@ describe('GuessCard', () => {
   it('labels the one box "Hint", never "A nudge" (R6, AC9)', async () => {
     await openDay({ attempts: twoMisses() })
 
-    expect(screen.getByText('Hint')).toBeInTheDocument()
+    expect(screen.getByText(puzzle.hint)).toBeInTheDocument()
     expect(screen.queryByText(/a nudge/i)).not.toBeInTheDocument()
     expect(
       screen.queryByRole('complementary', { name: 'A nudge' }),
@@ -521,13 +522,13 @@ describe('GuessCard', () => {
     expect(rootChip('C')).toHaveAttribute('aria-pressed', 'true')
     expect(modeChip(wrongFlavour())).toHaveAttribute('aria-pressed', 'false')
     expect(modeChip(wrongFlavour())).toHaveAttribute('aria-disabled', 'true')
-    expect(control()).toHaveAccessibleName('Pick a mode')
+    expect(control()).toHaveAccessibleName(coaching.pickMode)
     expect(control()).toBeDisabled()
 
     await user.click(modeChip(otherWrongFlavour()))
 
     expect(
-      screen.getByRole('button', { name: `Check C ${otherWrongFlavour()}` }),
+      screen.getByRole('button', { name: coaching.checkPair({ root: 'C', flavour: otherWrongFlavour() }) }),
     ).toBeEnabled()
   })
 
@@ -552,7 +553,7 @@ describe('GuessCard', () => {
 
     await openDay({ attempts: [SOLVING], solved: true })
 
-    expect(control()).toHaveAccessibleName('Solved')
+    expect(control()).toHaveAccessibleName(coaching.checkSolved)
     expect(control()).toBeDisabled()
     expect(control().className).not.toBe(readyClass)
   })
@@ -567,7 +568,7 @@ describe('GuessCard', () => {
     await user.click(modeChip(wrongFlavour()))
 
     const check = control()
-    const play = screen.getByRole('button', { name: 'Play the loop' })
+    const play = screen.getByRole('button', { name: puzzle.playName.play })
 
     expect(sizeOf(check)).toEqual(sizeOf(play))
     expect(sizeOf(check)).toEqual(['py-[22px]', 'text-[17px]'])
@@ -585,13 +586,16 @@ describe('GuessCard', () => {
   const LONGEST_CHECK_LABELS = (() => {
     const modes = [...new Set(GROOVES.map((groove) => groove.flavour))]
     const labels = ROOTS.flatMap((root) =>
-      modes.map((flavour) => `Check ${root} ${flavour}`),
+      modes.map((flavour) => coaching.checkPair({ root, flavour })),
     )
     const longest = Math.max(...labels.map((label) => label.length))
     return labels.filter((label) => label.length === longest)
   })()
 
-  const LONGEST_CHECK_LABEL = 'Check E♭ Phrygian dominant'
+  const LONGEST_CHECK_LABEL = coaching.checkPair({
+    root: 'E♭',
+    flavour: 'Phrygian dominant',
+  })
 
   const LONG_GROOVE: Groove = {
     ...GROOVE,
@@ -638,14 +642,14 @@ describe('GuessCard', () => {
 
     const waiting = await openDay()
     states.push({
-      name: 'Pick a root and a mode',
+      name: coaching.pickRootAndMode,
       token: 'bg-surface-inset',
       className: control().className,
     })
     await user.click(rootChip('G'))
     await user.click(modeChip(wrongFlavour()))
     states.push({
-      name: `Check G ${wrongFlavour()}`,
+      name: coaching.checkPair({ root: 'G', flavour: wrongFlavour() }),
       token: 'bg-accent',
       className: control().className,
     })
@@ -653,7 +657,7 @@ describe('GuessCard', () => {
 
     await openDay({ attempts: [SOLVING], solved: true })
     states.push({
-      name: 'Solved',
+      name: coaching.checkSolved,
       token: 'bg-accent-soft',
       className: control().className,
     })
@@ -932,7 +936,7 @@ describe('GuessCard', () => {
 
     expect(pressedIn(rootGroup())).toEqual([])
     expect(pressedIn(flavourGroup())).toEqual([])
-    expect(control()).toHaveAccessibleName('Pick a root and a mode')
+    expect(control()).toHaveAccessibleName(coaching.pickRootAndMode)
 
     expect(giveUp()).not.toBeInTheDocument()
     expect(confirm()).not.toBeInTheDocument()
@@ -949,7 +953,7 @@ describe('GuessCard', () => {
     await user.click(giveUp() as HTMLElement)
     await user.click(confirm() as HTMLElement)
 
-    expect(control()).toHaveAccessibleName('Check C Aeolian')
+    expect(control()).toHaveAccessibleName(coaching.checkPair({ root: 'C', flavour: 'Aeolian' }))
     expect(control()).toBeDisabled()
   })
 
@@ -1110,7 +1114,7 @@ describe('GuessCard', () => {
     await seedPreferences({ simpleMode: true })
     await openDay()
 
-    expect(screen.getByRole('radiogroup', { name: 'Mode' })).toBeInTheDocument()
+    expect(screen.getByRole('radiogroup', { name: puzzle.modeGroup })).toBeInTheDocument()
     expect(screen.queryByRole('radiogroup', { name: 'Family' })).toBeNull()
   })
 
@@ -2028,7 +2032,7 @@ describe('through the composed page', () => {
     const today = new Date()
     const groove = selectGrooveForDate(today, GROOVES)
     const expected = flavourOptions(today, groove, GROOVES)
-    const modes = screen.getByRole('radiogroup', { name: 'Mode' })
+    const modes = screen.getByRole('radiogroup', { name: puzzle.modeGroup })
 
     expect(within(modes).getAllByRole('button').map(chipLabel)).toEqual(expected)
   })
@@ -2036,7 +2040,7 @@ describe('through the composed page', () => {
   it("offers all twelve roots, in the design's order", async () => {
     await renderFeature()
 
-    const roots = screen.getByRole('radiogroup', { name: 'Root' })
+    const roots = screen.getByRole('radiogroup', { name: puzzle.rootGroup })
     expect(within(roots).getAllByRole('button').map(chipLabel)).toEqual(ROOTS)
   })
 
@@ -2044,16 +2048,18 @@ describe('through the composed page', () => {
     const user = userEvent.setup()
     await renderFeature()
 
-    expect(control()).toHaveAccessibleName('Pick a root and a mode')
+    expect(control()).toHaveAccessibleName(coaching.pickRootAndMode)
     expect(control()).toBeDisabled()
 
-    const roots = screen.getByRole('radiogroup', { name: 'Root' })
-    const modes = screen.getByRole('radiogroup', { name: 'Mode' })
+    const roots = screen.getByRole('radiogroup', { name: puzzle.rootGroup })
+    const modes = screen.getByRole('radiogroup', { name: puzzle.modeGroup })
     await user.click(within(roots).getByRole('button', { name: 'G' }))
     const firstMode = within(modes).getAllByRole('button')[0]
     await user.click(firstMode)
 
-    expect(control()).toHaveAccessibleName(`Check G ${chipLabel(firstMode)}`)
+    expect(control()).toHaveAccessibleName(
+      coaching.checkPair({ root: 'G', flavour: chipLabel(firstMode) }),
+    )
     expect(control()).toBeEnabled()
   })
 })

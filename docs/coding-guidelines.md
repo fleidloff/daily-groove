@@ -11,9 +11,10 @@ this document.
 
 Each rule is tagged:
 
-- *lint-enforced* — `npm run lint` fails on a violation. The mechanism is one
-  rule, `import/no-restricted-paths` in `eslint.config.mjs`; see
-  [Enforcement](#enforcement) for the zone behind each.
+- *lint-enforced* — `npm run lint` fails on a violation. Two rules in
+  `eslint.config.mjs` do that work: `import/no-restricted-paths` for the import
+  graph, and `no-restricted-syntax` for one folder's test literals; see
+  [Enforcement](#enforcement) for the block behind each.
 - *human-checked* — no linter checks it; a reviewer does. Several are
   additionally guarded by tests that read the tree from disk —
   `src/components/structure.test.ts`,
@@ -341,7 +342,8 @@ which are hooks. A `use` prefix is not the test; calling React hooks is.
 holds the code that sits *below* the app: what the app and the groove generator
 under `scripts/` must both run and run identically, plus the body of domain
 logic that shared core was cut out of. Today that is `hash.ts`, `groove.ts`,
-`date.ts`, `branding.ts` and the sixteen modules of `theory/`.
+`date.ts`, the seven area files of `snippets/` and the sixteen modules of
+`theory/`.
 
 **A module earns a place in `src/lib/` only if it is pure, dependency-free of
 app code, runtime-safe TypeScript, and either shared across the app/generator
@@ -409,6 +411,79 @@ of the twelve interval sets. `src/lib/theory/roots.test.ts` and
 `src/lib/theory/scales.test.ts` each assert that their table is declared in
 exactly one non-test file under `src/` and `scripts/`, the way
 `src/lib/hash.test.ts` does for the FNV prime.
+
+**No user-facing string is written inside a component. The app's words live in
+`src/lib/snippets/`.** A component composes and renders language; it does not
+hold it. That is two habits to break, not one, because the sweep that moved
+eighty-nine strings out found prose in two shapes and only one of them greps:
+
+```tsx
+// not this — a quoted literal
+const STEPS = ['Listen to the groove 🎧', 'Jam along 🎸']
+<button aria-label="Close how to play" />
+
+// nor this — JSX text between tags, which a search for quotes never finds
+<Heading level={1} size="lg">Groove not found</Heading>
+<Link href="/">Play today&apos;s groove</Link>
+
+// this
+import { intro } from '@/lib/snippets'
+<Heading level={2} size="sm">{intro.title}</Heading>
+<button aria-label={intro.closeName} />
+```
+
+An `aria-label`, a `title` or an `alt` written inline is the same violation as
+visible text: an accessible name is a word the player is read.
+
+Import the area object and read a key off it — `intro.title`, never a
+destructure at module scope, so any line tells a reader which area the word came
+from. **No file outside `src/lib/snippets/` may write `snippets/en` in a
+specifier**: `en/` is the part a second language replaces, and a consumer that
+names it pins the app to English. `@/lib/snippets` is the only path a caller
+writes.
+
+What this rule does *not* count as a word: glyphs (`▶`, `♪`, `✕`), separators
+(`' · '`), URLs, licence identifiers, storage keys, locales and theory names
+(`'Dorian'`, `'E♭'`) are data, and they stay in the component that uses them.
+`HowToPlay.tsx` kept `DRUM_CREDIT_URL` and `'CC BY 4.0'` and gave up only the
+sentence beside them.
+
+The rule covers feature components and routes. The design system is held to a
+stricter version of the same thing by [its own section](#the-design-system) and
+by `src/components/structure.test.ts`: no file under `src/components/` holds an
+app word *or* imports `@/lib/snippets` at all. `PlayControl` takes its labels
+and its accessible names as required props, and the caller passes the snippets
+in.
+
+**Why the words sit down here.** Snippets strain the fourth bar above — wording
+this product chose is product, not domain, and by that bar alone it would belong
+to a slice. They are in `src/lib/` because the three absolute bars all hold
+(pure constants and pure functions, nothing imported from outside `src/lib/`,
+runtime-safe TypeScript), because `src/lib/branding.ts` already put product
+wording here at a scale of two, and because `src/app/groove/not-found.tsx`
+renders words and may not import a feature's internals, so app-wide wording has
+to sit above the slices. This generalises a file that was already here; it does
+not widen the bar for anything else.
+
+**What a linter stops, and what it does not.** Nothing mechanical fires on an
+inline string in a component. The one lint block this subject gets — [the
+copied-sentence block](#the-copied-sentence-block), beside the
+`import-boundaries` zones — covers the *other* half of it, a test that quotes
+the app's words, and even there it is scoped by file to
+`src/features/daily-groove/lib/presentation/`'s tests, minus `date.test.ts` and
+`staffLabel.test.ts`, and fires only on whitespace-bearing literals passed to
+`toBe`, `toEqual`, `toContain` and `toMatch`. It never reads component source,
+and it never reads a component test. The next inline label is caught in review
+or not at all.
+
+*human-checked* — motivated by
+`src/features/daily-groove/components/intro/HowToPlay.tsx`, which held its four
+steps, its heading, the close button's `aria-label` and the DrumGizmo credit
+sentence; and by `src/app/groove/not-found.tsx`, whose title, paragraph and link
+text were JSX text with not a quote in sight. A linter cannot tell `'Aeolian'`
+from `'No streak yet'`. `src/features/daily-groove/structure.test.ts` guards the
+one arrow that would let the two leaves merge: neither `src/lib/snippets/` nor
+`src/lib/theory/` may name the other, in an import or in a `vi.mock`.
 
 **`src/lib/` is a leaf: nothing in it may import `src/features/` or
 `src/components/`.** Being a leaf is not tidiness, it is the mechanism. Because
@@ -527,8 +602,10 @@ comment that earns its place from one that restates the code.
 
 ## Anti-patterns and their fixes
 
-Three shapes this repository has actually grown, each with the file it grew in
-and the move that fixed it.
+Five shapes this repository has actually grown, each with the file it grew in
+and the move that fixed it. Two of them are one subject seen from both sides:
+what a linter stops in one folder, and what only a reviewer will stop
+everywhere else.
 
 **No component file constructs an I/O adapter.** A component may *use* audio,
 storage or the network; it may not build the thing that touches them.
@@ -573,6 +650,76 @@ that still compiles.
 *human-checked* — motivated by `src/app/page.test.tsx` and the destination table
 in `specs/feature-5/prd/epic-3-god-component.md`.
 
+**A test under `lib/presentation/` asserts *which* sentence a module selected,
+never what the sentence says.** `src/features/daily-groove/lib/presentation/`
+decides which line the player is shown; `src/lib/snippets/en/` decides what that
+line says. A test in the first folder that writes the sentence out has asserted
+the second folder's job, and has become a second place the wording lives — so a
+reword has to find it.
+
+```ts
+// not this — the sentence, copied
+expect(selectFeedback(attempts, false).message).toBe(
+  'Right home note, wrong colour.',
+)
+
+// this — this input selects that snippet, which is all feedback.ts decides
+expect(selectFeedback(attempts, false).message).toBe(coaching.rootMatched)
+
+// a snippet that takes arguments is called with the ones the module passes
+expect(hint()).toHaveTextContent(coaching.nearMiss({ notes: 2 }))
+```
+
+Three files in that folder are exempt, each named in the config with its reason
+beside it rather than inferred from a path convention. `date.test.ts`: an
+`Intl`-formatted date is produced by the platform, not written by us, so
+`dateLine()` returning `'Sunday, 30 August'` is an assertion about en-GB and
+there is no snippet to import. `staffLabel.test.ts`: a degree string is theory,
+not language — `'1 G, 2 A, ♭3 B♭'` is data that happens to contain spaces, and a
+translator translates neither half. `src/lib/snippets/**`: the module that
+*defines* sentences is the one place a sentence must be written out, because a
+test asserting `nearMiss({ notes: 2 })` against the snippet it imports asserts
+nothing.
+
+*lint-enforced* (`daily-groove/no-copied-sentences`) — motivated by
+`src/features/daily-groove/lib/presentation/nearMiss.test.ts` and
+`feedback.test.ts`, which between them held eleven copies of sentences that live
+in `src/lib/snippets/en/`. What the block matches, and why its whitespace clause
+is a heuristic rather than a test for language, is under
+[Enforcement](#the-copied-sentence-block); `scripts/lintRules.test.ts` asserts
+both that it fires and that it stays quiet.
+
+**Every other test is held to that rule by a reviewer, and by nothing else.**
+The block above covers one folder — ten test files, after its two exemptions.
+The 28 test files outside it — the five `GroovePuzzle.*.test.tsx` shells, the
+region components' tests, the harness under `testing/`, the route tests — carry
+roughly 824 of the suite's 835 matcher call sites between them, and **nothing
+mechanical stops a sentence being typed into one of them**. A prose literal in
+`GuessCard.test.tsx` passes `npm run lint` today and will keep passing; it is
+caught in review or not at all.
+
+That is a measured choice, not an unfinished job. Counting the literals in
+`{ name: … }` arguments across the suite, ~60 are roots, ~20 are modes and ~20
+are fixture titles, so a rule scoped by matcher rather than by folder would need
+an allowlist of the twelve flavour names — a second place the twelve are written
+down, which is the duplication feature-20 Epic 1 existed to remove. Two things
+separate language from data in this repo without a heuristic: **the folder an
+assertion sits in, and a person reading the diff.** The block uses the first;
+every test outside it has the second and nothing more.
+
+Unenforced is not the same as permitted. If a prose literal lands in a component
+test three weeks from now, that is the argument for widening the block, and it
+is one config edit away. This is the same bet the inline-string rule under
+[Shared code](#shared-code-srclib) takes on the other side of the render: that
+one covers where a word is *written*, this one covers where a word is
+*asserted*, and both stop at the edge of one narrow scope.
+
+*human-checked* — motivated by
+`src/features/daily-groove/components/GroovePuzzle.guessing.test.tsx`, whose 183
+matcher call sites were copies of the app's words; and by feature-19, whose
+reword of the hint lines had to be applied by hand across 209 assertions. No
+test asserts this one.
+
 **A component that imports most of its own feature's modules is doing too much.**
 `src/features/daily-groove/components/GroovePuzzle.tsx` reached 362 lines
 importing six `lib/` modules, the data file, both hooks and every region
@@ -605,12 +752,25 @@ still something a reviewer has to count.
 
 ## Enforcement
 
-The lint-enforced rules above are all one ESLint rule:
-`import/no-restricted-paths`, configured as an **error** in the
-`daily-groove/import-boundaries` block of `eslint.config.mjs`. There is no
-second mechanism — the `no-restricted-imports` fallback the spec allowed for was
-never needed, because a zone's `target` and `except` clauses express every case,
-including the "consumers, not the feature" carve-out.
+The lint-enforced rules above are two ESLint rules, in two named blocks of
+`eslint.config.mjs`, both configured as an **error**:
+
+| Block | Rule | What it holds |
+| :-- | :-- | :-- |
+| `daily-groove/import-boundaries` | `import/no-restricted-paths` | eight zones — the whole import graph. No `files` key, because a boundary binds a test exactly as it binds source |
+| `daily-groove/no-copied-sentences` | `no-restricted-syntax` | eight selectors — a sentence copied into a test under `lib/presentation/`. Scoped by `files`, with three named exclusions |
+
+**The difference in scoping is the design, not an accident of configuration.** A
+boundary is a fact about a path: `src/components/` importing `src/features/` is
+wrong wherever it is written, so the block that catches it is scoped to nothing.
+A copied sentence is not a fact about the literal — `'C Aeolian'` is data and
+`'Right home note, wrong colour.'` is language, and no parser tells those apart.
+It is knowable only from the folder the assertion sits in, so the block that
+catches it is scoped by file, and says so.
+
+Within the boundaries block, the `no-restricted-imports` fallback the spec
+allowed for was never needed, because a zone's `target` and `except` clauses
+express every case, including the "consumers, not the feature" carve-out.
 
 `basePath` is pinned to `import.meta.dirname`, so the zones resolve against the
 repo root whatever directory `eslint` runs from.
@@ -705,6 +865,62 @@ boundary matters in a test, the guard is a structural test, not a zone.
 the restricted path, because a lint error is where most people meet these rules
 first.
 
+### The copied-sentence block
+
+`daily-groove/no-copied-sentences` sits directly after
+`daily-groove/import-boundaries` in the config. It stands behind the
+`lib/presentation/` test rule under
+[Anti-patterns](#anti-patterns-and-their-fixes), and it reads the way the table
+above reads a zone. `F` is again `src/features/daily-groove`.
+
+| Part | Value |
+| :-- | :-- |
+| `files` | `F/lib/presentation/**/*.test.ts` — the modules whose job is *selecting* a sentence |
+| matchers | `toBe`, `toEqual`, `toContain`, `toMatch`, enumerated rather than folded into one regex, so each can be proven separately |
+| what it matches | a string `Literal` **containing whitespace**, as a direct child of the call — plus the substitution-free `TemplateLiteral` that would otherwise be the way around it |
+| `ignores` | `date.test.ts`, an `Intl` date comes from the platform · `staffLabel.test.ts`, a degree string is theory · `src/lib/snippets/**`, the module that defines a sentence must write it out |
+| `message` | names the rule, why it exists, and what to write instead — including that a one-word literal is data and stays legal |
+
+**The whitespace clause is a heuristic, and it is exact only because the scope is
+narrow.** Scoped by file alone the block fires 44 times inside
+`lib/presentation/`, and only 11 of those are sentences: the other 33 are
+`'warm'`, `'open'`, `'neutral'`, `'tonic'`, `'C'`, `'Dorian'` and `''`. Adding
+the one clause — the literal contains whitespace — brings that to **11 fires on
+the 11 sentences, no false positive and no miss**, measured against the real
+tree with the real config. Do not read it as a general test for language. Applied
+suite-wide it would be wrong immediately: `'C Aeolian'`, `'Cm–Fm–G7'` and
+`'105 bpm · Sunday, 30 August'` are all whitespace-bearing data. None of them
+occurs in the files this block covers, and the two files that do hold that shape
+were already excluded by name for reasons of their own. What the clause has
+going for it is that it names nothing — no flavour list, no word list, so it is
+not the second copy of the twelve modes that an allowlist would be. What it
+costs is that a one-word sentence is invisible to it; there are none today.
+
+**Three mechanical details are load-bearing.** `> Literal` is a *direct* child of
+the call, so `toEqual(['guessCardView', 'metaLine'])` stays legal — those strings
+are elements of an array, not arguments of the call.
+`[value=type(string)]` keeps a regex out, because `toMatch(/export \*/)`
+stringifies to something with a space in it. And `expressions.length=0` on the
+template selector is what keeps a composed assertion legal —
+`` `${GROOVE.bpm} ${puzzle.bpm} · ${dateLine(DATE)}` `` has substitutions, a
+whole sentence typed in backticks does not.
+
+**The block is proven both ways, and permanently.** `scripts/lintRules.test.ts`
+runs ESLint's Node API over this repo's own config on synthetic source text:
+four cases that it fires, one per matcher, and six that it stays quiet — a mode,
+a `data-` attribute value, the same prose literal written in a component test,
+each of the two excluded files, and the snippets module's own test. The
+`filePath` is virtual, so no file that violates the block has to exist on disk.
+That is the thing the zones above cannot do — a fixture that breaks a zone fails
+`npm run lint` for everyone, which is why they can only be demonstrated by hand.
+A rule that has only been seen to pass is a comment; one that has never been seen
+to stay quiet is a nuisance waiting to happen.
+
+**The escape hatch** is
+`// eslint-disable-next-line no-restricted-syntax -- <reason>`, with the reason
+on the same line so every exception is greppable:
+`grep -rn "eslint-disable.*no-restricted-syntax" src scripts`. Count today: zero.
+
 ### What lint structurally cannot see
 
 `import/no-restricted-paths` inspects **import and require specifiers only**. It
@@ -724,11 +940,21 @@ the scan catches the `readFileSync`, `vi.mock` or dynamic path that lint cannot
 see. Deleting either one as "duplication" removes a case the other never
 covered.
 
+**And one thing lint could see but is not asked to.**
+`expect(screen.getByText('Right home note, wrong colour.'))` in
+`components/puzzle/GuessCard.test.tsx` is the same copied sentence the
+`no-copied-sentences` block catches one folder over, and the block passes it
+without a word. That is a scope decision rather than a limitation — the folder is
+what makes the whitespace clause safe, and a component test is full of
+whitespace-bearing data. The guard for those 824 call sites is a reviewer, and the
+human-checked half under [Anti-patterns](#anti-patterns-and-their-fixes) has the
+counting behind that choice.
+
 ### What is not lint-enforced, and why
 
 The *human-checked* tag is not a softer version of *lint-enforced*; it means the
 rule is about meaning rather than about the import graph, so no configuration
-would catch it. Six of them in particular are conventions a reviewer owns:
+would catch it. Seven of them in particular are conventions a reviewer owns:
 
 | Convention | Where it is stated | Why no linter |
 | :-- | :-- | :-- |
@@ -738,6 +964,12 @@ would catch it. Six of them in particular are conventions a reviewer owns:
 | Feature components are grouped by screen region | [Feature slices](#feature-slices) | which region a component belongs to is a judgement about the screen |
 | Comments are avoided unless genuinely non-obvious | [Comments](#comments) | whether a comment restates its code is a judgement about meaning |
 | `src/lib/hash.ts` is frozen | [Shared code](#shared-code-srclib) | a linter cannot know this function's output decides which puzzle every past date showed |
+| A test outside `lib/presentation/` does not quote the app's words | [Anti-patterns](#anti-patterns-and-their-fixes) | `'C Aeolian'` and `'Play the loop'` are the same shape to a parser; only the folder tells them apart |
+
+The last row is the one place that phrasing needs qualifying: a heuristic *would*
+catch part of it, and inside one narrow folder this repo runs one — see [the
+copied-sentence block](#the-copied-sentence-block) for what had to be true first,
+and for what widening it would cost.
 
 Several human-checked rules do have a test standing behind them —
 `src/components/structure.test.ts`,

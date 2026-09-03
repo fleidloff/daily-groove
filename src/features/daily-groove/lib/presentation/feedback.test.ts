@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest'
+import { coaching } from '@/lib/snippets'
 import type { Attempt } from '../../types'
 import {
   selectFeedback,
@@ -53,19 +54,15 @@ describe('selectFeedback', () => {
     expect(feedback.message).toMatch(/right/i)
     expect(feedback.message).not.toMatch(/keep the root/i)
     expect(feedback.message).not.toMatch(/another flavour/i)
-    expect(feedback.message).toBe('Right home note, wrong colour.')
+    expect(feedback.message).toBe(coaching.rootMatched)
   })
 
   it('leaves the other three diagnoses untouched (R13 boundary)', () => {
     expect(selectFeedback([FLAVOUR_ONLY], false).message).toBe(
-      'The mode is right. But the tonic is somewhere else.',
+      coaching.flavourMatched,
     )
-    expect(selectFeedback([NEITHER], false).message).toBe(
-      'Not it. Keep playing and try again.',
-    )
-    expect(selectFeedback([], false).message).toBe(
-      'Loop it a few times. Sing the note that feels like rest — that’s usually the root.',
-    )
+    expect(selectFeedback([NEITHER], false).message).toBe(coaching.neitherMatched)
+    expect(selectFeedback([], false).message).toBe(coaching.opening)
   })
 
   it('names the mode as right and the tonic as elsewhere when only the mode matched', () => {

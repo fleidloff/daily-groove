@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { puzzle } from '@/lib/snippets'
 import { dateLine, metaLine } from './date'
 import type { Groove } from '../../types'
 
@@ -34,17 +35,21 @@ describe('metaLine', () => {
 
   it('writes the tempo, then the day, for a groove that belongs to one', () => {
     expect(metaLine(GROOVE, new Date(2026, 7, 31))).toBe(
-      '96 bpm · Monday, 31 August',
+      `${puzzle.bpm({ bpm: GROOVE.bpm })} · ${dateLine(new Date(2026, 7, 31))}`,
     )
   })
 
   it('spells the day exactly as dateLine spells it', () => {
     const day = new Date(2026, 7, 31)
-    expect(metaLine(GROOVE, day)).toBe(`96 bpm · ${dateLine(day)}`)
+    expect(metaLine(GROOVE, day)).toBe(
+      `${puzzle.bpm({ bpm: GROOVE.bpm })} · ${dateLine(day)}`,
+    )
   })
 
   it('writes "shared groove" in the day\'s place when there is no day', () => {
-    expect(metaLine(GROOVE, null)).toBe('96 bpm · shared groove')
+    expect(metaLine(GROOVE, null)).toBe(
+      `${puzzle.bpm({ bpm: GROOVE.bpm })} · ${puzzle.sharedGroove}`,
+    )
   })
 
   it('shows no date at all on a shared groove', () => {
@@ -59,27 +64,35 @@ describe('metaLine', () => {
 
   it('puts the answer between the tempo and the day, once there is one', () => {
     expect(metaLine(GROOVE, new Date(2026, 7, 30), ANSWER)).toBe(
-      '96 bpm · C Mixolydian · Sunday, 30 August',
+      `${puzzle.bpm({ bpm: GROOVE.bpm })} · ${ANSWER.root} ${ANSWER.flavour} · ${dateLine(new Date(2026, 7, 30))}`,
     )
   })
 
   it('puts it in the same place on a shared groove', () => {
     expect(metaLine(GROOVE, null, ANSWER)).toBe(
-      '96 bpm · C Mixolydian · shared groove',
+      `${puzzle.bpm({ bpm: GROOVE.bpm })} · ${ANSWER.root} ${ANSWER.flavour} · ${puzzle.sharedGroove}`,
     )
   })
 
   it('omits it entirely while the day is still on', () => {
     const day = new Date(2026, 7, 30)
-    expect(metaLine(GROOVE, day, null)).toBe('96 bpm · Sunday, 30 August')
-    expect(metaLine(GROOVE, day)).toBe('96 bpm · Sunday, 30 August')
-    expect(metaLine(GROOVE, null)).toBe('96 bpm · shared groove')
+    expect(metaLine(GROOVE, day, null)).toBe(
+      `${puzzle.bpm({ bpm: GROOVE.bpm })} · ${dateLine(day)}`,
+    )
+    expect(metaLine(GROOVE, day)).toBe(
+      `${puzzle.bpm({ bpm: GROOVE.bpm })} · ${dateLine(day)}`,
+    )
+    expect(metaLine(GROOVE, null)).toBe(
+      `${puzzle.bpm({ bpm: GROOVE.bpm })} · ${puzzle.sharedGroove}`,
+    )
   })
 
   it('carries whichever tempo the groove has', () => {
-    expect(metaLine({ ...GROOVE, bpm: 84 }, null)).toBe('84 bpm · shared groove')
+    expect(metaLine({ ...GROOVE, bpm: 84 }, null)).toBe(
+      `${puzzle.bpm({ bpm: 84 })} · ${puzzle.sharedGroove}`,
+    )
     expect(metaLine({ ...GROOVE, bpm: 140 }, new Date(2026, 8, 4))).toBe(
-      '140 bpm · Friday, 4 September',
+      `${puzzle.bpm({ bpm: 140 })} · ${dateLine(new Date(2026, 8, 4))}`,
     )
   })
 })

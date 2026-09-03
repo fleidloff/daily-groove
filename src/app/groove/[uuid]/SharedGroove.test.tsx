@@ -7,6 +7,7 @@ import {
   isTodaysGroove,
   type Groove,
 } from "@/features/daily-groove";
+import { puzzle, routes } from "@/lib/snippets";
 
 const { replaceMock, pushMock } = vi.hoisted(() => ({
   replaceMock: vi.fn(),
@@ -67,7 +68,7 @@ describe("a shared link to today's own groove", () => {
 
     await waitFor(() => expect(replaceMock).toHaveBeenCalled());
     expect(
-      screen.queryByRole("button", { name: /play the groove/i }),
+      screen.queryByRole("button", { name: puzzle.playText.play }),
     ).toBeNull();
     expect(screen.queryByText(/shared groove/i)).toBeNull();
     expect(screen.queryByRole("heading", { name: todays().name })).toBeNull();
@@ -78,7 +79,7 @@ describe("a shared link to today's own groove", () => {
     render(<SharedGroove groove={todays()} />);
 
     await waitFor(() => expect(replaceMock).toHaveBeenCalled());
-    expect(screen.getByText(/taking you to today/i)).toBeInTheDocument();
+    expect(screen.getByText(routes.redirecting)).toBeInTheDocument();
   });
 });
 

@@ -1,6 +1,7 @@
 'use client'
 
 import { Switch } from '@/components/controls/Switch'
+import { puzzle } from '@/lib/snippets'
 
 type ModeToggleProps = {
   simple: boolean
@@ -15,7 +16,7 @@ export function ModeToggle({
 }: ModeToggleProps) {
   return (
     <Switch
-      label="Simple mode"
+      label={puzzle.simpleMode}
       checked={simple}
       onChange={onChange}
       disabled={disabled}

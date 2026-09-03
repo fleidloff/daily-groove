@@ -10,6 +10,14 @@ const MANIFEST_OUTPUT_PATHS = [
   '../../src/features/daily-groove/data/notes.generated.ts',
 ]
 
+// Files whose subject *is* an app path, so naming one is not reaching for it.
+// scripts/lintRules.test.ts asserts that an ESLint block scoped to
+// src/features/daily-groove/lib/presentation/ fires there and stays quiet
+// elsewhere; it feeds ESLint virtual filePaths that never touch disk and
+// imports nothing from the app. The sibling case above — "imports nothing from
+// src/features" — is what actually holds the boundary for it.
+const PATH_NAMING_FILES = ['scripts/lintRules.test.ts']
+
 function scriptFiles(dir: string = SCRIPTS_DIR): string[] {
   const out: string[] = []
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
@@ -60,6 +68,7 @@ describe('the generator/app boundary', () => {
     const offenders: string[] = []
     for (const file of scriptFiles()) {
       if (file === 'scripts/grooves/boundary.test.ts') continue
+      if (PATH_NAMING_FILES.includes(file)) continue
       const source = readFileSync(join(REPO_ROOT, file), 'utf8')
       let stripped = source
       for (const path of MANIFEST_OUTPUT_PATHS) stripped = stripped.split(path).join('')

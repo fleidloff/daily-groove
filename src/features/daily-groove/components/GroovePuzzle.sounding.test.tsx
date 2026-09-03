@@ -56,6 +56,7 @@ import { dateLine } from '../lib/presentation/date'
 import type { Move } from '../lib/presentation/moves'
 import { COLOUR_MOVES, TONIC_MOVES } from '../lib/presentation/coachingMoves'
 import { barChords } from '@/lib/theory/changes'
+import { puzzle } from '@/lib/snippets'
 import { GROOVES } from '../data/grooves.generated'
 import { NOTES, PITCHES, type PitchSample } from '../data/notes.generated'
 import { renderFeature } from '../testing/renderFeature'
@@ -100,10 +101,10 @@ describe('GroovePuzzle', () => {
     const user = userEvent.setup()
     await renderPuzzle()
 
-    await user.click(screen.getByRole('button', { name: /^play the loop$/i }))
+    await user.click(screen.getByRole('button', { name: puzzle.playName.play }))
 
     expect(await screen.findByRole('alert')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /retry/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: puzzle.audioRetry })).toBeInTheDocument()
     expect(rootGroup()).toBeInTheDocument()
     expect(
       screen.getByRole('heading', { name: GROOVE.name }),
@@ -116,13 +117,13 @@ describe('GroovePuzzle', () => {
     const user = userEvent.setup()
     await renderPuzzle()
 
-    await user.click(screen.getByRole('button', { name: /play the loop/i }))
+    await user.click(screen.getByRole('button', { name: puzzle.playName.play }))
     expect(await screen.findByRole('alert')).toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: /retry/i }))
+    await user.click(screen.getByRole('button', { name: puzzle.audioRetry }))
 
     expect(
-      await screen.findByRole('button', { name: 'Stop the loop' }),
+      await screen.findByRole('button', { name: puzzle.playName.stop }),
     ).toBeInTheDocument()
     await waitFor(() =>
       expect(screen.queryByRole('alert')).not.toBeInTheDocument(),
@@ -152,14 +153,14 @@ describe('GroovePuzzle', () => {
       '50',
     )
 
-    await user.click(screen.getByRole('button', { name: 'Stop the loop' }))
+    await user.click(screen.getByRole('button', { name: puzzle.playName.stop }))
     expect(fake.sources[0].stop).toHaveBeenCalledTimes(1)
     expect(screen.getByRole('progressbar')).toHaveAttribute(
       'aria-valuenow',
       '0',
     )
     expect(
-      await screen.findByRole('button', { name: 'Play the loop' }),
+      await screen.findByRole('button', { name: puzzle.playName.play }),
     ).toBeInTheDocument()
 
     await play(user)
@@ -194,7 +195,7 @@ describe('GroovePuzzle', () => {
       '2',
     )
 
-    await user.click(screen.getByRole('button', { name: 'Stop the loop' }))
+    await user.click(screen.getByRole('button', { name: puzzle.playName.stop }))
 
     expect(screen.getByRole('progressbar')).toHaveAttribute(
       'aria-valuenow',
@@ -211,17 +212,17 @@ describe('GroovePuzzle', () => {
     const user = userEvent.setup()
     await renderPuzzle()
 
-    await user.click(screen.getByRole('button', { name: 'Play the loop' }))
+    await user.click(screen.getByRole('button', { name: puzzle.playName.play }))
 
-    const control = await screen.findByRole('button', { name: 'Stop the loop' })
-    expect(control).toHaveTextContent('■ Stop')
+    const control = await screen.findByRole('button', { name: puzzle.playName.stop })
+    expect(control).toHaveTextContent(`■ ${puzzle.playText.stop}`)
   })
 
   it('stacks the caption below the control rather than beside it (E2 R4, AC3)', async () => {
     await renderPuzzle()
 
-    const play = screen.getByRole('button', { name: 'Play the loop' })
-    expect(play).toHaveTextContent('▶ Play the groove')
+    const play = screen.getByRole('button', { name: puzzle.playName.play })
+    expect(play).toHaveTextContent(`▶ ${puzzle.playText.play}`)
     expect(play).toHaveClass('w-full')
 
     const region = play.parentElement as HTMLElement
@@ -269,7 +270,7 @@ describe('GroovePuzzle', () => {
       screen.getByRole('heading', { name: GROOVE.name }),
     ).toBeInTheDocument()
     expect(
-      screen.getByText(new RegExp(`^${GROOVE.bpm} bpm · `)),
+      screen.getByText(new RegExp(`^${puzzle.bpm({ bpm: GROOVE.bpm })} · `)),
     ).toBeInTheDocument()
     expect(screen.getAllByText(new RegExp(dateLine(new Date())))).toHaveLength(1)
     expect(screen.queryByText('BPM')).not.toBeInTheDocument()
@@ -284,22 +285,25 @@ describe('GroovePuzzle', () => {
   const soundingControls = () =>
     screen
       .getAllByRole('button')
-      .filter((b) => /^Stop\b/.test(b.getAttribute('aria-label') ?? ''))
+      .filter((b) => b.getAttribute('aria-label') === puzzle.playName.stop)
 
   const todayControl = () =>
-    screen.getByRole('button', { name: /^(Play|Stop) the loop$/ })
+    screen.getByRole('button', {
+      name: (name) =>
+        name === puzzle.playName.play || name === puzzle.playName.stop,
+    })
 
   it("plays today's groove through the page transport (E5 R3, R4, AC3)", async () => {
     const user = userEvent.setup()
     await renderPuzzle()
 
     await user.click(todayControl())
-    await screen.findByRole('button', { name: 'Stop the loop' })
+    await screen.findByRole('button', { name: puzzle.playName.stop })
 
     expect(fetch).toHaveBeenCalledWith(GROOVE.audioSrc)
     expect(fake.sources).toHaveLength(1)
     expect(fake.sources[0].loop).toBe(true)
-    expect(nameOf(todayControl())).toBe('Stop the loop')
+    expect(nameOf(todayControl())).toBe(puzzle.playName.stop)
 
     await user.click(todayControl())
     expect(fake.sources[0].stop).toHaveBeenCalledTimes(1)
@@ -312,11 +316,11 @@ describe('GroovePuzzle', () => {
     const user = userEvent.setup()
     await renderPuzzle()
 
-    await user.click(screen.getByRole('button', { name: 'Play the loop' }))
+    await user.click(screen.getByRole('button', { name: puzzle.playName.play }))
 
-    const busy = await screen.findByRole('button', { name: 'Loading…' })
+    const busy = await screen.findByRole('button', { name: puzzle.playText.loading })
     expect(busy).toBeDisabled()
-    expect(busy).toHaveTextContent('Loading…')
+    expect(busy).toHaveTextContent(puzzle.playText.loading)
     expect(fake.sources).toHaveLength(0)
     await user.click(busy)
     expect(fake.sources).toHaveLength(0)
@@ -325,9 +329,9 @@ describe('GroovePuzzle', () => {
       fake.releaseDecodes()
     })
 
-    const stop = await screen.findByRole('button', { name: 'Stop the loop' })
+    const stop = await screen.findByRole('button', { name: puzzle.playName.stop })
     expect(stop).toBeEnabled()
-    expect(stop).toHaveTextContent('■ Stop')
+    expect(stop).toHaveTextContent(`■ ${puzzle.playText.stop}`)
     expect(fake.sources).toHaveLength(1)
   })
 
@@ -519,7 +523,7 @@ describe('GroovePuzzle', () => {
     expect(startedAt(first)).toBe(2)
 
     await play(user)
-    await user.click(screen.getByRole('button', { name: 'Stop the loop' }))
+    await user.click(screen.getByRole('button', { name: puzzle.playName.stop }))
     await advance(0.3)
     const tappedAt = fake.currentTime
 
@@ -544,14 +548,14 @@ describe('GroovePuzzle', () => {
     expect(groove.stop).not.toHaveBeenCalled()
     expect(progressReads()).toBe(at)
     expect(
-      screen.getByRole('button', { name: 'Stop the loop' }),
+      screen.getByRole('button', { name: puzzle.playName.stop }),
     ).toBeInTheDocument()
     expect(fake.contexts).toHaveLength(1)
 
     await advance(BEAT)
     expect(fake.currentTime).toBeGreaterThan(startedAt(note))
 
-    await user.click(screen.getByRole('button', { name: 'Stop the loop' }))
+    await user.click(screen.getByRole('button', { name: puzzle.playName.stop }))
     expect(groove.stop).toHaveBeenCalledTimes(1)
     expect(note.stop).not.toHaveBeenCalled()
   })
@@ -569,7 +573,7 @@ describe('GroovePuzzle', () => {
     const when = startedAt(note)
     expect(when).toBeGreaterThan(fake.currentTime)
 
-    await user.click(screen.getByRole('button', { name: 'Stop the loop' }))
+    await user.click(screen.getByRole('button', { name: puzzle.playName.stop }))
 
     expect(note.stop).toHaveBeenCalled()
     expect((note.stop.mock.calls[0] as [number])[0]).toBeLessThan(when)
@@ -597,7 +601,7 @@ describe('GroovePuzzle', () => {
     expect(groove.start).toHaveBeenCalledTimes(1)
     expect(progressReads()).toBe(at)
     expect(
-      screen.getByRole('button', { name: 'Stop the loop' }),
+      screen.getByRole('button', { name: puzzle.playName.stop }),
     ).toBeInTheDocument()
   })
 
@@ -666,7 +670,7 @@ describe('GroovePuzzle', () => {
     ) => user.click(within(flavourGroup()).getByRole('button', { name }))
 
     const cardText = () =>
-      screen.getByRole('heading', { name: 'What is it?' })
+      screen.getByRole('heading', { name: puzzle.guessTitle })
         .parentElement as HTMLElement
 
     it('sounds the tapped mode’s lick from the day’s root (H1, R1, R7, R32, AC20)', async () => {
@@ -875,7 +879,7 @@ describe('GroovePuzzle', () => {
       expect(groove.start).toHaveBeenCalledTimes(1)
       expect(progressReads()).toBe(at)
       expect(
-        screen.getByRole('button', { name: 'Stop the loop' }),
+        screen.getByRole('button', { name: puzzle.playName.stop }),
       ).toBeInTheDocument()
       expect(fake.contexts).toHaveLength(1)
     })
@@ -915,7 +919,7 @@ describe('GroovePuzzle', () => {
       await tapMode(user, mode)
       const nodes = await soundedLick(before, phrase.length)
 
-      await user.click(screen.getByRole('button', { name: 'Stop the loop' }))
+      await user.click(screen.getByRole('button', { name: puzzle.playName.stop }))
 
       for (const node of nodes) {
         expect(node.stop).toHaveBeenCalledTimes(1)
@@ -1129,7 +1133,7 @@ describe('GroovePuzzle', () => {
     await play(user)
     await waitFor(() => expect(fetchedNotes()).toHaveLength(WARMED))
 
-    await user.click(screen.getByRole('button', { name: 'Stop the loop' }))
+    await user.click(screen.getByRole('button', { name: puzzle.playName.stop }))
     await play(user)
     await settle()
 
@@ -1159,7 +1163,7 @@ describe('GroovePuzzle', () => {
   it('keeps the caption below the control at full width (E2 R1a, AC6a)', async () => {
     await renderPuzzle()
 
-    const play = screen.getByRole('button', { name: 'Play the loop' })
+    const play = screen.getByRole('button', { name: puzzle.playName.play })
     const caption = screen.getByText(CAPTION)
 
     expect(play.nextElementSibling).toBe(caption)
@@ -1200,8 +1204,8 @@ describe('GroovePuzzle', () => {
   })
 
   describe('the tap sounds can be switched off (F16 E2)', () => {
-    const soundSwitch = () => screen.getByRole('switch', { name: /tap sounds/i })
-    const modeSwitch = () => screen.getByRole('switch', { name: /simple mode/i })
+    const soundSwitch = () => screen.getByRole('switch', { name: puzzle.tapSounds })
+    const modeSwitch = () => screen.getByRole('switch', { name: puzzle.simpleMode })
 
     const turnSoundsOff = async (user: ReturnType<typeof userEvent.setup>) => {
       await user.click(soundSwitch())
@@ -1307,7 +1311,7 @@ describe('GroovePuzzle', () => {
 
       expect(screen.queryByText(CAPTION)).toBeNull()
       const caption = screen.getByText(CAPTION_SOUNDS_OFF)
-      const control = screen.getByRole('button', { name: 'Play the loop' })
+      const control = screen.getByRole('button', { name: puzzle.playName.play })
       expect(control.nextElementSibling).toBe(caption)
       expect(caption.parentElement).toBe(control.parentElement)
       expect(caption.className).toMatch(/text-text-muted/)
@@ -1340,7 +1344,7 @@ describe('GroovePuzzle', () => {
       const stillPlaying = () => {
         expect(progressReads()).toBe(at)
         expect(
-          screen.getByRole('button', { name: 'Stop the loop' }),
+          screen.getByRole('button', { name: puzzle.playName.stop }),
         ).toBeInTheDocument()
         expect(fake.sources).toHaveLength(sounding)
         expect(groove.stop).not.toHaveBeenCalled()
@@ -1426,7 +1430,7 @@ describe('GroovePuzzle', () => {
         expect(marked().every((glyph) => glyph === null)).toBe(true)
 
         expect(screen.queryByRole('alert')).toBeNull()
-        expect(screen.queryByRole('button', { name: /retry/i })).toBeNull()
+        expect(screen.queryByRole('button', { name: puzzle.audioRetry })).toBeNull()
         expect(screen.queryByText(/quota|storage|could not|failed/i)).toBeNull()
         expect(complained).not.toHaveBeenCalled()
       } finally {
@@ -1586,7 +1590,7 @@ describe('GroovePuzzle', () => {
 
     expect(
       screen.getByText(
-        new RegExp(`^${GROOVE.bpm} bpm · C Aeolian · `),
+        new RegExp(`^${puzzle.bpm({ bpm: GROOVE.bpm })} · C Aeolian · `),
       ),
     ).toBeInTheDocument()
   })
@@ -1631,19 +1635,21 @@ describe('GroovePuzzle', () => {
     const renderShared = (groove: Groove = GROOVE) =>
       renderPuzzle(<GroovePuzzle groove={groove} mode="shared" />)
 
-    const notice = () => screen.queryByText(/this is a shared groove/i)
+    const notice = () => screen.queryByText(puzzle.sharedNotice)
 
     const cardMeta = () =>
       screen.getByText(
         (_content, element) =>
           element?.tagName === 'P' &&
-          /^\d+ bpm/.test(element.textContent ?? ''),
+          (element.textContent ?? '').startsWith(
+            puzzle.bpm({ bpm: GROOVE.bpm }),
+          ),
       )
 
     it('reads "shared groove" where the date stands, and shows no date (R1a, R4, AC11)', async () => {
       await renderShared()
 
-      expect(cardMeta().textContent).toBe(`${GROOVE.bpm} bpm · shared groove`)
+      expect(cardMeta().textContent).toBe(`${puzzle.bpm({ bpm: GROOVE.bpm })} · ${puzzle.sharedGroove}`)
       expect(cardMeta().textContent).not.toContain(dateLine(new Date()))
     })
 
@@ -1651,7 +1657,7 @@ describe('GroovePuzzle', () => {
       await renderPuzzle()
 
       expect(cardMeta().textContent).toBe(
-        `${GROOVE.bpm} bpm · ${dateLine(new Date())}`,
+        `${puzzle.bpm({ bpm: GROOVE.bpm })} · ${dateLine(new Date())}`,
       )
       expect(notice()).toBeNull()
     })

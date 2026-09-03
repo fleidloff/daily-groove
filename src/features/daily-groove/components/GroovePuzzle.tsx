@@ -51,7 +51,7 @@ import { PlayControl } from '@/components/controls/PlayControl'
 import { Row } from '@/components/layout/Row'
 import { Stack } from '@/components/layout/Stack'
 import { Text } from '@/components/typography/Text'
-import { APP_NAME } from '@/lib/branding'
+import { branding, puzzle } from '@/lib/snippets'
 
 export type PuzzleMode = 'daily' | 'shared'
 
@@ -60,22 +60,16 @@ type GroovePuzzleProps = {
   mode?: PuzzleMode
 }
 
-const REGION_LABEL = APP_NAME
+const REGION_LABEL = branding.appName
 
 const subscribeNoop = () => () => {}
 
 const FLAVOUR_POOL = flavourPool(GROOVES)
 
-const CAPTION_SOUNDS_ON =
-  'Find the note that feels like home — Play along with your instrument, or tap a root or a mode to hear it.'
-
-const CAPTION_SOUNDS_OFF =
-  'Find the note that feels like home — Play along with your instrument.'
-
 function PuzzleLoading() {
   return (
     <section aria-label={REGION_LABEL}>
-      <Text tone="muted">Loading today&apos;s groove…</Text>
+      <Text tone="muted">{puzzle.loading}</Text>
     </section>
   )
 }
@@ -235,9 +229,9 @@ function GroovePuzzleView({
           <div role="alert">
             <Card tone="inset">
               <Row gap="md" align="center" justify="between">
-                <Text tone="muted">Couldn&apos;t play the groove.</Text>
+                <Text tone="muted">{puzzle.audioError}</Text>
                 <button type="button" onClick={handleToggle}>
-                  Retry
+                  {puzzle.audioRetry}
                 </button>
               </Row>
             </Card>
@@ -270,14 +264,11 @@ function GroovePuzzleView({
                     isPlaying={isPlaying}
                     onToggle={handleToggle}
                     busy={loading}
-                    text={{
-                      play: 'Play the groove',
-                      stop: 'Stop',
-                      loading: 'Loading…',
-                    }}
+                    text={puzzle.playText}
+                    name={puzzle.playName}
                   />
                   <Text tone="muted" size="sm">
-                    {tapSounds ? CAPTION_SOUNDS_ON : CAPTION_SOUNDS_OFF}
+                    {tapSounds ? puzzle.captionSoundsOn : puzzle.captionSoundsOff}
                   </Text>
                 </Stack>
               </Stack>

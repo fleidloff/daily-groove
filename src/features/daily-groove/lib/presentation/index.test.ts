@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
+import { coaching } from '@/lib/snippets'
 import type { Answer, Attempt, Flavour, Root } from '../../types'
 import { ROOTS } from '@/lib/theory/roots'
 import { FAMILIES } from '@/lib/theory/families'
@@ -316,9 +317,9 @@ describe('check enablement', () => {
 
 describe('the check button’s label and tone', () => {
   it.each<[string, Partial<GuessCardViewInput>, string]>([
-    ['nothing chosen', {}, 'Pick a root and a mode'],
-    ['only a root', { selectedRoot: 'G' }, 'Pick a mode'],
-    ['only a mode', { selectedFlavour: WRONG_FLAVOURS[0] }, 'Pick a root'],
+    ['nothing chosen', {}, coaching.pickRootAndMode],
+    ['only a root', { selectedRoot: 'G' }, coaching.pickMode],
+    ['only a mode', { selectedFlavour: WRONG_FLAVOURS[0] }, coaching.pickRoot],
     [
       'both chosen',
       {
@@ -326,12 +327,12 @@ describe('the check button’s label and tone', () => {
         selectedFlavour: WRONG_FLAVOURS[0],
         canCheck: true,
       },
-      `Check G ${WRONG_FLAVOURS[0]}`,
+      coaching.checkPair({ root: 'G', flavour: WRONG_FLAVOURS[0] }),
     ],
     [
       'a solved day',
       { selectedRoot: 'C', selectedFlavour: ANSWER.flavour, solved: true },
-      'Solved',
+      coaching.checkSolved,
     ],
   ])(
     'asks for the half that is missing with %s (F20 E2 R3c; was GuessCard.test.tsx CTA_CASES)',

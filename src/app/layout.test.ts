@@ -107,8 +107,9 @@ describe('the jazz face is vendored into the repo', () => {
 
 describe('layout.tsx metadata names the app', () => {
   it('imports the branding constants', () => {
-    expect(source).toMatch(/import\s*\{[^}]*\bAPP_NAME\b[^}]*\}\s*from\s*['"]@\/lib\/branding['"]/)
-    expect(source).toMatch(/import\s*\{[^}]*\bTAGLINE\b[^}]*\}\s*from\s*['"]@\/lib\/branding['"]/)
+    expect(source).toMatch(/import\s*\{[^}]*\bbranding\b[^}]*\}\s*from\s*['"]@\/lib\/snippets['"]/)
+    expect(source).toMatch(/\bappName:\s*APP_NAME\b/)
+    expect(source).toMatch(/\btagline:\s*TAGLINE\b/)
   })
 
   it('sets the document title to APP_NAME', () => {

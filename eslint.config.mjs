@@ -61,6 +61,40 @@ const moduleMapZones = [
   },
 ];
 
+// A test in the coaching modules' folder asserts *which* sentence was
+// selected, never what the sentence says — the sentence itself lives in
+// src/lib/snippets/. A string literal with whitespace in it is a sentence; a
+// one-word literal is a root, a mode, a tone or an option state, and stays
+// legal. Measured on the tree this landed against: 11 hits, all sentences,
+// no false positives.
+const SENTENCE_MATCHERS = ["toBe", "toEqual", "toContain", "toMatch"];
+
+const SENTENCE_MESSAGE =
+  "A sentence the app renders must be imported from @/lib/snippets, not " +
+  "written out here. lib/presentation/ selects a sentence; " +
+  "src/lib/snippets/en/ defines it — so a sentence copied into this test is a " +
+  "second place the wording lives, and a second place a reword has to be " +
+  "found. Feature-19 paid that bill across 209 assertions. Assert the snippet " +
+  "instead: expect(selectFeedback(attempts, false).message)" +
+  ".toBe(coaching.rootMatched), calling it with the same arguments the module " +
+  "passes if it takes any. A one-word literal is data, not language " +
+  "('Aeolian', 'warm', 'open'), and is not restricted.";
+
+const copiedSentenceRules = SENTENCE_MATCHERS.flatMap((matcher) => [
+  {
+    selector:
+      `CallExpression[callee.property.name='${matcher}'] > ` +
+      `Literal[value=type(string)][value=/\\s/]`,
+    message: SENTENCE_MESSAGE,
+  },
+  {
+    selector:
+      `CallExpression[callee.property.name='${matcher}'] > ` +
+      `TemplateLiteral[expressions.length=0][quasis.0.value.raw=/\\s/]`,
+    message: SENTENCE_MESSAGE,
+  },
+]);
+
 const featureBoundaryZones = features.flatMap((feature) => {
   const others = features.filter((other) => other !== feature);
 
@@ -163,6 +197,27 @@ const eslintConfig = defineConfig([
         },
       ],
     },
+  },
+  {
+    name: "daily-groove/no-copied-sentences",
+    files: [`${F}/lib/presentation/**/*.test.ts`],
+    ignores: [
+      // An Intl-formatted date is produced by the platform, not written by
+      // us: dateLine() returning 'Sunday, 30 August' is an assertion about
+      // en-GB, and there is no snippet to import.
+      `${F}/lib/presentation/date.test.ts`,
+      // A degree string is theory, not language: '1 G, 2 A, ♭3 B♭' is data
+      // that happens to contain spaces. A translator translates neither half.
+      `${F}/lib/presentation/staffLabel.test.ts`,
+      // A module that *defines* sentences is the one place a sentence must be
+      // written out. A test asserting nearMiss({ notes: 2 }) against the
+      // snippet it imports asserts nothing; asserting it against 'two notes'
+      // is the only version that checks anything. Redundant against today's
+      // `files` glob, and kept so that widening that glob later cannot
+      // silently swallow the definer.
+      "src/lib/snippets/**",
+    ],
+    rules: { "no-restricted-syntax": ["error", ...copiedSentenceRules] },
   },
 ]);
 

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { InlineButton } from '@/components/controls/InlineButton'
 import { Row } from '@/components/layout/Row'
 import { Stack } from '@/components/layout/Stack'
+import { header } from '@/lib/snippets'
 import type { Groove } from '../../types'
 import {
   browserShareDeps,
@@ -58,7 +59,7 @@ export function ShareGroove({ groove, deps, origin }: ShareGrooveProps) {
   return (
     <Stack gap="xs">
       <Row gap="sm" align="center">
-        <InlineButton label="Share" onPress={handlePress}>
+        <InlineButton label={header.share} onPress={handlePress}>
           <svg
             aria-hidden="true"
             focusable="false"
@@ -75,14 +76,14 @@ export function ShareGroove({ groove, deps, origin }: ShareGrooveProps) {
             <path d="M4.75 5.75 8 2.5l3.25 3.25" />
             <path d="M3 9.5v3.5a.5.5 0 0 0 .5.5h9a.5.5 0 0 0 .5-.5V9.5" />
           </svg>
-          Share
+          {header.share}
         </InlineButton>
 
         <span
           aria-live="polite"
           className="text-[13px] leading-[1.45] text-text-muted"
         >
-          {outcome === 'copied' ? 'Link copied' : ''}
+          {outcome === 'copied' ? header.linkCopied : ''}
         </span>
       </Row>
 

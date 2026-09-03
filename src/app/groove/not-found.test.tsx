@@ -3,15 +3,16 @@ import { resolve } from "node:path";
 import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
 import NotFound from "./not-found";
+import { routes } from "@/lib/snippets";
 
 describe("the not-found page a dead share link lands on", () => {
   it("says the groove could not be found", () => {
     render(<NotFound />);
 
     expect(
-      screen.getByRole("heading", { name: /not found/i }),
+      screen.getByRole("heading", { name: routes.notFoundTitle }),
     ).toBeInTheDocument();
-    expect(screen.getByText(/couldn't find the groove/i)).toBeInTheDocument();
+    expect(screen.getByText(routes.notFoundBody)).toBeInTheDocument();
   });
 
   it("offers exactly one way back, and it is today's puzzle", () => {

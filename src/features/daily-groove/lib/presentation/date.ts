@@ -1,3 +1,4 @@
+import { puzzle } from '@/lib/snippets'
 import type { Answer, Groove } from '../../types'
 
 const WEEKDAY = new Intl.DateTimeFormat('en-GB', { weekday: 'long' })
@@ -16,8 +17,8 @@ export function metaLine(
   answer: Answer | null = null,
 ): string {
   return [
-    `${groove.bpm} bpm`,
+    puzzle.bpm({ bpm: groove.bpm }),
     ...(answer ? [`${answer.root} ${answer.flavour}`] : []),
-    date ? dateLine(date) : 'shared groove',
+    date ? dateLine(date) : puzzle.sharedGroove,
   ].join(' · ')
 }

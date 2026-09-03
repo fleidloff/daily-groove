@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { coaching, header, intro, puzzle } from '@/lib/snippets'
 import {
   control,
   guess,
@@ -75,7 +76,7 @@ describe('nothing on the page counts your tries (F19 E1)', () => {
 
   const giveUp = () =>
     screen.queryByRole('button', {
-      name: /give up and show the answer|end the day and show the answer/i,
+      name: (name) => name === puzzle.giveUp || name === puzzle.giveUpArmed,
     })
 
   it('catches copy that names a count, however it is worded (F19 E1 R8, AC10)', () => {
@@ -93,14 +94,14 @@ describe('nothing on the page counts your tries (F19 E1)', () => {
     const user = userEvent.setup()
     await renderPuzzle()
 
-    expect(screen.getByRole('heading', { name: /how to play/i })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: intro.title })).toBeInTheDocument()
     expect(readablePage()).toEqual(
-      expect.arrayContaining(['Close how to play', 'Current streak']),
+      expect.arrayContaining([intro.closeName, header.currentStreakName]),
     )
     expect(offendingCopy(readablePage())).toEqual([])
     expect(document.querySelectorAll('[data-dot-state]')).toHaveLength(0)
 
-    await user.click(screen.getByRole('button', { name: 'Close how to play' }))
+    await user.click(screen.getByRole('button', { name: intro.closeName }))
     expect(offendingCopy(readablePage())).toEqual([])
   })
 
@@ -116,7 +117,7 @@ describe('nothing on the page counts your tries (F19 E1)', () => {
     expect(offendingCopy(readablePage())).toEqual([])
 
     await guess(user, 'A', thirdWrongFlavour())
-    expect(giveUp()).toHaveAccessibleName('Give up and show the answer')
+    expect(giveUp()).toHaveAccessibleName(puzzle.giveUp)
     expect(offendingCopy(readablePage())).toEqual([])
   })
 
@@ -127,7 +128,7 @@ describe('nothing on the page counts your tries (F19 E1)', () => {
     await guess(user, 'C', wrongFlavour())
     await guess(user, 'C', 'Aeolian')
 
-    expect(control()).toHaveAccessibleName('Solved')
+    expect(control()).toHaveAccessibleName(coaching.checkSolved)
     expect(offendingCopy(readablePage())).toEqual([])
   })
 
@@ -147,8 +148,8 @@ describe('nothing on the page counts your tries (F19 E1)', () => {
       /streak (?:lost|broken|reset|over|ended)/i,
     )
     expect(document.body.textContent).not.toMatch(/back to (?:zero|0)/i)
-    expect(screen.getByLabelText(/current streak/i)).toHaveTextContent(
-      /no streak yet/i,
+    expect(screen.getByLabelText(header.currentStreakName)).toHaveTextContent(
+      header.noStreakYet,
     )
   })
 })

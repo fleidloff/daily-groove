@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { header } from '@/lib/snippets'
 import { ShareGroove } from './ShareGroove'
 import type { Groove } from '../../types'
 
@@ -22,7 +23,7 @@ const GROOVE: Groove = {
 const ORIGIN = 'https://x.test'
 const LINK = `${ORIGIN}/groove/${GROOVE.uuid}`
 
-const shareControl = () => screen.getByRole('button', { name: 'Share' })
+const shareControl = () => screen.getByRole('button', { name: header.share })
 const liveRegion = () => document.querySelector('[aria-live="polite"]')
 
 async function settle() {
@@ -106,7 +107,7 @@ describe('ShareGroove (F12 E2)', () => {
     await user.click(shareControl())
     await settle()
 
-    expect(screen.queryByText('Link copied')).toBeNull()
+    expect(screen.queryByText(header.linkCopied)).toBeNull()
     expect(screen.queryByText(LINK)).toBeNull()
     expect(screen.queryByRole('alert')).toBeNull()
   })
@@ -124,11 +125,11 @@ describe('ShareGroove (F12 E2)', () => {
     await settle()
 
     expect(write).toHaveBeenCalledWith(LINK)
-    const confirmation = screen.getByText('Link copied')
+    const confirmation = screen.getByText(header.linkCopied)
     expect(confirmation.closest('[aria-live="polite"]')).not.toBeNull()
 
     expect(shareControl()).toHaveFocus()
-    expect(shareControl()).toHaveAccessibleName('Share')
+    expect(shareControl()).toHaveAccessibleName(header.share)
     await user.keyboard('{Enter}')
     await settle()
     expect(write).toHaveBeenCalledTimes(2)
@@ -140,18 +141,18 @@ describe('ShareGroove (F12 E2)', () => {
     render(<ShareGroove groove={GROOVE} origin={ORIGIN} deps={{ write }} />)
 
     await press()
-    expect(screen.getByText('Link copied')).toBeInTheDocument()
+    expect(screen.getByText(header.linkCopied)).toBeInTheDocument()
 
     await act(async () => {
       vi.advanceTimersByTime(2500)
     })
 
-    expect(screen.queryByText('Link copied')).toBeNull()
+    expect(screen.queryByText(header.linkCopied)).toBeNull()
     expect(liveRegion()).not.toBeNull()
     expect(shareControl()).toBeInTheDocument()
 
     await press()
-    expect(screen.getByText('Link copied')).toBeInTheDocument()
+    expect(screen.getByText(header.linkCopied)).toBeInTheDocument()
   })
 
   it('leaves no timer behind when it is unmounted mid-confirmation (R6)', async () => {
@@ -162,7 +163,7 @@ describe('ShareGroove (F12 E2)', () => {
     )
 
     await press()
-    expect(screen.getByText('Link copied')).toBeInTheDocument()
+    expect(screen.getByText(header.linkCopied)).toBeInTheDocument()
 
     view.unmount()
 
@@ -222,7 +223,7 @@ describe('ShareGroove (F12 E2)', () => {
     await settle()
 
     expect(screen.queryByRole('alert')).toBeNull()
-    expect(screen.queryByText('Link copied')).toBeNull()
+    expect(screen.queryByText(header.linkCopied)).toBeNull()
     expect(screen.queryByText(LINK)).toBeNull()
     expect(write).not.toHaveBeenCalled()
 
@@ -236,10 +237,10 @@ describe('ShareGroove (F12 E2)', () => {
     const user = userEvent.setup()
     render(<ShareGroove groove={GROOVE} origin={ORIGIN} deps={{}} />)
 
-    expect(shareControl()).toHaveAccessibleName('Share')
+    expect(shareControl()).toHaveAccessibleName(header.share)
     await user.click(shareControl())
     await settle()
 
-    expect(shareControl()).toHaveAccessibleName('Share')
+    expect(shareControl()).toHaveAccessibleName(header.share)
   })
 })

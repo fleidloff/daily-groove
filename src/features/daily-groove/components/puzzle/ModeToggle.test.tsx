@@ -2,13 +2,14 @@ import { describe, expect, it, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { ModeToggle } from './ModeToggle'
+import { puzzle } from '@/lib/snippets'
 
 describe('ModeToggle', () => {
   it('is a switch whose name says what it switches (R1, AC1)', () => {
     render(<ModeToggle simple={false} onChange={vi.fn()} />)
 
     expect(
-      screen.getByRole('switch', { name: /simple mode/i }),
+      screen.getByRole('switch', { name: puzzle.simpleMode }),
     ).toBeInTheDocument()
   })
 
@@ -147,9 +148,9 @@ describe('ModeToggle', () => {
   it('still reads as a switch that is on when it has settled (F11 E4 R4, R5, AC4, AC5)', () => {
     render(<ModeToggle simple onChange={vi.fn()} disabled />)
 
-    const toggle = screen.getByRole('switch', { name: /simple mode/i })
+    const toggle = screen.getByRole('switch', { name: puzzle.simpleMode })
     expect(toggle).toHaveAttribute('aria-checked', 'true')
-    expect(toggle).toHaveTextContent(/simple mode/i)
+    expect(toggle).toHaveTextContent(puzzle.simpleMode)
   })
 
   it('still reads as a switch that is off when it has settled (F11 E4 R4, R5, AC5)', () => {

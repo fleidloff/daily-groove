@@ -1,23 +1,19 @@
 import { describe, expect, it, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { intro } from '@/lib/snippets'
 import { HowToPlay } from './HowToPlay'
 
-const STEPS = [
-  'Listen to the groove 🎧',
-  'Jam along 🎸',
-  'Guess the Root & Mode 🎯',
-  'Come back every day for a new challenge ⏭',
-]
+const STEPS = intro.steps.map((step) => `${step.words}${step.mark}`.trim())
 
-const EMOJI = ['🎧', '🎸', '🎯', '⏭']
+const EMOJI = intro.steps.map((step) => step.mark)
 
 describe('HowToPlay', () => {
   it('carries a heading that names what the box explains (R4)', () => {
     render(<HowToPlay onClose={vi.fn()} />)
 
     expect(
-      screen.getByRole('heading', { level: 2, name: 'How to play' }),
+      screen.getByRole('heading', { level: 2, name: intro.title }),
     ).toBeInTheDocument()
   })
 
@@ -62,7 +58,7 @@ describe('HowToPlay', () => {
     render(<HowToPlay onClose={vi.fn()} />)
 
     expect(
-      screen.getByRole('button', { name: 'Close how to play' }),
+      screen.getByRole('button', { name: intro.closeName }),
     ).toBeInTheDocument()
   })
 
@@ -70,7 +66,7 @@ describe('HowToPlay', () => {
     render(<HowToPlay onClose={vi.fn()} />)
 
     expect(
-      screen.getByRole('button', { name: 'Close how to play' }),
+      screen.getByRole('button', { name: intro.closeName }),
     ).toHaveAttribute('type', 'button')
   })
 
@@ -79,7 +75,7 @@ describe('HowToPlay', () => {
     const onClose = vi.fn()
     render(<HowToPlay onClose={onClose} />)
 
-    await user.click(screen.getByRole('button', { name: 'Close how to play' }))
+    await user.click(screen.getByRole('button', { name: intro.closeName }))
 
     expect(onClose).toHaveBeenCalledTimes(1)
   })
@@ -89,7 +85,7 @@ describe('HowToPlay', () => {
     const onClose = vi.fn()
     render(<HowToPlay onClose={onClose} />)
 
-    const close = screen.getByRole('button', { name: 'Close how to play' })
+    const close = screen.getByRole('button', { name: intro.closeName })
     close.focus()
     await user.keyboard('{Enter}')
 
@@ -126,13 +122,13 @@ describe('HowToPlay', () => {
     const user = userEvent.setup()
     render(<HowToPlay onClose={vi.fn()} />)
 
-    await user.click(screen.getByRole('button', { name: 'Close how to play' }))
+    await user.click(screen.getByRole('button', { name: intro.closeName }))
 
     expect(screen.getAllByRole('listitem')).toHaveLength(4)
   })
 
   describe('the drum samples credit', () => {
-    const SOURCE = 'Drum samples provided by DrumGizmo.org'
+    const SOURCE = intro.drumCredit
 
     it('names the credit in the exact words the licence requires', () => {
       render(<HowToPlay onClose={vi.fn()} />)

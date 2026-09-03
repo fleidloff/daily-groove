@@ -2,6 +2,7 @@ import { EyebrowLabel } from '@/components/typography/EyebrowLabel'
 import { Stack } from '@/components/layout/Stack'
 import type { Feedback } from '../../lib/presentation/feedback'
 import { FeedbackLine } from './FeedbackLine'
+import { puzzle } from '@/lib/snippets'
 
 type NudgeBoxProps = {
   feedback: Feedback | null
@@ -18,18 +19,18 @@ export function NudgeBox({ feedback, coaching, eliminated }: NudgeBoxProps) {
 
   return (
     <aside
-      aria-label="Hint"
+      aria-label={puzzle.hint}
       className="rounded-panel border border-border bg-surface-inset px-4 py-[14px]"
     >
       <Stack gap="xs">
-        <EyebrowLabel>Hint</EyebrowLabel>
+        <EyebrowLabel>{puzzle.hint}</EyebrowLabel>
         <div role="status" aria-live="polite">
           <Stack gap="xs">
             {message !== null && <FeedbackLine feedback={message} />}
             {move !== null && <FeedbackLine feedback={move} />}
             {count !== null && (
               <p className="text-[14px] leading-[1.5] text-text-muted">
-                {count} roots ruled out. Narrowing as you go.
+                {puzzle.ruledOut({ roots: count })}
               </p>
             )}
           </Stack>

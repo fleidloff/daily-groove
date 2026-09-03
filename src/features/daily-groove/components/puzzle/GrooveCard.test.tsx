@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { GrooveCard } from './GrooveCard'
+import { puzzle } from '@/lib/snippets'
 import { dateLine, metaLine } from '../../lib/presentation/date'
 import type { Groove } from '../../types'
 import { GROOVES } from '../../data/grooves.generated'
@@ -42,7 +43,9 @@ describe('GrooveCard', () => {
 
   it('shows the tempo as a number and its unit (R1, R5, AC1, AC4)', () => {
     render(<GrooveCard groove={GROOVE_105} meta={metaFor(GROOVE_105)} />)
-    expect(screen.getByText('105 bpm · Sunday, 30 August')).toBeInTheDocument()
+    expect(
+      screen.getByText(`${puzzle.bpm({ bpm: GROOVE_105.bpm })} · ${dateLine(DAY)}`),
+    ).toBeInTheDocument()
     expect(
       screen.getByRole('heading', { name: 'Sunroom Shuffle' }),
     ).toBeInTheDocument()
@@ -53,7 +56,9 @@ describe('GrooveCard', () => {
     const heading = screen.getByRole('heading', { level: 2 })
     expect(heading.textContent).toBe('Sunroom Shuffle')
     expect(heading).not.toHaveTextContent('105')
-    expect(screen.getByText('105 bpm · Sunday, 30 August')).not.toBe(heading)
+    expect(
+      screen.getByText(`${puzzle.bpm({ bpm: GROOVE_105.bpm })} · ${dateLine(DAY)}`),
+    ).not.toBe(heading)
   })
 
   it('shows the tempo whether or not the groove is playing (R2, AC2)', async () => {
@@ -73,11 +78,17 @@ describe('GrooveCard', () => {
       </GrooveCard>,
     )
 
-    expect(screen.getByText('105 bpm · Sunday, 30 August')).toBeInTheDocument()
+    expect(
+      screen.getByText(`${puzzle.bpm({ bpm: GROOVE_105.bpm })} · ${dateLine(DAY)}`),
+    ).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Play' }))
-    expect(screen.getByText('105 bpm · Sunday, 30 August')).toBeInTheDocument()
+    expect(
+      screen.getByText(`${puzzle.bpm({ bpm: GROOVE_105.bpm })} · ${dateLine(DAY)}`),
+    ).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Stop' }))
-    expect(screen.getByText('105 bpm · Sunday, 30 August')).toBeInTheDocument()
+    expect(
+      screen.getByText(`${puzzle.bpm({ bpm: GROOVE_105.bpm })} · ${dateLine(DAY)}`),
+    ).toBeInTheDocument()
   })
 
   it('renders no meta line beneath the name (R9, AC5)', () => {
@@ -97,7 +108,9 @@ describe('GrooveCard', () => {
     )
 
     expect(
-      screen.getByText('105 bpm · C Mixolydian · Sunday, 30 August'),
+      screen.getByText(
+        `${puzzle.bpm({ bpm: GROOVE_105.bpm })} · C Mixolydian · ${dateLine(DAY)}`,
+      ),
     ).toBeInTheDocument()
   })
 
@@ -105,7 +118,9 @@ describe('GrooveCard', () => {
     const { container } = render(
       <GrooveCard groove={GROOVE_105} meta={metaFor(GROOVE_105)} />,
     )
-    expect(screen.getByText('105 bpm · Sunday, 30 August')).toBeInTheDocument()
+    expect(
+      screen.getByText(`${puzzle.bpm({ bpm: GROOVE_105.bpm })} · ${dateLine(DAY)}`),
+    ).toBeInTheDocument()
     expect(container.textContent ?? '').not.toMatch(/Dorian|Mixolydian/)
   })
 
@@ -124,7 +139,7 @@ describe('GrooveCard', () => {
     render(<GrooveCard groove={GROOVE_105} meta={metaFor(GROOVE_105)} />)
 
     expect(
-      screen.getByText('105 bpm · Sunday, 30 August'),
+      screen.getByText(`${puzzle.bpm({ bpm: GROOVE_105.bpm })} · ${dateLine(DAY)}`),
     ).toBeInTheDocument()
   })
 
@@ -149,11 +164,15 @@ describe('GrooveCard', () => {
     const { rerender } = render(
       <GrooveCard groove={GROOVE_105} meta={metaLine(GROOVE_105, null)} />,
     )
-    expect(screen.getByText('105 bpm · shared groove')).toBeInTheDocument()
+    expect(
+      screen.getByText(`${puzzle.bpm({ bpm: GROOVE_105.bpm })} · ${puzzle.sharedGroove}`),
+    ).toBeInTheDocument()
     expect(screen.queryByText(/August|Sunday/)).not.toBeInTheDocument()
 
     rerender(<GrooveCard groove={GROOVE_105} meta={metaFor(GROOVE_105)} />)
-    expect(screen.getByText('105 bpm · Sunday, 30 August')).toBeInTheDocument()
+    expect(
+      screen.getByText(`${puzzle.bpm({ bpm: GROOVE_105.bpm })} · ${dateLine(DAY)}`),
+    ).toBeInTheDocument()
     expect(screen.queryByText(/shared groove/)).not.toBeInTheDocument()
   })
 
@@ -165,7 +184,9 @@ describe('GrooveCard', () => {
       />,
     )
     expect(
-      screen.getByText('105 bpm · C Mixolydian · shared groove'),
+      screen.getByText(
+        `${puzzle.bpm({ bpm: GROOVE_105.bpm })} · C Mixolydian · ${puzzle.sharedGroove}`,
+      ),
     ).toBeInTheDocument()
   })
 

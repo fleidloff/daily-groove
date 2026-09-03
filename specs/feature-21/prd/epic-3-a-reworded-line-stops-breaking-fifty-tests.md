@@ -96,7 +96,7 @@ mode worth avoiding here, and it is the one the current test shape guarantees.
   tests. The file an assertion sits in is what makes the rule safe; it is not on
   its own sufficient, which R5b states.
 - **R5b** — The scope alone would fire on data. Inside `lib/presentation/`, after
-  the two named exclusions, 43 string literals reach those four matchers and only
+  the two named exclusions, 44 string literals reach those four matchers and only
   11 are sentences: the rest are `'warm'`, `'open'`, `'out'`, `'neutral'`,
   `'tonic'`, `'C'`, `'Dorian'` and `''`. The block therefore carries one further
   clause — the literal contains whitespace — measured against the real tree with
@@ -322,8 +322,8 @@ rests on — `lib/presentation/` *selects* a sentence, `src/lib/snippets/`
 it?**
 Answer: **A) Scope by file *and* require whitespace.** Writing the spec turned up
 what the PRD had assumed away: inside `lib/presentation/`, after the two
-exclusions, 43 literals reach those matchers and only 11 are sentences. A by-file
-block with no further clause fires 32 times on `'warm'`, `'open'`, `'neutral'`,
+exclusions, 44 literals reach those matchers and only 11 are sentences. A by-file
+block with no further clause fires 33 times on `'warm'`, `'open'`, `'neutral'`,
 `'C'` and `''`, which contradicts R6 outright. The whitespace clause fires 11 for
 11 against the real config.
 Applied to: R5, R5a, R5b, R5c, R6, R7a, R11, AC4, AC6, AC6b, Behaviour details.

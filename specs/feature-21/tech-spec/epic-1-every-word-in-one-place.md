@@ -382,6 +382,13 @@ The three names do not change, so no test file that imports them changes either.
 The diff may touch a test file only as follows. Step K1 enforces it.
 
 - The five files in the exceptions table, as described there.
+- `src/app/layout.test.ts`: the two source-scan lines in *"imports the branding
+  constants"* become three, asserting the `@/lib/snippets` import and the
+  `appName: APP_NAME` / `tagline: TAGLINE` bindings. Forced by R1d — the test reads
+  `layout.tsx` from disk and demands the literal specifier `@/lib/branding`, which
+  Step K0 deletes, so green-today and broken-at-K0 were the only alternatives. No
+  rendered string is involved: it is an assertion about an import path, which is
+  why it does not breach R12's subject.
 - `src/features/daily-groove/testing/puzzleHarness.tsx`: the three constants of
   C7, plus imports. `play()`'s `'Play the loop'` / `'Stop the loop'` stay.
 - Every other `*.test.ts` / `*.test.tsx`: changed lines must all be import
@@ -1106,7 +1113,9 @@ Covers: R9, AC15
   the tag *human-checked*, with the sentence saying why: a linter cannot tell
   `'Aeolian'` from `'No streak yet'`; (d) say precisely which half Epic 3's lint
   rule does enforce — assertions on rendered language in test files
-  (`*ByText`, `*ByRole`'s `name`, `toHaveTextContent`, `toHaveAccessibleName`) —
+  (whitespace-bearing literals passed to `toBe`, `toEqual`, `toContain` and
+  `toMatch`, scoped by file to `lib/presentation/`'s tests minus `date.test.ts`
+  and `staffLabel.test.ts`; nothing fires in component tests) —
   and therefore that nothing mechanical will stop the next inline label in a
   component; (e) point at `src/lib/snippets/index.ts` as the destination and
   repeat R1c's ban on `snippets/en` specifiers. Add the new folder to the
@@ -1126,7 +1135,8 @@ Covers: R1d, AC3
 - **Test first** — `grep -rn "lib/branding" src scripts` — expect nothing but
   `scripts/tiers.test.ts:56`, which is the stale-but-passing case documented in
   Architecture. Anything else means a track missed a repoint.
-- **Implement** — `git rm src/lib/branding.ts`.
+- **Implement** — `rm src/lib/branding.ts`. Not `git rm`: this run never touches
+  the index, and the deletion is reviewed in the working tree like every other change.
 - **Green when** — `npx tsc --noEmit`, `npm test` and `npm run build` pass.
 - **Refactor** — none. Do not edit `scripts/tiers.test.ts`.
 

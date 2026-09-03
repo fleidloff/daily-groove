@@ -6,14 +6,13 @@ type PlayControlProps = {
   isPlaying: boolean
   onToggle: () => void
   busy?: boolean
-  text?: { play: string; stop: string; loading: string }
+  text: { play: string; stop: string; loading: string }
+  name: { play: string; stop: string }
 }
 
 const GLYPH = { play: '▶', stop: '■', loading: '◌' } as const
-const TEXT = { play: 'Play', stop: 'Stop', loading: 'Loading…' } as const
-const NAME = { play: 'Play the loop', stop: 'Stop the loop' } as const
 
-export function PlayControl({ isPlaying, onToggle, busy = false, text = TEXT }: PlayControlProps) {
+export function PlayControl({ isPlaying, onToggle, busy = false, text, name }: PlayControlProps) {
   const action = isPlaying ? 'stop' : 'play'
   const state = busy ? 'loading' : action
 
@@ -23,7 +22,7 @@ export function PlayControl({ isPlaying, onToggle, busy = false, text = TEXT }: 
       size="lg"
       disabled={busy}
       onPress={onToggle}
-      label={busy ? text.loading : NAME[action]}
+      label={busy ? text.loading : name[action]}
     >
       {`${GLYPH[state]} ${text[state]}`}
     </Button>

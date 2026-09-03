@@ -13,6 +13,7 @@ import { ChipGroup } from '@/components/controls/ChipGroup'
 import type { ChipOptionState } from '@/components/controls/ChipGroup'
 import { Heading } from '@/components/typography/Heading'
 import { Stack } from '@/components/layout/Stack'
+import { puzzle } from '@/lib/snippets'
 
 const chipStates = (options: readonly OptionView[]) => {
   const states: Record<string, ChipOptionState> = {}
@@ -58,7 +59,7 @@ export function GuessCard({ onHearRoot, onHearMode }: GuessCardProps) {
     <Card>
       <Stack gap="lg">
         <Heading level={3} size="md">
-          What is it?
+          {puzzle.guessTitle}
         </Heading>
 
         <Stack gap="sm">
@@ -72,7 +73,7 @@ export function GuessCard({ onHearRoot, onHearMode }: GuessCardProps) {
         </Stack>
 
         <ChipGroup
-          label="Root"
+          label={puzzle.rootGroup}
           name="root"
           options={view.roots.map((option) => option.value)}
           value={view.selectedRoot}
@@ -87,7 +88,7 @@ export function GuessCard({ onHearRoot, onHearMode }: GuessCardProps) {
         />
 
         <ChipGroup
-          label="Mode"
+          label={puzzle.modeGroup}
           name="flavour"
           options={view.flavours.map((option) => option.value)}
           value={view.selectedFlavour}
@@ -124,9 +125,7 @@ export function GuessCard({ onHearRoot, onHearMode }: GuessCardProps) {
             disabled={false}
             tone="idle"
           >
-            {armed
-              ? 'Yes — end the day and show the answer'
-              : 'Give up and show the answer'}
+            {armed ? puzzle.giveUpArmed : puzzle.giveUp}
           </Button>
         )}
       </Stack>
