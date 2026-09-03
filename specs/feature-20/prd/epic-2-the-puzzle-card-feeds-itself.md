@@ -7,8 +7,9 @@ Feature: [briefing.md](../briefing.md) · [roadmap.md](../roadmap.md)
 `GroovePuzzle.tsx` computes thirteen derived values and posts them down to
 `GuessCard` as props, which is why every coaching feature ends up editing the one
 file that everything else also edits. This epic puts the coaching modules behind
-one door, has `GuessCard` read the puzzle session itself and open that door with
-what it reads, and leaves `GroovePuzzle` composing rather than calculating. The
+one door, has `GuessCard` read the puzzle session itself — through one context the
+shell provides from the hooks it already calls — and open that door with what it
+reads, leaving `GroovePuzzle` composing rather than calculating. The
 puzzle plays, scores, nudges, locks and solves exactly as it does today.
 
 ## Problem
@@ -44,6 +45,8 @@ alone. That is the growth rate the door has to absorb.
 - `GuessCard` reads the puzzle session through a hook and calls the entry point
   itself, rather than receiving either as props
 - `GroovePuzzle` stops computing what it does not render
+- a session context: the shell provides what it already creates, and one hook
+  reads it, so the card can call the entry point without being handed its state
 - the assertions about *what the coaching says* move to the module that decides it
 
 **Out of scope**
@@ -95,9 +98,18 @@ alone. That is the growth rate the door has to absorb.
 - **R4a** — `GuessCard` reads the puzzle session through a hook it calls: the
   stored selection, attempts, `solved`, `revealed`, `canCheck`, the answer, the
   actions that mutate them (`selectRoot`, `selectFlavour`, `check`, `reveal`),
-  and the two settings with their setters. None of these arrive as props. How a
-  second component reaches the session that `usePuzzleSession` owns is the open
-  question this cycle asks.
+  and the two settings with their setters. None of these arrive as props — it
+  reads them from the session context.
+- **R4b** — `GroovePuzzle` provides that context. It keeps calling
+  `usePuzzleSession`, `useSimpleMode` and `useTapSounds` exactly once and puts
+  their results on one context; every consumer below it sees the same instance.
+  Store lifetime does not change: the zustand store is still created inside
+  `usePuzzleSession` on first render and lives for that mount, hydration still
+  runs once when the result store loads, and shared mode's read-only result store
+  is still passed in the same way.
+- **R4c** — One hook reads the context and it is the only way in. Called outside
+  the provider it throws rather than returning a default, so a component mounted
+  without a session fails loudly in a test instead of rendering an empty card.
 - **R5** — `GuessCard`'s remaining props are the ones it genuinely cannot own:
   `onHearRoot` and `onHearMode`, which play through the transport clock the
   shell holds. The thirteen derived props, the three offered values, the
@@ -120,8 +132,24 @@ alone. That is the growth rate the door has to absorb.
   chip state stay rendered: rewriting one of those as a pure-function call is a
   different assertion wearing the old one's name.
 - **R10** — `GuessCard`'s own tests still drive it through rendering and user
-  action, not by asserting on the view model it happens to call. How they stand
-  up the session the card now reads is the second open question this cycle asks.
+  action, not by asserting on the view model it happens to call. They stand the
+  session up by mounting the feature: `renderFeature()` with the result store
+  seeded to the rung under test — the path `docs/testing.md` asks for, and the one
+  `puzzleHarness.tsx` already takes for the five `GroovePuzzle.*` files.
+- **R10a** — Nothing is added to the card to make that easier. No test-only
+  `session` prop, no hand-made session object, no `vi.mock` of an internal path.
+  Where a rung is awkward to reach, the harness gains a helper: the seam stays in
+  `testing/` rather than in the component.
+- **R10b** — `GuessCard.test.tsx` stays where it is, beside `GuessCard.tsx`,
+  and keeps the card's rendered cases even though they now mount the feature. It
+  is colocated with its subject, which is what tells the next reader where to
+  look; the file is not merged into `GroovePuzzle.guessing.test.tsx` and is not
+  split into topic files by this epic.
+- **R10c** — The suite gets slower and the epic reports by how much. The app
+  suite's wall clock and `GuessCard.test.tsx`'s own duration are measured before
+  the change and after it, and both numbers go in the epic's report. There is no
+  threshold: the cost is one-off and the epic is not judged against a ceiling
+  invented in advance.
 - **R11** — The door is narrow: the entry point exports the view model function
   and its types, not a re-export of the eleven modules behind it. Epic 3 asserts
   this for all five entry points; this one is built to the same rule from the
@@ -138,10 +166,28 @@ the session and the settings. The session — selection, attempts, `solved`,
 wraps `check` and `reveal` so that persistence happens after each. The two
 settings are owned by `useSimpleMode` and `useTapSounds`, each holding local
 state and a preference store. Nothing here is global: a component that calls
-`usePuzzleSession` gets a second store, not the first one. So "the card reads the
-session through a hook" needs a way for the hook to reach the instance the shell
-created, and Q4 chooses it. What stays a prop is what the card cannot own at all:
-the two hear callbacks, which schedule against the transport clock.
+`usePuzzleSession` gets a second store, not the first one. So the hook the card
+calls reads a context rather than creating anything — the shell provides the three
+hooks' results once, and everything below it sees that instance. Lifetime is
+unchanged, one store per mount of `GroovePuzzle` created exactly where it is
+created today, which is what keeps hydration and shared mode's read-only store
+working untouched. What stays a prop is what the card cannot own at all: the two
+hear callbacks, which schedule against the transport clock.
+
+**How a rendered case reaches a rung.** `hydrate()` restores attempts, `solved`,
+`revealed` and the matched halves of the selection from the stored result, so a
+seeded result store puts the mounted feature at any rung without a single
+hand-made prop. That is already how `GroovePuzzle.guessing.test.tsx` reaches the
+third miss. The cost is per-case mount time, and it is measurable rather than
+theoretical: `GuessCard.test.tsx` runs 142 cases in 2.1s of test time today,
+about 15ms each, because it renders one component with props it invents;
+`GroovePuzzle.guessing.test.tsx` runs 82 feature-mounted cases in 7.7s, about
+94ms each. Roughly 110 of `GuessCard.test.tsx`'s cases render, so the move costs
+around +9s of test time against the app suite's 38.8s today (13.9s of wall clock
+across 114 files) and makes the file the slowest in the repo at ~11s. That is
+accepted, measured and reported rather than budgeted: the alternative — one mount
+per `describe` reused across its cases — buys the time back by sharing state
+between cases, which is the bug class every test framework warns about.
 
 **Why the button belongs in the view model.** `GuessCard` currently computes
 `label` from four nested conditionals over `solved`, `bothChosen`, `selectedRoot`
@@ -173,8 +219,15 @@ briefing's order.
   then it holds the one mapping from the domain per-option state to
   `ChipOptionState`.
 - **AC4** (R4, R4a) — Given `GuessCard.tsx`, when its imports are read, then it
-  imports the coaching entry point and a session hook, and no prop it receives
-  carries the view model, the selection, the store actions or the settings.
+  imports the coaching entry point and the session context's hook, and no prop it
+  receives carries the view model, the selection, the store actions or the
+  settings.
+- **AC4a** (R4b) — Given the feature mounted, when the store is counted, then
+  `createDailyGrooveStore` runs once per mount of `GroovePuzzle` and the card
+  reads that instance; and given a shared groove, when its read-only result store
+  is passed, then hydration and the read-only behaviour are as they are today.
+- **AC4b** (R4c) — Given `GuessCard` mounted outside the provider, when it
+  renders, then the session hook throws.
 - **AC5** (R5) — Given `GuessCard`'s prop type, when its members are listed, then
   they are `onHearRoot` and `onHearMode`.
 - **AC6** (R6) — Given `GroovePuzzle.tsx`, when read, then `feedback`,
@@ -187,12 +240,21 @@ briefing's order.
 - **AC8** (R8, R9) — Given `GuessCard.test.tsx` and the entry point's test file,
   when cases are counted, then the total is at least 115; and given each moved
   case, when read, then it asserts coaching text and nothing about rendering.
-- **AC9** (R10) — Given `GuessCard.test.tsx`, when its assertions are read, then
-  they act on rendered output and user events, and none asserts on the entry
-  point's return value directly.
+- **AC9** (R10, R10a) — Given `GuessCard.test.tsx`, when its assertions are read,
+  then they act on rendered output and user events, none asserts on the entry
+  point's return value directly, and every case that renders stands the card up
+  through `renderFeature()` with a seeded result store — no `session` prop, no
+  hand-made session, no mocked internal path.
 - **AC10** (R11) — Given the entry point's module, when its exports are listed,
   then it exports the view model function and its types and nothing else from
   behind the door.
+- **AC10a** (R10b) — Given the tree after the epic,
+  when `src/features/daily-groove/components/puzzle/` is listed, then
+  `GuessCard.test.tsx` is still there, and
+  `GroovePuzzle.guessing.test.tsx`'s case count is unchanged by this epic.
+- **AC10b** (R10c) — Given the epic's report, when read, then it states the app
+  suite's wall clock and `GuessCard.test.tsx`'s duration before and after, each
+  measured the same way.
 - **AC11** (R12) — Given the full gate, when `npm test`, the type check, lint and
   build run, then all pass, and `structure.test.ts`, `route-boundary.test.ts` and
   the design-system boundary tests are green.
@@ -205,8 +267,8 @@ Epic 1 rewrites the theory imports in three files this epic also edits.
 
 **Hands to Epic 3:** the coaching entry point — the first of the five, and the
 pattern the other four follow. Epic 3's narrow-door test asserts against it too.
-Also whatever Q4 creates for the session, which Epic 3's map places inside the
-puzzle module.
+Also the session context, which Epic 3's map places inside the puzzle module and
+behind that module's entry point.
 
 ## Assumptions
 
@@ -225,12 +287,21 @@ puzzle module.
 - The 13-of-28 count is measured with feature-18's uncommitted work applied and
   should be re-counted when the epic starts.
 - `GuessCard.test.tsx` shrinks but is not split into files by this epic. Whether
-  it needs splitting is answerable only once the coaching assertions have moved
-  out.
-- `GroovePuzzle` still calls `useSimpleMode` and `usePuzzleSession` itself: it
+  it needs splitting, and whether it wants feature-14's topic-file shape one
+  level down, is answerable only once the coaching assertions have moved out and
+  the runtime is known.
+- `GroovePuzzle` still calls `useSimpleMode`, `useTapSounds` and
+  `usePuzzleSession` itself — once each, now also providing their results. It
   needs `simple` to pick the flavour matcher and `tapSounds` for the hear
-  callbacks. The card reading the same values does not move where they are
+  callbacks anyway. The card reading the same values does not move where they are
   created.
+- The context and its hook live in `src/features/daily-groove/state/`, beside
+  `useDailyGrooveStore.ts`: it is the session's lifetime, and Epic 3's map puts
+  `state/` in the puzzle module. The name is a detail; the location is what that
+  map has to agree with.
+- The context carries the two settings as well as the session. They are two hooks
+  and one object, and a card reading its state from one place and its settings
+  from another has two seams again.
 
 ## Question log
 
@@ -255,61 +326,35 @@ pure-function assertions; rendering, interaction and chip-state cases stay** —
 case about what the coaching says has always been a fact about the module.
 Applied to: R8, R9, AC8.
 
-## Open questions
+### Cycle 2 — 2026-09-03
 
-Tick one option per question (`- [x]`), or write your own, then re-run
-`/brainstorm feature-19 epic-2`.
+**Q4. How does the card's hook reach the session the shell created?**
+Answer: **A) A session context** — `GroovePuzzle` keeps calling the three hooks
+once and provides their results; it is the only form of "reads the session
+through a hook" the current code permits without changing store lifetime, so
+hydration and shared mode's read-only store stay untouched.
+Applied to: Summary, Scope, R4a, R4b, R4c, AC4, AC4a, AC4b, Behaviour details,
+Dependencies, Assumptions. Opened nothing new on its own.
 
-### Q4. How does the card's hook reach the session the shell created?
+**Q5. How do `GuessCard`'s rendered cases stand up the session?**
+Answer: **A) Through the feature's public surface** — `renderFeature()` with the
+result store seeded to the rung under test, because `hydrate()` already restores
+every rung and `docs/testing.md` asks for the public surface. Accepted cost: each
+remaining case pays a feature mount.
+Applied to: R10, R10a, AC9, Behaviour details. Opened Q6 and Q7.
 
-`usePuzzleSession` creates its zustand store inside `useState` on first render
-and wraps `check` and `reveal` with persistence; `useSimpleMode` and
-`useTapSounds` hold local state of their own. A second component calling any of
-them gets a second copy, not the shell's. So the hook the card calls needs a way
-to the shell's instance. Nothing the player sees changes under any option; the
-reason is engineering, and it decides what the puzzle module's shape is
-afterwards.
+### Cycle 3 — 2026-09-03
 
-- [x] A) A session context. `GroovePuzzle` keeps calling `usePuzzleSession`,
-      `useSimpleMode` and `useTapSounds` once and provides their results; the card
-      reads them with one hook over that context *(recommended — it is the only
-      form of "reads the session through a hook" the current code permits without
-      changing store lifetime: the instance stays per mount, hydration and the
-      shared-mode read-only store are untouched, and the provider is the whole
-      cost. The roadmap's puzzle module gains one file)*
-- [ ] B) A module-level singleton store, created at import, that any component
-      subscribes to — no provider anywhere, and every mount now shares one store:
-      shared mode's read-only result store, the hydrate-on-load and every test
-      that mounts a fresh puzzle have to be rethought
-- [ ] C) `GroovePuzzle` passes the session object as one prop — `session` — and the
-      card destructures it. "Almost no props" holds literally and no context is
-      introduced, but the card is handed its state rather than reading it, which
-      is the shape Q1's answer set out to remove
-- [ ] D) Return to raw-state props — `GroovePuzzle` passes attempts, answer, date
-      and the two settings and the card calls the entry point with them. Q1's
-      option A, chosen again with the store's lifetime now known
+**Q6. Does `GuessCard.test.tsx` survive as a file?**
+Answer: **A) It stays where it is, mounting the feature** — a relocated
+assertion keeps its subject, and the subject of these cases is the guess card;
+colocation is what tells the next reader where to look.
+Applied to: R10b, AC10a, Assumptions.
 
-### Q5. How do `GuessCard`'s rendered cases stand up the session?
+**Q7. What does the epic owe on suite time?**
+Answer: **A) Accept it and measure it, no threshold** — the cost is one-off and
+bounded, ~14s to ~17s of wall clock is still a suite you run on every save, and
+a ceiling invented now is a number nobody could defend later.
+Applied to: R10c, AC10b, Behaviour details.
 
-112 of the file's 115 cases render `<GuessCard {...props()} />` with hand-made
-props. After R4a there are no such props. Whatever remains after the coaching
-text moves out — rendering, interaction, chip state — needs a session behind the
-card. No persona bearing; the reason is which coupling the test suite accepts.
-
-- [x] A) Through the feature's public surface: `renderFeature()` with the result
-      store seeded to the rung under test *(recommended — `docs/testing.md` asks
-      for exactly this, and `puzzleHarness.tsx` already reaches every rung that
-      way for `GroovePuzzle.test.tsx`, because `hydrate()` restores attempts,
-      `solved`, `revealed` and the matched halves of the selection from the stored
-      result. The cost is that each remaining case pays the feature's mount, and
-      the file stops being a component test in all but name)*
-- [ ] B) A seeded-session helper in `testing/` that mounts the card inside the
-      real mechanism Q4 chooses, with hand-made state — the cases keep their
-      current shape and speed, and the helper knows the session's internal shape,
-      which is the coupling `docs/testing.md` warns about
-- [ ] C) Split by kind: state transitions and interaction through the public
-      surface, static renders of a given rung through the seeded helper — the
-      most precise, and two ways to set up one component
-- [ ] D) An optional `session` prop the card accepts only so tests can pass one —
-      the cases barely change, and the card grows a test-only prop, which is the
-      pattern the repo has avoided so far
+The PRD is settled: no open questions remain.

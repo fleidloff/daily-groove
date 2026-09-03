@@ -266,9 +266,9 @@ import `src/lib/theory/` when Epic 2 edits them.
   modules in `src/lib/` that nothing imports. The app still builds, so
   `architecture.md`'s removability standard holds literally, but the cut is no
   longer clean.
-- The roadmap's "Execution waves" and "Contract frozen here" sections describe
-  the shim plan this epic no longer follows. They are stale, not wrong about
-  anything else; the sequence is now Epic 1 → Epic 2 → Epic 3.
+- The roadmap's "Execution waves" and "Contract frozen here" sections have been
+  corrected to match: no shims, and the sequence is Epic 1 → Epic 2 → Epic 3 →
+  Epic 4.
 
 ## Question log
 
