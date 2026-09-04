@@ -23,4 +23,5 @@ export const solved = {
     const key = Object.keys(MODE_LINES).find((k) => k.toLowerCase() === wanted)
     return key === undefined ? undefined : MODE_LINES[key]
   },
+  heardIn: ({ track, artist }) => `You've heard this in “${track}” by ${artist}`,
 } satisfies SolvedSnippets

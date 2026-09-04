@@ -13,7 +13,7 @@ import {
 import { scaleNotes } from '@/lib/theory/notes'
 import { ROOTS } from '@/lib/theory/roots'
 import { STAFF_FLOOR_STEP, staffNotes } from '@/lib/theory/staff'
-import { GROOVES } from './grooves.generated'
+import { GROOVES, HEARD_IN } from './grooves.generated'
 import { selectGrooveForDate } from '../lib/puzzle/selectGroove'
 
 const PUBLIC = join(process.cwd(), 'public')
@@ -457,4 +457,26 @@ describe('the rotation is the generated catalogue', () => {
       expect(flavourOptions(date, groove, GROOVES)).toEqual(first)
     }
   })
+})
+
+describe('the heard-in table (quick 001)', () => {
+  it('names only scales a shipped groove carries', () => {
+    const shipped = new Set(GROOVES.map((g) => g.scale))
+    for (const scale of Object.keys(HEARD_IN)) {
+      expect(shipped.has(scale), scale).toBe(true)
+    }
+  })
+
+  it('gives every entry a non-empty track and artist', () => {
+    for (const [scale, entry] of Object.entries(HEARD_IN)) {
+      expect(entry.track.trim(), scale).not.toBe('')
+      expect(entry.artist.trim(), scale).not.toBe('')
+    }
+  })
+
+  it('leaves some scales without an entry rather than padding the table', () => {
+    expect(Object.keys(HEARD_IN).length).toBeGreaterThan(0)
+    expect(Object.keys(HEARD_IN).length).toBeLessThan(GROOVES.length)
+  })
+
 })

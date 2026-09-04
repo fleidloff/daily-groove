@@ -338,6 +338,7 @@ to catch a violation.
 | timing feel, lean, drift | `humanize.ts` and the template's `humanize` block |
 | reverb, peak ceiling, bus behaviour | `mix.ts` |
 | what gets rejected | `gate.ts` |
+| the track a scale is heard in, shown on the reveal | `heard-in.json`, keyed by `Groove.scale`; `npm run grooves -- --manifest-only` re-renders it |
 | add a voice | `types.ts` (`VoiceName`), samples, `samples/pack.json`, every template's `gain`/`pan`, a pattern, and its own RNG stream label |
 
 After any change to what the audio contains, re-render and re-verify:

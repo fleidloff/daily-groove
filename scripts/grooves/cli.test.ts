@@ -33,10 +33,39 @@ function tempRun() {
     manifestPath: join(dir, 'grooves.generated.ts'),
     cataloguePath: join(dir, 'catalogue.json'),
     lockPath: join(dir, 'grooves.lock.json'),
+    heardIn: {},
   }
 }
 
 const RENDER_TIMEOUT_MS = 60_000
+
+const scaleOf = (spec: GrooveSpec) =>
+  buildEvents(spec, templateById(spec.template)).music.scale
+
+describe('generate with a heard-in table', () => {
+  it('writes the table into the manifest as HEARD_IN', async () => {
+    const opts = tempRun()
+    writeFileSync(opts.cataloguePath, JSON.stringify(SPECS))
+    const table = { [scaleOf(SPECS[0])]: { track: 'So What', artist: 'Miles Davis' } }
+
+    await generate({ ...opts, encode: false, heardIn: table })
+
+    const manifest = readFileSync(opts.manifestPath, 'utf8')
+    expect(manifest).toContain('export const HEARD_IN: Record<string, HeardIn> = {')
+    expect(manifest).toContain(`'${scaleOf(SPECS[0])}': { track: 'So What', artist: 'Miles Davis' },`)
+  })
+
+  it('refuses a key no groove in the run renders, naming it', async () => {
+    const opts = tempRun()
+    writeFileSync(opts.cataloguePath, JSON.stringify(SPECS))
+    const table = { 'C♯ locrian': { track: 'A', artist: 'B' } }
+
+    await expect(generate({ ...opts, encode: false, heardIn: table })).rejects.toThrow(
+      /heard-in\.json: C♯ locrian: no groove renders this scale/,
+    )
+    expect(existsSync(opts.manifestPath)).toBe(false)
+  })
+})
 
 describe('generate', () => {
   it('writes every artifact inside the run it was given, and nothing outside it', async () => {

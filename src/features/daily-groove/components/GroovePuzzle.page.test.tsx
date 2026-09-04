@@ -41,7 +41,8 @@ vi.mock('../lib/persistence/storage', async (importOriginal) => ({
 import { GroovePuzzle } from './GroovePuzzle'
 import { selectGrooveForDate } from '../lib/puzzle/selectGroove'
 import { isoDate } from '@/lib/date'
-import { GROOVES } from '../data/grooves.generated'
+import { flavourOptions } from '@/lib/theory/music'
+import { GROOVES, HEARD_IN } from '../data/grooves.generated'
 import { renderFeature } from '../testing/renderFeature'
 import { branding, coaching, header, puzzle, routes, solved } from '@/lib/snippets'
 const { appName: APP_NAME } = branding
@@ -803,6 +804,51 @@ describe('GroovePuzzle', () => {
       await guess(user, 'C', wrongFlavour())
       expect(mockStore.save).toHaveBeenCalledTimes(1)
       expect(mockStore.save.mock.calls[0][0].date).toBe(TODAY())
+    })
+  })
+
+  describe('the heard-in line (quick 001)', () => {
+    const withTrack = GROOVES.find((g) => HEARD_IN[g.scale] !== undefined) as Groove
+    const withoutTrack = GROOVES.find((g) => HEARD_IN[g.scale] === undefined) as Groove
+    const line = (g: Groove) => solved.heardIn(HEARD_IN[g.scale])
+
+    it('names the track for a shared groove opened on another day, after the solve (Done when 1, 3)', async () => {
+      const user = userEvent.setup()
+      await renderPuzzle(<GroovePuzzle groove={withTrack} mode="shared" />)
+
+      expect(screen.queryByText(line(withTrack))).not.toBeInTheDocument()
+      await guess(user, withTrack.root, withTrack.flavour)
+
+      expect(
+        within(screen.getByRole('status')).getByText(line(withTrack)),
+      ).toBeInTheDocument()
+    })
+
+    it('shows the same line on a given-up day (Done when 3)', async () => {
+      const user = userEvent.setup()
+      await renderPuzzle(<GroovePuzzle groove={withTrack} mode="shared" />)
+      const wrong = flavourOptions(new Date(), withTrack, GROOVES).filter(
+        (f) => f !== withTrack.flavour,
+      )
+
+      for (const flavour of wrong.slice(0, 3)) {
+        await guess(user, withTrack.root, flavour)
+      }
+      await user.click(giveUp() as HTMLElement)
+      await user.click(giveUp() as HTMLElement)
+
+      expect(
+        within(screen.getByRole('status')).getByText(line(withTrack)),
+      ).toBeInTheDocument()
+    })
+
+    it('renders no line for a scale with no entry (Done when 2)', async () => {
+      const user = userEvent.setup()
+      await renderPuzzle(<GroovePuzzle groove={withoutTrack} mode="shared" />)
+
+      await guess(user, withoutTrack.root, withoutTrack.flavour)
+
+      expect(screen.getByRole('status').textContent).not.toMatch(/heard this/i)
     })
   })
 

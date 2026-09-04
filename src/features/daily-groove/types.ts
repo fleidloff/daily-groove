@@ -1,4 +1,4 @@
-export type { Answer, Attempt, Flavour, Groove, Root } from '@/lib/groove'
+export type { Answer, Attempt, Flavour, Groove, Root, HeardIn } from '@/lib/groove'
 
 import type { Answer, Attempt } from '@/lib/groove'
 

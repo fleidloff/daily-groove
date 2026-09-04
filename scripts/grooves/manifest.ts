@@ -1,7 +1,9 @@
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { dirname } from 'node:path'
-import type { Groove } from '../../src/lib/groove.ts'
+import type { Groove, HeardIn } from '../../src/lib/groove.ts'
 import type { Pools } from './pools.ts'
+
+export type HeardInTable = Record<string, HeardIn>
 
 const BANNER = `/**
  * GENERATED FILE - DO NOT EDIT.
@@ -69,24 +71,46 @@ function renderPools(pools: Pools): string {
   ].join('\n')
 }
 
+const HEARD_IN_BANNER = `/**
+ * One well-known recording per scale, keyed the way \`Groove.scale\` is spelt.
+ * A scale with no entry shows no line.
+ */`
+
+function renderHeardIn(table: HeardInTable): string {
+  const head = 'export const HEARD_IN: Record<string, HeardIn> = '
+  const scales = Object.keys(table).sort()
+  if (scales.length === 0) return `${HEARD_IN_BANNER}\n${head}{}\n`
+  const body = scales
+    .map((scale) => {
+      const { track, artist } = table[scale]
+      return `  ${literal(scale)}: { track: ${literal(track)}, artist: ${literal(artist)} },`
+    })
+    .join('\n')
+  return `${HEARD_IN_BANNER}\n${head}{\n${body}\n}\n`
+}
+
 export function renderManifest(
   entries: readonly Groove[],
   pools?: Pools,
+  heardIn?: HeardInTable,
 ): string {
-  const head = `${BANNER}\n\nimport type { Groove } from '@/lib/groove'\n\n`
+  const types = heardIn ? 'Groove, HeardIn' : 'Groove'
+  const head = `${BANNER}\n\nimport type { ${types} } from '@/lib/groove'\n\n`
   const grooves =
     entries.length === 0
       ? 'export const GROOVES: Groove[] = []\n'
       : `export const GROOVES: Groove[] = [\n${entries.map(renderEntry).join('\n')}\n]\n`
-  const tail = pools ? `\n${renderPools(pools)}` : ''
-  return `${head}${grooves}${tail}`
+  const poolsTail = pools ? `\n${renderPools(pools)}` : ''
+  const heardInTail = heardIn ? `\n${renderHeardIn(heardIn)}` : ''
+  return `${head}${grooves}${poolsTail}${heardInTail}`
 }
 
 export function writeManifest(
   entries: readonly Groove[],
   path: string,
   pools?: Pools,
+  heardIn?: HeardInTable,
 ): void {
   mkdirSync(dirname(path), { recursive: true })
-  writeFileSync(path, renderManifest(entries, pools), 'utf8')
+  writeFileSync(path, renderManifest(entries, pools, heardIn), 'utf8')
 }

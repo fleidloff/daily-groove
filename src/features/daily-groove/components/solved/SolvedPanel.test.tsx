@@ -107,6 +107,51 @@ describe('SolvedPanel', () => {
     expect(within(header()).getByText(/♭7/)).toBeInTheDocument()
   })
 
+  it('names the track the scale is heard in, under the mode line (quick 001)', () => {
+    renderPanel({
+      answer: { root: 'C', flavour: 'Mixolydian' },
+      heardIn: { track: 'So What', artist: 'Miles Davis' },
+    })
+
+    const line = within(headerBlock()).getByText(/So What/)
+    expect(line).toHaveTextContent(
+      solved.heardIn({ track: 'So What', artist: 'Miles Davis' }),
+    )
+    const texts = Array.from(headerBlock().querySelectorAll<HTMLElement>('p'))
+    expect(texts.indexOf(within(headerBlock()).getByText(/♭7/))).toBeLessThan(
+      texts.indexOf(line),
+    )
+  })
+
+  it('styles the heard-in line as it styles the mode line (quick 001)', () => {
+    renderPanel({
+      answer: { root: 'C', flavour: 'Mixolydian' },
+      heardIn: { track: 'So What', artist: 'Miles Davis' },
+    })
+
+    expect(classOf(within(headerBlock()).getByText(/So What/))).toBe(
+      classOf(within(headerBlock()).getByText(/♭7/)),
+    )
+  })
+
+  it('shows the same heard-in line on a given-up day (quick 001)', () => {
+    renderPanel({
+      answer: { root: 'C', flavour: 'Mixolydian' },
+      heardIn: { track: 'So What', artist: 'Miles Davis' },
+      revealed: true,
+    })
+
+    expect(within(headerBlock()).getByText(/So What/)).toBeInTheDocument()
+  })
+
+  it('renders nothing for the heard-in line when no track is known (quick 001)', () => {
+    renderPanel({ answer: { root: 'C', flavour: 'Mixolydian' } })
+
+    expect(headerBlock().textContent).not.toMatch(/heard this/i)
+    expect(headerBlock().textContent).not.toMatch(/—\s*$/)
+    expect(headerBlock().querySelectorAll('p')).toHaveLength(1)
+  })
+
   it('carries neither the attempt count nor the streak (F15 E1 R5, R5a, R5b, AC2)', () => {
     renderPanel({ answer: { root: 'C', flavour: 'Mixolydian' } })
 

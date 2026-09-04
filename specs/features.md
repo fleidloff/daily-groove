@@ -49,13 +49,27 @@ briefing. Rename the folder to the next free number to put one on the plan.
 
 ---
 
+## Quick changes
+
+Small changes built from a one-page ticket in `specs/quick/` instead of the
+five-step chain — `/quick-feature` writes the ticket, asks anything blocking inside it,
+and implements it directly. Anything that fails the size test in that skill goes
+to `/create-feature` instead.
+
+Status runs 📝 **Drafted** → ❓ **Questions open** → ✅ **Done**.
+
+| # | Change | Status | Summary |
+| :-- | :-- | :-- | :-- |
+| [001](quick/001-where-youve-heard-it.md) | Where you’ve heard it | ✅ Done | Names one well-known track per mode in the solved box — text only, no links or playback. |
+
+---
+
 ## Candidate features 
 
 Ideas without a briefing yet. 
 
 | Idea                               | Summary                                                                                                                                                                                                              | Why it's worth it                                                                                                                                                                                                                                                                                             |
 |:-----------------------------------|:---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **where you've heard it**          | Name a well-known track per mode in the solved box — "you've heard this in —", text only, no links or playback.                                                                                                      | Split out of feature-15: the payoff lands harder when the sound has somewhere to go outside the app, but twelve good references are a curation job, not an implementation one.                                                                                                                                |
 | **Share your result**              | A spoiler-free share card — the attempt dots as emoji, the date, the streak — copied to the clipboard or shared natively.                                                                                            | The standard growth loop for a daily puzzle, and the cheapest one: no accounts, no backend, no new content.                                                                                                                                                                                                   |
 | **PWA and daily reminder**         | Installable to the home screen, the day's groove cached for offline play, an opt-in notification when a new one lands.                                                                                               | A daily habit game lives or dies on returning. Both mechanisms are standard and neither needs an account.                                                                                                                                                                                                     |
 | **Lick variations**                | Have different variations of the licks for the modes                                                                                                                                                                 | More fun, does not get boring and you cannot remember lick and mode combination so easily                                                                                                                                                                                                                     |

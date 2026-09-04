@@ -376,3 +376,50 @@ describe('the committed manifest', () => {
     }
   })
 })
+
+describe('renderManifest with a heard-in table', () => {
+  const HEARD_IN = {
+    'E♭ dorian': { track: 'So What', artist: 'Miles Davis' },
+    'C♯ minor': { track: "Isn't She Lovely", artist: 'Stevie Wonder' },
+  }
+
+  function readHeardIn(source: string): Record<string, { track: string; artist: string }> {
+    const match = /export const HEARD_IN: Record<string, HeardIn> = (\{[\s\S]*?\n\})/.exec(source)
+    if (!match) throw new Error('HEARD_IN is not exported')
+    return new Function(`return ${match[1]}`)()
+  }
+
+  it('exports HEARD_IN typed with the shared HeardIn type, imported beside Groove', () => {
+    const source = renderManifest([ENTRY], POOLS, HEARD_IN)
+    expect(source).toContain("import type { Groove, HeardIn } from '@/lib/groove'")
+    expect(source).toContain('export const HEARD_IN: Record<string, HeardIn> = {')
+  })
+
+  it('exports no HEARD_IN when no table is given', () => {
+    expect(renderManifest([ENTRY], POOLS)).not.toContain('HEARD_IN')
+  })
+
+  it('round-trips every entry, keyed by scale and sorted', () => {
+    const source = renderManifest([ENTRY], POOLS, HEARD_IN)
+    expect(readHeardIn(source)).toEqual(HEARD_IN)
+    expect(source.indexOf("'C♯ minor'")).toBeLessThan(source.indexOf("'E♭ dorian'"))
+  })
+
+  it('escapes a quote inside a track rather than breaking the literal', () => {
+    const source = renderManifest([ENTRY], POOLS, HEARD_IN)
+    expect(source).toContain("'Isn\\'t She Lovely'")
+    expect(source).not.toContain('"')
+  })
+
+  it('renders an empty table as an empty record', () => {
+    expect(renderManifest([ENTRY], POOLS, {})).toContain(
+      'export const HEARD_IN: Record<string, HeardIn> = {}',
+    )
+  })
+
+  it('still renders the entries and pools alongside it', () => {
+    const source = renderManifest([ENTRY, SECOND], POOLS, HEARD_IN)
+    expect(evaluate(source)).toEqual([ENTRY, SECOND])
+    expect(readPool(source, 'SCALE_POOL')).toEqual(POOLS.scales)
+  })
+})

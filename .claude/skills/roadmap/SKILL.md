@@ -51,7 +51,60 @@ and saying so is what stops it drifting to the front of the plan unexamined.
 expects them to (feature slices, colocated tests, whatever the project says),
 so the roadmap doesn't quietly contradict the codebase's own rules.
 
-## 3. Shape the epics
+## 3. Check it is a feature at all
+
+Before shaping epics, ask whether the briefing needs a roadmap. Some do not: a
+briefing that would come out as one epic, touching two files, is a quick ticket
+wearing a feature folder, and running it through `/roadmap` → `/brainstorm` →
+`/writespec` → `/implement-feature` costs more than the change.
+
+**Skip this check when `roadmap.md` already exists.** The decision was taken on
+the first run; a refine cycle does not reopen it.
+
+The test is `/quick-feature` §2, read against the briefing, plus one question of
+this skill's own. All five must hold:
+
+1. The briefing would yield **one epic** — §4's "how many" question, asked early.
+2. What changes, the files it touches and what done means fit in five bullets.
+3. At most two of the six modules in `docs/architecture.md` are touched.
+4. Nothing frozen in `docs/music.md` is touched.
+5. One `git revert` is the whole rollback.
+
+Any "no" and this is a feature; go to §4 without comment. A borderline case is a
+feature too — the quick path's own rule is that a change trimmed to fit it is a
+feature being smuggled through the cheap door.
+
+**All five hold → suggest the move, and stop.** Say in a line which five facts
+you read from the briefing, and ask one question in chat: move it to a quick
+ticket, or keep it as a feature? This is the one question in the chain that is
+asked in chat rather than in the document, because writing a roadmap to ask
+whether a roadmap should exist is the cost the question is trying to avoid.
+Don't write `roadmap.md` while it is open.
+
+**Keep** → go to §4. Say nothing further about it.
+
+**Move** → do the move, then stop:
+
+- Allocate `specs/quick/NNN-slug.md` the way `/quick-feature` §3 does: three
+  digits, highest existing plus one, slug from the briefing's title.
+- Write `## What` from the briefing's bullets, in the user's words — the
+  briefing is theirs, so these bullets are too. Write `## Done when` as bullets a
+  test or a look at the page can settle, taken from the briefing where it says
+  what done means and left for the user where it doesn't; say which. Write
+  neither `## Notes` nor `## Open questions` — those are `/quick-feature`'s
+  analyze phase, and it runs on the ticket as it would on a hand-written one.
+- Add one line under the title: `Moved from feature-N's briefing.`
+- Delete `specs/feature-N/`. The briefing's content now lives in the ticket,
+  and a feature folder with no roadmap and a ticket with the same words is two
+  places for one change.
+- In `specs/features.md`, remove the feature's row and add a row to the *Quick
+  changes* table at 📝 **Drafted**, as `/quick-feature` §10 describes. A
+  candidate idea the feature had retired stays retired.
+
+Then report the ticket path and point at `/quick-feature NNN`. Not
+`/brainstorm`: there is no roadmap, and there will not be one.
+
+## 4. Shape the epics
 
 An epic is a slice of the feature that a team could pick up, finish, and prove
 works — without the rest of the roadmap existing yet.
@@ -104,7 +157,7 @@ and let the other depend on it. Don't hoist it into a shared prerequisite epic
 
 Restructuring at this point is normal, not a sign of a bad first pass.
 
-## 4. Write the roadmap
+## 5. Write the roadmap
 
 Write to `specs/<feature>/roadmap.md` using this structure:
 
@@ -161,7 +214,7 @@ are the roadmap's load-bearing guesses.
 Omit `Assumptions` or `Open questions` if genuinely empty. Keep the prose
 tight; this is a document someone will act on, not a proposal to sell.
 
-## 5. Update the feature index
+## 6. Update the feature index
 
 `specs/features.md` is the one-page index of every feature — one table row each,
 a single sentence of summary. Keep it in step with the roadmap you just wrote.
@@ -176,7 +229,7 @@ The summary describes the feature's outcome in one sentence — what a person ca
 do afterwards that they couldn't before. Not the epic list, not the phasing;
 that's what the roadmap is for. Keep it to a line so the index stays scannable.
 
-## 6. Ask what you don't know
+## 7. Ask what you don't know
 
 Write down every question where you are less than ~90% confident and where the
 answer would change the roadmap's shape — epic boundaries, ordering, scope,
@@ -240,11 +293,13 @@ When none of the four fits, the user will write their own; that's expected.
 Write the roadmap even when questions remain. State the assumption you proceeded
 under so the document stands on its own, and let the answers refine it.
 
-## 7. Report back
+## 8. Report back
 
 Tell the user the path you wrote, the epic names in wave order, whether you
 added or updated the `specs/features.md` row, and the count of open questions —
-pointing them at the bottom of the file to answer.
+pointing them at the bottom of the file to answer. If §3 moved the feature to a
+quick ticket instead, the report is the one §3 describes, and the rest of this
+section does not apply.
 
 **Then point at `/brainstorm <feature>` as the next step, and don't run it.**
 

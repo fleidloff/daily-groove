@@ -16,7 +16,7 @@ import { simpleLickMode } from '@/lib/theory/simpleModes'
 import { barChords } from '@/lib/theory/changes'
 import { metaLine } from '../lib/presentation'
 import { selectGrooveForDate } from '../lib/puzzle/selectGroove'
-import { GROOVES } from '../data/grooves.generated'
+import { GROOVES, HEARD_IN } from '../data/grooves.generated'
 import { NOTES, PITCHES } from '../data/notes.generated'
 import {
   REFERENCE_FADE_SECONDS,
@@ -285,6 +285,7 @@ function GroovePuzzleView({
                   progressionDegrees={groove.progressionDegrees}
                   attempts={attempts}
                   revealed={revealed}
+                  heardIn={HEARD_IN[groove.scale]}
                 />
                 {shared && <PlayTodayLink />}
               </div>

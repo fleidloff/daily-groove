@@ -6,7 +6,7 @@
  * change the catalogue or the generator instead.
  */
 
-import type { Groove } from '@/lib/groove'
+import type { Groove, HeardIn } from '@/lib/groove'
 
 export const GROOVES: Groove[] = [
   {
@@ -654,3 +654,31 @@ export const PROGRESSION_POOL: string[] = [
   'GmMaj7–Em7♭5–C7',
   'Gmaj7–Em7–Am7–D7',
 ]
+
+/**
+ * One well-known recording per scale, keyed the way `Groove.scale` is spelt.
+ * A scale with no entry shows no line.
+ */
+export const HEARD_IN: Record<string, HeardIn> = {
+  'A dorian': { track: 'Oye Como Va', artist: 'Santana' },
+  'A harmonic major': { track: 'In My Life', artist: 'The Beatles' },
+  'A ionian': { track: 'Dancing Queen', artist: 'ABBA' },
+  'B ionian': { track: 'Yellow', artist: 'Coldplay' },
+  'C ionian': { track: 'Let It Be', artist: 'The Beatles' },
+  'C mixolydian': { track: 'Tomorrow Never Knows', artist: 'The Beatles' },
+  'C♯ aeolian': { track: 'Shape of You', artist: 'Ed Sheeran' },
+  'D mixolydian': { track: 'Sweet Home Alabama', artist: 'Lynyrd Skynyrd' },
+  'D phrygian': { track: 'Flamenco Sketches', artist: 'Miles Davis' },
+  'E dorian': { track: 'Riders on the Storm', artist: 'The Doors' },
+  'E harmonic minor': { track: 'Bourrée in E minor, BWV 996', artist: 'J. S. Bach' },
+  'E mixolydian': { track: 'Norwegian Wood', artist: 'The Beatles' },
+  'E phrygian': { track: 'Wherever I May Roam', artist: 'Metallica' },
+  'E♭ blues': { track: 'Blue Train', artist: 'John Coltrane' },
+  'E♭ dorian': { track: 'So What', artist: 'Miles Davis' },
+  'F blues': { track: 'Watermelon Man', artist: 'Herbie Hancock' },
+  'F lydian': { track: 'String Quartet No. 15, Op. 132, III. Heiliger Dankgesang', artist: 'Ludwig van Beethoven' },
+  'F♯ aeolian': { track: 'Wonderwall', artist: 'Oasis' },
+  'F♯ blues': { track: 'Foxy Lady', artist: 'The Jimi Hendrix Experience' },
+  'F♯ harmonic minor': { track: 'Piano Concerto No. 23, K. 488, II. Adagio', artist: 'Wolfgang Amadeus Mozart' },
+  'G aeolian': { track: 'Carol of the Bells', artist: 'Mykola Leontovych' },
+}

@@ -6,6 +6,7 @@ import { displayFlavour } from '../../src/lib/theory/names.ts'
 import { CATALOGUE_PATH, readCatalogue } from './catalogue.ts'
 import { encodeMp3 } from './encode.ts'
 import { buildEvents } from './events.ts'
+import { heardInFailures, readHeardIn, type HeardInTable } from './heardIn.ts'
 import { writeManifest } from './manifest.ts'
 import { buildPools } from './pools.ts'
 import { buildLock, mergeLock, readLock, writeLock, type Lock } from './lock.ts'
@@ -61,6 +62,7 @@ export type GenerateOptions = {
   encode?: boolean
   cataloguePath?: string
   lockPath?: string
+  heardIn?: HeardInTable
 }
 
 export type GenerateResult = {
@@ -115,8 +117,14 @@ export async function generate(options: GenerateOptions = {}): Promise<GenerateR
     : files.map(() => 0)
   const entries = rendered.map(({ spec, music }, i) => toGroove(spec, music, delays[i]))
 
+  const heardIn = options.heardIn ?? readHeardIn()
+  const heardInProblems = heardInFailures(heardIn, entries.map((e) => e.scale))
+  if (heardInProblems.length > 0) {
+    throw new Error(`heard-in.json: ${heardInProblems.join('; ')}`)
+  }
+
   const manifestPath = options.manifestPath ?? DEFAULT_MANIFEST_PATH
-  writeManifest(entries, manifestPath, buildPools(entries))
+  writeManifest(entries, manifestPath, buildPools(entries), heardIn)
 
   if (audioOnDisk) {
     const lockPath = options.lockPath ?? DEFAULT_LOCK_PATH

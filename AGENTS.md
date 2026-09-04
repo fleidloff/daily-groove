@@ -20,8 +20,9 @@ Testing — what must be tested, and where the tests live:
 
 How a feature gets built — the five skills and the one order they run in
 (`/create-feature` → `/roadmap` → `/brainstorm` → `/writespec` →
-`/implement-feature`), what each reads and writes, and why answering a
-document's questions before moving on is the cheaper order:
+`/implement-feature`), what each reads and writes, why answering a document's
+questions before moving on is the cheaper order, and `/quick-feature`, the one-ticket
+path for a change too small to be worth all five:
 @docs/skills.md
 
 ## Comments

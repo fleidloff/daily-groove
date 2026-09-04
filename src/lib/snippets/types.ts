@@ -79,6 +79,7 @@ export type SolvedSnippets = {
   changes: string
   notesToLiveIn: string
   modeLine: (args: { flavour: string }) => string | undefined
+  heardIn: (args: { track: string; artist: string }) => string
 }
 
 export type RoutesSnippets = {

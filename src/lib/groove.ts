@@ -40,3 +40,5 @@ export type Attempt = {
   rootMatched: boolean
   flavourMatched: boolean
 }
+
+export type HeardIn = { track: string; artist: string }

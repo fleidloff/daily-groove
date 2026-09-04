@@ -43,6 +43,44 @@ Don't move to the next step while questions are still open. Specifying against
 unsettled requirements produces work that gets thrown away — and `/writespec`
 and `/implement-feature` will stop and tell you so anyway.
 
+## `/quick-feature` — when the chain costs more than the mistake
+
+The five steps buy insurance against building the wrong thing. For a change you
+can describe in five bullets that insurance costs more than the accident, so
+there is a second door:
+
+```
+write specs/quick/NNN-slug.md  →  /quick-feature NNN  →  answer  →  /quick-feature NNN  →  the code
+       What + Done when            Notes + questions
+```
+
+You write what changes and what done means. `/quick-feature NNN` fills in the notes —
+the files it expects to touch, the assumptions it took — and asks anything
+blocking as tickable options inside the same file. Run it again once those are
+ticked and it builds in this session: no epics, no agents except the `musician`
+for anything under `scripts/grooves/`, and the full lint / test / build set
+before reporting. `/quick-feature <what to change>` drafts the whole ticket for you
+instead, when you'd rather not open the file. `/create-quick-feature` is the
+middle way: it interviews you like `/create-feature` does, writes only `What`
+and `Done when`, and stops — the ticket then enters `/quick-feature NNN` as a
+hand-written one.
+
+It refuses to be the cheap door for a real feature. Four questions decide:
+five bullets or fewer, at most two of the six modules in
+[architecture.md](architecture.md), nothing frozen in [music.md](music.md)
+touched, one `git revert` to roll back. Any "no" and it hands the work to
+`/create-feature` instead — including halfway through the build, if that is when
+the truth turns up.
+
+Quick changes get their own table in `specs/features.md`, so the index still
+shows everything that shipped.
+
+The chain can hand over too. `/roadmap` runs the same four questions against
+the briefing before it shapes epics, and when they all pass and the answer would
+be one epic, it asks whether to move the feature here instead. Say yes and it
+writes the ticket from the briefing, deletes the feature folder, moves the row,
+and points at `/quick-feature NNN`.
+
 ## `/verify-epic`
 
 `/implement-feature` runs `/verify-epic` itself at the end of every epic, so you
@@ -71,6 +109,7 @@ next feature chosen by the player rather than by the person who built the app.
 ```
 specs/
 ├── features.md              one line per feature — the index
+├── quick/NNN-slug.md        one-page tickets, outside the chain
 └── feature-N/
     ├── briefing.md          step 1
     ├── roadmap.md           step 2

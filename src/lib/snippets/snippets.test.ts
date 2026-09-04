@@ -71,6 +71,22 @@ describe('an interpolating snippet is a function of its arguments', () => {
   })
 })
 
+describe('the heard-in line (quick 001)', () => {
+  const args = { track: 'So What', artist: 'Miles Davis' }
+
+  it('returns the same string for the same arguments', () => {
+    expect(snippets.solved.heardIn(args)).toBe(snippets.solved.heardIn({ ...args }))
+  })
+
+  it('renders both the track and the artist', () => {
+    const line = snippets.solved.heardIn(args)
+    expect(line).toContain('So What')
+    expect(line).toContain('Miles Davis')
+    expect(line.indexOf('So What')).toBeLessThan(line.indexOf('Miles Davis'))
+  })
+
+})
+
 describe('feature-22 wording', () => {
   it('names both ways to play and points at the switch by its name (F22 E2 R4)', () => {
     expect(snippets.intro.twoWays).toBe(

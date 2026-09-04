@@ -17,7 +17,7 @@ import { scaleNotes } from '@/lib/theory/notes'
 import { selectNearMiss } from '../../lib/presentation/nearMiss'
 import { staffLabel } from '../../lib/presentation/staffLabel'
 import { staffNotes } from '@/lib/theory/staff'
-import type { Answer, Attempt } from '../../types'
+import type { Answer, Attempt, HeardIn } from '../../types'
 
 type SolvedPanelProps = {
   answer: Answer
@@ -25,6 +25,7 @@ type SolvedPanelProps = {
   progressionDegrees?: number[]
   attempts: Attempt[]
   revealed: boolean
+  heardIn?: HeardIn
 }
 
 export function SolvedPanel({
@@ -33,6 +34,7 @@ export function SolvedPanel({
   progressionDegrees,
   attempts,
   revealed,
+  heardIn,
 }: SolvedPanelProps) {
   const notes = scaleNotes(answer)
   const degrees = scaleDegrees(answer)
@@ -57,6 +59,11 @@ export function SolvedPanel({
             {nearMiss !== undefined && (
               <Text size="sm" tone="inverted-muted">
                 {nearMiss}
+              </Text>
+            )}
+            {heardIn !== undefined && (
+              <Text size="sm" tone="inverted-muted">
+                {solved.heardIn(heardIn)}
               </Text>
             )}
           </Stack>
