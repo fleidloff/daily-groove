@@ -1,7 +1,7 @@
 ---
 name: quick-feature
-description: Build a small change from a one-page ticket instead of the five-step chain — allocate `specs/quick/NNN-slug.md`, write what changes and what done means, ask any blocking question in the ticket itself, then implement it directly and run the full pre-push checks. Escalates to `/create-feature` the moment it stops being small. Use whenever the user runs `/quick-feature`, or asks for a small change, a tweak, a one-liner, or says something is too small for a feature.
-argument-hint: [what to change | NNN] [--go]
+description: Build a small change from a one-page ticket instead of the five-step chain — allocate `specs/quick/N-slug.md`, write what changes and what done means, ask any blocking question in the ticket itself, then implement it directly and run the full pre-push checks. Escalates to `/create-feature` the moment it stops being small. Use whenever the user runs `/quick-feature`, or asks for a small change, a tweak, a one-liner, or says something is too small for a feature.
+argument-hint: [what to change | N] [--go]
 ---
 
 # Quick
@@ -27,16 +27,16 @@ commit themselves.
 
 | Invocation | Ticket state | Phase |
 | :-- | :-- | :-- |
-| `/quick-feature 007` | `## What` and `## Done when` written by hand, no `## Notes` yet | **Analyze** — fill in `## Notes` and `## Open questions`, then stop (§4, §5). |
-| `/quick-feature 007` | analyzed, no questions open | **Build** (§6). |
-| `/quick-feature 007` | questions unticked | Say what is open, stop. |
+| `/quick-feature 7` | `## What` and `## Done when` written by hand, no `## Notes` yet | **Analyze** — fill in `## Notes` and `## Open questions`, then stop (§4, §5). |
+| `/quick-feature 7` | analyzed, no questions open | **Build** (§6). |
+| `/quick-feature 7` | questions unticked | Say what is open, stop. |
 | `/quick-feature <prose>` | none yet | **Draft** the whole ticket from the prose, then stop. |
 | `/quick-feature <prose> --go` | none yet | Draft and build in one run, only if the draft ends with no questions. |
 | bare `/quick-feature` | — | List `specs/quick/` with each ticket's status and ask which. |
 
 **The hand-written ticket is the normal way in.** The user opens
-`specs/quick/NNN-slug.md`, writes `## What` and `## Done when`, and runs
-`/quick-feature NNN`. Analyze and build are two runs on purpose: the notes name the
+`specs/quick/N-slug.md`, writes `## What` and `## Done when`, and runs
+`/quick-feature N`. Analyze and build are two runs on purpose: the notes name the
 files before any code exists, which is the cheapest moment to catch a wrong
 module.
 
@@ -72,8 +72,8 @@ is the escalation path working, not a run that failed.
 
 ## 3. Allocate the number
 
-`specs/quick/NNN-slug.md` — three digits, highest existing plus one, never
-filling a gap. The slug is the title in kebab-case. Create `specs/quick/` if it
+`specs/quick/N-slug.md` — a plain number, no padding, highest existing plus one,
+never filling a gap. The slug is the title in kebab-case. Create `specs/quick/` if it
 isn't there.
 
 Only the draft phase allocates here. `/create-quick-feature` and `/roadmap` §3
@@ -86,7 +86,7 @@ say so and let them rename it — don't move their file.
 ## 4. Who writes which section
 
 ```markdown
-# NNN — Title
+# N — Title
 
 ## What                          <- the user's
 * one idea per bullet
@@ -212,7 +212,7 @@ Two edits, both in that file.
 before the candidate ideas list. Create it with its own heading and legend if it
 isn't there yet. Columns `# | Change | Status | Summary`:
 
-`| [007](quick/007-slug.md) | <short name> | 📝 Drafted | <one-sentence summary> |`
+`| [7](quick/7-slug.md) | <short name> | 📝 Drafted | <one-sentence summary> |`
 
 Status runs 📝 **Drafted** → ❓ **Questions open** → ✅ **Done**. A row goes in
 when the ticket is written, and moves to ✅ only when §8 came back green and

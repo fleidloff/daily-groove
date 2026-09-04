@@ -1,4 +1,4 @@
-# 001 — Where you've heard it
+# 1 — Where you've heard it
 
 ## What
 

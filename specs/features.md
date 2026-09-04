@@ -1,6 +1,6 @@
 # Features
 
-One line per feature. Each entry points at the feature's own `specs/feature-X/`
+One line per feature. Each entry points at the feature's own `specs/features/feature-X/`
 folder, where the briefing, roadmap, PRDs and tech specs live.
 
 Features are named two ways:
@@ -16,28 +16,28 @@ tested and verified). Lettered candidates sit at ✏️ **Briefed** until promot
 
 | # | Feature | Status | Summary |
 | :-- | :-- | :-- | :-- |
-| [1](feature-1/) | Core game | ✅ Done | The daily groove puzzle: one deterministic groove per day, guess its scale / chord / progression, progress kept in the browser. |
-| [2](feature-2/) | Design implementation | ✅ Done | Dresses the app in the Claude Design canvas — warm paper, cream cards, deep-green accent, dark palette — and rebuilds the guessing flow as root + flavour with escalating attempts. |
-| [3](feature-3/) | Groove generation | ✅ Done | Offline generator that mints short, funky, natural-sounding 4-bar grooves as MP3s from seeds, plus a `grooves:add` command to grow the rotating catalogue. |
-| [4](feature-4/) | Clarity pass | ✅ Done | Declutters the page — date and streak in the top row, a play button as big as the solve button — fixes the streak that resets overnight, and turns the played-grooves row into something you can replay. |
-| [5](feature-5/) | Structure and guidelines | ✅ Done | Reorganises the design system and the feature slice into named sub-folders, dismantles the god component and the cross-boundary test imports, and writes the resulting rules into `docs/coding-guidelines.md` where lint enforces them. |
-| [6](feature-6/) | Playback and polish | ✅ Done | Ends the page at the puzzle — the played-grooves row and the shared-player machinery behind it are gone — fixes the loop visualisation so it tracks the groove you actually hear, evens out every chip row, and sets the headlines in a Real Book hand. |
-| [7](feature-7/) | Guessing clarity | ✅ Done | Makes the puzzle winnable and honest — tempo back on the card, modes instead of flavours, the root handed over, a way to give up, a simple mode, and a rotation that plays every groove before repeating. |
-| [8](feature-8/) | First-run clarity | ✅ Done | Names the app Eardle, says in one line what it is, greets a new or lapsed player with a four-point how-to-play that anyone can call back up, and makes the play button the obvious first move. |
-| [9](feature-9/) | Natural feel | ✅ Done | Makes the grooves sound like a band rather than a sequencer — a real kit, bass and keyboard in place of the cajon and the FM piano, loops whose every pass is a different take, timing and dynamics with limbs, voicings and bass lines instead of arpeggios, a fill to end the last pass, and two more feels carrying four more modes. |
-| [10](feature-10/) | Hear the root | ✅ Done | Gives the root row a voice — tap a root to hear it against the running groove, so the home note can be found by ear instead of guessed. |
-| [11](feature-11/) | Lead sheet view | ✅ Done | Draws the changes as a 4-bar lead sheet with the notes in notation below it, puts the chords on the playing 4-bar visualisation, and stops the simple toggle from moving once the puzzle is solved. |
-| [12](feature-12/) | Shareable grooves | ✅ Done | Gives every groove a uuid and a share button, so a groove can be sent to someone and opened on any day — and an archive becomes possible later. |
-| [13](feature-13/) | Drum kit rewrite | ✅ Done | Rebuilds every groove on a real drum kit in place of the cajon, adds a bongo where it fits, brings the keys within a few dB of the drums, and takes the mechanical evenness off the piano — with every groove’s harmony untouched. |
-| [14](feature-14/) | Development speed | ✅ Done | Splits the slow generator tests out of the default test run, breaks up the 3111-line GroovePuzzle test file, and gives implementation workers role-specialized agents so less documentation travels with each dispatch. |
-| [15](feature-15/) | Explain the answer | ✅ Done | Turns the solved box from a scoreboard into the day's lesson — why it is that mode, the notes and the changes as degrees, and how near the guess came. |
-| [16](feature-16/) | Hear the mode | ✅ Done | Gives the mode row a voice — tap a mode to hear a short lick in it from the day's root — and puts both rows on the groove's beat, quieter, behind a switch that turns the tap sounds off. |
-| [17](feature-17/) | Fair feedback | ✅ Done | Stops handing the root over — the nudge narrows the root row instead of naming it — and lets the chips remember what Check confirmed and what it ruled out. |
-| [18](feature-18/) | Coach the ear | ✅ Done | Keeps a how-to-listen line in the hint box for the whole day — changing with each miss and with what the miss showed — and gives it the slot the verdict line used to hold; drops the narrowing count once the root is confirmed. |
-| [19](feature-19/) | Attempts out of the way | ✅ Done | Drops the three attempt dots — a solve counts however many tries it took, and only giving up or skipping a day breaks the streak. |
-| [20](feature-20/) | Modular architecture | ✅ Done | Draws the boundaries the one feature slice only implied — one shared body of theory, a door onto the coaching modules that the puzzle card feeds itself through, and a map that lint enforces. |
-| [21](feature-21/) | Internationalization | ✅ Done | Gathers every user-facing string into `src/lib/snippets/en/` and gives the app a stored language, so the next language is a folder beside it rather than a second sweep. |
-| [22](feature-22/) | Gentle first round | ✅ Done | Meets a first-time player in Simple mode — six roots, Major or Minor — names both ways to play on the switch and in the how-to-play box, moves the listening advice into the hint and the drum credit onto the groove box, and tidies the give-up ending. |
+| [1](features/feature-1/) | Core game | ✅ Done | The daily groove puzzle: one deterministic groove per day, guess its scale / chord / progression, progress kept in the browser. |
+| [2](features/feature-2/) | Design implementation | ✅ Done | Dresses the app in the Claude Design canvas — warm paper, cream cards, deep-green accent, dark palette — and rebuilds the guessing flow as root + flavour with escalating attempts. |
+| [3](features/feature-3/) | Groove generation | ✅ Done | Offline generator that mints short, funky, natural-sounding 4-bar grooves as MP3s from seeds, plus a `grooves:add` command to grow the rotating catalogue. |
+| [4](features/feature-4/) | Clarity pass | ✅ Done | Declutters the page — date and streak in the top row, a play button as big as the solve button — fixes the streak that resets overnight, and turns the played-grooves row into something you can replay. |
+| [5](features/feature-5/) | Structure and guidelines | ✅ Done | Reorganises the design system and the feature slice into named sub-folders, dismantles the god component and the cross-boundary test imports, and writes the resulting rules into `docs/coding-guidelines.md` where lint enforces them. |
+| [6](features/feature-6/) | Playback and polish | ✅ Done | Ends the page at the puzzle — the played-grooves row and the shared-player machinery behind it are gone — fixes the loop visualisation so it tracks the groove you actually hear, evens out every chip row, and sets the headlines in a Real Book hand. |
+| [7](features/feature-7/) | Guessing clarity | ✅ Done | Makes the puzzle winnable and honest — tempo back on the card, modes instead of flavours, the root handed over, a way to give up, a simple mode, and a rotation that plays every groove before repeating. |
+| [8](features/feature-8/) | First-run clarity | ✅ Done | Names the app Eardle, says in one line what it is, greets a new or lapsed player with a four-point how-to-play that anyone can call back up, and makes the play button the obvious first move. |
+| [9](features/feature-9/) | Natural feel | ✅ Done | Makes the grooves sound like a band rather than a sequencer — a real kit, bass and keyboard in place of the cajon and the FM piano, loops whose every pass is a different take, timing and dynamics with limbs, voicings and bass lines instead of arpeggios, a fill to end the last pass, and two more feels carrying four more modes. |
+| [10](features/feature-10/) | Hear the root | ✅ Done | Gives the root row a voice — tap a root to hear it against the running groove, so the home note can be found by ear instead of guessed. |
+| [11](features/feature-11/) | Lead sheet view | ✅ Done | Draws the changes as a 4-bar lead sheet with the notes in notation below it, puts the chords on the playing 4-bar visualisation, and stops the simple toggle from moving once the puzzle is solved. |
+| [12](features/feature-12/) | Shareable grooves | ✅ Done | Gives every groove a uuid and a share button, so a groove can be sent to someone and opened on any day — and an archive becomes possible later. |
+| [13](features/feature-13/) | Drum kit rewrite | ✅ Done | Rebuilds every groove on a real drum kit in place of the cajon, adds a bongo where it fits, brings the keys within a few dB of the drums, and takes the mechanical evenness off the piano — with every groove’s harmony untouched. |
+| [14](features/feature-14/) | Development speed | ✅ Done | Splits the slow generator tests out of the default test run, breaks up the 3111-line GroovePuzzle test file, and gives implementation workers role-specialized agents so less documentation travels with each dispatch. |
+| [15](features/feature-15/) | Explain the answer | ✅ Done | Turns the solved box from a scoreboard into the day's lesson — why it is that mode, the notes and the changes as degrees, and how near the guess came. |
+| [16](features/feature-16/) | Hear the mode | ✅ Done | Gives the mode row a voice — tap a mode to hear a short lick in it from the day's root — and puts both rows on the groove's beat, quieter, behind a switch that turns the tap sounds off. |
+| [17](features/feature-17/) | Fair feedback | ✅ Done | Stops handing the root over — the nudge narrows the root row instead of naming it — and lets the chips remember what Check confirmed and what it ruled out. |
+| [18](features/feature-18/) | Coach the ear | ✅ Done | Keeps a how-to-listen line in the hint box for the whole day — changing with each miss and with what the miss showed — and gives it the slot the verdict line used to hold; drops the narrowing count once the root is confirmed. |
+| [19](features/feature-19/) | Attempts out of the way | ✅ Done | Drops the three attempt dots — a solve counts however many tries it took, and only giving up or skipping a day breaks the streak. |
+| [20](features/feature-20/) | Modular architecture | ✅ Done | Draws the boundaries the one feature slice only implied — one shared body of theory, a door onto the coaching modules that the puzzle card feeds itself through, and a map that lint enforces. |
+| [21](features/feature-21/) | Internationalization | ✅ Done | Gathers every user-facing string into `src/lib/snippets/en/` and gives the app a stored language, so the next language is a folder beside it rather than a second sweep. |
+| [22](features/feature-22/) | Gentle first round | ✅ Done | Meets a first-time player in Simple mode — six roots, Major or Minor — names both ways to play on the switch and in the how-to-play box, moves the listening advice into the hint and the drum credit onto the groove box, and tidies the give-up ending. |
 
 ## Prepared candidates
 
@@ -60,8 +60,8 @@ Status runs 📝 **Drafted** → ❓ **Questions open** → ✅ **Done**.
 
 | # | Change | Status | Summary |
 | :-- | :-- | :-- | :-- |
-| [001](quick/001-where-youve-heard-it.md) | Where you’ve heard it | ✅ Done | Names one well-known track per mode in the solved box — text only, no links or playback. |
-| [002](quick/002-always-four-chords.md) | Always four chords | ✅ Done | Every groove names four chords, one per bar — the home chord written out where a 3-chord cycle used to wrap, with no audio re-rendered. |
+| [1](quick/1-where-youve-heard-it.md) | Where you’ve heard it | ✅ Done | Names one well-known track per mode in the solved box — text only, no links or playback. |
+| [2](quick/2-always-four-chords.md) | Always four chords | ✅ Done | Every groove names four chords, one per bar — the home chord written out where a 3-chord cycle used to wrap, with no audio re-rendered. |
 
 ---
 

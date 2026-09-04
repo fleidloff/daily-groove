@@ -1,6 +1,6 @@
 ---
 name: WriteSpec
-description: Turn each PRD in a feature into an epic technical specification with exact TDD implementation steps. Reads `specs/feature-X/prd/*.md` and writes one spec per PRD to `specs/feature-X/tech-spec/`, decomposed into parallel tracks behind frozen contracts, with every step written red-green-refactor. Major architectural decisions become tickable questions at the end, asked in cycles until all are settled. Use whenever the user runs `/writespec`, or asks for a technical spec, implementation plan, or engineering breakdown of a PRD or epic.
+description: Turn each PRD in a feature into an epic technical specification with exact TDD implementation steps. Reads `specs/features/feature-X/prd/*.md` and writes one spec per PRD to `specs/features/feature-X/tech-spec/`, decomposed into parallel tracks behind frozen contracts, with every step written red-green-refactor. Major architectural decisions become tickable questions at the end, asked in cycles until all are settled. Use whenever the user runs `/writespec`, or asks for a technical spec, implementation plan, or engineering breakdown of a PRD or epic.
 argument-hint: [feature-X] [epic-N]
 ---
 
@@ -21,18 +21,18 @@ reading list.
 
 **The output shape is unchanged.** Same template
 ([references/tech-spec-template.md](references/tech-spec-template.md)), same
-destination — `specs/<feature>/tech-spec/<same-basename-as-the-PRD>.md` — and the
+destination — `specs/features/<feature>/tech-spec/<same-basename-as-the-PRD>.md` — and the
 same sections in the same order as the specs already there. Who does the work
 changes; what lands on disk does not.
 
 ## 1. Resolve the target
 
-- `/writespec feature-3` → every PRD in `specs/feature-3/prd/`.
+- `/writespec feature-3` → every PRD in `specs/features/feature-3/prd/`.
 - `/writespec feature-3 epic-2` → just that epic's PRD.
 - Bare `/writespec` → list the folders under `specs/` and ask which one.
 
-Accept loose input: `3`, `feature 3`, `specs/feature-3` all resolve to
-`specs/feature-3`.
+Accept loose input: `3`, `feature 3`, `specs/features/feature-3` all resolve to
+`specs/features/feature-3`.
 
 **One spec per PRD file**, same basename so they pair up:
 `prd/epic-2-streaks.md` → `tech-spec/epic-2-streaks.md`.
@@ -201,7 +201,7 @@ Follow [references/tech-spec-template.md](references/tech-spec-template.md).
 `specs/features.md` carries a **Status** column. A feature reaches
 🛠 **Ready to implement** when there is nothing left to decide before building:
 
-- **Every PRD in `specs/<feature>/prd/` has a matching tech spec**, and
+- **Every PRD in `specs/features/<feature>/prd/` has a matching tech spec**, and
 - **no spec has open architectural questions**, and
 - **no PRD has open questions either** — an unsettled requirement invalidates
   the steps written against it, whatever state the spec is in.

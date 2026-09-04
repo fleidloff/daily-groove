@@ -590,7 +590,7 @@ own store does not need a paragraph saying so.
 
 Reasoning worth keeping outlives the file it would sit in, so it goes where a
 reader will look for it — [architecture.md](architecture.md) for shape,
-[music.md](music.md) for musical decisions, `specs/feature-N/` for why a
+[music.md](music.md) for musical decisions, `specs/features/feature-N/` for why a
 requirement exists. A block comment is the worst place to leave it: nothing
 points at it and nothing keeps it true.
 
@@ -648,7 +648,7 @@ feature — goes to the file that owns *that* subject, not into the nearest file
 that still compiles.
 
 *human-checked* — motivated by `src/app/page.test.tsx` and the destination table
-in `specs/feature-5/prd/epic-3-god-component.md`.
+in `specs/features/feature-5/prd/epic-3-god-component.md`.
 
 **A test under `lib/presentation/` asserts *which* sentence a module selected,
 never what the sentence says.** `src/features/daily-groove/lib/presentation/`

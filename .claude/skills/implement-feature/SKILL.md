@@ -1,6 +1,6 @@
 ---
 name: implement-feature
-description: Implement every epic in a feature by dispatching parallel agents against its specs. Reads `specs/feature-X/prd/` and `specs/feature-X/tech-spec/`, splits the work into units that own disjoint files, and runs each through analyze → write tests → implement → run tests → fix until green. Ends each epic with a full `/verify-epic` QA pass and fixes until it comes back clean, then reports every AC done / partly / not done. Pass `--teams` to run the units as Claude Code agent teammates instead of subagents. Use whenever the user runs `/implement-feature`, or asks to build, implement, or execute the epics of a feature from its specs.
+description: Implement every epic in a feature by dispatching parallel agents against its specs. Reads `specs/features/feature-X/prd/` and `specs/features/feature-X/tech-spec/`, splits the work into units that own disjoint files, and runs each through analyze → write tests → implement → run tests → fix until green. Ends each epic with a full `/verify-epic` QA pass and fixes until it comes back clean, then reports every AC done / partly / not done. Pass `--teams` to run the units as Claude Code agent teammates instead of subagents. Use whenever the user runs `/implement-feature`, or asks to build, implement, or execute the epics of a feature from its specs.
 argument-hint: [feature-X] [--teams]
 ---
 
@@ -26,7 +26,7 @@ mention it afterwards.
 
 ## 1. Resolve target and flags
 
-- `/implement-feature feature-3` → every epic with a PRD in `specs/feature-3/`.
+- `/implement-feature feature-3` → every epic with a PRD in `specs/features/feature-3/`.
 - `/implement-feature feature-3 --teams` → same, run as agent teammates (§6).
 - Bare `/implement-feature` → list the folders under `specs/` and ask.
 
@@ -35,11 +35,11 @@ epic (`epic-2`) narrows the run to that epic.
 
 ## 2. Gather the work
 
-For each epic in `specs/<feature>/prd/`:
+For each epic in `specs/features/<feature>/prd/`:
 
 - **The PRD** is the source of the acceptance criteria you report against. Every
   epic needs one.
-- **The tech spec** (`specs/<feature>/tech-spec/<same-basename>.md`) is the
+- **The tech spec** (`specs/features/<feature>/tech-spec/<same-basename>.md`) is the
   implementation plan: contracts, tracks, file ownership, TDD steps. Use it
   when it exists — it was written to be parallelized, so don't re-derive it.
 - **No tech spec?** Say so. Offer `/writespec <feature>` first, since a spec
@@ -150,7 +150,7 @@ untested. The run does not wait for a person, and nothing claims to have been
 heard.
 
 **Every worker writes a status file** to
-`specs/<feature>/.implement/<unit>.md` before finishing, in the format the brief
+`specs/features/<feature>/.implement/<unit>.md` before finishing, in the format the brief
 specifies. Don't rely on the returned message alone: it's the only artifact that
 survives a worker dying mid-run, and in teams mode you don't get the output back
 at all (§6). Add `.implement/` to `.gitignore` if it isn't there.
@@ -321,12 +321,12 @@ have, not a row to quietly rewrite.
 
 ## 11. Report
 
-Write the run report to `specs/<feature>/.implement/report.md` and summarize it
+Write the run report to `specs/features/<feature>/.implement/report.md` and summarize it
 in chat, using
 [references/report-template.md](references/report-template.md).
 
 Its acceptance-criteria table comes from the `/verify-epic` reports at
-`specs/<feature>/.verify/` — those are the verified results, so don't restate
+`specs/features/<feature>/.verify/` — those are the verified results, so don't restate
 them from memory or re-grade them more kindly. Every AC from every PRD, marked:
 
 - **Done** — implemented and covered by a passing test. Name the test.

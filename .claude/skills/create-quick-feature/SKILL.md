@@ -1,12 +1,12 @@
 ---
 name: create-quick-feature
-description: Start a quick change — allocate the next `specs/quick/NNN-slug.md` ticket, interview the user for what changes and what done means, write only the `## What` and `## Done when` sections as one-idea-per-bullet, and register the row in the Quick changes table of `specs/features.md`. Runs no analysis and no build; `/quick-feature NNN` does that. Use whenever the user runs `/create-quick-feature`, or asks to open, write, add or scaffold a quick ticket without building it yet.
-argument-hint: [NNN | what the change is about]
+description: Start a quick change — allocate the next `specs/quick/N-slug.md` ticket, interview the user for what changes and what done means, write only the `## What` and `## Done when` sections as one-idea-per-bullet, and register the row in the Quick changes table of `specs/features.md`. Runs no analysis and no build; `/quick-feature N` does that. Use whenever the user runs `/create-quick-feature`, or asks to open, write, add or scaffold a quick ticket without building it yet.
+argument-hint: [N | what the change is about]
 ---
 
 # Create quick feature
 
-`/quick-feature NNN` expects a hand-written ticket — `## What` and `## Done
+`/quick-feature N` expects a hand-written ticket — `## What` and `## Done
 when`, nothing else — and fills in the rest itself. This skill writes that
 ticket, and nothing else. No `## Notes`, no `## Open questions`, no size test,
 no code. It is to `/quick-feature` what `/create-feature` is to `/roadmap`: the
@@ -14,14 +14,13 @@ user's intent, recorded before anyone reads the tree against it.
 
 ## 1. Allocate the number
 
-`specs/quick/NNN-slug.md` — three digits, highest existing plus one, never
-filling a gap. A missing number means a ticket was deleted, and reusing it makes
+`specs/quick/N-slug.md` — a plain number, no padding, highest existing plus one,
+never filling a gap. A missing number means a ticket was deleted, and reusing it makes
 old links and commit messages point at the wrong thing. Create `specs/quick/` if
 it isn't there.
 
-- The argument is a bare number — `/create-quick-feature 007`,
-  `/create-quick-feature 7` → use exactly that, zero-padded. A bare number is a
-  target, not ticket content.
+- The argument is a bare number — `/create-quick-feature 7` → use exactly
+  that. A bare number is a target, not ticket content.
 - The target is already taken → say so, show what is in it, and stop. Never
   write into an existing ticket.
 - The target fills a gap → say so and use the next free number instead, unless
@@ -43,7 +42,7 @@ what should change, and how would you tell it's done? Then stop and wait. Don't
 use a multiple-choice prompt to collect the content — the ticket is the user's
 framing, and options you invented would replace it with yours.
 
-If the answer is thin but coherent, write it. `specs/quick/001-*.md` runs to
+If the answer is thin but coherent, write it. `specs/quick/1-*.md` runs to
 seven `## What` bullets and four `## Done when` bullets, and most tickets will
 be shorter. If it's genuinely ambiguous what is being changed, ask one
 follow-up, not a list.
@@ -89,7 +88,7 @@ it becomes a wrong `## Notes`.
 On confirmation, write the ticket:
 
 ```markdown
-# NNN — Title
+# N — Title
 
 ## What
 
@@ -113,7 +112,7 @@ legend if it isn't there yet, as `/quick-feature` §10 describes.
 
 Add the row in ascending number order, at 📝 **Drafted**:
 
-`| [NNN](quick/NNN-slug.md) | <short name> | 📝 Drafted | <one-sentence summary> |`
+`| [N](quick/N-slug.md) | <short name> | 📝 Drafted | <one-sentence summary> |`
 
 Status is set here and never advanced by this skill. `/quick-feature` moves it
 to ❓ Questions open or ✅ Done.
@@ -130,5 +129,5 @@ and narrow its summary to what remains, and say so in the report.
 ## 6. Report back
 
 The ticket path; the bullets, one line each; the row written; any candidate
-idea removed or narrowed. Then the next step: `/quick-feature NNN`, which
+idea removed or narrowed. Then the next step: `/quick-feature N`, which
 analyzes the ticket and asks anything blocking inside it. Don't run it.

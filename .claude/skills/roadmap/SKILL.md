@@ -1,6 +1,6 @@
 ---
 name: roadmap
-description: Turn a feature briefing into a phased, epic-based roadmap. Reads `specs/feature-X/briefing.md` and writes `specs/feature-X/roadmap.md`, split into epics that each ship visible progress, are independently buildable and validatable, and are ordered for maximum parallelism. Use this whenever the user runs `/roadmap`, mentions a feature-X folder or a briefing, or asks to plan, phase, break down, or sequence a feature into epics, milestones, or waves of work — even if they don't say the word "roadmap".
+description: Turn a feature briefing into a phased, epic-based roadmap. Reads `specs/features/feature-X/briefing.md` and writes `specs/features/feature-X/roadmap.md`, split into epics that each ship visible progress, are independently buildable and validatable, and are ordered for maximum parallelism. Use this whenever the user runs `/roadmap`, mentions a feature-X folder or a briefing, or asks to plan, phase, break down, or sequence a feature into epics, milestones, or waves of work — even if they don't say the word "roadmap".
 argument-hint: [feature-X]
 ---
 
@@ -14,17 +14,17 @@ where the dependencies allow it.
 
 The skill runs for exactly one feature.
 
-- Invoked as `/roadmap feature-3` → the target is `specs/feature-3/`.
+- Invoked as `/roadmap feature-3` → the target is `specs/features/feature-3/`.
 - Invoked bare (`/roadmap`) → list the folders under `specs/` and ask which one.
   Don't guess, even when only one exists — confirming costs one line and
   prevents writing a roadmap into the wrong folder.
-- Accept loose input: `3`, `feature 3`, and `specs/feature-3` all mean
-  `specs/feature-3`. If it doesn't resolve to a real folder, show what's
+- Accept loose input: `3`, `feature 3`, and `specs/features/feature-3` all mean
+  `specs/features/feature-3`. If it doesn't resolve to a real folder, show what's
   available and ask.
 
 ## 2. Read the inputs
 
-**`specs/<feature>/briefing.md` is required.** Stop and tell the user if it is
+**`specs/features/<feature>/briefing.md` is required.** Stop and tell the user if it is
 missing or empty — a roadmap invented without a briefing looks authoritative
 and is worthless, which is worse than no roadmap. Ask them to fill it in.
 
@@ -85,8 +85,8 @@ Don't write `roadmap.md` while it is open.
 
 **Move** → do the move, then stop:
 
-- Allocate `specs/quick/NNN-slug.md` the way `/quick-feature` §3 does: three
-  digits, highest existing plus one, slug from the briefing's title.
+- Allocate `specs/quick/N-slug.md` the way `/quick-feature` §3 does: highest
+  existing number plus one, no padding, slug from the briefing's title.
 - Write `## What` from the briefing's bullets, in the user's words — the
   briefing is theirs, so these bullets are too. Write `## Done when` as bullets a
   test or a look at the page can settle, taken from the briefing where it says
@@ -94,14 +94,14 @@ Don't write `roadmap.md` while it is open.
   neither `## Notes` nor `## Open questions` — those are `/quick-feature`'s
   analyze phase, and it runs on the ticket as it would on a hand-written one.
 - Add one line under the title: `Moved from feature-N's briefing.`
-- Delete `specs/feature-N/`. The briefing's content now lives in the ticket,
+- Delete `specs/features/feature-N/`. The briefing's content now lives in the ticket,
   and a feature folder with no roadmap and a ticket with the same words is two
   places for one change.
 - In `specs/features.md`, remove the feature's row and add a row to the *Quick
   changes* table at 📝 **Drafted**, as `/quick-feature` §10 describes. A
   candidate idea the feature had retired stays retired.
 
-Then report the ticket path and point at `/quick-feature NNN`. Not
+Then report the ticket path and point at `/quick-feature N`. Not
 `/brainstorm`: there is no roadmap, and there will not be one.
 
 ## 4. Shape the epics
@@ -159,7 +159,7 @@ Restructuring at this point is normal, not a sign of a bad first pass.
 
 ## 5. Write the roadmap
 
-Write to `specs/<feature>/roadmap.md` using this structure:
+Write to `specs/features/<feature>/roadmap.md` using this structure:
 
 ````markdown
 # Roadmap — <Feature Name>
@@ -220,7 +220,7 @@ tight; this is a document someone will act on, not a proposal to sell.
 a single sentence of summary. Keep it in step with the roadmap you just wrote.
 
 - **No row for this feature yet** → add one, in feature-number order:
-  `| [N](feature-N/) | <short name> | <one-sentence summary> |`
+  `| [N](features/feature-N/) | <short name> | <one-sentence summary> |`
 - **Row exists** → rewrite the summary if the roadmap sharpened, widened, or
   narrowed what the feature actually is. If it still reads true, leave it alone.
 - **No `specs/features.md` at all** → create it with the same table shape.

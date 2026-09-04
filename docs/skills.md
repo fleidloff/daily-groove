@@ -19,10 +19,10 @@ from step 2 to step 4 means specifying against requirements nobody wrote down.
 
 | # | Run | What it does | Writes |
 | :-- | :-- | :-- | :-- |
-| 1 | `/create-feature` | Asks what the feature is, and records your answer as bullets. | `specs/feature-N/briefing.md` |
-| 2 | `/roadmap feature-N` | Splits the briefing into epics that each ship something visible. | `specs/feature-N/roadmap.md` |
-| 3 | `/brainstorm feature-N` | Turns each epic into a PRD — requirements and acceptance criteria. | `specs/feature-N/prd/epic-*.md` |
-| 4 | `/writespec feature-N` | Turns each PRD into TDD implementation steps, split into parallel tracks. | `specs/feature-N/tech-spec/epic-*.md` |
+| 1 | `/create-feature` | Asks what the feature is, and records your answer as bullets. | `specs/features/feature-N/briefing.md` |
+| 2 | `/roadmap feature-N` | Splits the briefing into epics that each ship something visible. | `specs/features/feature-N/roadmap.md` |
+| 3 | `/brainstorm feature-N` | Turns each epic into a PRD — requirements and acceptance criteria. | `specs/features/feature-N/prd/epic-*.md` |
+| 4 | `/writespec feature-N` | Turns each PRD into TDD implementation steps, split into parallel tracks. | `specs/features/feature-N/tech-spec/epic-*.md` |
 | 5 | `/implement-feature feature-N` | Builds every epic from the specs, in parallel, until the tests pass. | the code |
 
 Steps 2–5 all take an optional epic: `/brainstorm feature-8 epic-2` runs just
@@ -50,11 +50,11 @@ can describe in five bullets that insurance costs more than the accident, so
 there is a second door:
 
 ```
-write specs/quick/NNN-slug.md  →  /quick-feature NNN  →  answer  →  /quick-feature NNN  →  the code
+write specs/quick/N-slug.md  →  /quick-feature N  →  answer  →  /quick-feature N  →  the code
        What + Done when            Notes + questions
 ```
 
-You write what changes and what done means. `/quick-feature NNN` fills in the notes —
+You write what changes and what done means. `/quick-feature N` fills in the notes —
 the files it expects to touch, the assumptions it took — and asks anything
 blocking as tickable options inside the same file. Run it again once those are
 ticked and it builds in this session: no epics, no agents except the `musician`
@@ -62,7 +62,7 @@ for anything under `scripts/grooves/`, and the full lint / test / build set
 before reporting. `/quick-feature <what to change>` drafts the whole ticket for you
 instead, when you'd rather not open the file. `/create-quick-feature` is the
 middle way: it interviews you like `/create-feature` does, writes only `What`
-and `Done when`, and stops — the ticket then enters `/quick-feature NNN` as a
+and `Done when`, and stops — the ticket then enters `/quick-feature N` as a
 hand-written one.
 
 It refuses to be the cheap door for a real feature. Four questions decide:
@@ -79,7 +79,7 @@ The chain can hand over too. `/roadmap` runs the same four questions against
 the briefing before it shapes epics, and when they all pass and the answer would
 be one epic, it asks whether to move the feature here instead. Say yes and it
 writes the ticket from the briefing, deletes the feature folder, moves the row,
-and points at `/quick-feature NNN`.
+and points at `/quick-feature N`.
 
 ## `/verify-epic`
 
@@ -91,30 +91,34 @@ done / partly / not done. It diagnoses, it doesn't fix.
 
 ## `/create-feature-for-persona`
 
-A different way into step 1. It walks the live app in character as the persona in
-[persona.md](persona.md) — first run with empty `localStorage`, then as a
-returner — reports what that person likes, what they find unclear and what they
-miss, picks the single strongest finding, and hands it to `/create-feature` as
-the briefing for the next free number.
+A different way into step 1, or into the quick door. It walks the live app in
+character as the persona in [persona.md](persona.md) — first run with empty
+`localStorage`, then as a returner — reports what that person likes, what they
+find unclear and what they miss, picks the single strongest finding, and runs
+`/quick-feature`'s four size questions against it. All four pass and it hands
+the finding to `/create-quick-feature` as a ticket; any fail, or any doubt, and
+it hands it to `/create-feature` as a lettered candidate.
 
 ```
-/create-feature-for-persona  →  briefing.md  →  /roadmap feature-N  →  …
+/create-feature-for-persona  →  specs/quick/N-slug.md          →  /quick-feature N  →  …
+                             →  specs/features/feature-X/briefing.md  →  promote to a number  →  /roadmap feature-N  →  …
 ```
 
-It stops at the briefing, like `/create-feature` does. Use it when you want the
-next feature chosen by the player rather than by the person who built the app.
+It stops at the ticket or the briefing, like `/create-quick-feature` and
+`/create-feature` do. Use it when you want the next change chosen by the player
+rather than by the person who built the app.
 
 ## Where things live
 
 ```
 specs/
-├── features.md              one line per feature — the index
-├── quick/NNN-slug.md        one-page tickets, outside the chain
-└── feature-N/
-    ├── briefing.md          step 1
-    ├── roadmap.md           step 2
-    ├── prd/epic-*.md        step 3
-    └── tech-spec/epic-*.md  step 4
+├── features.md                  one line per feature — the index
+├── quick/N-slug.md              one-page tickets, outside the chain
+└── features/feature-N/
+    ├── briefing.md              step 1
+    ├── roadmap.md               step 2
+    ├── prd/epic-*.md            step 3
+    └── tech-spec/epic-*.md      step 4
 ```
 
 The skills keep `specs/features.md` in step as they go, so the index never has

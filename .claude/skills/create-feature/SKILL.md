@@ -1,12 +1,12 @@
 ---
 name: create-feature
-description: Start a new feature — allocate the next `specs/feature-X/` folder (a number for work on the plan, a letter for a prepared candidate), interview the user for the briefing, write `briefing.md` as one-idea-per-bullet, and register it in the right table of `specs/features.md`, retiring the matching candidate row if there is one. Use whenever the user runs `/create-feature`, or asks to start, add, kick off, or scaffold a new feature, briefing, feature folder, or candidate.
+description: Start a new feature — allocate the next `specs/features/feature-X/` folder (a number for work on the plan, a letter for a prepared candidate), interview the user for the briefing, write `briefing.md` as one-idea-per-bullet, and register it in the right table of `specs/features.md`, retiring the matching candidate row if there is one. Use whenever the user runs `/create-feature`, or asks to start, add, kick off, or scaffold a new feature, briefing, feature folder, or candidate.
 argument-hint: [feature-N | feature-X | what the feature is about]
 ---
 
 # Create feature
 
-Every downstream skill starts from `specs/feature-X/briefing.md` — `/roadmap`
+Every downstream skill starts from `specs/features/feature-X/briefing.md` — `/roadmap`
 refuses to run without one, and everything after it inherits whatever the
 briefing got wrong. This skill produces that file, and nothing else. No roadmap,
 no epics, no PRDs.
@@ -67,7 +67,7 @@ is being built, ask one follow-up, not a list.
 
 ## 3. Write the bullets
 
-Match the house style — look at `specs/feature-*/briefing.md` before writing:
+Match the house style — look at `specs/features/feature-*/briefing.md` before writing:
 `*` bullets, short fragments, imperative, no headings, no prose paragraphs, no
 preamble.
 
@@ -97,7 +97,7 @@ Show the bullets in the terminal, **name the folder you are about to create**,
 and ask whether to write them or adjust. Cheap, and it catches both a misread
 and a wrongly-guessed label before either propagates into a roadmap.
 
-On confirmation, create `specs/feature-X/` and write `briefing.md`.
+On confirmation, create `specs/features/feature-X/` and write `briefing.md`.
 
 ## 5. Register it in `specs/features.md`
 
@@ -109,12 +109,12 @@ may have gained a column since this was written.
 **A numbered feature** → the main table, in ascending number order, at
 📋 **Planned**:
 
-`| [N](feature-N/) | <short name> | 📋 Planned | <one-sentence summary> |`
+`| [N](features/feature-N/) | <short name> | 📋 Planned | <one-sentence summary> |`
 
 **A lettered candidate** → the *Prepared candidates* table, in ascending letter
 order, at ✏️ **Briefed**:
 
-`| [X](feature-X/) | <short name> | ✏️ Briefed | <one-sentence summary> |`
+`| [X](features/feature-X/) | <short name> | ✏️ Briefed | <one-sentence summary> |`
 
 Status is set here and never advanced by this skill. `/writespec` moves a
 feature to 🛠 Ready to implement and `/implement-feature` to 🔨 In progress or

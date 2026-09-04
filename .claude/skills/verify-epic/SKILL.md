@@ -147,7 +147,7 @@ covered forever.
 ## 6. Report
 
 Follow [references/qa-report-template.md](references/qa-report-template.md).
-Write it to `specs/<feature>/.verify/<epic>.md` and summarize in chat: the
+Write it to `specs/features/<feature>/.verify/<epic>.md` and summarize in chat: the
 verdict, the AC tallies, and each failure with its diagnosis.
 
 **Check the citations before relaying anything.** Once the report is written and

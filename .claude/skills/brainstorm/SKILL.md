@@ -1,6 +1,6 @@
 ---
 name: brainstorm
-description: Turn a roadmap epic into a simple PRD through repeated question-and-reconcile cycles. Reads `specs/feature-X/roadmap.md`, writes one PRD per epic to `specs/feature-X/prd/`, ends each draft with tickable multiple-choice questions, and on the next run folds the answers into the requirements as direct statements, logs them, and asks again until no high-impact gaps remain. Use whenever the user runs `/brainstorm`, says they've answered a PRD's questions, or asks to write, flesh out, reconcile, or nail down a PRD, spec, or requirements for a feature or epic.
+description: Turn a roadmap epic into a simple PRD through repeated question-and-reconcile cycles. Reads `specs/features/feature-X/roadmap.md`, writes one PRD per epic to `specs/features/feature-X/prd/`, ends each draft with tickable multiple-choice questions, and on the next run folds the answers into the requirements as direct statements, logs them, and asks again until no high-impact gaps remain. Use whenever the user runs `/brainstorm`, says they've answered a PRD's questions, or asks to write, flesh out, reconcile, or nail down a PRD, spec, or requirements for a feature or epic.
 argument-hint: [feature-X] [epic-N]
 ---
 
@@ -13,12 +13,12 @@ until nothing high-impact is unresolved.
 
 ## 1. Resolve the target
 
-- `/brainstorm feature-3` → every epic in `specs/feature-3/`.
+- `/brainstorm feature-3` → every epic in `specs/features/feature-3/`.
 - `/brainstorm feature-3 epic-2` → just that epic.
 - Bare `/brainstorm` → list the folders under `specs/` and ask which one.
 
-Accept loose input: `3`, `feature 3`, `specs/feature-3` all resolve to
-`specs/feature-3`. If it doesn't resolve, show what exists and ask.
+Accept loose input: `3`, `feature 3`, `specs/features/feature-3` all resolve to
+`specs/features/feature-3`. If it doesn't resolve, show what exists and ask.
 
 ## 2. Read the inputs
 
@@ -46,7 +46,7 @@ answers likely reshape the PRDs.
 
 ## 3. Pick the mode per epic
 
-Decided by whether `specs/<feature>/prd/epic-<N>-*.md` exists:
+Decided by whether `specs/features/<feature>/prd/epic-<N>-*.md` exists:
 
 - **No PRD** → draft one (§5), ending with the first round of questions (§4).
 - **PRD with answered questions** → run the reconcile cycle (§6).
@@ -117,7 +117,7 @@ Never re-ask something already in the log.
 
 ## 5. Drafting a new PRD
 
-One file per epic: `specs/<feature>/prd/epic-<N>-<slug>.md`, slug from the epic
+One file per epic: `specs/features/<feature>/prd/epic-<N>-<slug>.md`, slug from the epic
 name in the roadmap. Follow
 [references/prd-template.md](references/prd-template.md).
 
@@ -184,7 +184,7 @@ After folding answers in, reread the feature's row:
   the index for every PRD edit makes it useless as a change signal.
 - No longer true → rewrite the summary to match the settled PRDs.
 - Row missing entirely → add one, in feature-number order:
-  `| [N](feature-N/) | <short name> | <one-sentence summary> |`
+  `| [N](features/feature-N/) | <short name> | <one-sentence summary> |`
 
 Never expand the row into epic-level detail; the index stays one line per
 feature.

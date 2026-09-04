@@ -1,6 +1,6 @@
 ---
 name: create-feature-for-persona
-description: Review the live app in character as the persona in `docs/persona.md` — what works, what is unclear, what is missing — then turn the single strongest finding into a new numbered feature via `/create-feature`. Stops at the briefing; runs no roadmap, no PRDs, no code. Use whenever the user runs `/create-feature-for-persona`, or asks for a feature idea from the persona's point of view, a persona walkthrough, or a UX review of the deployed app that ends in a briefing.
+description: Review the live app in character as the persona in `docs/persona.md` — what works, what is unclear, what is missing — then turn the single strongest finding into either a quick ticket via `/create-quick-feature` or a feature briefing via `/create-feature`, deciding by the size test. Stops at the ticket or the briefing; runs no roadmap, no PRDs, no code. Use whenever the user runs `/create-feature-for-persona`, or asks for a feature idea from the persona's point of view, a persona walkthrough, or a UX review of the deployed app that ends in a ticket or a briefing.
 argument-hint: [url | local] — defaults to the deployed app
 ---
 
@@ -9,12 +9,13 @@ argument-hint: [url | local] — defaults to the deployed app
 The feature list is written by the person building the app, who knows where
 every button is and what every word means. This skill borrows a different pair
 of ears: it walks the live app as the persona in `docs/persona.md`, notices what
-that person would notice, and commits the single best finding to the plan as a
-briefing.
+that person would notice, and records the single best finding through whichever
+of the repo's two doors fits it — a quick ticket in `specs/quick/` or a feature
+briefing in `specs/features/`.
 
-It ends at `briefing.md`. `/roadmap`, `/brainstorm`, `/writespec` and
-`/implement-feature` are the user's to run — do not run them, and do not offer
-to.
+It ends at the ticket or at `briefing.md`. `/quick-feature`, `/roadmap`,
+`/brainstorm`, `/writespec` and `/implement-feature` are the user's to run — do
+not run them, and do not offer to.
 
 ## 1. Load the persona
 
@@ -95,11 +96,12 @@ prefer:
 - **one coherent shippable thing** over a theme that would need three epics to
   mean anything.
 
-**Then check it isn't already on the plan.** Read `specs/features.md`:
+**Then check it isn't already on the plan.** Read `specs/features.md`, all
+three tables:
 
 - It duplicates a shipped or planned feature (numbered, or a lettered
-  candidate) → pick your next-best finding instead, and say in the report which
-  feature already covers the first one.
+  candidate) or a quick change → pick your next-best finding instead, and say in
+  the report which feature or ticket already covers the first one.
 - It matches one of the auto-generated candidate ideas at the bottom → that is
   fine, and is exactly the promotion those rows exist for. `/create-feature`
   retires the row; note it.
@@ -107,18 +109,66 @@ prefer:
 State the choice in one sentence before writing anything, along with the finding
 it comes from and what you passed over.
 
-## 5. Hand it to `/create-feature`
+## 5. Pick the door
 
-Invoke the `create-feature` skill and let it do the mechanical work — allocating
-the next free number, the bullet house style, the confirmation, the row in
-`specs/features.md`, the report.
+The repo has two ways to record a change, and the finding decides which one —
+not its importance to the persona, which is already settled, but its size.
+Run the four questions from `/quick-feature` §2 against the finding as you
+understand it from the app and `docs/architecture.md`:
+
+1. Can you say what changes and what done means in five bullets or fewer?
+2. Does it touch at most **two** of the six modules — catalogue, theory, audio,
+   puzzle, coaching, shell? A copy change, a reordering, one new line in a
+   panel is one module; anything that needs new audio *and* a new control is
+   two or more.
+3. Does it leave the four frozen things in `docs/music.md` alone? Anything that
+   re-renders the catalogue or reassigns past puzzles is never quick.
+4. Is one `git revert` the whole rollback?
+
+**All four yes → a quick ticket (§5a). Any no, or any you cannot answer from
+here → a feature briefing (§5b).** The expensive door is the safe default: a
+briefing that turns out to be one epic gets offered the quick path by
+`/roadmap`, and a ticket that turns out to be a feature is escalated by
+`/quick-feature`, so a wrong guess costs one hand-off either way. But the two
+mistakes are not symmetric — a feature smuggled through the cheap door skips
+the requirements nobody wrote down, so when in doubt, brief it.
+
+State the verdict in one line, question by question, before writing anything.
+
+### 5a. Hand it to `/create-quick-feature`
+
+Invoke the `create-quick-feature` skill and let it do the mechanical work — the
+next free number, the two sections, the confirmation, the row in the Quick
+changes table, the report.
+
+**The content comes from you, not from an interview.** Hand over both halves as
+the seed so the skill skips its own question:
+
+- `## What` — the change in the persona's terms, `*` bullets, one idea each,
+  including one bullet naming the moment in the app that prompted it.
+- `## Done when` — bullets a test or a look at the page can settle: what the
+  persona sees afterwards that they did not before.
+
+Do not write `## Notes` or `## Open questions`; those are `/quick-feature`'s,
+on its analyze run. Do not name files or modules — you checked them for the size
+test, but the ticket records intent, and the analyze run names files with the
+tree open.
+
+### 5b. Hand it to `/create-feature`
+
+Invoke the `create-feature` skill and let it do the mechanical work — the label,
+the bullet house style, the confirmation, the row in `specs/features.md`, the
+report.
 
 Two things are different from a normal run, and you supply both:
 
 - **The briefing content comes from you, not from an interview.** You already
   have it; there is nothing to ask the user. Hand over the bullets as the seed
   so `/create-feature` skips its own question.
-- **A number, not a letter.** The user asked for the next free number.
+- **A letter, not a number.** A persona finding is an idea worth keeping, not a
+  commitment to build — which features get numbers, and in what order, is the
+  user's scheduling decision. Propose the next free letter at the confirmation
+  gate and allocate a number only if the user asks for one.
 
 Write the bullets in the persona's terms, in the repo's briefing style: `*`
 bullets, short imperative fragments, one idea per bullet, no headings, no prose.
@@ -134,18 +184,26 @@ Do not specify. No components, no state shape, no file paths, no acceptance
 criteria — `/roadmap` and `/brainstorm` are the cycles that ask about those, and
 a bullet that answers early arrives looking like a decision the user made.
 
-`/create-feature` shows the bullets and the folder name and waits for
-confirmation. Let it. Adjust and re-confirm rather than arguing for your idea —
-the user knows the plan better than the persona does.
+Either skill shows what it is about to write and waits for confirmation. Let it.
+Adjust and re-confirm rather than arguing for your idea — the user knows the
+plan better than the persona does.
 
 ## 6. Report back
 
 - **How you looked** — browser or fallback, which states you reached, and what
   you could not observe.
 - **The review** — the three headings from §3, in the persona's voice, tight.
-- **The choice** — the one feature, the finding behind it, and what you passed
-  over and why.
-- Whatever `/create-feature` reports: the folder, the bullets, the row.
+- **The choice** — the one finding, what you passed over and why, and the
+  door: the four size-test answers in one line each.
+- Whatever the skill you handed to reports: the ticket or folder, the bullets,
+  the row.
 
-Then stop. Point at `/roadmap feature-N` as the next step and leave it to the
-user — they said they would run it themselves.
+Then stop. The next step differs by door, and you point at it without running
+it:
+
+- **Quick ticket** → `/quick-feature N`, which analyzes the ticket and asks
+  anything blocking inside it.
+- **Lettered candidate** → nothing. It is parked until the user promotes it to a
+  number; suggesting `/roadmap feature-X` would plan work nobody has committed
+  to.
+- **Numbered feature**, if the user asked for one → `/roadmap feature-N`.

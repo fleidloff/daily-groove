@@ -1,4 +1,4 @@
-# 002 — Always four chords
+# 2 — Always four chords
 
 ## What
 
