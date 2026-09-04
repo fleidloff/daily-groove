@@ -25,6 +25,6 @@ export const solved = {
   },
   heardIn: ({ track, artist }) => `You've heard this in “${track}” by ${artist}`,
   nextGrooveIn: ({ hours, minutes }) =>
-    `New groove tomorrow in ${hours}:${String(minutes).padStart(2, '0')}`,
+    `Next groove at midnight in ${hours}h ${String(minutes).padStart(2, '0')}m`,
   nextGrooveReady: 'Today’s groove is ready — reload the page to play it.',
 } satisfies SolvedSnippets
