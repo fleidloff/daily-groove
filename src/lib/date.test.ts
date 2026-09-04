@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isoDate, parseIsoDate } from './date'
+import { isoDate, nextDayStart, parseIsoDate } from './date'
 
 describe('isoDate', () => {
   it('formats the local calendar day as YYYY-MM-DD', () => {
@@ -18,5 +18,25 @@ describe('parseIsoDate', () => {
     expect(date.getMonth()).toBe(7)
     expect(date.getDate()).toBe(30)
     expect(date.getHours()).toBe(12)
+  })
+})
+
+describe('nextDayStart', () => {
+  it('returns the local midnight that ends the given day', () => {
+    const next = nextDayStart(new Date('2026-08-21T23:00'))
+    expect(isoDate(next)).toBe('2026-08-22')
+    expect(next.getHours()).toBe(0)
+    expect(next.getMinutes()).toBe(0)
+    expect(next.getSeconds()).toBe(0)
+    expect(next.getMilliseconds()).toBe(0)
+  })
+
+  it('is a full day away from a midnight', () => {
+    const midnight = new Date('2026-08-21T00:00')
+    expect(nextDayStart(midnight).getTime() - midnight.getTime()).toBe(24 * 60 * 60 * 1000)
+  })
+
+  it('rolls over the month and the year', () => {
+    expect(isoDate(nextDayStart(new Date('2026-12-31T08:00')))).toBe('2027-01-01')
   })
 })

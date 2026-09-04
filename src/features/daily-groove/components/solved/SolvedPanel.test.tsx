@@ -134,7 +134,7 @@ describe('SolvedPanel', () => {
     )
   })
 
-  it('shows the same heard-in line on a given-up day (quick 001)', () => {
+  it('shows the same heard-in line on a given-up day (quick 001)', () =>{
     renderPanel({
       answer: { root: 'C', flavour: 'Mixolydian' },
       heardIn: { track: 'So What', artist: 'Miles Davis' },

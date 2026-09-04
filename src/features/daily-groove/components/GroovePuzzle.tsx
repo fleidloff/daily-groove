@@ -36,6 +36,7 @@ import { usePuzzleSession } from '../hooks/usePuzzleSession'
 import { useReferenceNote } from '../hooks/useReferenceNote'
 import { useSimpleMode } from '../hooks/useSimpleMode'
 import { useTapSounds } from '../hooks/useTapSounds'
+import { useNextGroove } from '../hooks/useNextGroove'
 import { useTransport } from '../hooks/useTransport'
 import { GrooveCard } from './puzzle/GrooveCard'
 import { PlayTodayLink } from './puzzle/PlayTodayLink'
@@ -106,6 +107,8 @@ function GroovePuzzleView({
   })
 
   const { tapSounds, setTapSounds } = useTapSounds()
+
+  const nextGroove = useNextGroove(today)
 
   const source = useMemo<PlayableSource>(
     () => ({
@@ -251,6 +254,7 @@ function GroovePuzzleView({
                 shared ? null : today,
                 solved || revealed ? answer : null,
               )}
+              nextGroove={!shared && (solved || revealed) ? nextGroove : undefined}
             >
               <Stack gap="lg">
                 <TransportPanel

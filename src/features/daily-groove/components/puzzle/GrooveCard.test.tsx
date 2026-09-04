@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest'
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { GrooveCard } from './GrooveCard'
-import { puzzle } from '@/lib/snippets'
+import { puzzle, solved } from '@/lib/snippets'
 import { dateLine, metaLine } from '../../lib/presentation/date'
 import type { Groove } from '../../types'
 import { GROOVES } from '../../data/grooves.generated'
@@ -285,5 +285,42 @@ describe('through the composed page', () => {
       expect(link).toHaveAttribute('rel', expect.stringContaining('noopener'))
     }
     expect(screen.getAllByRole('link', { name: puzzle.drumCredit })).toHaveLength(1)
+  })
+})
+
+describe('the next-groove line (quick 3)', () => {
+  const meta = metaFor(GROOVE)
+  const follows = (a: Element, b: Element) =>
+    Boolean(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING)
+
+  it('counts down above the tempo line, in the same muted style', () => {
+    render(
+      <GrooveCard
+        groove={GROOVE}
+        meta={meta}
+        nextGroove={{ ready: false, hours: 7, minutes: 12 }}
+      />,
+    )
+
+    const line = screen.getByText(solved.nextGrooveIn({ hours: 7, minutes: 12 }))
+    const metaEl = screen.getByText(meta)
+    expect(follows(screen.getByRole('heading', { name: 'Sunroom Shuffle' }), line)).toBe(true)
+    expect(follows(line, metaEl)).toBe(true)
+    expect(line.className).toBe(metaEl.className)
+  })
+
+  it('says the next groove is ready once its day has ended', () => {
+    render(<GrooveCard groove={GROOVE} meta={meta} nextGroove={{ ready: true }} />)
+
+    expect(screen.getByText(solved.nextGrooveReady)).toBeInTheDocument()
+  })
+
+  it('renders no such line when it is given none', () => {
+    render(<GrooveCard groove={GROOVE} meta={meta} />)
+
+    expect(screen.queryByText(solved.nextGrooveReady)).not.toBeInTheDocument()
+    const paragraphs = Array.from(document.querySelectorAll('p')).map((p) => p.textContent)
+    expect(paragraphs[0]).toBe(meta)
+    expect(paragraphs).toHaveLength(2)
   })
 })

@@ -3,12 +3,13 @@ import { Card } from '@/components/surfaces/Card'
 import { Heading } from '@/components/typography/Heading'
 import { Text } from '@/components/typography/Text'
 import { Stack } from '@/components/layout/Stack'
-import { puzzle } from '@/lib/snippets'
-import type { Groove } from '../../types'
+import { puzzle, solved } from '@/lib/snippets'
+import type { Groove, NextGroove } from '../../types'
 
 type GrooveCardProps = {
   groove: Groove
   meta: string
+  nextGroove?: NextGroove
   children?: ReactNode
 }
 
@@ -19,13 +20,23 @@ const DRUM_CREDIT_LICENCE_URL = 'https://creativecommons.org/licenses/by/4.0/'
 const CREDIT_LINK =
   'underline decoration-border-strong underline-offset-2 transition-colors hover:text-text-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent'
 
-export function GrooveCard({ groove, meta, children }: GrooveCardProps) {
+export function GrooveCard({ groove, meta, nextGroove, children }: GrooveCardProps) {
   return (
     <Card>
       <Stack gap='lg' fill>
         <Heading level={2} size='lg'>
           {groove.name}
         </Heading>
+        {nextGroove !== undefined && (
+          <Text tone='muted' size='sm'>
+            {nextGroove.ready
+              ? solved.nextGrooveReady
+              : solved.nextGrooveIn({
+                  hours: nextGroove.hours,
+                  minutes: nextGroove.minutes,
+                })}
+          </Text>
+        )}
         <Text tone='muted' size='sm'>
           {meta}
         </Text>

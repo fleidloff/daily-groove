@@ -9,3 +9,7 @@ export function parseIsoDate(iso: string): Date {
   const [year, month, day] = iso.split('-').map(Number)
   return new Date(year, month - 1, day, 12, 0, 0, 0)
 }
+
+export function nextDayStart(date: Date): Date {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1, 0, 0, 0, 0)
+}

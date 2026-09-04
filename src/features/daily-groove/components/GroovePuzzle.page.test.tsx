@@ -7,6 +7,7 @@ import {
   control,
   flavourGroup,
   flavours,
+  ANSWER,
   GROOVE,
   guess,
   installPuzzleAudio,
@@ -40,7 +41,7 @@ vi.mock('../lib/persistence/storage', async (importOriginal) => ({
 
 import { GroovePuzzle } from './GroovePuzzle'
 import { selectGrooveForDate } from '../lib/puzzle/selectGroove'
-import { isoDate } from '@/lib/date'
+import { isoDate, nextDayStart } from '@/lib/date'
 import { flavourOptions } from '@/lib/theory/music'
 import { GROOVES, HEARD_IN } from '../data/grooves.generated'
 import { renderFeature } from '../testing/renderFeature'
@@ -849,6 +850,68 @@ describe('GroovePuzzle', () => {
       await guess(user, withoutTrack.root, withoutTrack.flavour)
 
       expect(screen.getByRole('status').textContent).not.toMatch(/heard this/i)
+    })
+  })
+
+  describe('the next-groove line (quick 3)', () => {
+    const acceptable = () => {
+      const remaining = nextDayStart(new Date()).getTime() - Date.now()
+      const minutes = Math.floor(remaining / 60000)
+      return [minutes, minutes - 1].map((m) =>
+        solved.nextGrooveIn({ hours: Math.floor(m / 60), minutes: m % 60 }),
+      )
+    }
+    const isLine = (content: string) =>
+      acceptable().includes(content) || content === solved.nextGrooveReady
+    const line = () => screen.queryByText(isLine)
+
+    it('says when the next groove lands once today is solved (Done when 1)', async () => {
+      const user = userEvent.setup()
+      await renderPuzzle()
+      expect(screen.queryByText(isLine)).not.toBeInTheDocument()
+
+      await guess(user, ANSWER.root, ANSWER.flavour)
+
+      expect(acceptable()).toContain(line()?.textContent)
+    })
+
+    it('says it on a given-up day too (Done when 2)', async () => {
+      const user = userEvent.setup()
+      await renderPuzzle()
+
+      await guess(user, ANSWER.root, wrongFlavour())
+      await guess(user, ANSWER.root, otherWrongFlavour())
+      await guess(user, ANSWER.root, thirdWrongFlavour())
+      await user.click(giveUp() as HTMLElement)
+      await user.click(giveUp() as HTMLElement)
+
+      expect(acceptable()).toContain(line()?.textContent)
+    })
+
+    it('says nothing on a shared groove (Done when 3)', async () => {
+      const user = userEvent.setup()
+      await renderPuzzle(<GroovePuzzle groove={GROOVE} mode="shared" />)
+
+      await guess(user, ANSWER.root, ANSWER.flavour)
+
+      expect(screen.getByRole('status')).toBeInTheDocument()
+      expect(line()).not.toBeInTheDocument()
+    })
+
+    it('sits in the groove card above the tempo line, not in the answer box', async () => {
+      const user = userEvent.setup()
+      await renderPuzzle()
+
+      await guess(user, ANSWER.root, ANSWER.flavour)
+
+      const found = line() as HTMLElement
+      expect(within(screen.getByRole('status')).queryByText(isLine)).not.toBeInTheDocument()
+      const meta = screen.getByText(new RegExp(`^${puzzle.bpm({ bpm: GROOVE.bpm })} · `))
+      expect(found.compareDocumentPosition(meta) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+      expect(
+        screen.getByRole('heading', { name: GROOVE.name }).compareDocumentPosition(found) &
+          Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy()
     })
   })
 

@@ -87,6 +87,31 @@ describe('the heard-in line (quick 001)', () => {
 
 })
 
+describe('the next-groove line (quick 3)', () => {
+  it('renders the hours and the minutes as a clock reading', () => {
+    expect(snippets.solved.nextGrooveIn({ hours: 7, minutes: 12 })).toContain('7:12')
+    expect(snippets.solved.nextGrooveIn({ hours: 13, minutes: 5 })).toContain('13:05')
+  })
+
+  it('keeps the hours and pads the minutes when few are left', () => {
+    expect(snippets.solved.nextGrooveIn({ hours: 0, minutes: 5 })).toContain('0:05')
+    expect(snippets.solved.nextGrooveIn({ hours: 0, minutes: 0 })).toContain('0:00')
+  })
+
+  it('returns the same string for the same arguments', () => {
+    expect(snippets.solved.nextGrooveIn({ hours: 1, minutes: 1 })).toBe(
+      snippets.solved.nextGrooveIn({ hours: 1, minutes: 1 }),
+    )
+  })
+
+  it('has a line for the moment the next groove is already there', () => {
+    expect(snippets.solved.nextGrooveReady.length).toBeGreaterThan(0)
+    expect(snippets.solved.nextGrooveReady).not.toBe(
+      snippets.solved.nextGrooveIn({ hours: 0, minutes: 0 }),
+    )
+  })
+})
+
 describe('feature-22 wording', () => {
   it('names both ways to play and points at the switch by its name (F22 E2 R4)', () => {
     expect(snippets.intro.twoWays).toBe(

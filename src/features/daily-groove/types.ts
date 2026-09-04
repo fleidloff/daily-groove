@@ -2,6 +2,10 @@ export type { Answer, Attempt, Flavour, Groove, Root, HeardIn } from '@/lib/groo
 
 import type { Answer, Attempt } from '@/lib/groove'
 
+export type NextGroove =
+  | { ready: true }
+  | { ready: false; hours: number; minutes: number }
+
 export type DailyResult = {
   date: string
   answer: Answer

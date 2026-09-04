@@ -62,6 +62,7 @@ Status runs 📝 **Drafted** → ❓ **Questions open** → ✅ **Done**.
 | :-- | :-- | :-- | :-- |
 | [1](quick/1-where-youve-heard-it.md) | Where you’ve heard it | ✅ Done | Names one well-known track per mode in the solved box — text only, no links or playback. |
 | [2](quick/2-always-four-chords.md) | Always four chords | ✅ Done | Every groove names four chords, one per bar — the home chord written out where a 3-chord cycle used to wrap, with no audio re-rendered. |
+| [3](quick/3-when-is-the-next-groove.md) | Next groove line | ✅ Done | Counts down to the next groove in the groove card, above the tempo line, once today's is solved or given up; says to reload once midnight has passed. |
 
 ---
 
