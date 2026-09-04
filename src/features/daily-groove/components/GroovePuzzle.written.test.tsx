@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event'
 import type { Root } from '../types'
 import { ROOTS } from '@/lib/theory/roots'
 import { simpleRootOptions } from '@/lib/theory/music'
-import { WRITTEN, writtenRoot, type Written } from '@/lib/theory/transpose'
+import { INSTRUMENT_KEYS, writtenRoot, type InstrumentKey } from '@/lib/theory/transpose'
 import { coaching, header, puzzle, solved } from '@/lib/snippets'
 import { NOTES, type ReferenceNote } from '../data/notes.generated'
 import { createLocalStore } from '../lib/persistence/storage'
@@ -33,8 +33,8 @@ import { GroovePuzzle } from './GroovePuzzle'
 
 const transposeBox = () =>
   screen.getByRole('combobox', { name: header.transpose })
-const pick = (user: ReturnType<typeof userEvent.setup>, written: Written) =>
-  user.selectOptions(transposeBox(), written)
+const pick = (user: ReturnType<typeof userEvent.setup>, instrumentKey: InstrumentKey) =>
+  user.selectOptions(transposeBox(), instrumentKey)
 const toAlto = (user: ReturnType<typeof userEvent.setup>) => pick(user, 'E♭')
 const rootChips = () => within(rootGroup()).getAllByRole('button')
 const rootLabels = () => rootChips().map(chipLabel)
@@ -100,12 +100,12 @@ describe('GroovePuzzle — written pitch', () => {
     await renderPuzzle()
     expect(
       within(transposeBox()).getAllByRole('option').map((o) => o.textContent),
-    ).toEqual(WRITTEN.map((w) => header.instruments[w]))
+    ).toEqual(INSTRUMENT_KEYS.map((w) => header.instruments[w]))
     expect(rootLabels()).toEqual([...ROOTS])
-    for (const written of WRITTEN) {
-      await pick(user, written)
-      expect(transposeBox()).toHaveValue(written)
-      expect(rootLabels()).toEqual(ROOTS.map((r) => writtenRoot(r, written)))
+    for (const instrumentKey of INSTRUMENT_KEYS) {
+      await pick(user, instrumentKey)
+      expect(transposeBox()).toHaveValue(instrumentKey)
+      expect(rootLabels()).toEqual(ROOTS.map((r) => writtenRoot(r, instrumentKey)))
     }
   })
 
@@ -181,7 +181,7 @@ describe('GroovePuzzle — written pitch', () => {
     await expect(createLocalPreferenceStore().get()).resolves.toEqual({
       simpleMode: false,
       tapSounds: true,
-      written: 'E♭',
+      instrumentKey: 'E♭',
     })
   })
 
@@ -200,7 +200,7 @@ describe('GroovePuzzle — written pitch', () => {
   })
 
   it('reopens on alto, chips already in alto pitch, before any interaction (R2, AC2)', async () => {
-    await seedPreferences({ written: 'E♭' })
+    await seedPreferences({ instrumentKey: 'E♭' })
     await renderPuzzle()
     expect(transposeBox()).toHaveValue('E♭')
     expect(rootLabels()).toEqual(ROOTS.map(ALTO))
@@ -211,7 +211,7 @@ describe('GroovePuzzle — written pitch', () => {
     await renderPuzzle()
     await toAlto(user)
     await expect(createLocalPreferenceStore().get()).resolves.toMatchObject({
-      written: 'E♭',
+      instrumentKey: 'E♭',
     })
   })
 

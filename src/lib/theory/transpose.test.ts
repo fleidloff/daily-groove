@@ -1,23 +1,23 @@
 import { describe, expect, it } from 'vitest'
 import { ROOTS, pitchClassOf } from './roots'
-import { WRITTEN, writtenRoot, type Written } from './transpose'
+import { INSTRUMENT_KEYS, writtenRoot, type InstrumentKey } from './transpose'
 
-const OFFSET: Record<Written, number> = { C: 0, 'B♭': 2, 'E♭': 9, F: 7 }
+const OFFSET: Record<InstrumentKey, number> = { C: 0, 'B♭': 2, 'E♭': 9, F: 7 }
 const up = (from: string, to: string) =>
   (pitchClassOf(to as never) - pitchClassOf(from as never) + 12) % 12
 
 describe('writtenRoot', () => {
   it('lists the four keys in one frozen order (F23 E1 R1)', () => {
-    expect(WRITTEN).toEqual(['C', 'B♭', 'E♭', 'F'])
+    expect(INSTRUMENT_KEYS).toEqual(['C', 'B♭', 'E♭', 'F'])
   })
 
-  it.each(WRITTEN)(
+  it.each(INSTRUMENT_KEYS)(
     'raises every root by the %s offset and spells it from ROOTS (F23 E1 R5, AC6)',
-    (written) => {
+    (instrumentKey) => {
       for (const root of ROOTS) {
-        const out = writtenRoot(root, written)
+        const out = writtenRoot(root, instrumentKey)
         expect(ROOTS).toContain(out)
-        expect(up(root, out)).toBe(OFFSET[written])
+        expect(up(root, out)).toBe(OFFSET[instrumentKey])
       }
     },
   )

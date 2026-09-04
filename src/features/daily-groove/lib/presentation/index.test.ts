@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { coaching } from '@/lib/snippets'
 import type { Answer, Attempt, Flavour, Root } from '../../types'
 import { ROOTS } from '@/lib/theory/roots'
-import { WRITTEN, writtenRoot } from '@/lib/theory/transpose'
+import { INSTRUMENT_KEYS, writtenRoot } from '@/lib/theory/transpose'
 import { FAMILIES } from '@/lib/theory/families'
 import { flavourOptions, simpleRootOptions } from '@/lib/theory/music'
 import { GROOVES } from '../../data/grooves.generated'
@@ -559,7 +559,7 @@ describe('it is a pure function', () => {
   })
 })
 
-describe('the written labels (F23 E1)', () => {
+describe('the instrument-key labels (F23 E1)', () => {
   const shape = (view: ReturnType<typeof guessCardView>) => ({
     roots: view.roots.map(({ value, state }) => ({ value, state })),
     flavours: view.flavours.map(({ value, state }) => ({ value, state })),
@@ -572,27 +572,27 @@ describe('the written labels (F23 E1)', () => {
   })
 
   it('labels every root chip in the written pitch and keeps its concert value (R5, R6, AC6)', () => {
-    for (const written of WRITTEN) {
-      const view = guessCardView(input({ written }))
+    for (const instrumentKey of INSTRUMENT_KEYS) {
+      const view = guessCardView(input({ instrumentKey }))
       expect(values(view.roots)).toEqual(ROOTS)
       expect(labels(view.roots)).toEqual(
-        ROOTS.map((root) => writtenRoot(root, written)),
+        ROOTS.map((root) => writtenRoot(root, instrumentKey)),
       )
     }
   })
 
   it('labels a concert row with the roots themselves, with or without the argument (R4, AC5)', () => {
     expect(labels(guessCardView(input()).roots)).toEqual(ROOTS)
-    expect(labels(guessCardView(input({ written: 'C' })).roots)).toEqual(ROOTS)
+    expect(labels(guessCardView(input({ instrumentKey: 'C' })).roots)).toEqual(ROOTS)
     expect(labels(guessCardView(input()).flavours)).toEqual(FULL_FLAVOURS)
   })
 
   it('labels the modes with themselves on every instrument (R11, AC13)', () => {
-    for (const written of WRITTEN) {
-      expect(labels(guessCardView(input({ written })).flavours)).toEqual(
+    for (const instrumentKey of INSTRUMENT_KEYS) {
+      expect(labels(guessCardView(input({ instrumentKey })).flavours)).toEqual(
         FULL_FLAVOURS,
       )
-      expect(labels(guessCardView(input({ simple: true, written })).flavours)).toEqual(
+      expect(labels(guessCardView(input({ simple: true, instrumentKey })).flavours)).toEqual(
         FAMILIES,
       )
     }
@@ -605,7 +605,7 @@ describe('the written labels (F23 E1)', () => {
         selectedRoot: 'E♭',
         selectedFlavour: flavour,
         canCheck: true,
-        written: 'E♭',
+        instrumentKey: 'E♭',
       }),
     )
     expect(view.check.label).toBe(
@@ -623,8 +623,8 @@ describe('the written labels (F23 E1)', () => {
       selectedFlavour: WRONG_FLAVOURS[1],
       canCheck: true,
     }
-    const concert = guessCardView(input({ ...over, written: 'C' }))
-    const alto = guessCardView(input({ ...over, written: 'E♭' }))
+    const concert = guessCardView(input({ ...over, instrumentKey: 'C' }))
+    const alto = guessCardView(input({ ...over, instrumentKey: 'E♭' }))
 
     expect(shape(alto)).toEqual(shape(concert))
     expect(alto.roots.filter((option) => option.state === 'out').length).toBeGreaterThan(0)
@@ -634,13 +634,13 @@ describe('the written labels (F23 E1)', () => {
   })
 
   it('offers simple mode’s six concert roots on every instrument, labelled for it, answer included (R9, AC11, AC14)', () => {
-    for (const written of WRITTEN) {
-      const view = guessCardView(input({ simple: true, written }))
+    for (const instrumentKey of INSTRUMENT_KEYS) {
+      const view = guessCardView(input({ simple: true, instrumentKey }))
       expect(values(view.roots)).toEqual(SIMPLE_ROOTS)
       expect(labels(view.roots)).toEqual(
-        SIMPLE_ROOTS.map((root) => writtenRoot(root, written)),
+        SIMPLE_ROOTS.map((root) => writtenRoot(root, instrumentKey)),
       )
-      expect(labels(view.roots)).toContain(writtenRoot(ANSWER.root, written))
+      expect(labels(view.roots)).toContain(writtenRoot(ANSWER.root, instrumentKey))
     }
   })
 })

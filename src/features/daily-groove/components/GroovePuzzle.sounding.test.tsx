@@ -61,7 +61,7 @@ import type { Move } from '../lib/presentation/moves'
 import { COLOUR_MOVES, TONIC_MOVES } from '../lib/presentation/coachingMoves'
 import { barChords } from '@/lib/theory/changes'
 import { coaching, header as headerSnippets, puzzle, solved } from '@/lib/snippets'
-import type { Written } from '@/lib/theory/transpose'
+import type { InstrumentKey } from '@/lib/theory/transpose'
 import { writtenChord } from '@/lib/theory/written'
 import { GROOVES } from '../data/grooves.generated'
 import { NOTES, PITCHES, type PitchSample } from '../data/notes.generated'
@@ -1185,12 +1185,12 @@ describe('GroovePuzzle', () => {
     expect(after).toHaveLength(12)
     expect(after.every((glyph) => glyph === NOTE_GLYPH)).toBe(true)
 
-    const written = Array.from(
+    const instrumentKey = Array.from(
       { length: localStorage.length },
       (_, i) => localStorage.key(i) as string,
     )
     const allowed = ['daily-groove:v2:results', 'daily-groove:v1:prefs']
-    expect(written.filter((key) => !allowed.includes(key))).toEqual([])
+    expect(instrumentKey.filter((key) => !allowed.includes(key))).toEqual([])
   })
 
   describe('the tap sounds can be switched off (F16 E2)', () => {
@@ -1354,12 +1354,12 @@ describe('GroovePuzzle', () => {
       expect(marked().every((glyph) => glyph === null)).toBe(true)
       expect(move()).toBe(coaching.ladder[0].soundsOff)
 
-      const written = Array.from(
+      const instrumentKey = Array.from(
         { length: localStorage.length },
         (_, i) => localStorage.key(i) as string,
       )
       const allowed = ['daily-groove:v2:results', 'daily-groove:v1:prefs']
-      expect(written.filter((key) => !allowed.includes(key))).toEqual([])
+      expect(instrumentKey.filter((key) => !allowed.includes(key))).toEqual([])
     })
 
     it('loads a preference written before this switch existed (E9, R7, AC7)', async () => {
@@ -1621,8 +1621,8 @@ describe('GroovePuzzle', () => {
       mockStore.getAll.mockResolvedValue([stored])
     }
 
-    const WRITTEN_BARS = (written: Written) =>
-      BAR_CHORDS.map((chord) => writtenChord(chord, written))
+    const WRITTEN_BARS = (instrumentKey: InstrumentKey) =>
+      BAR_CHORDS.map((chord) => writtenChord(chord, instrumentKey))
 
     const solvedBox = (heading: string) =>
       screen.getByRole('heading', { name: heading }).closest('[role="status"]') as HTMLElement
@@ -1644,7 +1644,7 @@ describe('GroovePuzzle', () => {
       screen.getByRole('combobox', { name: headerSnippets.transpose })
 
     it('prints no chord over the bars while an alto player’s day is still on (F23 E2 R4, AC5)', async () => {
-      await seedPreferences({ written: 'E♭' })
+      await seedPreferences({ instrumentKey: 'E♭' })
       await renderPuzzle()
 
       expect(trackChords()).toBeNull()
@@ -1654,7 +1654,7 @@ describe('GroovePuzzle', () => {
     })
 
     it('writes the four symbols over the bars in the instrument’s pitch once the day is solved (F23 E2 R4, AC5)', async () => {
-      await seedPreferences({ written: 'E♭' })
+      await seedPreferences({ instrumentKey: 'E♭' })
       seedStored(storedDay({ solved: true, attempts: [SOLVING] }))
       await renderPuzzle()
 
@@ -1664,7 +1664,7 @@ describe('GroovePuzzle', () => {
     })
 
     it('writes them for a day given up on too, in the tenor’s pitch (F23 E2 R4)', async () => {
-      await seedPreferences({ written: 'B♭' })
+      await seedPreferences({ instrumentKey: 'B♭' })
       seedStored(
         storedDay({
           solved: false,

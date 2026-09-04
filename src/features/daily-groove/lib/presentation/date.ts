@@ -1,5 +1,5 @@
 import { puzzle } from '@/lib/snippets'
-import { writtenRoot, type Written } from '@/lib/theory/transpose'
+import { writtenRoot, type InstrumentKey } from '@/lib/theory/transpose'
 import type { Answer, Groove } from '../../types'
 
 const WEEKDAY = new Intl.DateTimeFormat('en-GB', { weekday: 'long' })
@@ -16,12 +16,12 @@ export function metaLine(
   groove: Groove,
   date: Date | null,
   answer: Answer | null = null,
-  written: Written = 'C',
+  instrumentKey: InstrumentKey = 'C',
 ): string {
   return [
     puzzle.bpm({ bpm: groove.bpm }),
     ...(answer
-      ? [`${writtenRoot(answer.root, written)} ${answer.flavour}`]
+      ? [`${writtenRoot(answer.root, instrumentKey)} ${answer.flavour}`]
       : []),
     date ? dateLine(date) : puzzle.sharedGroove,
   ].join(' · ')

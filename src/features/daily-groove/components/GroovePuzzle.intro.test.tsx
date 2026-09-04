@@ -234,12 +234,12 @@ describe('GroovePuzzle', () => {
       await user.click(closeBox())
       await settle()
 
-      const written = Array.from(
+      const instrumentKey = Array.from(
         { length: localStorage.length },
         (_, i) => localStorage.key(i) as string,
       )
       const allowed = ['daily-groove:v2:results', 'daily-groove:v1:prefs']
-      expect(written.filter((key) => !allowed.includes(key))).toEqual([])
+      expect(instrumentKey.filter((key) => !allowed.includes(key))).toEqual([])
     })
 
     it('explains the game when storage cannot be read at all (F8 E3 R15, AC14)', async () => {

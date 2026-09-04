@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import type { Written } from '@/lib/theory/transpose'
+import type { InstrumentKey } from '@/lib/theory/transpose'
 import {
   createLocalPreferenceStore,
   type PreferenceStore,
@@ -9,14 +9,14 @@ import {
 
 const defaultStore: PreferenceStore = createLocalPreferenceStore()
 
-export type UseWritten = {
-  written: Written
-  setWritten: (written: Written) => void
+export type UseInstrumentKey = {
+  instrumentKey: InstrumentKey
+  setInstrumentKey: (instrumentKey: InstrumentKey) => void
   loaded: boolean
 }
 
-export function useWritten(store: PreferenceStore = defaultStore): UseWritten {
-  const [written, setWrittenState] = useState<Written>('C')
+export function useInstrumentKey(store: PreferenceStore = defaultStore): UseInstrumentKey {
+  const [instrumentKey, setInstrumentKeyState] = useState<InstrumentKey>('C')
   const [loaded, setLoaded] = useState(false)
 
   useEffect(() => {
@@ -26,7 +26,7 @@ export function useWritten(store: PreferenceStore = defaultStore): UseWritten {
     store.get().then(
       (prefs) => {
         if (!active) return
-        setWrittenState(prefs.written ?? 'C')
+        setInstrumentKeyState(prefs.instrumentKey ?? 'C')
         setLoaded(true)
       },
       () => {
@@ -40,15 +40,15 @@ export function useWritten(store: PreferenceStore = defaultStore): UseWritten {
     }
   }, [store])
 
-  const setWritten = useCallback(
-    (next: Written) => {
-      setWrittenState(next)
-      void Promise.resolve(store.update({ written: next })).catch(() => {
+  const setInstrumentKey = useCallback(
+    (next: InstrumentKey) => {
+      setInstrumentKeyState(next)
+      void Promise.resolve(store.update({ instrumentKey: next })).catch(() => {
         // An injected store that throws must not break the pill.
       })
     },
     [store],
   )
 
-  return { written, setWritten, loaded }
+  return { instrumentKey, setInstrumentKey, loaded }
 }

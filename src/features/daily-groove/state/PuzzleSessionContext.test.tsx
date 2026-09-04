@@ -22,7 +22,7 @@ function Probe({ name }: { name: string }) {
     <p data-testid={name}>
       {`${value.groove.name} · ${value.today.toISOString()} · simple ${
         value.simple ? 'on' : 'off'
-      } · taps ${value.tapSounds ? 'on' : 'off'} · written ${value.written}`}
+      } · taps ${value.tapSounds ? 'on' : 'off'} · written ${value.instrumentKey}`}
     </p>
   )
 }
@@ -42,8 +42,8 @@ function aValue(session: PuzzleSessionValue['session']): PuzzleSessionValue {
     setSimple: vi.fn(),
     tapSounds: false,
     setTapSounds: vi.fn(),
-    written: 'E♭',
-    setWritten: vi.fn(),
+    instrumentKey: 'E♭',
+    setInstrumentKey: vi.fn(),
   }
 }
 
@@ -151,7 +151,7 @@ describe('the puzzle session context', () => {
     )
 
     expect(screen.getByTestId('a')).toHaveTextContent('written E♭')
-    reads[0].setWritten('B♭')
-    expect(value.setWritten).toHaveBeenCalledWith('B♭')
+    reads[0].setInstrumentKey('B♭')
+    expect(value.setInstrumentKey).toHaveBeenCalledWith('B♭')
   })
 })

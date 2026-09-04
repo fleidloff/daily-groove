@@ -1,7 +1,7 @@
 import { coaching } from '@/lib/snippets'
 import type { Answer, Attempt, Flavour, Groove, Root } from '../../types'
 import { ROOTS } from '@/lib/theory/roots'
-import { writtenRoot, type Written } from '@/lib/theory/transpose'
+import { writtenRoot, type InstrumentKey } from '@/lib/theory/transpose'
 import { FAMILIES } from '@/lib/theory/families'
 import { flavourOptions, simpleRootOptions } from '@/lib/theory/music'
 import { GROOVES } from '../../data/grooves.generated'
@@ -51,7 +51,7 @@ export type GuessCardViewInput = {
   canCheck: boolean
   simple: boolean
   tapSounds: boolean
-  written?: Written
+  instrumentKey?: InstrumentKey
 }
 
 type GuessCardView = {
@@ -110,7 +110,7 @@ export function guessCardView(input: GuessCardViewInput): GuessCardView {
     tapSounds,
   } = input
 
-  const written = input.written ?? 'C'
+  const instrumentKey = input.instrumentKey ?? 'C'
 
   const rootValues: readonly Root[] = simple
     ? simpleRootOptions(date, answer)
@@ -134,7 +134,7 @@ export function guessCardView(input: GuessCardViewInput): GuessCardView {
       ? coaching.checkRevealed
       : bothOffered
         ? coaching.checkPair({
-            root: writtenRoot(selectedRoot, written),
+            root: writtenRoot(selectedRoot, instrumentKey),
             flavour: selectedFlavour,
           })
         : selectedRoot !== null
@@ -147,7 +147,7 @@ export function guessCardView(input: GuessCardViewInput): GuessCardView {
 
   return {
     roots: optionStates(rootValues, narrowing.roots, confirmed.roots, (root) =>
-      writtenRoot(root, written),
+      writtenRoot(root, instrumentKey),
     ),
     flavours: optionStates(
       flavourValues,

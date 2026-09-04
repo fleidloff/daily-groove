@@ -1,9 +1,9 @@
-import { WRITTEN, type Written } from '@/lib/theory/transpose'
+import { INSTRUMENT_KEYS, type InstrumentKey } from '@/lib/theory/transpose'
 
 export type Preferences = {
   simpleMode?: boolean
   tapSounds: boolean
-  written?: Written
+  instrumentKey?: InstrumentKey
 }
 
 export type PreferenceStore = {
@@ -45,16 +45,16 @@ function readPreferences(): Preferences {
     return defaultPreferences()
   }
 
-  const { simpleMode, tapSounds, written } = parsed as Record<string, unknown>
+  const { simpleMode, tapSounds, instrumentKey } = parsed as Record<string, unknown>
   return {
     tapSounds: typeof tapSounds === 'boolean' ? tapSounds : defaultPreferences().tapSounds,
     ...(typeof simpleMode === 'boolean' ? { simpleMode } : {}),
-    ...(isWritten(written) ? { written } : {}),
+    ...(isInstrumentKey(instrumentKey) ? { instrumentKey } : {}),
   }
 }
 
-function isWritten(value: unknown): value is Written {
-  return typeof value === 'string' && (WRITTEN as readonly string[]).includes(value)
+function isInstrumentKey(value: unknown): value is InstrumentKey {
+  return typeof value === 'string' && (INSTRUMENT_KEYS as readonly string[]).includes(value)
 }
 
 function writePreferences(prefs: Preferences): void {

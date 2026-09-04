@@ -128,39 +128,39 @@ describe('createLocalPreferenceStore', () => {
     expect(localStorage.getItem(RESULTS_KEY)).toBe(resultsBlob)
   })
 
-  it('round-trips the written key beside the others (F23 E1 R2, AC2)', async () => {
+  it('round-trips the instrument key beside the others (F23 E1 R2, AC2)', async () => {
     const store = createLocalPreferenceStore()
-    await store.update({ written: 'E♭' })
-    await expect(store.get()).resolves.toEqual({ tapSounds: true, written: 'E♭' })
+    await store.update({ instrumentKey: 'E♭' })
+    await expect(store.get()).resolves.toEqual({ tapSounds: true, instrumentKey: 'E♭' })
     await expect(createLocalPreferenceStore().get()).resolves.toEqual({
       tapSounds: true,
-      written: 'E♭',
+      instrumentKey: 'E♭',
     })
   })
 
-  it('holds no written key when nothing was stored (F23 E1 R2, AC3)', async () => {
+  it('holds no instrument key when nothing was stored (F23 E1 R2, AC3)', async () => {
     const prefs = await createLocalPreferenceStore().get()
-    expect('written' in prefs).toBe(false)
+    expect('instrumentKey' in prefs).toBe(false)
   })
 
   it.each(['G', 'Eb', 'concert', 3, null, true])(
-    'drops a stored written of %j (F23 E1 R2, R3)',
+    'drops a stored instrument key of %j (F23 E1 R2, R3)',
     async (raw) => {
-      localStorage.setItem(PREFS_KEY, JSON.stringify({ tapSounds: true, written: raw }))
+      localStorage.setItem(PREFS_KEY, JSON.stringify({ tapSounds: true, instrumentKey: raw }))
       await expect(createLocalPreferenceStore().get()).resolves.toStrictEqual({
         tapSounds: true,
       })
     },
   )
 
-  it('patches written without moving simpleMode or tapSounds (F23 E1 R10, AC12)', async () => {
+  it('patches the instrument key without moving simpleMode or tapSounds (F23 E1 R10, AC12)', async () => {
     const store = createLocalPreferenceStore()
     await store.update({ simpleMode: true, tapSounds: false })
-    await store.update({ written: 'B♭' })
+    await store.update({ instrumentKey: 'B♭' })
     await expect(store.get()).resolves.toEqual({
       simpleMode: true,
       tapSounds: false,
-      written: 'B♭',
+      instrumentKey: 'B♭',
     })
   })
 

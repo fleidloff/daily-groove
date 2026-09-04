@@ -273,6 +273,6 @@ describe('the transpose slot (F23 E1)', () => {
 
     expect(source).not.toMatch(/transpose['"]/)
     expect(source).not.toContain('TransposeSelect')
-    expect(source).not.toContain('useWritten')
+    expect(source).not.toContain('useInstrumentKey')
   })
 })

@@ -17,7 +17,7 @@ import { scaleNotes } from '@/lib/theory/notes'
 import { selectNearMiss } from '../../lib/presentation/nearMiss'
 import { staffLabel } from '../../lib/presentation/staffLabel'
 import { staffNotes } from '@/lib/theory/staff'
-import type { Written } from '@/lib/theory/transpose'
+import type { InstrumentKey } from '@/lib/theory/transpose'
 import { writtenAnswer, writtenChord } from '@/lib/theory/written'
 import type { Answer, Attempt, HeardIn } from '../../types'
 
@@ -28,7 +28,7 @@ type SolvedPanelProps = {
   attempts: Attempt[]
   revealed: boolean
   heardIn?: HeardIn
-  written: Written
+  instrumentKey: InstrumentKey
 }
 
 export function SolvedPanel({
@@ -38,9 +38,9 @@ export function SolvedPanel({
   attempts,
   revealed,
   heardIn,
-  written,
+  instrumentKey,
 }: SolvedPanelProps) {
-  const shown = writtenAnswer(answer, written)
+  const shown = writtenAnswer(answer, instrumentKey)
   const notes = scaleNotes(shown)
   const degrees = scaleDegrees(answer)
   const character = characterOf(answer.flavour)
@@ -61,7 +61,7 @@ export function SolvedPanel({
                 </Text>
               )}
             </Row>
-            {written !== 'C' && (
+            {instrumentKey !== 'C' && (
               <Text size="sm" tone="inverted-muted">
                 {solved.concertPitch(answer)}
               </Text>
@@ -82,7 +82,7 @@ export function SolvedPanel({
           <LabelledColumn label={solved.changes}>
             <LeadSheet
               chords={barChords(progression).map((chord) =>
-                writtenChord(chord, written),
+                writtenChord(chord, instrumentKey),
               )}
               numerals={barNumerals(answer.flavour, progressionDegrees)}
             />

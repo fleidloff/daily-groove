@@ -1,19 +1,19 @@
 import { describe, expect, it } from 'vitest'
 import { FLAVOURS, displayFlavour } from './names'
 import { ROOTS } from './roots'
-import { type Written, writtenRoot } from './transpose'
+import { type InstrumentKey, writtenRoot } from './transpose'
 import { writtenAnswer, writtenChord } from './written'
 
-const KEYS: Written[] = ['C', 'E♭', 'B♭']
+const KEYS: InstrumentKey[] = ['C', 'E♭', 'B♭']
 
 describe('writtenAnswer', () => {
   it('re-roots the answer through writtenRoot and keeps the flavour (F23 E2 R1)', () => {
-    for (const written of KEYS) {
+    for (const instrumentKey of KEYS) {
       for (const root of ROOTS) {
         for (const slug of FLAVOURS) {
           const flavour = displayFlavour(slug)
-          expect(writtenAnswer({ root, flavour }, written)).toEqual({
-            root: writtenRoot(root, written),
+          expect(writtenAnswer({ root, flavour }, instrumentKey)).toEqual({
+            root: writtenRoot(root, instrumentKey),
             flavour,
           })
         }
@@ -36,7 +36,7 @@ describe('writtenAnswer', () => {
 })
 
 describe('writtenChord', () => {
-  const CASES: [string, Written, string][] = [
+  const CASES: [string, InstrumentKey, string][] = [
     ['Am7', 'E♭', 'F♯m7'],
     ['E♭maj7', 'E♭', 'Cmaj7'],
     ['A♭m7♭5', 'E♭', 'Fm7♭5'],
@@ -51,16 +51,16 @@ describe('writtenChord', () => {
 
   it.each(CASES)(
     'reads %s for %s as %s (F23 E2 R3, AC4)',
-    (symbol, written, expected) => {
-      expect(writtenChord(symbol, written)).toBe(expected)
+    (symbol, instrumentKey, expected) => {
+      expect(writtenChord(symbol, instrumentKey)).toBe(expected)
     },
   )
 
   it('spells every written root from ROOTS, with the suffix verbatim (AC2)', () => {
-    for (const written of KEYS) {
+    for (const instrumentKey of KEYS) {
       for (const root of ROOTS) {
-        expect(writtenChord(`${root}m7♭5`, written)).toBe(
-          `${writtenRoot(root, written)}m7♭5`,
+        expect(writtenChord(`${root}m7♭5`, instrumentKey)).toBe(
+          `${writtenRoot(root, instrumentKey)}m7♭5`,
         )
       }
     }

@@ -37,7 +37,7 @@ import { usePuzzleSession } from '../hooks/usePuzzleSession'
 import { useReferenceNote } from '../hooks/useReferenceNote'
 import { useSimpleMode } from '../hooks/useSimpleMode'
 import { useTapSounds } from '../hooks/useTapSounds'
-import { useWritten } from '../hooks/useWritten'
+import { useInstrumentKey } from '../hooks/useInstrumentKey'
 import { useNextGroove } from '../hooks/useNextGroove'
 import { useTransport } from '../hooks/useTransport'
 import { GrooveCard } from './puzzle/GrooveCard'
@@ -111,7 +111,7 @@ function GroovePuzzleView({
 
   const { tapSounds, setTapSounds } = useTapSounds()
 
-  const { written, setWritten, loaded: writtenLoaded } = useWritten()
+  const { instrumentKey, setInstrumentKey, loaded: instrumentKeyLoaded } = useInstrumentKey()
 
   const nextGroove = useNextGroove(today)
 
@@ -149,8 +149,8 @@ function GroovePuzzleView({
       setSimple,
       tapSounds,
       setTapSounds,
-      written,
-      setWritten,
+      instrumentKey,
+      setInstrumentKey,
     }),
     [
       groove,
@@ -160,8 +160,8 @@ function GroovePuzzleView({
       setSimple,
       tapSounds,
       setTapSounds,
-      written,
-      setWritten,
+      instrumentKey,
+      setInstrumentKey,
     ],
   )
 
@@ -229,7 +229,7 @@ function GroovePuzzleView({
     warmLicks()
   }, [isPlaying, loading, tapSounds, warm, warmLicks])
 
-  if (!hydrated || !modeLoaded || !writtenLoaded) return <PuzzleLoading />
+  if (!hydrated || !modeLoaded || !instrumentKeyLoaded) return <PuzzleLoading />
 
   const guessCard = (
     <GuessCard onHearRoot={hearRoot} onHearMode={handleHearMode} />
@@ -243,7 +243,7 @@ function GroovePuzzleView({
           streak={streak}
           onShowHelp={showHelp ? null : handleShowHelp}
           share={<ShareGroove groove={groove} />}
-          transpose={<TransposeSelect written={written} onChange={setWritten} />}
+          transpose={<TransposeSelect instrumentKey={instrumentKey} onChange={setInstrumentKey} />}
         />
 
         {showHelp && <HowToPlay onClose={handleCloseHelp} />}
@@ -271,7 +271,7 @@ function GroovePuzzleView({
                 groove,
                 shared ? null : today,
                 solved || revealed ? answer : null,
-                written,
+                instrumentKey,
               )}
               nextGroove={!shared && (solved || revealed) ? nextGroove : undefined}
             >
@@ -283,7 +283,7 @@ function GroovePuzzleView({
                   chords={
                     solved || revealed
                       ? barChords(groove.progression).map((chord) =>
-                          writtenChord(chord, written),
+                          writtenChord(chord, instrumentKey),
                         )
                       : null
                   }
@@ -313,7 +313,7 @@ function GroovePuzzleView({
                   attempts={attempts}
                   revealed={revealed}
                   heardIn={HEARD_IN[groove.scale]}
-                  written={written}
+                  instrumentKey={instrumentKey}
                 />
                 {shared && <PlayTodayLink />}
               </div>

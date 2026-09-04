@@ -1,7 +1,7 @@
 'use client'
 
 import { createContext, useContext, type ReactNode } from 'react'
-import type { Written } from '@/lib/theory/transpose'
+import type { InstrumentKey } from '@/lib/theory/transpose'
 import type { Groove } from '../types'
 import type { UsePuzzleSession } from '../hooks/usePuzzleSession'
 
@@ -13,8 +13,8 @@ export type PuzzleSessionValue = {
   setSimple(simple: boolean): void
   tapSounds: boolean
   setTapSounds(on: boolean): void
-  written: Written
-  setWritten(written: Written): void
+  instrumentKey: InstrumentKey
+  setInstrumentKey(instrumentKey: InstrumentKey): void
 }
 
 const PuzzleSession = createContext<PuzzleSessionValue | null>(null)

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import { renderHook, act, waitFor } from '@testing-library/react'
 import type { PreferenceStore, Preferences } from '../lib/persistence/preferences'
-import { useWritten } from './useWritten'
+import { useInstrumentKey } from './useInstrumentKey'
 
 function makeStore(initial: Preferences = { tapSounds: true }) {
   let saved: Preferences = initial
@@ -14,37 +14,37 @@ function makeStore(initial: Preferences = { tapSounds: true }) {
   return { store, saved: () => saved }
 }
 
-describe('useWritten', () => {
+describe('useInstrumentKey', () => {
   it('starts on concert and reports loaded once the store has answered (F23 E1 R2, AC3)', async () => {
     const { store } = makeStore()
-    const { result } = renderHook(() => useWritten(store))
+    const { result } = renderHook(() => useInstrumentKey(store))
 
-    expect(result.current.written).toBe('C')
+    expect(result.current.instrumentKey).toBe('C')
     expect(result.current.loaded).toBe(false)
     await waitFor(() => expect(result.current.loaded).toBe(true))
-    expect(result.current.written).toBe('C')
+    expect(result.current.instrumentKey).toBe('C')
   })
 
   it('adopts a stored instrument (F23 E1 R2, AC2)', async () => {
-    const { store } = makeStore({ tapSounds: true, written: 'E♭' })
-    const { result } = renderHook(() => useWritten(store))
+    const { store } = makeStore({ tapSounds: true, instrumentKey: 'E♭' })
+    const { result } = renderHook(() => useInstrumentKey(store))
 
     await waitFor(() => expect(result.current.loaded).toBe(true))
-    expect(result.current.written).toBe('E♭')
+    expect(result.current.instrumentKey).toBe('E♭')
   })
 
-  it('setWritten updates the value and writes a patch naming only written (F23 E1 R2, R10, AC12)', async () => {
+  it('setInstrumentKey updates the value and writes a patch naming only instrumentKey (F23 E1 R2, R10, AC12)', async () => {
     const { store, saved } = makeStore({ simpleMode: true, tapSounds: false })
-    const { result } = renderHook(() => useWritten(store))
+    const { result } = renderHook(() => useInstrumentKey(store))
     await waitFor(() => expect(result.current.loaded).toBe(true))
 
     await act(async () => {
-      result.current.setWritten('B♭')
+      result.current.setInstrumentKey('B♭')
     })
 
-    expect(result.current.written).toBe('B♭')
-    expect(store.update).toHaveBeenCalledWith({ written: 'B♭' })
-    expect(saved()).toEqual({ simpleMode: true, tapSounds: false, written: 'B♭' })
+    expect(result.current.instrumentKey).toBe('B♭')
+    expect(store.update).toHaveBeenCalledWith({ instrumentKey: 'B♭' })
+    expect(saved()).toEqual({ simpleMode: true, tapSounds: false, instrumentKey: 'B♭' })
   })
 
   it('a store that rejects on write does not cost the player the switch (F23 E1 R3, AC4)', async () => {
@@ -54,14 +54,14 @@ describe('useWritten', () => {
         throw new Error('QuotaExceededError')
       }),
     }
-    const { result } = renderHook(() => useWritten(store))
+    const { result } = renderHook(() => useInstrumentKey(store))
     await waitFor(() => expect(result.current.loaded).toBe(true))
 
     await act(async () => {
-      result.current.setWritten('B♭')
+      result.current.setInstrumentKey('B♭')
     })
 
-    expect(result.current.written).toBe('B♭')
+    expect(result.current.instrumentKey).toBe('B♭')
   })
 
   it('a store that rejects on read leaves the player on concert and still reports loaded (F23 E1 R3, AC4)', async () => {
@@ -71,10 +71,10 @@ describe('useWritten', () => {
       }),
       update: vi.fn(async () => {}),
     }
-    const { result } = renderHook(() => useWritten(store))
+    const { result } = renderHook(() => useInstrumentKey(store))
 
     await waitFor(() => expect(result.current.loaded).toBe(true))
-    expect(result.current.written).toBe('C')
+    expect(result.current.instrumentKey).toBe('C')
   })
 
   it('a load that resolves after unmount sets no state', async () => {
@@ -88,11 +88,11 @@ describe('useWritten', () => {
       ),
       update: vi.fn(async () => {}),
     }
-    const { result, unmount } = renderHook(() => useWritten(store))
+    const { result, unmount } = renderHook(() => useInstrumentKey(store))
     unmount()
 
     await act(async () => {
-      release({ tapSounds: true, written: 'E♭' })
+      release({ tapSounds: true, instrumentKey: 'E♭' })
     })
 
     expect(result.current.loaded).toBe(false)

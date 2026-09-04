@@ -138,7 +138,7 @@ re-measured rather than believed.
 - **puzzle → theory** — `lib/puzzle/selectGroove.ts` and `narrowing.ts` reach
   `@/lib/theory/options`, `scoring.ts` reaches `families`,
   `hooks/usePuzzleSession.ts` reaches `music`, and
-  `lib/persistence/preferences.ts` and `hooks/useWritten.ts` reach `transpose`.
+  `lib/persistence/preferences.ts` and `hooks/useInstrumentKey.ts` reach `transpose`.
   **puzzle → catalogue** —
   `lib/puzzle/grooveByUuid.ts` and `isTodaysGroove.ts` read `GROOVES`.
 - **coaching → theory** — `lib/presentation/index.ts` reaches `roots`,

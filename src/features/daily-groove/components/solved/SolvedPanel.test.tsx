@@ -7,7 +7,7 @@ import { coaching, solved } from '@/lib/snippets'
 import { barChords } from '@/lib/theory/changes'
 import { scaleDegrees } from '@/lib/theory/degrees'
 import { scaleNotes } from '@/lib/theory/notes'
-import type { Written } from '@/lib/theory/transpose'
+import type { InstrumentKey } from '@/lib/theory/transpose'
 import { GROOVES } from '../../data/grooves.generated'
 import { staffLabel } from '../../lib/presentation/staffLabel'
 import type { Answer, Attempt } from '../../types'
@@ -32,7 +32,7 @@ function renderPanel(overrides: Partial<Parameters<typeof SolvedPanel>[0]> = {})
       progression="Cm–Fm–G7"
       attempts={[]}
       revealed={false}
-      written="C"
+      instrumentKey="C"
       {...overrides}
     />,
   )
@@ -626,7 +626,7 @@ describe('SolvedPanel', () => {
       within(headerBlock()).queryByText(solved.concertPitch(E_FLAT_DORIAN))
 
     it('spells the scale from the written root and keeps the degrees (F23 E2 R1, AC1)', () => {
-      renderPanel({ answer: E_FLAT_DORIAN, written: 'E♭' })
+      renderPanel({ answer: E_FLAT_DORIAN, instrumentKey: 'E♭' })
 
       expect(staff()).toHaveAccessibleName('1 C, 2 D, ♭3 E♭, 4 F, 5 G, 6 A, ♭7 B♭')
       expect(degreeTexts()).toEqual(['1', '2', '♭3', '4', '5', '6', '♭7'])
@@ -635,7 +635,7 @@ describe('SolvedPanel', () => {
     })
 
     it('pairs every degree with its written note in the accessible label (F23 E2 R2, AC3)', () => {
-      renderPanel({ answer: E_FLAT_DORIAN, written: 'B♭' })
+      renderPanel({ answer: E_FLAT_DORIAN, instrumentKey: 'B♭' })
 
       expect(staff()).toHaveAccessibleName(
         staffLabel(
@@ -651,7 +651,7 @@ describe('SolvedPanel', () => {
         answer: E_FLAT_DORIAN,
         progression: CHANGES_UNDER_TEST,
         progressionDegrees: DEGREES,
-        written: 'E♭',
+        instrumentKey: 'E♭',
       })
 
       expect(barTexts()).toEqual(['Cm7', 'E♭maj7', 'F7', 'Cm7'])
@@ -671,14 +671,14 @@ describe('SolvedPanel', () => {
         answer: E_FLAT_DORIAN,
         progression: CHANGES_UNDER_TEST,
         progressionDegrees: DEGREES,
-        written: 'E♭',
+        instrumentKey: 'E♭',
       })
 
       expect(numeralTexts()).toEqual(concert)
     })
 
     it('names the answer in written pitch (F23 E1 R7, AC9 — the heading is this box’s)', () => {
-      renderPanel({ answer: E_FLAT_DORIAN, written: 'E♭' })
+      renderPanel({ answer: E_FLAT_DORIAN, instrumentKey: 'E♭' })
 
       expect(screen.getByRole('heading', { name: 'C Dorian' })).toBeInTheDocument()
       expect(screen.queryByRole('heading', { name: 'E♭ Dorian' })).toBeNull()
@@ -688,7 +688,7 @@ describe('SolvedPanel', () => {
     })
 
     it('names it in the tenor’s pitch on B♭ (F23 E1 R7, AC9)', () => {
-      renderPanel({ answer: E_FLAT_DORIAN, written: 'B♭' })
+      renderPanel({ answer: E_FLAT_DORIAN, instrumentKey: 'B♭' })
 
       expect(screen.getByRole('heading', { name: 'F Dorian' })).toBeInTheDocument()
     })
@@ -696,7 +696,7 @@ describe('SolvedPanel', () => {
     it('reads the concert answer under the heading on alto sax (F23 E2 R5, AC6)', () => {
       renderPanel({
         answer: E_FLAT_DORIAN,
-        written: 'E♭',
+        instrumentKey: 'E♭',
         heardIn: { track: 'So What', artist: 'Miles Davis' },
       })
 
@@ -716,13 +716,13 @@ describe('SolvedPanel', () => {
     })
 
     it('reads the same concert answer on tenor (F23 E2 R5)', () => {
-      renderPanel({ answer: E_FLAT_DORIAN, written: 'B♭' })
+      renderPanel({ answer: E_FLAT_DORIAN, instrumentKey: 'B♭' })
 
       expect(concertLine()).toBeInTheDocument()
     })
 
     it('renders no concert line on Concert (F23 E2 R5, R7, AC6)', () => {
-      renderPanel({ answer: E_FLAT_DORIAN, written: 'C' })
+      renderPanel({ answer: E_FLAT_DORIAN, instrumentKey: 'C' })
 
       expect(concertLine()).toBeNull()
       expect(headerBlock().textContent).not.toMatch(/concert/i)
@@ -736,7 +736,7 @@ describe('SolvedPanel', () => {
         attempts: [],
         revealed: false,
       }
-      const { rerender } = render(<SolvedPanel {...props} written="C" />)
+      const { rerender } = render(<SolvedPanel {...props} instrumentKey="C" />)
       const concert = {
         label: staff().getAttribute('aria-label'),
         bars: barTexts(),
@@ -745,14 +745,14 @@ describe('SolvedPanel', () => {
       }
       expect(concertLine()).toBeNull()
 
-      rerender(<SolvedPanel {...props} written="E♭" />)
+      rerender(<SolvedPanel {...props} instrumentKey="E♭" />)
       expect(staff().getAttribute('aria-label')).not.toBe(concert.label)
       expect(barTexts()).not.toEqual(concert.bars)
       expect(screen.getByRole('heading', { level: 2 }).textContent).toBe('C Dorian')
       expect(numeralTexts()).toEqual(concert.numerals)
       expect(concertLine()).toBeInTheDocument()
 
-      rerender(<SolvedPanel {...props} written="C" />)
+      rerender(<SolvedPanel {...props} instrumentKey="C" />)
       expect(staff().getAttribute('aria-label')).toBe(concert.label)
       expect(barTexts()).toEqual(concert.bars)
       expect(screen.getByRole('heading', { level: 2 }).textContent).toBe(concert.heading)
@@ -764,7 +764,7 @@ describe('SolvedPanel', () => {
         answer: E_FLAT_DORIAN,
         progression: CHANGES_UNDER_TEST,
         progressionDegrees: DEGREES,
-        written: 'C',
+        instrumentKey: 'C',
       })
 
       expect(screen.getByRole('heading', { name: 'E♭ Dorian' })).toBeInTheDocument()
@@ -796,12 +796,12 @@ describe('SolvedPanel', () => {
         ).textContent,
       ]
 
-      const { rerender } = render(<SolvedPanel {...props} written="C" />)
+      const { rerender } = render(<SolvedPanel {...props} instrumentKey="C" />)
       const concert = prose()
 
-      for (const written of ['E♭', 'B♭'] as Written[]) {
-        rerender(<SolvedPanel {...props} written={written} />)
-        expect(prose(), written).toEqual(concert)
+      for (const instrumentKey of ['E♭', 'B♭'] as InstrumentKey[]) {
+        rerender(<SolvedPanel {...props} instrumentKey={instrumentKey} />)
+        expect(prose(), instrumentKey).toEqual(concert)
       }
     })
   })

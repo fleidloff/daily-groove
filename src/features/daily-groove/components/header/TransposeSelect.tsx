@@ -2,24 +2,24 @@
 
 import { Select } from '@/components/controls/Select'
 import { header } from '@/lib/snippets'
-import { WRITTEN, type Written } from '@/lib/theory/transpose'
+import { INSTRUMENT_KEYS, type InstrumentKey } from '@/lib/theory/transpose'
 
-const OPTIONS = WRITTEN.map((written) => ({
-  value: written,
-  label: header.instruments[written],
-  short: written,
+const OPTIONS = INSTRUMENT_KEYS.map((instrumentKey) => ({
+  value: instrumentKey,
+  label: header.instruments[instrumentKey],
+  short: instrumentKey,
 }))
 
 type TransposeSelectProps = {
-  written: Written
-  onChange(written: Written): void
+  instrumentKey: InstrumentKey
+  onChange(instrumentKey: InstrumentKey): void
 }
 
-export function TransposeSelect({ written, onChange }: TransposeSelectProps) {
+export function TransposeSelect({ instrumentKey, onChange }: TransposeSelectProps) {
   return (
     <Select
       label={header.transpose}
-      value={written}
+      value={instrumentKey}
       options={OPTIONS}
       onChange={onChange}
     />

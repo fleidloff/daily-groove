@@ -40,7 +40,7 @@ export function GuessCard({ onHearRoot, onHearMode }: GuessCardProps) {
     setSimple,
     tapSounds,
     setTapSounds,
-    written,
+    instrumentKey,
   } = usePuzzleSessionContext()
 
   const view = guessCardView({
@@ -55,7 +55,7 @@ export function GuessCard({ onHearRoot, onHearMode }: GuessCardProps) {
     canCheck: session.canCheck,
     simple,
     tapSounds,
-    written,
+    instrumentKey,
   })
 
   const [armed, setArmed] = useState(false)
