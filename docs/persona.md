@@ -8,10 +8,12 @@ does not serve them needs a different justification. See
 
 **Sam, 31 — the plateaued hobby musician.**
 
-Plays guitar (or keys, or bass) well enough to enjoy it. Learned by ear and by
+Plays guitar and alto saxophone well enough to enjoy both. Learned by ear and by
 tab, never by theory. Can hear that a groove is *doing something* — can even
 play along by feel — but could not name the mode if asked, and knows that gap is
-what keeps them repeating the same three shapes.
+what keeps them repeating the same three shapes on the guitar and the same few
+fingerings on the sax. The sax is in E♭, so a note name on the screen is not the
+note they finger, and they have never quite worked out the offset.
 
 Has a full-time job that isn't music. Practises in the gaps: twenty minutes
 before dinner, an hour on a Sunday. Has started and abandoned three theory
@@ -26,7 +28,8 @@ Plays Wordle every morning.
 - One thing per day. Not a curriculum, not a streak of guilt.
 - To be told the answer eventually. Failing without learning is worse than
   losing.
-- To pick up the instrument afterwards, if the groove is a good one.
+- To pick up an instrument afterwards, if the groove is a good one — the guitar
+  for chords and shapes, the sax for a line over the top.
 
 ## What loses them
 
@@ -50,6 +53,11 @@ Plays Wordle every morning.
 - **The groove is worth playing along to.** It is the reward, not just the
   question — so it has to sound like music, at a stated tempo, in a loop you
   can jam over.
+- **The lead register stays empty.** Sam brings the melody instrument, so the
+  backing track is drums, bass and comp and nothing above the comp.
+- **Two instruments, one answer.** What the reveal shows must be usable from
+  both: a scale name and its notes serve the guitar as written, and the sax
+  needs the same notes a major sixth up to finger them.
 - **Progress lives in the browser.** No account is the feature, not a shortcut.
 
 ## Not the persona
