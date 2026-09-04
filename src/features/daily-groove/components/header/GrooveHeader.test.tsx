@@ -47,7 +47,7 @@ describe('GrooveHeader', () => {
     expect(tagline.className).toContain('text-text-muted')
   })
 
-  it('takes the streak, the help handler and one slot (F8 E1 R12, AC10; F12 E2 R1a)', () => {
+  it('takes the streak, the help handler and two slots (F8 E1 R12, AC10; F12 E2 R1a; F23 E1 R1)', () => {
     const source = readFileSync(
       resolve(
         process.cwd(),
@@ -62,7 +62,7 @@ describe('GrooveHeader', () => {
     const props = [
       ...(block as RegExpMatchArray)[1].matchAll(/^\s{2}(\w+)\??:/gm),
     ].map((match) => match[1])
-    expect(props).toEqual(['streak', 'onShowHelp', 'share'])
+    expect(props).toEqual(['streak', 'onShowHelp', 'share', 'transpose'])
 
     expect(source).not.toContain('dateLine')
   })
@@ -210,5 +210,69 @@ describe('the share slot (F12 E2)', () => {
     expect(source).not.toMatch(/from ['"][^'"]*share/)
     expect(source).not.toContain('shareUrlOf')
     expect(source).not.toContain('ShareGroove')
+  })
+})
+
+describe('the transpose slot (F23 E1)', () => {
+  const share = () => (
+    <button type="button" onClick={() => {}}>
+      Share
+    </button>
+  )
+  const transpose = () => (
+    <button type="button" onClick={() => {}}>
+      Transpose
+    </button>
+  )
+
+  it('renders the slot inside the header, first of the three, ahead of the streak and share (R1, AC1)', () => {
+    render(
+      <GrooveHeader
+        streak={12}
+        onShowHelp={() => {}}
+        share={share()}
+        transpose={transpose()}
+      />,
+    )
+
+    const shareButton = screen.getByRole('button', { name: 'Share' })
+    const pill = screen.getByRole('button', { name: 'Transpose' })
+    const badge = screen.getByLabelText(header.currentStreakName)
+    const anchor = badge.closest('.self-end') as HTMLElement
+
+    expect(anchor).toContainElement(shareButton)
+    expect(anchor).toContainElement(pill)
+    expect(
+      pill.compareDocumentPosition(badge) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy()
+    expect(
+      badge.compareDocumentPosition(shareButton) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy()
+  })
+
+  it('renders the slot beside the streak when share is absent (R1)', () => {
+    render(
+      <GrooveHeader streak={12} onShowHelp={() => {}} transpose={transpose()} />,
+    )
+
+    const badge = screen.getByLabelText(header.currentStreakName)
+    expect(badge.closest('.self-end')).toContainElement(
+      screen.getByRole('button', { name: 'Transpose' }),
+    )
+  })
+
+  it('learns nothing about pitch to render it (R1)', () => {
+    const source = readFileSync(
+      resolve(
+        process.cwd(),
+        'src/features/daily-groove/components/header/GrooveHeader.tsx',
+      ),
+      'utf8',
+    )
+
+    expect(source).not.toMatch(/transpose['"]/)
+    expect(source).not.toContain('TransposeSelect')
+    expect(source).not.toContain('useWritten')
   })
 })

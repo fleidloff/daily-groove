@@ -128,6 +128,42 @@ describe('createLocalPreferenceStore', () => {
     expect(localStorage.getItem(RESULTS_KEY)).toBe(resultsBlob)
   })
 
+  it('round-trips the written key beside the others (F23 E1 R2, AC2)', async () => {
+    const store = createLocalPreferenceStore()
+    await store.update({ written: 'E♭' })
+    await expect(store.get()).resolves.toEqual({ tapSounds: true, written: 'E♭' })
+    await expect(createLocalPreferenceStore().get()).resolves.toEqual({
+      tapSounds: true,
+      written: 'E♭',
+    })
+  })
+
+  it('holds no written key when nothing was stored (F23 E1 R2, AC3)', async () => {
+    const prefs = await createLocalPreferenceStore().get()
+    expect('written' in prefs).toBe(false)
+  })
+
+  it.each(['G', 'Eb', 'concert', 3, null, true])(
+    'drops a stored written of %j (F23 E1 R2, R3)',
+    async (raw) => {
+      localStorage.setItem(PREFS_KEY, JSON.stringify({ tapSounds: true, written: raw }))
+      await expect(createLocalPreferenceStore().get()).resolves.toStrictEqual({
+        tapSounds: true,
+      })
+    },
+  )
+
+  it('patches written without moving simpleMode or tapSounds (F23 E1 R10, AC12)', async () => {
+    const store = createLocalPreferenceStore()
+    await store.update({ simpleMode: true, tapSounds: false })
+    await store.update({ written: 'B♭' })
+    await expect(store.get()).resolves.toEqual({
+      simpleMode: true,
+      tapSounds: false,
+      written: 'B♭',
+    })
+  })
+
   describe('a hostile storage never throws into the UI (E5 R7, F16 E2 R8)', () => {
     afterEach(() => {
       vi.restoreAllMocks()

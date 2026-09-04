@@ -59,7 +59,7 @@ The slice separates six concerns, and they are not the same thing as its folders
 | Module | What is in it |
 | :-- | :-- |
 | **catalogue** | `scripts/grooves/`, and the two manifests it writes: `src/features/daily-groove/data/grooves.generated.ts` and `data/notes.generated.ts` |
-| **theory** | `src/lib/theory/` — sixteen modules, of which the generator imports `names.ts`, `roots.ts` and `scales.ts` |
+| **theory** | `src/lib/theory/` — eighteen modules, of which the generator imports `names.ts`, `roots.ts` and `scales.ts` |
 | **audio** | `lib/audio/`, plus the three hooks that drive playback: `hooks/useTransport.ts`, `hooks/useReferenceNote.ts`, `hooks/useModeLick.ts` |
 | **puzzle** | `lib/puzzle/`, `lib/persistence/`, `state/`, plus the four hooks that carry the session and the settings: `hooks/usePuzzleSession.ts`, `hooks/useProgress.ts`, `hooks/useSimpleMode.ts`, `hooks/useTapSounds.ts` |
 | **coaching** | `lib/presentation/` — eleven modules behind one `index.ts` |
@@ -137,16 +137,19 @@ re-measured rather than believed.
   `lib/audio/reference.ts` and two of the hooks.
 - **puzzle → theory** — `lib/puzzle/selectGroove.ts` and `narrowing.ts` reach
   `@/lib/theory/options`, `scoring.ts` reaches `families`,
-  `hooks/usePuzzleSession.ts` reaches `music`. **puzzle → catalogue** —
+  `hooks/usePuzzleSession.ts` reaches `music`, and
+  `lib/persistence/preferences.ts` and `hooks/useWritten.ts` reach `transpose`.
+  **puzzle → catalogue** —
   `lib/puzzle/grooveByUuid.ts` and `isTodaysGroove.ts` read `GROOVES`.
 - **coaching → theory** — `lib/presentation/index.ts` reaches `roots`,
-  `families` and `music`; `nearMiss.ts` reaches `families`, `difference` and
+  `families`, `music` and `transpose`; `date.ts` reaches `transpose`;
+  `nearMiss.ts` reaches `families`, `difference` and
   `scales`. **coaching → puzzle** — `lib/presentation/ruledOut.ts` reaches
   `../puzzle/narrowing`. **coaching → catalogue** — `index.ts` reads `GROOVES`.
 - **shell → every other module.** Coaching through the door from
   `GroovePuzzle.tsx` and `components/puzzle/GuessCard.tsx`; the rest directly, as
   `GroovePuzzle.tsx`'s own imports show — three into `lib/audio/`, one each into
-  `lib/puzzle/` and `lib/persistence/`, four into `@/lib/theory/`, and both
+  `lib/puzzle/` and `lib/persistence/`, five into `@/lib/theory/`, and both
   manifests. The shell also imports the design system, which none of the other
   five does.
 

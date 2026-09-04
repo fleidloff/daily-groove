@@ -23,14 +23,25 @@ const chipStates = (options: readonly OptionView[]) => {
   return states
 }
 
+const chipLabels = (options: readonly OptionView[]) =>
+  Object.fromEntries(options.map((option) => [option.value, option.label]))
+
 type GuessCardProps = {
   onHearRoot(r: Root): void
   onHearMode(f: Flavour): void
 }
 
 export function GuessCard({ onHearRoot, onHearMode }: GuessCardProps) {
-  const { groove, today, session, simple, setSimple, tapSounds, setTapSounds } =
-    usePuzzleSessionContext()
+  const {
+    groove,
+    today,
+    session,
+    simple,
+    setSimple,
+    tapSounds,
+    setTapSounds,
+    written,
+  } = usePuzzleSessionContext()
 
   const view = guessCardView({
     groove,
@@ -44,6 +55,7 @@ export function GuessCard({ onHearRoot, onHearMode }: GuessCardProps) {
     canCheck: session.canCheck,
     simple,
     tapSounds,
+    written,
   })
 
   const [armed, setArmed] = useState(false)
@@ -86,6 +98,7 @@ export function GuessCard({ onHearRoot, onHearMode }: GuessCardProps) {
           columns={{ base: 4, wide: 6 }}
           adornment={tapSounds ? '♪' : undefined}
           optionStates={chipStates(view.roots)}
+          optionLabels={chipLabels(view.roots)}
         />
 
         <ChipGroup

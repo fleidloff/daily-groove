@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { coaching } from '@/lib/snippets'
 import type { Answer, Attempt, Flavour, Root } from '../../types'
 import { ROOTS } from '@/lib/theory/roots'
+import { WRITTEN, writtenRoot } from '@/lib/theory/transpose'
 import { FAMILIES } from '@/lib/theory/families'
 import { flavourOptions, simpleRootOptions } from '@/lib/theory/music'
 import { GROOVES } from '../../data/grooves.generated'
@@ -81,6 +82,9 @@ const misses = (count: number): Attempt[] =>
 
 const values = (options: readonly OptionView[]): string[] =>
   options.map((option) => option.value)
+
+const labels = (options: readonly OptionView[]): string[] =>
+  options.map((option) => option.label)
 
 const stateOf = (
   options: readonly OptionView[],
@@ -551,6 +555,92 @@ describe('it is a pure function', () => {
       expect(guessCardView(input({ attempts: misses(2) }))).toEqual(baseline)
     } finally {
       vi.useRealTimers()
+    }
+  })
+})
+
+describe('the written labels (F23 E1)', () => {
+  const shape = (view: ReturnType<typeof guessCardView>) => ({
+    roots: view.roots.map(({ value, state }) => ({ value, state })),
+    flavours: view.flavours.map(({ value, state }) => ({ value, state })),
+    selectedRoot: view.selectedRoot,
+    selectedFlavour: view.selectedFlavour,
+    hint: view.hint,
+    enabled: view.check.enabled,
+    giveUp: view.giveUp,
+    over: view.over,
+  })
+
+  it('labels every root chip in the written pitch and keeps its concert value (R5, R6, AC6)', () => {
+    for (const written of WRITTEN) {
+      const view = guessCardView(input({ written }))
+      expect(values(view.roots)).toEqual(ROOTS)
+      expect(labels(view.roots)).toEqual(
+        ROOTS.map((root) => writtenRoot(root, written)),
+      )
+    }
+  })
+
+  it('labels a concert row with the roots themselves, with or without the argument (R4, AC5)', () => {
+    expect(labels(guessCardView(input()).roots)).toEqual(ROOTS)
+    expect(labels(guessCardView(input({ written: 'C' })).roots)).toEqual(ROOTS)
+    expect(labels(guessCardView(input()).flavours)).toEqual(FULL_FLAVOURS)
+  })
+
+  it('labels the modes with themselves on every instrument (R11, AC13)', () => {
+    for (const written of WRITTEN) {
+      expect(labels(guessCardView(input({ written })).flavours)).toEqual(
+        FULL_FLAVOURS,
+      )
+      expect(labels(guessCardView(input({ simple: true, written })).flavours)).toEqual(
+        FAMILIES,
+      )
+    }
+  })
+
+  it('names the written root in the check label (R7, AC9)', () => {
+    const flavour = WRONG_FLAVOURS[0]
+    const view = guessCardView(
+      input({
+        selectedRoot: 'E♭',
+        selectedFlavour: flavour,
+        canCheck: true,
+        written: 'E♭',
+      }),
+    )
+    expect(view.check.label).toBe(
+      coaching.checkPair({ root: writtenRoot('E♭', 'E♭'), flavour }),
+    )
+    expect(view.selectedRoot).toBe('E♭')
+    expect(view.check.enabled).toBe(true)
+  })
+
+  it('changes nothing but labels when the instrument changes mid-puzzle (R8, AC10)', () => {
+    const attempts = misses(2)
+    const over = {
+      attempts,
+      selectedRoot: 'G' as Root,
+      selectedFlavour: WRONG_FLAVOURS[1],
+      canCheck: true,
+    }
+    const concert = guessCardView(input({ ...over, written: 'C' }))
+    const alto = guessCardView(input({ ...over, written: 'E♭' }))
+
+    expect(shape(alto)).toEqual(shape(concert))
+    expect(alto.roots.filter((option) => option.state === 'out').length).toBeGreaterThan(0)
+    expect(labels(alto.roots)).toEqual(
+      ROOTS.map((root) => writtenRoot(root, 'E♭')),
+    )
+  })
+
+  it('offers simple mode’s six concert roots on every instrument, labelled for it, answer included (R9, AC11, AC14)', () => {
+    for (const written of WRITTEN) {
+      const view = guessCardView(input({ simple: true, written }))
+      expect(values(view.roots)).toEqual(SIMPLE_ROOTS)
+      expect(labels(view.roots)).toEqual(
+        SIMPLE_ROOTS.map((root) => writtenRoot(root, written)),
+      )
+      expect(labels(view.roots)).toContain(writtenRoot(ANSWER.root, written))
     }
   })
 })

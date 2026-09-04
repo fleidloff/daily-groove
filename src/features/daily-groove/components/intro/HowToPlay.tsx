@@ -43,6 +43,7 @@ export function HowToPlay({ onClose }: HowToPlayProps) {
         </ol>
 
         <Text tone="muted">{intro.twoWays}</Text>
+        <Text tone="muted">{intro.transpose}</Text>
       </Stack>
     </Card>
   )

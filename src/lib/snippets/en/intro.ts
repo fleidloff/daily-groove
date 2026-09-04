@@ -11,4 +11,6 @@ export const intro = {
   ],
   twoWays:
     'Two ways to play: Simple mode is six roots, Major or Minor. The switch on the card opens up the full set.',
+  transpose:
+    "Play a sax or a trumpet? Pick your key beside Transpose in the top row and the roots, chords and notes read in your instrument's pitch.",
 } satisfies IntroSnippets

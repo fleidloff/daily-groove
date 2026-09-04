@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { UnknownFlavourError, scaleNotes } from './notes'
+import { UnknownFlavourError, UnknownRootError, pitchClassOfNote, scaleNotes } from './notes'
 import { ROOTS } from './roots'
 import { FLAVOUR_INTERVALS } from './scales'
 
@@ -149,5 +149,25 @@ describe('FLAVOUR_INTERVALS', () => {
     for (const [flavour, intervals] of heptatonic) {
       expect(intervals, flavour).toHaveLength(7)
     }
+  })
+})
+
+describe('pitchClassOfNote', () => {
+  it('reads a letter and its accidental as a pitch class (F23 E2 R3)', () => {
+    expect(pitchClassOfNote('C')).toBe(0)
+    expect(pitchClassOfNote('G♭')).toBe(6)
+    expect(pitchClassOfNote('F♯')).toBe(6)
+    expect(pitchClassOfNote('B♯')).toBe(0)
+    expect(pitchClassOfNote('C♭')).toBe(11)
+    expect(pitchClassOfNote('E♭♭')).toBe(2)
+  })
+
+  it('agrees with ROOTS for every root the app spells', () => {
+    ROOTS.forEach((root, index) => expect(pitchClassOfNote(root)).toBe(index))
+  })
+
+  it('rejects what is not a spelt note', () => {
+    expect(() => pitchClassOfNote('H')).toThrow(UnknownRootError)
+    expect(() => pitchClassOfNote('C♮')).toThrow(UnknownRootError)
   })
 })

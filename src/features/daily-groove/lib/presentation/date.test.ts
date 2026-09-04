@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { puzzle } from '@/lib/snippets'
+import { writtenRoot } from '@/lib/theory/transpose'
 import { dateLine, metaLine } from './date'
 import type { Groove } from '../../types'
 
@@ -85,6 +86,22 @@ describe('metaLine', () => {
     expect(metaLine(GROOVE, null)).toBe(
       `${puzzle.bpm({ bpm: GROOVE.bpm })} · ${puzzle.sharedGroove}`,
     )
+  })
+
+  it('names the answer in the written pitch when asked (F23 E1 R7, AC9)', () => {
+    const day = new Date(2026, 7, 30)
+    expect(metaLine(GROOVE, day, ANSWER, 'E♭')).toBe(
+      `${puzzle.bpm({ bpm: GROOVE.bpm })} · ${writtenRoot(ANSWER.root, 'E♭')} ${ANSWER.flavour} · ${dateLine(day)}`,
+    )
+    expect(metaLine(GROOVE, null, ANSWER, 'B♭')).toBe(
+      `${puzzle.bpm({ bpm: GROOVE.bpm })} · ${writtenRoot(ANSWER.root, 'B♭')} ${ANSWER.flavour} · ${puzzle.sharedGroove}`,
+    )
+  })
+
+  it('reads as today on concert, with or without the argument (F23 E1 R4, AC5)', () => {
+    const day = new Date(2026, 7, 30)
+    expect(metaLine(GROOVE, day, ANSWER, 'C')).toBe(metaLine(GROOVE, day, ANSWER))
+    expect(metaLine(GROOVE, day, null, 'E♭')).toBe(metaLine(GROOVE, day))
   })
 
   it('carries whichever tempo the groove has', () => {

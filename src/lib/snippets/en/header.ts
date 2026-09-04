@@ -7,4 +7,11 @@ export const header = {
   streakDays: ({ days }) => `${days} day${days === 1 ? '' : 's'} streak`,
   share: 'Share',
   linkCopied: 'Link copied',
+  transpose: 'Transpose',
+  instruments: {
+    C: 'C · concert',
+    'B♭': 'B♭ · trumpet, tenor sax',
+    'E♭': 'E♭ · alto sax',
+    F: 'F · horn',
+  },
 } satisfies HeaderSnippets

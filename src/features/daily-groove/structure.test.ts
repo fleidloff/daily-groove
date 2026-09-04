@@ -269,7 +269,13 @@ describe('the coaching module has one door', () => {
 
 describe('feature components sit in screen regions', () => {
   const REGIONS: Record<string, string[]> = {
-    header: ['GrooveHeader', 'HelpToggle', 'ShareGroove', 'StreakBadge'],
+    header: [
+      'GrooveHeader',
+      'HelpToggle',
+      'ShareGroove',
+      'StreakBadge',
+      'TransposeSelect',
+    ],
     intro: ['HowToPlay'],
     puzzle: [
       'GrooveCard',
@@ -309,6 +315,7 @@ describe('feature components sit in screen regions', () => {
       'GroovePuzzle.header.test.tsx',
       'GroovePuzzle.copy.test.tsx',
       'GroovePuzzle.firstVisit.test.tsx',
+      'GroovePuzzle.written.test.tsx',
     ]
     const absent = composedTests.filter((name) => !existsSync(join(COMPONENTS, name)))
     expect(absent).toEqual([])

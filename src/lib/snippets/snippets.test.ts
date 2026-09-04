@@ -89,13 +89,13 @@ describe('the heard-in line (quick 001)', () => {
 
 describe('the next-groove line (quick 3)', () => {
   it('renders the hours and the minutes as a clock reading', () => {
-    expect(snippets.solved.nextGrooveIn({ hours: 7, minutes: 12 })).toContain('7:12')
-    expect(snippets.solved.nextGrooveIn({ hours: 13, minutes: 5 })).toContain('13:05')
+    expect(snippets.solved.nextGrooveIn({ hours: 7, minutes: 12 })).toContain('7h 12m')
+    expect(snippets.solved.nextGrooveIn({ hours: 13, minutes: 5 })).toContain('13h 05m')
   })
 
   it('keeps the hours and pads the minutes when few are left', () => {
-    expect(snippets.solved.nextGrooveIn({ hours: 0, minutes: 5 })).toContain('0:05')
-    expect(snippets.solved.nextGrooveIn({ hours: 0, minutes: 0 })).toContain('0:00')
+    expect(snippets.solved.nextGrooveIn({ hours: 0, minutes: 5 })).toContain('0h 05m')
+    expect(snippets.solved.nextGrooveIn({ hours: 0, minutes: 0 })).toContain('0h 00m')
   })
 
   it('returns the same string for the same arguments', () => {
@@ -161,5 +161,55 @@ describe('the give-up ending (F22 E3)', () => {
 
   it('no longer carries the given-up line (R7, AC6)', () => {
     expect(snippets.solved).not.toHaveProperty('givenUp')
+  })
+})
+
+describe('feature-23 wording', () => {
+  it('names the transpose select and each key’s instrument (F23 E1 R1, AC1, AC1b)', () => {
+    expect(snippets.header.transpose).toBe('Transpose')
+    expect(snippets.header.instruments).toEqual({
+      C: 'C · concert',
+      'B♭': 'B♭ · trumpet, tenor sax',
+      'E♭': 'E♭ · alto sax',
+      F: 'F · horn',
+    })
+  })
+
+  it('opens each option with the key it sets (F23 E1 R1, AC1b)', () => {
+    const { instruments } = snippets.header
+    for (const key of ['C', 'B♭', 'E♭', 'F'] as const) {
+      expect(instruments[key].startsWith(key)).toBe(true)
+    }
+  })
+
+  it('leaves the root eyebrow one word, on every instrument (F23 E1 R11, AC13)', () => {
+    expect(snippets.puzzle.rootGroup).toBe('Root')
+  })
+
+  it('explains the transpose select in one line that names it (F23 E1 R12, AC15)', () => {
+    expect(snippets.intro.transpose).toBe(
+      "Play a sax or a trumpet? Pick your key beside Transpose in the top row and the roots, chords and notes read in your instrument's pitch.",
+    )
+    expect(snippets.intro.transpose).toContain(snippets.header.transpose)
+    expect(snippets.intro.steps).toHaveLength(4)
+  })
+})
+
+describe('the concert line (F23 E2)', () => {
+  it('names the concert answer and says which pitch it is in (F23 E2 R5, AC6)', () => {
+    expect(snippets.solved.concertPitch({ root: 'E♭', flavour: 'Dorian' })).toBe(
+      'E♭ Dorian in concert pitch',
+    )
+  })
+
+  it('returns the same string for the same arguments', () => {
+    const args = { root: 'A♭', flavour: 'Phrygian' }
+    expect(snippets.solved.concertPitch(args)).toBe(snippets.solved.concertPitch({ ...args }))
+  })
+
+  it('puts the root before the flavour and both before the qualifier', () => {
+    const line = snippets.solved.concertPitch({ root: 'F♯', flavour: 'Blues' })
+    expect(line.indexOf('F♯')).toBeLessThan(line.indexOf('Blues'))
+    expect(line.indexOf('Blues')).toBeLessThan(line.indexOf('concert'))
   })
 })

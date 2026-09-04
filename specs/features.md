@@ -38,7 +38,7 @@ tested and verified). Lettered candidates sit at ✏️ **Briefed** until promot
 | [20](features/feature-20/) | Modular architecture | ✅ Done | Draws the boundaries the one feature slice only implied — one shared body of theory, a door onto the coaching modules that the puzzle card feeds itself through, and a map that lint enforces. |
 | [21](features/feature-21/) | Internationalization | ✅ Done | Gathers every user-facing string into `src/lib/snippets/en/` and gives the app a stored language, so the next language is a folder beside it rather than a second sweep. |
 | [22](features/feature-22/) | Gentle first round | ✅ Done | Meets a first-time player in Simple mode — six roots, Major or Minor — names both ways to play on the switch and in the how-to-play box, moves the listening advice into the hint and the drum credit onto the groove box, and tidies the give-up ending. |
-| [23](features/feature-23/) | Transpose for the sax | 🛠 Ready to implement | Lets a sax or trumpet player play the whole puzzle in their instrument's written pitch — the root chips, the check, the heading, the chords and the notes — remembered across days, while the audio and the share link stay in concert pitch. |
+| [23](features/feature-23/) | Transpose for the sax | ✅ Done | Lets a sax or trumpet player play the whole puzzle in their instrument's written pitch — the root chips, the check, the heading, the chords and the notes — remembered across days, while the audio and the share link stay in concert pitch. |
 
 ## Prepared candidates
 

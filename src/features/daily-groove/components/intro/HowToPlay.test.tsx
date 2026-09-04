@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { intro, puzzle } from '@/lib/snippets'
+import { header, intro, puzzle } from '@/lib/snippets'
 import { HowToPlay } from './HowToPlay'
 
 const STEPS = intro.steps.map((step) => `${step.words}${step.mark}`.trim())
@@ -137,6 +137,24 @@ describe('HowToPlay', () => {
     expect(screen.getAllByRole('listitem')).toHaveLength(4)
     const list = screen.getAllByRole('listitem').at(-1) as HTMLElement
     expect(list.compareDocumentPosition(line) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
+  it('explains the transpose select in one line under the four steps, beside the two-ways line (F23 E1 R12, AC15)', () => {
+    render(<HowToPlay onClose={vi.fn()} />)
+
+    const line = screen.getByText(intro.transpose)
+    expect(line).toBeVisible()
+    expect(line).toHaveTextContent(header.transpose)
+    expect(line.tagName).toBe('P')
+    expect(line.className).toContain('text-text-muted')
+    expect(line.closest('ol')).toBeNull()
+    expect(screen.getAllByRole('listitem')).toHaveLength(4)
+
+    const twoWays = screen.getByText(intro.twoWays)
+    expect(
+      twoWays.compareDocumentPosition(line) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy()
+    expect(twoWays.parentElement).toBe(line.parentElement)
   })
 
   it('carries no link — the credit lives on the groove card now (F22 E2 R8, AC7)', () => {

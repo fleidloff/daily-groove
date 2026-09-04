@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { InlineButton } from '@/components/controls/InlineButton'
-import { Row } from '@/components/layout/Row'
+import { Toast } from '@/components/display/Toast'
 import { Stack } from '@/components/layout/Stack'
 import { header } from '@/lib/snippets'
 import type { Groove } from '../../types'
@@ -57,8 +57,11 @@ export function ShareGroove({ groove, deps, origin }: ShareGrooveProps) {
   }, [cancelClear, deps, groove, origin])
 
   return (
-    <Stack gap="xs">
-      <Row gap="sm" align="center">
+    <Stack gap="xs" align="end">
+      <Toast
+        align="end"
+        message={outcome === 'copied' ? header.linkCopied : null}
+      >
         <InlineButton label={header.share} onPress={handlePress}>
           <svg
             aria-hidden="true"
@@ -78,14 +81,7 @@ export function ShareGroove({ groove, deps, origin }: ShareGrooveProps) {
           </svg>
           {header.share}
         </InlineButton>
-
-        <span
-          aria-live="polite"
-          className="text-[13px] leading-[1.45] text-text-muted"
-        >
-          {outcome === 'copied' ? header.linkCopied : ''}
-        </span>
-      </Row>
+      </Toast>
 
       {outcome === 'manual' && offered !== null && (
         <span className="select-all break-all text-[12px] leading-[1.45] text-text-muted">

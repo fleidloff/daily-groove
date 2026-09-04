@@ -10,6 +10,7 @@ import {
   coachingLine,
   flavourGroup,
   flavours,
+  ANSWER,
   GROOVE,
   GROOVE_LOOP_SECONDS,
   guess,
@@ -26,6 +27,8 @@ import {
   seedFullSet,
   rootGroup,
   settle,
+  storedDay,
+  seedPreferences,
   SOLVING,
   soundedNotes,
   startedAt,
@@ -57,7 +60,9 @@ import { dateLine } from '../lib/presentation/date'
 import type { Move } from '../lib/presentation/moves'
 import { COLOUR_MOVES, TONIC_MOVES } from '../lib/presentation/coachingMoves'
 import { barChords } from '@/lib/theory/changes'
-import { coaching, puzzle } from '@/lib/snippets'
+import { coaching, header as headerSnippets, puzzle, solved } from '@/lib/snippets'
+import type { Written } from '@/lib/theory/transpose'
+import { writtenChord } from '@/lib/theory/written'
 import { GROOVES } from '../data/grooves.generated'
 import { NOTES, PITCHES, type PitchSample } from '../data/notes.generated'
 import { renderFeature } from '../testing/renderFeature'
@@ -1608,6 +1613,104 @@ describe('GroovePuzzle', () => {
 
     expect(trackChords()).toEqual(sheetBars)
     expect(trackChords()).toEqual(CHANGES_READ.split(' · '))
+  })
+
+  describe('the chord line written for an instrument (F23 E2)', () => {
+    const seedStored = (stored: DailyResult) => {
+      mockStore.get.mockResolvedValue(stored)
+      mockStore.getAll.mockResolvedValue([stored])
+    }
+
+    const WRITTEN_BARS = (written: Written) =>
+      BAR_CHORDS.map((chord) => writtenChord(chord, written))
+
+    const solvedBox = (heading: string) =>
+      screen.getByRole('heading', { name: heading }).closest('[role="status"]') as HTMLElement
+
+    const sheetBars = (box: HTMLElement) =>
+      Array.from(
+        within(box)
+          .getByRole('group', { name: solved.changes })
+          .querySelectorAll('[data-bar]'),
+      ).map((bar) => bar.textContent)
+
+    const staffLabelOf = (box: HTMLElement) =>
+      within(box)
+        .getByRole('group', { name: solved.notesToLiveIn })
+        .querySelector('[role="img"]')
+        ?.getAttribute('aria-label')
+
+    const transposeBox = () =>
+      screen.getByRole('combobox', { name: headerSnippets.transpose })
+
+    it('prints no chord over the bars while an alto player’s day is still on (F23 E2 R4, AC5)', async () => {
+      await seedPreferences({ written: 'E♭' })
+      await renderPuzzle()
+
+      expect(trackChords()).toBeNull()
+      for (const chord of WRITTEN_BARS('E♭')) {
+        expect(screen.queryAllByText(chord), chord).toEqual([])
+      }
+    })
+
+    it('writes the four symbols over the bars in the instrument’s pitch once the day is solved (F23 E2 R4, AC5)', async () => {
+      await seedPreferences({ written: 'E♭' })
+      seedStored(storedDay({ solved: true, attempts: [SOLVING] }))
+      await renderPuzzle()
+
+      expect(trackChords()).toEqual(WRITTEN_BARS('E♭'))
+      expect(trackChords()).toEqual(['Am', 'Dm', 'E7', 'Am'])
+      expect(trackChords()).toEqual(sheetBars(solvedBox('A Aeolian')))
+    })
+
+    it('writes them for a day given up on too, in the tenor’s pitch (F23 E2 R4)', async () => {
+      await seedPreferences({ written: 'B♭' })
+      seedStored(
+        storedDay({
+          solved: false,
+          revealed: true,
+          attempts: [miss('G', wrongFlavour(), false)],
+        }),
+      )
+      await renderPuzzle()
+
+      expect(trackChords()).toEqual(['Dm', 'Gm', 'A7', 'Dm'])
+      expect(trackChords()).toEqual(sheetBars(solvedBox('D Aeolian')))
+    })
+
+    it('changes chord line, lead sheet, staff, label and concert line together, and reverts on the way round (F23 E2 R6, AC7; F23 E1 R7, AC9)', async () => {
+      const user = userEvent.setup()
+      seedStored(storedDay({ solved: true, attempts: [SOLVING] }))
+      await renderPuzzle()
+
+      const concert = {
+        bars: trackChords(),
+        label: staffLabelOf(solvedBox('C Aeolian')),
+      }
+      expect(
+        within(solvedBox('C Aeolian')).queryByText(solved.concertPitch(ANSWER)),
+      ).toBeNull()
+
+      await user.selectOptions(transposeBox(), 'E♭')
+      const alto = solvedBox('A Aeolian')
+      expect(trackChords()).toEqual(WRITTEN_BARS('E♭'))
+      expect(sheetBars(alto)).toEqual(WRITTEN_BARS('E♭'))
+      expect(staffLabelOf(alto)).not.toBe(concert.label)
+      expect(
+        within(alto).getByText(solved.concertPitch(ANSWER)),
+      ).toBeInTheDocument()
+
+      await user.selectOptions(transposeBox(), 'B♭')
+      expect(trackChords()).toEqual(WRITTEN_BARS('B♭'))
+      expect(sheetBars(solvedBox('D Aeolian'))).toEqual(WRITTEN_BARS('B♭'))
+
+      await user.selectOptions(transposeBox(), 'C')
+      expect(trackChords()).toEqual(concert.bars)
+      expect(staffLabelOf(solvedBox('C Aeolian'))).toBe(concert.label)
+      expect(
+        within(solvedBox('C Aeolian')).queryByText(solved.concertPitch(ANSWER)),
+      ).toBeNull()
+    })
   })
 
   describe('the framing on a shared groove (F12 E3)', () => {

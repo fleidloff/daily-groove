@@ -22,7 +22,7 @@ function Probe({ name }: { name: string }) {
     <p data-testid={name}>
       {`${value.groove.name} · ${value.today.toISOString()} · simple ${
         value.simple ? 'on' : 'off'
-      } · taps ${value.tapSounds ? 'on' : 'off'}`}
+      } · taps ${value.tapSounds ? 'on' : 'off'} · written ${value.written}`}
     </p>
   )
 }
@@ -42,6 +42,8 @@ function aValue(session: PuzzleSessionValue['session']): PuzzleSessionValue {
     setSimple: vi.fn(),
     tapSounds: false,
     setTapSounds: vi.fn(),
+    written: 'E♭',
+    setWritten: vi.fn(),
   }
 }
 
@@ -122,7 +124,7 @@ describe('the puzzle session context', () => {
     )
 
     expect(screen.getByTestId('only')).toHaveTextContent(
-      `Test Groove · ${DATE.toISOString()} · simple on · taps off`,
+      `Test Groove · ${DATE.toISOString()} · simple on · taps off · written E♭`,
     )
 
     const read = reads[0]
@@ -137,5 +139,19 @@ describe('the puzzle session context', () => {
     expect(read.setSimple).toBe(value.setSimple)
     expect(read.tapSounds).toBe(false)
     expect(read.setTapSounds).toBe(value.setTapSounds)
+  })
+
+  it('hands the instrument and its setter to a consumer (F23 E1 R2, R10)', async () => {
+    const value = aValue(await aSession())
+
+    render(
+      <PuzzleSessionProvider value={value}>
+        <Probe name="a" />
+      </PuzzleSessionProvider>,
+    )
+
+    expect(screen.getByTestId('a')).toHaveTextContent('written E♭')
+    reads[0].setWritten('B♭')
+    expect(value.setWritten).toHaveBeenCalledWith('B♭')
   })
 })

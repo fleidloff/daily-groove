@@ -14,6 +14,7 @@ import { flavourPool, loopSecondsOf } from '@/lib/theory/music'
 import type { Family } from '@/lib/theory/families'
 import { simpleLickMode } from '@/lib/theory/simpleModes'
 import { barChords } from '@/lib/theory/changes'
+import { writtenChord } from '@/lib/theory/written'
 import { metaLine } from '../lib/presentation'
 import { selectGrooveForDate } from '../lib/puzzle/selectGroove'
 import { GROOVES, HEARD_IN } from '../data/grooves.generated'
@@ -36,6 +37,7 @@ import { usePuzzleSession } from '../hooks/usePuzzleSession'
 import { useReferenceNote } from '../hooks/useReferenceNote'
 import { useSimpleMode } from '../hooks/useSimpleMode'
 import { useTapSounds } from '../hooks/useTapSounds'
+import { useWritten } from '../hooks/useWritten'
 import { useNextGroove } from '../hooks/useNextGroove'
 import { useTransport } from '../hooks/useTransport'
 import { GrooveCard } from './puzzle/GrooveCard'
@@ -43,6 +45,7 @@ import { PlayTodayLink } from './puzzle/PlayTodayLink'
 import { SharedGrooveNotice } from './puzzle/SharedGrooveNotice'
 import { GrooveHeader } from './header/GrooveHeader'
 import { ShareGroove } from './header/ShareGroove'
+import { TransposeSelect } from './header/TransposeSelect'
 import { HowToPlay } from './intro/HowToPlay'
 import { GuessCard } from './puzzle/GuessCard'
 import { SolvedPanel } from './solved/SolvedPanel'
@@ -108,6 +111,8 @@ function GroovePuzzleView({
 
   const { tapSounds, setTapSounds } = useTapSounds()
 
+  const { written, setWritten, loaded: writtenLoaded } = useWritten()
+
   const nextGroove = useNextGroove(today)
 
   const source = useMemo<PlayableSource>(
@@ -144,8 +149,20 @@ function GroovePuzzleView({
       setSimple,
       tapSounds,
       setTapSounds,
+      written,
+      setWritten,
     }),
-    [groove, today, session, simple, setSimple, tapSounds, setTapSounds],
+    [
+      groove,
+      today,
+      session,
+      simple,
+      setSimple,
+      tapSounds,
+      setTapSounds,
+      written,
+      setWritten,
+    ],
   )
 
   const { playMode, warm: warmLicks } = useModeLick({
@@ -212,7 +229,7 @@ function GroovePuzzleView({
     warmLicks()
   }, [isPlaying, loading, tapSounds, warm, warmLicks])
 
-  if (!hydrated || !modeLoaded) return <PuzzleLoading />
+  if (!hydrated || !modeLoaded || !writtenLoaded) return <PuzzleLoading />
 
   const guessCard = (
     <GuessCard onHearRoot={hearRoot} onHearMode={handleHearMode} />
@@ -226,6 +243,7 @@ function GroovePuzzleView({
           streak={streak}
           onShowHelp={showHelp ? null : handleShowHelp}
           share={<ShareGroove groove={groove} />}
+          transpose={<TransposeSelect written={written} onChange={setWritten} />}
         />
 
         {showHelp && <HowToPlay onClose={handleCloseHelp} />}
@@ -253,6 +271,7 @@ function GroovePuzzleView({
                 groove,
                 shared ? null : today,
                 solved || revealed ? answer : null,
+                written,
               )}
               nextGroove={!shared && (solved || revealed) ? nextGroove : undefined}
             >
@@ -262,7 +281,11 @@ function GroovePuzzleView({
                   isPlaying={isPlaying}
                   passes={passes}
                   chords={
-                    solved || revealed ? barChords(groove.progression) : null
+                    solved || revealed
+                      ? barChords(groove.progression).map((chord) =>
+                          writtenChord(chord, written),
+                        )
+                      : null
                   }
                 />
                 <PlayControl
@@ -290,6 +313,7 @@ function GroovePuzzleView({
                   attempts={attempts}
                   revealed={revealed}
                   heardIn={HEARD_IN[groove.scale]}
+                  written={written}
                 />
                 {shared && <PlayTodayLink />}
               </div>

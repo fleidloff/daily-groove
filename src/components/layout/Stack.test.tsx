@@ -43,6 +43,29 @@ describe('Stack', () => {
     expect(root.className).toContain('flex-col')
   })
 
+  it('stretches its children unless asked to align them', () => {
+    const { container } = render(<Stack gap="sm">x</Stack>)
+    const root = container.firstElementChild as HTMLElement
+
+    expect(root.className).not.toContain('items-')
+  })
+
+  it('resolves each alignment to a distinct class', () => {
+    const classes = (['start', 'center', 'end'] as const).map(
+      (align) =>
+        (
+          render(
+            <Stack gap="sm" align={align}>
+              x
+            </Stack>,
+          ).container.firstElementChild as HTMLElement
+        ).className,
+    )
+
+    expect(new Set(classes).size).toBe(3)
+    expect(classes[2]).toContain('items-end')
+  })
+
   it('resolves each gap on the token scale to a distinct class', () => {
     const classes = (['xs', 'sm', 'md', 'lg', 'xl'] as const).map(
       (gap) =>

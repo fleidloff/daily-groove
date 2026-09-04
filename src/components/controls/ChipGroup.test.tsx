@@ -413,3 +413,59 @@ describe('ChipGroup', () => {
     expect(chips.map((chip) => chip.textContent)).toEqual(FOUR)
   })
 })
+
+describe('per-option labels (F23 E1)', () => {
+  it('shows the label and reports the value beneath it (F23 E1 R6)', async () => {
+    const user = userEvent.setup()
+    const onSelect = vi.fn()
+    const onPress = vi.fn()
+    renderGroup({
+      onSelect,
+      onPress,
+      value: 'Two',
+      optionLabels: { One: 'Uno', Two: 'Dos' },
+    })
+
+    expect(
+      [...chipList().querySelectorAll('button')].map((chip) => chip.textContent),
+    ).toEqual(['Uno', 'Dos', 'Three'])
+    expect(screen.getByRole('button', { name: 'Dos' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+    expect(screen.queryByRole('button', { name: 'Two' })).toBeNull()
+
+    await user.click(screen.getByRole('button', { name: 'Uno' }))
+    expect(onSelect).toHaveBeenCalledWith('One')
+    expect(onPress).toHaveBeenCalledWith('One')
+  })
+
+  it('keys per-option state by the value while showing the label, and keeps the adornment in front (F23 E1 R6, R8)', async () => {
+    const user = userEvent.setup()
+    const onSelect = vi.fn()
+    const onPress = vi.fn()
+    renderGroup({
+      onSelect,
+      onPress,
+      adornment: NOTE,
+      optionLabels: { Two: 'Dos' },
+      optionStates: { Two: { unavailable: true } },
+    })
+    const dos = screen.getByRole('button', { name: 'Dos' })
+    expect(dos).toHaveAttribute('aria-disabled', 'true')
+    expect(dos.textContent).toBe(`${NOTE}Dos`)
+
+    await user.click(dos)
+    expect(onPress).toHaveBeenCalledWith('Two')
+    expect(onSelect).not.toHaveBeenCalled()
+  })
+
+  it('changes no layout class when labels are given (F23 E1 R11)', () => {
+    renderGroup()
+    const before = chipList().className
+    cleanup()
+
+    renderGroup({ optionLabels: { One: 'Uno' } })
+    expect(chipList().className).toBe(before)
+  })
+})

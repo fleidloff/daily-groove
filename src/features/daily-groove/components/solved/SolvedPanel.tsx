@@ -17,6 +17,8 @@ import { scaleNotes } from '@/lib/theory/notes'
 import { selectNearMiss } from '../../lib/presentation/nearMiss'
 import { staffLabel } from '../../lib/presentation/staffLabel'
 import { staffNotes } from '@/lib/theory/staff'
+import type { Written } from '@/lib/theory/transpose'
+import { writtenAnswer, writtenChord } from '@/lib/theory/written'
 import type { Answer, Attempt, HeardIn } from '../../types'
 
 type SolvedPanelProps = {
@@ -26,6 +28,7 @@ type SolvedPanelProps = {
   attempts: Attempt[]
   revealed: boolean
   heardIn?: HeardIn
+  written: Written
 }
 
 export function SolvedPanel({
@@ -35,8 +38,10 @@ export function SolvedPanel({
   attempts,
   revealed,
   heardIn,
+  written,
 }: SolvedPanelProps) {
-  const notes = scaleNotes(answer)
+  const shown = writtenAnswer(answer, written)
+  const notes = scaleNotes(shown)
   const degrees = scaleDegrees(answer)
   const character = characterOf(answer.flavour)
   const nearMiss = selectNearMiss(attempts, answer, revealed)
@@ -48,7 +53,7 @@ export function SolvedPanel({
           <Stack gap="sm">
             <Row gap="md" align="baseline" collapseBelow="sm">
               <Heading level={2} size="lg" tone="inverted">
-                {`${answer.root} ${answer.flavour}`}
+                {`${shown.root} ${shown.flavour}`}
               </Heading>
               {character !== undefined && (
                 <Text size="sm" tone="inverted-muted">
@@ -56,6 +61,11 @@ export function SolvedPanel({
                 </Text>
               )}
             </Row>
+            {written !== 'C' && (
+              <Text size="sm" tone="inverted-muted">
+                {solved.concertPitch(answer)}
+              </Text>
+            )}
             {nearMiss !== undefined && (
               <Text size="sm" tone="inverted-muted">
                 {nearMiss}
@@ -71,7 +81,9 @@ export function SolvedPanel({
         <Stack gap="xl">
           <LabelledColumn label={solved.changes}>
             <LeadSheet
-              chords={barChords(progression)}
+              chords={barChords(progression).map((chord) =>
+                writtenChord(chord, written),
+              )}
               numerals={barNumerals(answer.flavour, progressionDegrees)}
             />
           </LabelledColumn>

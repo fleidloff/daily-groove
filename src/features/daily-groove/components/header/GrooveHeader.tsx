@@ -11,9 +11,15 @@ type GrooveHeaderProps = {
   streak: number
   onShowHelp: (() => void) | null
   share?: ReactNode
+  transpose?: ReactNode
 }
 
-export function GrooveHeader({ streak, onShowHelp, share }: GrooveHeaderProps) {
+export function GrooveHeader({
+  streak,
+  onShowHelp,
+  share,
+  transpose,
+}: GrooveHeaderProps) {
   return (
     <header>
       <Row gap="lg" align="center" justify="between" collapseBelow="sm">
@@ -30,10 +36,11 @@ export function GrooveHeader({ streak, onShowHelp, share }: GrooveHeaderProps) {
         </div>
 
         <div className="self-end sm:self-auto">
-          {share ? (
+          {share || transpose ? (
             <Row gap="sm" align="center">
-              {share}
+              {transpose}
               <StreakBadge streak={streak} />
+              {share}
             </Row>
           ) : (
             <StreakBadge streak={streak} />

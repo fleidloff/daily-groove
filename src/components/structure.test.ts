@@ -9,9 +9,9 @@ const GROUPS = ['controls', 'display', 'layout', 'surfaces', 'typography']
 const COMPONENTS: Record<string, string[]> = {
   layout: ['Container', 'PageShell', 'Row', 'Stack', 'LabelledColumn'],
   surfaces: ['Card', 'Panel'],
-  controls: ['Button', 'Chip', 'ChipGroup', 'InlineButton', 'PlayControl', 'Switch'],
+  controls: ['Button', 'Chip', 'ChipGroup', 'InlineButton', 'PlayControl', 'Select', 'Switch'],
   typography: ['Heading', 'Text', 'EyebrowLabel', 'SectionLabel', 'Lettering'],
-  display: ['Pill', 'ProgressTrack'],
+  display: ['Pill', 'ProgressTrack', 'Toast'],
 }
 
 function walk(dir: string): string[] {

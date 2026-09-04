@@ -5,7 +5,11 @@ import { render, screen, within } from '@testing-library/react'
 import { SolvedPanel } from './SolvedPanel'
 import { coaching, solved } from '@/lib/snippets'
 import { barChords } from '@/lib/theory/changes'
+import { scaleDegrees } from '@/lib/theory/degrees'
+import { scaleNotes } from '@/lib/theory/notes'
+import type { Written } from '@/lib/theory/transpose'
 import { GROOVES } from '../../data/grooves.generated'
+import { staffLabel } from '../../lib/presentation/staffLabel'
 import type { Answer, Attempt } from '../../types'
 
 const G_DORIAN: Answer = { root: 'G', flavour: 'Dorian' }
@@ -28,6 +32,7 @@ function renderPanel(overrides: Partial<Parameters<typeof SolvedPanel>[0]> = {})
       progression="Cm–Fm–G7"
       attempts={[]}
       revealed={false}
+      written="C"
       {...overrides}
     />,
   )
@@ -610,5 +615,194 @@ describe('SolvedPanel', () => {
     expect(changes.className).toMatch(/\bgrid-cols-4\b/)
     expect(changes.className).not.toMatch(/\bmin-w-/)
     expect(changes.className).not.toMatch(/overflow-x/)
+  })
+
+  describe('written for an instrument (F23 E2)', () => {
+    const E_FLAT_DORIAN: Answer = { root: 'E♭', flavour: 'Dorian' }
+    const CHANGES_UNDER_TEST = 'E♭m7–G♭maj7–A♭7'
+    const DEGREES = [0, 2, 3]
+
+    const concertLine = () =>
+      within(headerBlock()).queryByText(solved.concertPitch(E_FLAT_DORIAN))
+
+    it('spells the scale from the written root and keeps the degrees (F23 E2 R1, AC1)', () => {
+      renderPanel({ answer: E_FLAT_DORIAN, written: 'E♭' })
+
+      expect(staff()).toHaveAccessibleName('1 C, 2 D, ♭3 E♭, 4 F, 5 G, 6 A, ♭7 B♭')
+      expect(degreeTexts()).toEqual(['1', '2', '♭3', '4', '5', '6', '♭7'])
+      expect(noteheads()).toHaveLength(7)
+      expect(accidentalGlyphs()).toEqual(['♭', '♭'])
+    })
+
+    it('pairs every degree with its written note in the accessible label (F23 E2 R2, AC3)', () => {
+      renderPanel({ answer: E_FLAT_DORIAN, written: 'B♭' })
+
+      expect(staff()).toHaveAccessibleName(
+        staffLabel(
+          scaleDegrees(E_FLAT_DORIAN),
+          scaleNotes({ root: 'F', flavour: 'Dorian' }),
+        ),
+      )
+      expect(staff()).toHaveAccessibleName('1 F, 2 G, ♭3 A♭, 4 B♭, 5 C, 6 D, ♭7 E♭')
+    })
+
+    it('transposes each chord root, keeps each suffix, and leaves the numerals (F23 E2 R3, AC4)', () => {
+      renderPanel({
+        answer: E_FLAT_DORIAN,
+        progression: CHANGES_UNDER_TEST,
+        progressionDegrees: DEGREES,
+        written: 'E♭',
+      })
+
+      expect(barTexts()).toEqual(['Cm7', 'E♭maj7', 'F7', 'Cm7'])
+      expect(numeralTexts()).toEqual(['I', '♭III', 'IV', 'I'])
+    })
+
+    it('gives the numerals of the concert rendering (F23 E2 R3, AC4)', () => {
+      const { unmount } = renderPanel({
+        answer: E_FLAT_DORIAN,
+        progression: CHANGES_UNDER_TEST,
+        progressionDegrees: DEGREES,
+      })
+      const concert = numeralTexts()
+      unmount()
+
+      renderPanel({
+        answer: E_FLAT_DORIAN,
+        progression: CHANGES_UNDER_TEST,
+        progressionDegrees: DEGREES,
+        written: 'E♭',
+      })
+
+      expect(numeralTexts()).toEqual(concert)
+    })
+
+    it('names the answer in written pitch (F23 E1 R7, AC9 — the heading is this box’s)', () => {
+      renderPanel({ answer: E_FLAT_DORIAN, written: 'E♭' })
+
+      expect(screen.getByRole('heading', { name: 'C Dorian' })).toBeInTheDocument()
+      expect(screen.queryByRole('heading', { name: 'E♭ Dorian' })).toBeNull()
+      expect(
+        within(header()).getByText(solved.modeLine({ flavour: 'Dorian' }) as string),
+      ).toBeInTheDocument()
+    })
+
+    it('names it in the tenor’s pitch on B♭ (F23 E1 R7, AC9)', () => {
+      renderPanel({ answer: E_FLAT_DORIAN, written: 'B♭' })
+
+      expect(screen.getByRole('heading', { name: 'F Dorian' })).toBeInTheDocument()
+    })
+
+    it('reads the concert answer under the heading on alto sax (F23 E2 R5, AC6)', () => {
+      renderPanel({
+        answer: E_FLAT_DORIAN,
+        written: 'E♭',
+        heardIn: { track: 'So What', artist: 'Miles Davis' },
+      })
+
+      const line = concertLine() as HTMLElement
+      expect(line).toBeInTheDocument()
+      expect(classOf(line)).toBe(classOf(within(headerBlock()).getByText(/So What/)))
+
+      const heading = screen.getByRole('heading', { level: 2 })
+      expect(
+        heading.compareDocumentPosition(line) & Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy()
+
+      const lines = Array.from(headerBlock().querySelectorAll<HTMLElement>('p'))
+      expect(lines.indexOf(line)).toBeLessThan(
+        lines.indexOf(within(headerBlock()).getByText(/So What/)),
+      )
+    })
+
+    it('reads the same concert answer on tenor (F23 E2 R5)', () => {
+      renderPanel({ answer: E_FLAT_DORIAN, written: 'B♭' })
+
+      expect(concertLine()).toBeInTheDocument()
+    })
+
+    it('renders no concert line on Concert (F23 E2 R5, R7, AC6)', () => {
+      renderPanel({ answer: E_FLAT_DORIAN, written: 'C' })
+
+      expect(concertLine()).toBeNull()
+      expect(headerBlock().textContent).not.toMatch(/concert/i)
+    })
+
+    it('re-renders staff, label, lead sheet, heading and concert line together and back (F23 E2 R6, AC7)', () => {
+      const props = {
+        answer: E_FLAT_DORIAN,
+        progression: CHANGES_UNDER_TEST,
+        progressionDegrees: DEGREES,
+        attempts: [],
+        revealed: false,
+      }
+      const { rerender } = render(<SolvedPanel {...props} written="C" />)
+      const concert = {
+        label: staff().getAttribute('aria-label'),
+        bars: barTexts(),
+        heading: screen.getByRole('heading', { level: 2 }).textContent,
+        numerals: numeralTexts(),
+      }
+      expect(concertLine()).toBeNull()
+
+      rerender(<SolvedPanel {...props} written="E♭" />)
+      expect(staff().getAttribute('aria-label')).not.toBe(concert.label)
+      expect(barTexts()).not.toEqual(concert.bars)
+      expect(screen.getByRole('heading', { level: 2 }).textContent).toBe('C Dorian')
+      expect(numeralTexts()).toEqual(concert.numerals)
+      expect(concertLine()).toBeInTheDocument()
+
+      rerender(<SolvedPanel {...props} written="C" />)
+      expect(staff().getAttribute('aria-label')).toBe(concert.label)
+      expect(barTexts()).toEqual(concert.bars)
+      expect(screen.getByRole('heading', { level: 2 }).textContent).toBe(concert.heading)
+      expect(concertLine()).toBeNull()
+    })
+
+    it('renders the same text on Concert as it did before it knew about instruments (F23 E2 R7, AC8)', () => {
+      renderPanel({
+        answer: E_FLAT_DORIAN,
+        progression: CHANGES_UNDER_TEST,
+        progressionDegrees: DEGREES,
+        written: 'C',
+      })
+
+      expect(screen.getByRole('heading', { name: 'E♭ Dorian' })).toBeInTheDocument()
+      expect(barTexts()).toEqual(['E♭m7', 'G♭maj7', 'A♭7', 'E♭m7'])
+      expect(staff()).toHaveAccessibleName('1 E♭, 2 F, ♭3 G♭, 4 A♭, 5 B♭, 6 C, ♭7 D♭')
+      expect(headerBlock().querySelectorAll('p')).toHaveLength(1)
+    })
+
+    it('leaves the near-miss, heard-in and mode lines identical on every instrument (F23 E2 R8)', () => {
+      const props = {
+        answer: G_MIXOLYDIAN,
+        progression: 'G7–C7–D7',
+        attempts: [miss('Dorian')],
+        revealed: true,
+        heardIn: { track: 'So What', artist: 'Miles Davis' },
+      }
+      const prose = () => [
+        within(headerBlock()).getByText(
+          coaching.nearMissApart({
+            flavour: 'Dorian',
+            notes: 1,
+            guessed: '♭3',
+            answered: '3',
+          }),
+        ).textContent,
+        within(headerBlock()).getByText(solved.heardIn(props.heardIn)).textContent,
+        within(header()).getByText(
+          solved.modeLine({ flavour: 'Mixolydian' }) as string,
+        ).textContent,
+      ]
+
+      const { rerender } = render(<SolvedPanel {...props} written="C" />)
+      const concert = prose()
+
+      for (const written of ['E♭', 'B♭'] as Written[]) {
+        rerender(<SolvedPanel {...props} written={written} />)
+        expect(prose(), written).toEqual(concert)
+      }
+    })
   })
 })

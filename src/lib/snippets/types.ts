@@ -10,6 +10,8 @@ export type HeaderSnippets = {
   streakDays: (args: { days: number }) => string
   share: string
   linkCopied: string
+  transpose: string
+  instruments: { C: string; 'B♭': string; 'E♭': string; F: string }
 }
 
 export type IntroStep = { words: string; mark: string }
@@ -19,6 +21,7 @@ export type IntroSnippets = {
   closeName: string
   steps: readonly [IntroStep, IntroStep, IntroStep, IntroStep]
   twoWays: string
+  transpose: string
 }
 
 export type PuzzleSnippets = {
@@ -82,6 +85,7 @@ export type SolvedSnippets = {
   heardIn: (args: { track: string; artist: string }) => string
   nextGrooveIn: (args: { hours: number; minutes: number }) => string
   nextGrooveReady: string
+  concertPitch: (args: { root: string; flavour: string }) => string
 }
 
 export type RoutesSnippets = {

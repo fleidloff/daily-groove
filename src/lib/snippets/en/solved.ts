@@ -23,8 +23,9 @@ export const solved = {
     const key = Object.keys(MODE_LINES).find((k) => k.toLowerCase() === wanted)
     return key === undefined ? undefined : MODE_LINES[key]
   },
-  heardIn: ({ track, artist }) => `You've heard this in “${track}” by ${artist}`,
+  heardIn: ({ track, artist }) => `You've heard this scale in “${track}” by ${artist}`,
   nextGrooveIn: ({ hours, minutes }) =>
     `Next groove at midnight in ${hours}h ${String(minutes).padStart(2, '0')}m`,
   nextGrooveReady: 'Today’s groove is ready — reload the page to play it.',
+  concertPitch: ({ root, flavour }) => `${root} ${flavour} in concert pitch`,
 } satisfies SolvedSnippets

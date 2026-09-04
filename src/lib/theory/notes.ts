@@ -38,6 +38,11 @@ function splitNote(note: string): { letter: string; offset: number } {
   return { letter, offset }
 }
 
+export function pitchClassOfNote(note: string): number {
+  const { letter, offset } = splitNote(note)
+  return (NATURAL[letter] + offset + 12) % 12
+}
+
 export const FLAVOUR_LETTER_STEPS: Record<string, number[]> = {
   Blues: [0, 2, 3, 4, 4, 6],
 }
@@ -66,9 +71,9 @@ export function scaleNotes(answer: Answer): string[] {
   const intervals = lookup(FLAVOUR_INTERVALS, answer.flavour)
   if (intervals === undefined) throw new UnknownFlavourError(answer.flavour)
 
-  const { letter, offset } = splitNote(answer.root)
+  const { letter } = splitNote(answer.root)
   const rootLetterIndex = LETTERS.indexOf(letter as (typeof LETTERS)[number])
-  const rootPitch = (NATURAL[letter] + offset + 12) % 12
+  const rootPitch = pitchClassOfNote(answer.root)
 
   const letterSteps = FLAVOUR_LETTER_STEPS[answer.flavour]
 

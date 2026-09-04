@@ -22,6 +22,7 @@ type ChipGroupProps = {
   columns: ChipColumns
   adornment?: string
   optionStates?: Record<string, ChipOptionState>
+  optionLabels?: Record<string, string>
 }
 
 const COLUMN_CLASS: Record<number, string> = {
@@ -49,6 +50,7 @@ export function ChipGroup({
   columns,
   adornment,
   optionStates,
+  optionLabels,
 }: ChipGroupProps) {
   const labelId = useId()
   const layout = `grid ${COLUMN_CLASS[columns.base]} ${WIDE_CLASS[columns.wide]} gap-[7px]`
@@ -62,7 +64,7 @@ export function ChipGroup({
         {options.map((option) => (
           <Chip
             key={`${name}-${option}`}
-            label={option}
+            label={optionLabels?.[option] ?? option}
             selected={value === option}
             disabled={disabled}
             settled={settled}

@@ -24,7 +24,8 @@ const ORIGIN = 'https://x.test'
 const LINK = `${ORIGIN}/groove/${GROOVE.uuid}`
 
 const shareControl = () => screen.getByRole('button', { name: header.share })
-const liveRegion = () => document.querySelector('[aria-live="polite"]')
+const liveRegion = () =>
+  document.querySelector('[aria-live="polite"]') as HTMLElement | null
 
 async function settle() {
   await act(async () => {
@@ -231,6 +232,22 @@ describe('ShareGroove (F12 E2)', () => {
     await user.click(shareControl())
     await settle()
     expect(share).toHaveBeenCalledTimes(2)
+  })
+
+  it('confirms in a toast hung under the control, not inline beside it', async () => {
+    const user = userEvent.setup()
+    const write = vi.fn().mockResolvedValue(undefined)
+    render(<ShareGroove groove={GROOVE} origin={ORIGIN} deps={{ write }} />)
+
+    await user.click(shareControl())
+    await settle()
+
+    const toast = screen.getByText(header.linkCopied)
+    expect(liveRegion()?.className).toContain('absolute')
+    expect(liveRegion()?.className).toContain('pointer-events-none')
+    expect(toast.closest('button')).toBeNull()
+    expect(shareControl().parentElement).toContainElement(liveRegion())
+    expect(liveRegion()).not.toContainElement(shareControl())
   })
 
   it('says "Share" whatever has just happened (R2, AC1)', async () => {

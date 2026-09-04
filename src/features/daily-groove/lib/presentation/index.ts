@@ -1,6 +1,7 @@
 import { coaching } from '@/lib/snippets'
 import type { Answer, Attempt, Flavour, Groove, Root } from '../../types'
 import { ROOTS } from '@/lib/theory/roots'
+import { writtenRoot, type Written } from '@/lib/theory/transpose'
 import { FAMILIES } from '@/lib/theory/families'
 import { flavourOptions, simpleRootOptions } from '@/lib/theory/music'
 import { GROOVES } from '../../data/grooves.generated'
@@ -19,6 +20,7 @@ export type OptionState = 'open' | 'confirmed' | 'out'
 
 export type OptionView<T extends string = string> = {
   value: T
+  label: string
   state: OptionState
 }
 
@@ -49,6 +51,7 @@ export type GuessCardViewInput = {
   canCheck: boolean
   simple: boolean
   tapSounds: boolean
+  written?: Written
 }
 
 type GuessCardView = {
@@ -75,18 +78,21 @@ function optionStates<T extends string>(
   values: readonly T[],
   ruledOutList: readonly T[],
   confirmedList: readonly T[],
+  label: (value: T) => string,
 ): OptionView<T>[] {
   const locked = values.filter((value) => confirmedList.includes(value))
 
   if (locked.length > 0) {
     return values.map((value) => ({
       value,
+      label: label(value),
       state: locked.includes(value) ? 'confirmed' : 'out',
     }))
   }
 
   return values.map((value) => ({
     value,
+    label: label(value),
     state: ruledOutList.includes(value) ? 'out' : 'open',
   }))
 }
@@ -103,6 +109,8 @@ export function guessCardView(input: GuessCardViewInput): GuessCardView {
     simple,
     tapSounds,
   } = input
+
+  const written = input.written ?? 'C'
 
   const rootValues: readonly Root[] = simple
     ? simpleRootOptions(date, answer)
@@ -125,7 +133,10 @@ export function guessCardView(input: GuessCardViewInput): GuessCardView {
     : revealed
       ? coaching.checkRevealed
       : bothOffered
-        ? coaching.checkPair({ root: selectedRoot, flavour: selectedFlavour })
+        ? coaching.checkPair({
+            root: writtenRoot(selectedRoot, written),
+            flavour: selectedFlavour,
+          })
         : selectedRoot !== null
           ? coaching.pickMode
           : selectedFlavour !== null
@@ -135,8 +146,15 @@ export function guessCardView(input: GuessCardViewInput): GuessCardView {
   const over = solved || revealed
 
   return {
-    roots: optionStates(rootValues, narrowing.roots, confirmed.roots),
-    flavours: optionStates(flavourValues, narrowing.flavours, confirmed.flavours),
+    roots: optionStates(rootValues, narrowing.roots, confirmed.roots, (root) =>
+      writtenRoot(root, written),
+    ),
+    flavours: optionStates(
+      flavourValues,
+      narrowing.flavours,
+      confirmed.flavours,
+      (flavour) => flavour,
+    ),
     selectedRoot,
     selectedFlavour,
     check: {

@@ -13,6 +13,8 @@ import {
 import { scaleNotes } from '@/lib/theory/notes'
 import { ROOTS } from '@/lib/theory/roots'
 import { STAFF_FLOOR_STEP, staffNotes } from '@/lib/theory/staff'
+import { type Written, writtenRoot } from '@/lib/theory/transpose'
+import { writtenAnswer, writtenChord } from '@/lib/theory/written'
 import { GROOVES, HEARD_IN } from './grooves.generated'
 import { selectGrooveForDate } from '../lib/puzzle/selectGroove'
 
@@ -487,4 +489,83 @@ describe('the heard-in table (quick 001)', () => {
     expect(Object.keys(HEARD_IN).length).toBeLessThan(GROOVES.length)
   })
 
+})
+
+describe('the catalogue read for a transposing instrument (F23 E2)', () => {
+  const KEYS: Written[] = ['C', 'E♭', 'B♭']
+  const LEADING_ROOT = /^([A-G][♯♭]?)([\s\S]*)$/
+  const DRAWABLE = /^[A-G](♯♯|♯|♭♭|♭)?$/
+  const SYMBOLS = [...new Set(GROOVES.flatMap((g) => barChords(g.progression)))]
+  const PAIRS = [
+    ...new Map(GROOVES.map((g) => [`${g.root}|${g.flavour}`, answerOf(g)])).values(),
+  ]
+
+  it('keeps every suffix and spells every written root from ROOTS (F23 E2 R3, AC2)', () => {
+    expect(SYMBOLS.length).toBeGreaterThan(40)
+    for (const symbol of SYMBOLS) {
+      const [, concertRoot, suffix] = LEADING_ROOT.exec(symbol) as RegExpExecArray
+      expect(ROOTS, symbol).toContain(concertRoot)
+      for (const written of KEYS) {
+        const [, root, writtenSuffix] = LEADING_ROOT.exec(
+          writtenChord(symbol, written),
+        ) as RegExpExecArray
+        expect(writtenSuffix, `${symbol} under ${written}`).toBe(suffix)
+        expect(root, `${symbol} under ${written}`).toBe(
+          writtenRoot(concertRoot as Root, written),
+        )
+      }
+    }
+  })
+
+  it('is the identity on Concert for every shipped symbol (AC2)', () => {
+    for (const symbol of SYMBOLS) expect(writtenChord(symbol, 'C')).toBe(symbol)
+  })
+
+  it('spells every root × flavour as notes the staff can draw, in every key (F23 E2 R1, AC2)', () => {
+    for (const answer of PAIRS)
+      for (const written of KEYS) {
+        const where = `${answer.root} ${answer.flavour} under ${written}`
+        const shown = writtenAnswer(answer, written)
+        expect(ROOTS, where).toContain(shown.root)
+        const notes = scaleNotes(shown)
+        expect(notes, where).toHaveLength(scaleNotes(answer).length)
+        for (const note of notes) expect(note, where).toMatch(DRAWABLE)
+        expect(() => staffNotes(notes), where).not.toThrow()
+      }
+  })
+
+  it("shows today's staff on Concert (R7, AC8)", () => {
+    for (const answer of PAIRS) {
+      expect(writtenAnswer(answer, 'C')).toEqual(answer)
+      expect(scaleNotes(writtenAnswer(answer, 'C'))).toEqual(scaleNotes(answer))
+    }
+  })
+
+  it('carries a double accidental in exactly these written scales — each the spelling concert already shows for that root (F23 E2 AC2, D2)', () => {
+    const doubles = KEYS.flatMap((written) =>
+      PAIRS.map((answer) => ({
+        answer,
+        written,
+        notes: scaleNotes(writtenAnswer(answer, written)),
+      }))
+        .filter(({ notes }) => notes.some((note) => /♯♯|♭♭/.test(note)))
+        .map(
+          ({ answer, written, notes }) =>
+            `${written}: ${answer.root} ${answer.flavour} → ${notes.join(' ')}`,
+        ),
+    )
+
+    expect(new Set(doubles)).toEqual(
+      new Set([
+        'C: C♯ Lydian → C♯ D♯ E♯ F♯♯ G♯ A♯ B♯',
+        'C: C♯ Lydian dominant → C♯ D♯ E♯ F♯♯ G♯ A♯ B',
+        'C: A♭ Phrygian → A♭ B♭♭ C♭ D♭ E♭ F♭ G♭',
+        'C: E♭ Blues → E♭ G♭ A♭ B♭♭ B♭ D♭',
+        'E♭: B Phrygian dominant → A♭ B♭♭ C D♭ E♭ F♭ G♭',
+        'E♭: F♯ Blues → E♭ G♭ A♭ B♭♭ B♭ D♭',
+        'B♭: F♯ Blues → A♭ C♭ D♭ E♭♭ E♭ G♭',
+      ]),
+    )
+    expect(doubles).toHaveLength(7)
+  })
 })

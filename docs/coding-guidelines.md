@@ -37,9 +37,9 @@ the one-line test.**
 | :-- | :-- | :-- |
 | `layout/` | `Container`, `PageShell`, `Row`, `Stack`, `LabelledColumn` | Does it only arrange its children — spacing, direction, the page frame — and render no content of its own? |
 | `surfaces/` | `Card`, `Panel` | Is it a background other content sits *on*: a border, a fill, a gradient? |
-| `controls/` | `Button`, `Chip`, `ChipGroup`, `PlayControl` | Does the user press, toggle or select it? |
+| `controls/` | `Button`, `Chip`, `ChipGroup`, `InlineButton`, `PlayControl`, `Select`, `Switch` | Does the user press, toggle or select it? |
 | `typography/` | `Heading`, `Text`, `Lettering`, `EyebrowLabel`, `SectionLabel` | Is it text styling and nothing else? |
-| `display/` | `Pill`, `ProgressTrack` | Does it render a value read-only — no input, no children to arrange? |
+| `display/` | `Pill`, `ProgressTrack`, `Toast` | Does it render a value read-only — no input, no children to arrange? |
 
 `tokens.ts` stays at the root of `src/components/`, outside every group: it is
 the system's shared vocabulary, not a component. `Space` in
@@ -342,7 +342,7 @@ which are hooks. A `use` prefix is not the test; calling React hooks is.
 holds the code that sits *below* the app: what the app and the groove generator
 under `scripts/` must both run and run identically, plus the body of domain
 logic that shared core was cut out of. Today that is `hash.ts`, `groove.ts`,
-`date.ts`, the seven area files of `snippets/` and the sixteen modules of
+`date.ts`, the seven area files of `snippets/` and the eighteen modules of
 `theory/`.
 
 **A module earns a place in `src/lib/` only if it is pure, dependency-free of
@@ -369,7 +369,7 @@ cost:
   knowledge about this product. What a Dorian scale spells and how a chord is
   derived from a scale are domain; the ladder, the nudge, the streak and the
   stored result are product. `src/lib/theory/` qualifies whether or not the
-  generator happens to call any given module, which is why all sixteen live
+  generator happens to call any given module, which is why all eighteen live
   here: `phrase.ts` needs `licks.ts`, `numerals.ts` and `degrees.ts` spell
   accidentals against the same ionian ruler the generator renders from,
   `music.ts` reaches `options.ts`, which seeds the day's shuffle from `../hash`.
@@ -387,8 +387,8 @@ cost:
   across the boundary, which is precisely what feature-20 Epic 1 undid.
 
 **What the fourth bar costs, said plainly.** After feature-20 Epic 1, deleting
-`src/features/daily-groove/` and its route folder leaves fourteen modules in
-`src/lib/` that nothing imports: thirteen of the sixteen under `theory/` — every
+`src/features/daily-groove/` and its route folder leaves sixteen modules in
+`src/lib/` that nothing imports: fifteen of the eighteen under `theory/` — every
 one but `names.ts`, `roots.ts` and `scales.ts` — and `date.ts` with them. The
 app still builds, so [architecture.md](architecture.md)'s removability standard
 holds literally, but the cut is no longer clean. That is the price of one body of
