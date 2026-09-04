@@ -18,6 +18,20 @@ const HARMONIC_FIELDS = [
 
 type Harmonic = Record<(typeof HARMONIC_FIELDS)[number], string | undefined>
 
+const SEPARATOR = '\u2013'
+
+function perBar(progression: string | undefined, bars: string | undefined): string | undefined {
+  if (progression === undefined) return undefined
+  const chords = progression.split(SEPARATOR)
+  const count = Number(bars)
+  if (!Number.isInteger(count) || count <= 0) return progression
+  return Array.from({ length: count }, (_, bar) => chords[bar % chords.length]).join(SEPARATOR)
+}
+
+function comparable(entry: Harmonic, field: (typeof HARMONIC_FIELDS)[number]): string | undefined {
+  return field === 'progression' ? perBar(entry.progression, entry.bars) : entry[field]
+}
+
 const fixture = JSON.parse(
   readFileSync(join(import.meta.dirname, 'harmony.fixture.json'), 'utf8'),
 ) as { note: string; grooves: Record<string, Harmonic> }
@@ -48,7 +62,7 @@ function drift(expected: Record<string, Harmonic>, actual: Record<string, Harmon
       continue
     }
     for (const field of HARMONIC_FIELDS) {
-      if (expected[id][field] !== got[field]) {
+      if (comparable(expected[id], field) !== comparable(got, field)) {
         problems.push(`${id} ${field}: expected ${expected[id][field]}, got ${got[field]}`)
       }
     }
@@ -71,8 +85,20 @@ describe('the harmony survives the re-cut', () => {
     }
   })
 
-  it('leaves every groove’s harmony exactly as it was', () => {
+  it('leaves every groove’s harmony exactly as it was, bar for bar', () => {
     expect(drift(fixture.grooves, manifestHarmony())).toEqual([])
+  })
+
+  it('reads a three-chord cycle and its written-out four bars as the same harmony — quick-002', () => {
+    const three: Harmonic = {
+      bpm: '96', bars: '4', loopBars: '16', root: 'E', flavour: 'Dorian', scale: 'E dorian',
+      chord: 'Em7', progression: 'Em7–Bm7–C♯m7♭5',
+    }
+    const four = { ...three, progression: 'Em7–Bm7–C♯m7♭5–Em7' }
+    const other = { ...three, progression: 'Em7–Bm7–C♯m7♭5–Bm7' }
+    expect(drift({ g: three }, { g: four })).toEqual([])
+    expect(drift({ g: three }, { g: other })).toHaveLength(1)
+    expect(drift({ g: three }, { g: other })[0]).toContain('progression')
   })
 
   it('names the groove, the field and both values when something moves', () => {

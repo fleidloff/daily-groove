@@ -64,13 +64,12 @@ describe('buildHarmony', () => {
     }
   })
 
-  it('returns a progression of three or four chords valid for its flavour, starting on the tonic', () => {
+  it('returns a progression of exactly four chords valid for its flavour, starting on the tonic', () => {
     for (const flavour of FLAVOURS) {
       for (const root of ['C', 'F♯', 'A'] as Root[]) {
         const scalePitchClasses = scaleDegreePitchClasses(root, flavour)
         const h = buildHarmony(root, flavour, rngFor(`p:${root}:${flavour}`))
-        expect(h.progressionDegrees.length).toBeGreaterThanOrEqual(3)
-        expect(h.progressionDegrees.length).toBeLessThanOrEqual(4)
+        expect(h.progressionDegrees.length).toBe(4)
         expect(h.progressionMidi.length).toBe(h.progressionDegrees.length)
         expect(h.progressionDegrees[0]).toBe(0)
         expect(h.progressionMidi[0]).toEqual(h.chordMidi)
@@ -227,6 +226,49 @@ describe('buildHarmony — the blues idiom', () => {
         )
       })
     }
+  })
+
+  function rolling(first: number): { rng: () => number; calls: () => number } {
+    let calls = 0
+    return {
+      rng: () => (calls++ === 0 ? first : 0.5),
+      calls: () => calls,
+    }
+  }
+
+  it('completes a roll of three with the tonic in bar four — quick-002', () => {
+    for (const flavour of FLAVOURS) {
+      for (const root of ['C', 'E♭', 'B'] as Root[]) {
+        const h = buildHarmony(root, flavour, rolling(0).rng)
+        const where = `${root} ${flavour}`
+        expect(h.progressionDegrees, where).toHaveLength(4)
+        expect(h.progressionDegrees.slice(1, 3).every((d) => d !== 0), where).toBe(true)
+        expect(h.progressionDegrees[3], where).toBe(0)
+        expect(h.progressionMidi[3], where).toEqual(h.chordMidi)
+        expect(h.progressionName.split('–')[3], where).toBe(h.chordName)
+      }
+    }
+  })
+
+  it('leaves a roll of four as drawn, with no tonic appended — quick-002', () => {
+    for (const flavour of FLAVOURS) {
+      for (const root of ['C', 'E♭', 'B'] as Root[]) {
+        const h = buildHarmony(root, flavour, rolling(0.99).rng)
+        const where = `${root} ${flavour}`
+        expect(h.progressionDegrees, where).toHaveLength(4)
+        expect(h.progressionDegrees.slice(1).every((d) => d !== 0), where).toBe(true)
+      }
+    }
+  })
+
+  it('draws from the rng exactly as often as before the tonic was appended — quick-002', () => {
+    const three = rolling(0)
+    buildHarmony('C', 'dorian', three.rng)
+    expect(three.calls()).toBe(3)
+
+    const four = rolling(0.99)
+    buildHarmony('C', 'dorian', four.rng)
+    expect(four.calls()).toBe(4)
   })
 
   it('reaches beyond the tonic, so a blues is a progression and not a drone', () => {

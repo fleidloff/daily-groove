@@ -122,9 +122,11 @@ third the six-note scale does not hold, so they are stated. Deriving them would
 give m7 and sus4 shapes — in the scale, but not a blues. Harmonic minor needs no
 idiom: its raised seventh is a scale tone, so V7 and vii°7 fall out naturally.
 
-**Progressions** start on the tonic and run 3–4 chords, never repeating the
-previous degree back to back. `theory/validity.ts` then re-checks that the words
-and the audio agree.
+**Progressions** are four chords, one per bar of a pass, and start on the tonic.
+The seed draws three or four; a draw of three is completed by the tonic, so bar 4
+states the home chord again before the loop returns to it. Within a pass no
+degree repeats back to back; across the seam the tonic may. `theory/validity.ts`
+then re-checks that the words and the audio agree.
 
 ## The six feels
 

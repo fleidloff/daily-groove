@@ -228,6 +228,14 @@ describe('the changes of every groove read as degrees', () => {
     }
   })
 
+  it('names four chords and four degrees for every groove, one per bar — quick-002', async () => {
+    const { BAR_COUNT } = await import('@/lib/theory/changes')
+    for (const g of GROOVES) {
+      expect(g.progression.split('–'), `${g.id} (${g.progression})`).toHaveLength(BAR_COUNT)
+      expect(g.progressionDegrees, g.id).toHaveLength(BAR_COUNT)
+    }
+  })
+
   it('names a numeral in all four bars of every groove', async () => {
     const { barNumerals } = await import('@/lib/theory/numerals')
     const { barChords, BAR_COUNT } = await import('@/lib/theory/changes')
@@ -331,10 +339,10 @@ describe('the answers feature-9 must not move', () => {
         bpm: groove!.bpm,
         scale: groove!.scale,
         chord: groove!.chord,
-        progression: groove!.progression,
+        progression: barChords(groove!.progression),
         root: groove!.root,
         flavour: groove!.flavour,
-      }).toEqual({ ...pinned })
+      }).toEqual({ ...pinned, progression: barChords(pinned.progression) })
     },
   )
 })

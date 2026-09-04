@@ -4,6 +4,7 @@ import { ROOTS, pitchClassOf } from '../../../src/lib/theory/roots.ts'
 import { intervalsFor, pitchesOf } from '../../../src/lib/theory/scales.ts'
 
 const CHORD_OCTAVE = 4
+const CHORDS_PER_PASS = 4
 
 const PROGRESSION_SEPARATOR = '–'
 
@@ -136,6 +137,7 @@ export function buildHarmony(root: Root, flavour: Flavour, rng: () => number): H
     const pool = candidates.length > 0 ? candidates : others
     chosen.push(pool[Math.floor(rng() * pool.length) % pool.length])
   }
+  while (chosen.length < CHORDS_PER_PASS) chosen.push(tonic)
 
   return {
     chordMidi: tonic.midi,

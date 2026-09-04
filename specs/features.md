@@ -61,6 +61,7 @@ Status runs 📝 **Drafted** → ❓ **Questions open** → ✅ **Done**.
 | # | Change | Status | Summary |
 | :-- | :-- | :-- | :-- |
 | [001](quick/001-where-youve-heard-it.md) | Where you’ve heard it | ✅ Done | Names one well-known track per mode in the solved box — text only, no links or playback. |
+| [002](quick/002-always-four-chords.md) | Always four chords | ✅ Done | Every groove names four chords, one per bar — the home chord written out where a 3-chord cycle used to wrap, with no audio re-rendered. |
 
 ---
 

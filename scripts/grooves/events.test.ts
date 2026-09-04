@@ -41,9 +41,9 @@ function isApproachNote(
   if (grid % subdivision !== subdivision - 1) return false
   const chords = harmony.progressionMidi
   const bar = Math.floor(grid / subdivision)
-  const chordAt = (b: number) => (b % music.bars) % chords.length
-  if (chordAt(bar + 1) === chordAt(bar)) return false
-  const distance = (((event.midi - chords[chordAt(bar + 1)][0]) % 12) + 12) % 12
+  const rootAt = (b: number) => chords[(b % music.bars) % chords.length][0]
+  if (rootAt(bar + 1) === rootAt(bar)) return false
+  const distance = (((event.midi - rootAt(bar + 1)) % 12) + 12) % 12
   return Math.min(distance, 12 - distance) === 1
 }
 
@@ -1184,10 +1184,9 @@ describe('buildEvents — hands and fingers — R3, R4, R5, R6, R7, R8, R8a', ()
         ).toBeGreaterThan(12)
 
         const chords = harmony.progressionMidi
-        const chordIndex = (b: number) => (b % music.bars) % chords.length
+        const rootAt = (b: number) => chords[(b % music.bars) % chords.length][0]
         const written = bass.filter(
-          (e) =>
-            !(e.step === feel.subdivision - 1 && chordIndex(e.bar + 1) !== chordIndex(e.bar)),
+          (e) => !(e.step === feel.subdivision - 1 && rootAt(e.bar + 1) !== rootAt(e.bar)),
         )
         const steps = new Set(written.map((e) => e.step))
         expect(written.length, `${where} rests nowhere`).toBeLessThan(
@@ -1202,17 +1201,17 @@ describe('buildEvents — hands and fingers — R3, R4, R5, R6, R7, R8, R8a', ()
       for (let seed = 1; seed <= 12; seed += 1) {
         const { events, music, harmony } = played(still(feel), seed)
         const chords = harmony.progressionMidi
-        const chordIndex = (bar: number) => (bar % music.bars) % chords.length
+        const rootAt = (bar: number) => chords[(bar % music.bars) % chords.length][0]
         const bass = events.filter((e) => e.voice === 'bass')
         let found = 0
 
         for (let bar = 0; bar < music.loopBars; bar += 1) {
-          if (chordIndex(bar + 1) === chordIndex(bar)) continue
+          if (rootAt(bar + 1) === rootAt(bar)) continue
           const where = `${feel.id}:${seed} bar ${bar + 1}`
           const inBar = bass.filter((e) => e.bar === bar)
           expect(inBar.length, where).toBeGreaterThan(0)
           const last = inBar[inBar.length - 1]
-          const nextRoot = chords[chordIndex(bar + 1)][0]
+          const nextRoot = rootAt(bar + 1)
 
           expect(last.step, `${where} approaches off the last step`).toBe(feel.subdivision - 1)
           expect(interval(last.midi as number, nextRoot), `${where} is not a semitone away`).toBe(1)
@@ -1231,7 +1230,7 @@ describe('buildEvents — hands and fingers — R3, R4, R5, R6, R7, R8, R8a', ()
     let checked = 0
     for (let seed = 1; seed <= 24 && checked < 3; seed += 1) {
       const { events, music, harmony } = played(still(), seed)
-      if (harmony.progressionMidi.length !== 3) continue
+      if (harmony.progressionDegrees[3] !== 0) continue
       checked += 1
       const chord = harmony.progressionMidi[0]
       const tones = new Set(chord.map(pc))
@@ -1241,7 +1240,7 @@ describe('buildEvents — hands and fingers — R3, R4, R5, R6, R7, R8, R8a', ()
         expect(tones, `seed ${seed} bar ${lastBar + 1}`).toContain(pc(event.midi as number))
       }
     }
-    expect(checked, 'no three-chord progression in the first 24 seeds').toBeGreaterThan(0)
+    expect(checked, 'no progression ending on the tonic in the first 24 seeds').toBeGreaterThan(0)
   })
 
   it('keeps the approach note inside the loop — R8a, AC9a', () => {
@@ -1852,10 +1851,16 @@ describe('buildEvents — the comp stops being perfect — R1, R2, R3, R4, R5, R
     const catalogue = readCatalogue()
     expect(catalogue.map((spec) => spec.id).sort()).toEqual(Object.keys(PRE_EPIC_MUSIC).sort())
 
+    const perBar = (words: string) => {
+      const parts = words.split('|')
+      const chords = parts[4].split('–')
+      parts[4] = Array.from({ length: 4 }, (_, bar) => chords[bar % chords.length]).join('–')
+      return parts.join('|')
+    }
     for (const spec of catalogue) {
       const { music } = buildEvents(spec, templateById(spec.template))
       const words = [music.root, music.flavour, music.scale, music.chord, music.progression]
-      expect(words.join('|'), spec.id).toBe(PRE_EPIC_MUSIC[spec.id])
+      expect(perBar(words.join('|')), spec.id).toBe(perBar(PRE_EPIC_MUSIC[spec.id]))
     }
   })
 

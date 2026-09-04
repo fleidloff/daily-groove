@@ -411,10 +411,9 @@ export function buildEvents(
     harmony.progressionMidi[barInPass % harmony.progressionMidi.length]
 
   const nextRootAt = (barInPass: number): number | null => {
-    const chords = harmony.progressionMidi
-    const here = barInPass % chords.length
-    const next = ((barInPass + 1) % BARS_PER_PASS) % chords.length
-    return next === here ? null : chords[next][0]
+    const here = chordFor(barInPass)[0]
+    const next = chordFor((barInPass + 1) % BARS_PER_PASS)[0]
+    return next === here ? null : next
   }
 
   const compSpreadSec =
