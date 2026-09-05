@@ -182,8 +182,11 @@ overwritten, not summed with a feather, and not skipped because the bar is busy.
 - **AC5** (R7, R7b) — Given every template that declares `ride`, at every seed,
   every quarter-note position of every bar carries exactly one kick event; every
   kick event the drawn `KICK_PATTERNS` figure does not account for has velocity
-  below `0.5`; and every kick event it does account for has the velocity it has
-  today.
+  below `0.5`; and every kick event it does account for carries the velocity
+  `VELOCITIES` authors for its metric position, unchanged from today. The
+  comparison is on authored velocity, before `humanize`: `humanize` draws twice
+  per event over the whole list, so adding any event to a riding feel shifts every
+  later draw and a post-humanize comparison is unsatisfiable by construction.
 - **AC6** (R7) — Given the same riding groove built twice with a different
   `RIDE_LABEL`, the feathered kick steps are identical. The feather is not drawn.
 - **AC7** (R9) — Given `half-time` and `open-ballad` at every seed, no kick event
@@ -259,3 +262,15 @@ quietly accommodated.
 of three, every member holding beats 2 and 4. R5, R6, R12, AC4 and AC11 above
 were written against an earlier reading in which the foot hat was fixed
 placement, and now match Epic 1.
+
+### Cycle 2 — 2026-09-05
+
+**Correction, not a question.** AC5 as written in Cycle 1 asked that a drawn kick
+keep "the velocity it has today", without saying at which stage. Read as the
+rendered velocity it cannot be met: `humanize` in `scripts/grooves/humanize.ts`
+draws twice from its stream per event, walking the whole list in order, so
+inserting a feathered kick shifts every subsequent draw — and Epic 1's ride
+already does the same. AC5 now names authored velocity, before `humanize`, which
+is what R7b is actually about. Bit-exactness lives in AC9, and that is about the
+four feels this feature does not touch.
+Applied to: AC5.

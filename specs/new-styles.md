@@ -45,6 +45,16 @@ These break something structural and are their own features:
   a bar; a 3/4 or 12/8 feel wants a 12- or 24-step grid, which touches
   `events.ts` throughout.
 
+## The claves and the cowbell arrive unheard
+
+Feature-24 sources `claves`, `cowbell` and `rideBell` into the sample pack and
+plays none of them — son montuno above all is what they were bought for. Their
+round robins were verified by counting files in `pack.json`, never by ear,
+because nothing in that feature renders them. **So the first style that reaches
+for the claves owns their listening pass**, and should expect to find out there
+whether a bare wood transient machine-guns over a four-bar loop. Budget for
+re-sourcing one voice rather than assuming the pack is settled.
+
 ## How it would go
 
 Full feature, not a quick ticket: a template is tempo, swing, subdivision,

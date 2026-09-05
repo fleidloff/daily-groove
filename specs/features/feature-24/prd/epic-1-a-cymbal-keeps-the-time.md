@@ -68,8 +68,12 @@ part of closing that gap that can fail, so it goes first and it goes alone.
   **under a rendered `shuffle` groove**, not in isolation. A cymbal auditioned
   solo is the mistake feature-13 made: MuldjordKit's ride is a fine ride and a
   wrong one for this kit at this tempo, and only the mix says so.
-- **R3** — Audition renders are written to a scratch directory via the CLI's
-  `--out` option. `public/grooves/` is not touched by this epic.
+- **R3** — Audition renders are written to a scratch directory, and candidate
+  packs live outside `samples/` until a verdict is in. `public/grooves/` and
+  `samples/` are not touched by this epic until then. `generate()` already takes
+  `outDir`, `packDir`, `manifestPath`, `lockPath` and `catalogue`, but nothing
+  parses them from argv — `cli.ts` reads only `--manifest-only` — so this epic
+  builds the argv layer it needs.
 - **R4** — A candidate that no round-robin alternates can be built from is
   rejected without an audition. A ride ping is the most-repeated event in the
   file — eight or more a bar over four bars — and one identical sample at one
@@ -85,6 +89,12 @@ part of closing that gap that can fail, so it goes first and it goes alone.
 
 ### The pack
 
+- **R5b** — Adding a voice to `samples/pack.json` invalidates
+  `grooves.lock.json`'s `packSha256`, which `npm run grooves:verify` checks on
+  `prebuild`. This epic ends with that hash back in step and `npm run build`
+  green — it does not hand a red build forward to Epic 2. Re-hashing the pack is
+  not re-rendering the catalogue: the audio in `public/grooves/` is untouched
+  here and every note mp3 comes back byte-identical.
 - **R6** — Four voices are prepared in one pass: `ride` (the bow), `rideBell`,
   `claves` and `cowbell`. Preparation follows the pack's committed recipe — mono
   downmix, capped at that voice's own decay, 80 ms fade at the cap, 44.1 kHz
@@ -282,7 +292,13 @@ byte-identical.
   further libraries are prepared and heard before the epic reports the stopping
   outcome.
 - **AC14** (R3) — Given an audition render, `public/grooves/` is unmodified and
-  `grooves.lock.json` still verifies.
+  no candidate's files have entered `samples/`.
+- **AC14b** (R6) — Given the pack with the four new voices declared,
+  `grooves.lock.json`'s `packSha256` is brought back into step and
+  `npm run grooves:verify` exits clean, with every note mp3 byte-identical. The
+  lock hashes `samples/pack.json`, `grooves:verify` runs on `prebuild`, and only
+  `npm run notes` rewrites that hash — so an epic that adds a voice and stops
+  leaves `npm run build` failing as `pack-stale`.
 - **AC15** (R5) — Given a run in which none of the three candidates passes,
   `VoiceName` holds fourteen members and no `ride`, the pack declares `claves`,
   `cowbell` and `rideBell` and no `ride`, `events.test.ts` still bans `ride`, and
@@ -317,6 +333,14 @@ Nothing precedes this epic. What it hands forward:
   template in this feature.
 - **The bell, the claves and the cowbell need no pattern pool, no RNG stream and
   no template entry** in this epic. They are pack rows and type members only.
+- **The claves and the cowbell ship without a listening pass, deliberately.**
+  Nothing renders them here, so their round robins are checked by counting files
+  in `pack.json` and not by ear — and a bare wood transient machine-gunning over a
+  loop is audible only in a loop. Auditioning them would mean a throwaway template
+  through Epic 1's own `--pack`/`--out` rig; it was considered and declined, and
+  the styles in [new-styles.md](../../new-styles.md) audition them when something
+  first plays them. If the claves turn out wrong then, re-sourcing one voice is a
+  small job.
 - **The claves and the rim never sound in the same groove.** A briefing rule with
   nothing to bind yet, since no template plays claves. It is recorded in
   `docs/music.md` in Epic 2 so the styles that reach for the claves inherit it.
@@ -388,3 +412,21 @@ snare phrases already are.
 Applied to: R21c, R21d, R21e, AC9c, diagram, Dependencies. Replaced the Cycle 1
 assumption that one rule covered both bars, and preserves Q3's reasoning — the
 loop point keeps a marker that fires once.
+
+### Cycle 3 — 2026-09-05
+
+**Correction, not a question.** R3 as written in Cycle 1 said audition renders go
+to a scratch directory "via the CLI's `--out` option". There is no such option:
+`cli.ts`'s argv layer reads `--manifest-only` and nothing else, though
+`generate()` already accepts `outDir` and `packDir` as arguments. R3 now says
+what is there and makes the argv layer part of the epic's work.
+Applied to: R3, AC14.
+
+**Correction, not a question.** AC14 as written in Cycle 1 asserted that
+`grooves.lock.json` "still verifies" after this epic. It cannot: the lock carries
+`packSha256` over `samples/pack.json`, `npm run grooves:verify` runs on
+`prebuild`, and R6 adds four voices to that file — so the tree this epic leaves
+fails `npm run build` as `pack-stale` unless the hash is brought back into step.
+Only `npm run notes` rewrites it, and doing so re-renders no groove audio. R5b
+now makes that this epic's job rather than a red carried into Epic 2.
+Applied to: R5b, AC14, AC14b.

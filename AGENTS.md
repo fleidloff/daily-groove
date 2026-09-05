@@ -39,6 +39,11 @@ Code writes no title of its own in this repo. Its hooks own the tab instead:
 `◐` while a turn is running, `✳` while it waits for you. You supply the words
 after the glyph.
 
+A dispatched agent counts as running. `PreToolUse` on the agent tool and
+`SubagentStop` keep a token per live agent under `~/.claude/title-state/`, so a
+turn that ends while its agents are still working keeps `◐` and only flips to
+`✳` when the last one reports back.
+
 ```bash
 .claude/scripts/title.sh "F8) writing GrooveHeader tests"
 .claude/scripts/title.sh "Q4) moving StreakBadge"

@@ -4,10 +4,19 @@
   },
   "hooks": {
     "SessionStart": [
-      { "hooks": [{ "type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/scripts/title.sh --idle" }] }
+      { "hooks": [{ "type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/scripts/title.sh --reset" }] }
     ],
     "UserPromptSubmit": [
       { "hooks": [{ "type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/scripts/title.sh --busy" }] }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Task|Agent",
+        "hooks": [{ "type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/scripts/title.sh --agent-start" }]
+      }
+    ],
+    "SubagentStop": [
+      { "hooks": [{ "type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/scripts/title.sh --agent-stop" }] }
     ],
     "Notification": [
       { "hooks": [{ "type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/scripts/title.sh --idle" }] }

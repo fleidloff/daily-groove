@@ -63,21 +63,43 @@ at once, and a groove whose harmony moved is a past puzzle whose answer moved.
 ### The credit
 
 - **R6** — If a CC-BY library supplied the ride, the sample credit already on the
-  groove box grows to name both sources on **one line**. `puzzle.drumCredit` in
-  `src/lib/snippets/en/puzzle.ts` and its assertion in `snippets.test.ts` change
-  together.
-- **R7** — The credit stays where it is, on the groove box, as one line. It does
-  not become a stacked pair, does not move to a footer, and does not become a
-  generic "and others" — an attribution that names nobody satisfies nothing. A
-  footer is a separate candidate idea and stays one.
+  groove box grows to name both sources on **one line**, reading `Drum samples
+  provided by DrumGizmo.org and <Ride>`, where `<Ride>` is the attribution text
+  that library's licence names. Only the DrumGizmo half is the text of the
+  `drumgizmo.org` link; ` and <Ride>` renders after the anchor closes, so a link
+  never has inside it the name of something it does not point at. It keeps the shape and roughly the length of the
+  sentence Sam already skims past — a credit should stay something you can
+  not-read in one glance, because legal text growing on the page is the same
+  friction as being asked for an account before the first sound plays.
+  `puzzle.drumCredit` in `src/lib/snippets/en/puzzle.ts` and its assertion in
+  `snippets.test.ts` change together.
+- **R7** — The credit stays where it is and keeps the shape it already has:
+  `GrooveCard.tsx` renders `puzzle.drumCredit` as the text of a link to
+  `drumgizmo.org`, followed by a second link reading `CC BY 4.0`. It does not
+  become a stacked pair, does not move to a footer, and does not become a generic
+  "and others" — an attribution that names nobody satisfies nothing. A footer is a
+  separate candidate idea and stays one.
+- **R7b** — The ride library gets no link of its own. One line, two anchors, the
+  two that are there today — a third would be the growth of legal text on the page
+  that R6 exists to avoid. The ride's name is plain text between them.
+- **R7c** — The line is assembled from two snippet keys, not from splitting one.
+  `puzzle.drumCredit` keeps the words it has and stays the anchor's text; a second
+  key carries ` and <Ride>` and renders outside the anchor. Splitting a sentence in
+  the component on `' and '` would make the rendering depend on the punctuation of
+  a translatable string, and hard-coding the ride's name in `GrooveCard.tsx` would
+  put user-facing text outside `src/lib/snippets/`.
 - **R8** — If the ride library is CC0, nothing in `src/` changes and this epic
   does not touch the app's source at all.
 
 ### The player
 
-- **R9** — The app says nothing about the change. A groove Sam played three weeks
-  ago sounds different when they open its share link, and the puzzle, the answer,
-  the streak and the stored result are all exactly what they were.
+- **R9** — The app says nothing about the change, anywhere, ever. A groove Sam
+  played three weeks ago sounds different when they open its share link, and the
+  puzzle, the answer, the streak and the stored result are all exactly what they
+  were. No notice on the daily page, no line on the solved box, no snippet added
+  and no component written for one. A note about audio Sam cannot A/B against
+  what they remember is a thing to read that helps nobody play, and reading
+  things is what loses them.
 - **R10** — A returning player gets the new audio rather than a cached old file
   on the same path. The MP3 paths are stable (`/grooves/groove-01.mp3`), so this
   is verified against the deployed app rather than assumed from the build.
@@ -118,15 +140,24 @@ render all 30 to a scratch dir
   and `npm run build` — which runs it on `prebuild` — succeeds.
 - **AC4** (R4) — Given all thirty rendered grooves, the gate returns no failure,
   and each groove's RMS sits within −29…−20 dBFS.
-- **AC5** (R6, R8) — Given a CC-BY ride library, `snippets.puzzle.drumCredit` is
-  one string naming DrumGizmo.org and the ride library, and `snippets.test.ts`
-  asserts that exact string. Given a CC0 ride library, `git diff` shows no change
-  under `src/`.
-- **AC6** (R7) — Given the solved groove box, exactly one credit line renders, in
-  the position it renders in today.
+- **AC5** (R6, R7c, R8) — Given a CC-BY ride library, the credit line renders as
+  `Drum samples provided by DrumGizmo.org and <Ride> · CC BY 4.0`, with
+  `snippets.puzzle.drumCredit` unchanged at `Drum samples provided by
+  DrumGizmo.org` and supplying the anchor's text, and the second key supplying
+  ` and <Ride>` outside it; `snippets.test.ts` asserts both strings. Given a CC0
+  ride library, `git diff` shows no change under `src/`.
+- **AC6** (R7, R7b) — Given the groove box, exactly one credit line renders, in
+  the position it renders in today, carrying exactly two anchors — the
+  `drumgizmo.org` link whose text is `puzzle.drumCredit`, and the `CC BY 4.0`
+  licence link.
 - **AC7** (R9) — Given a stored result from before this feature, when the player
   opens the app or a share link to that groove, then the puzzle, the answer, the
   attempts, the streak and every word on the page are what they were.
+- **AC7b** (R9) — Given the diff for this epic, no snippet is added under
+  `src/lib/snippets/` that says anything to the player about the re-render, and
+  the only keys touched there are the two that carry the sample attribution, and
+  only if the ride library is CC-BY. No notice, no "re-recorded" line, no
+  changelog string.
 - **AC8** (R10) — Given a browser that played a `shuffle` groove before the
   deploy, when it opens the app after the deploy, then the audio it plays is the
   new render.
@@ -141,7 +172,9 @@ render all 30 to a scratch dir
 **Needs from Epic 2:** both templates final, and the count of riding feels — two,
 or one if `swung-sixteenth`'s ride did not survive its listening pass. If it is
 one, the changed-groove count is six rather than eleven and every requirement
-here reads with that number.
+here reads with that number. Epic 2 also owns the density band: a seed it could
+not bring inside its feel's band stops Epic 2, so this epic begins only when all
+thirty grooves render inside their bands.
 
 **Needs from Epic 1:** whether the ride library is CC0 or CC-BY, which is what
 decides whether R6 applies at all.
@@ -163,42 +196,55 @@ Hands nothing forward. This is the last epic.
 - **The listening sign-off is delivered the way Epic 1 established it** — file
   paths and what to listen for, played by a person.
 
-## Open questions
+## Question log
 
-Tick one option per question (`- [x]`), or write your own, then re-run
-`/brainstorm feature-24 epic-3`.
+Answered questions, kept for traceability. The requirements above are the source
+of truth — this records how they got there. Append-only.
 
-### Q1. What does the credit line say, if the ride is CC-BY?
+### Cycle 1 — 2026-09-05
 
-`puzzle.drumCredit` reads `Drum samples provided by DrumGizmo.org` today, sits on
-the groove box, and is asserted verbatim in `snippets.test.ts:133`. One line has
-to carry both obligations. `<Ride>` below stands for whatever Epic 1 picked.
+**Q1. What does the credit line say, if the ride is CC-BY?**
+Answer: **A) `Drum samples provided by DrumGizmo.org and <Ride>`** — the smallest
+edit that names both sources, keeping the sentence the shape and length Sam
+already skims past.
+Applied to: R6, R7, AC5, AC6. R7 gained the explicit refusal of links, which was
+option D.
 
-- [x] A) `Drum samples provided by DrumGizmo.org and <Ride>` *(recommended — the
-      smallest edit that names both sources, and it keeps the sentence Sam already
-      skims the same shape and roughly the same length. Persona: "an account, a
-      paywall, or a permission prompt before the first sound plays" is what loses
-      them, and legal text growing on the page is the same species of friction —
-      the credit should stay something you can not-read in one glance)*
-- [ ] B) `Drums: DrumGizmo.org · Ride: <Ride>` — names which library gave which
-      sound, which is what a person chasing the attribution actually wants
-- [ ] C) `Samples: DrumGizmo.org, <Ride>` — drops the sentence for a label, the
-      shortest thing that still names both
-- [ ] D) `Drum samples provided by DrumGizmo.org and <Ride>`, with the two library
-      names as links to their sources
+**Q2. Does anything tell the player their old groove now sounds different?**
+Answer: **A) Nothing at all** — a note about audio Sam cannot A/B is a thing to
+read that helps nobody play.
+Applied to: R9, AC7b. Stronger than option D, so no changelog line either: the
+change is findable in this feature's own spec documents and nowhere else is
+written for it.
 
-### Q2. Does anything tell the player their old groove now sounds different?
+### Cycle 2 — 2026-09-05
 
-Eleven puzzles Sam may already have played and shared will play a different take
-from tomorrow. Same answer, same streak, different cymbal.
+**Correction, not a question.** R7 and AC6 as written in Cycle 1 required the
+credit to render as "plain text containing no anchor". It does not and never
+did: `GrooveCard.tsx:45–62` renders `puzzle.drumCredit` as the text of a link to
+`drumgizmo.org`, followed by a second link reading `CC BY 4.0`. Cycle 1's Q1
+ruled out option D — *giving the ride library its own link* — and that was
+written down as though it ruled out the links already there.
+Applied to: R7, R7b, AC6. The decision is unchanged; the description of what it
+applies to is now accurate.
 
-- [x] A) Nothing at all *(recommended — persona: "one thing per day, not a
-      curriculum" and "homework" is what loses them, and a notice about a change
-      to audio they cannot A/B is a thing to read that helps nobody play. The
-      roadmap already puts every player-facing change out of scope for this epic
-      except the credit line)*
-- [ ] B) One line on the solved box of a re-rendered groove — "this groove was
-      re-recorded" — so a player who noticed is not left wondering
-- [ ] C) A one-off notice on the daily page for a week after the deploy
-- [ ] D) Nothing in the app, but a line in the repo's own changelog or
-      `features.md`, so the change is findable by whoever looks for it
+### Cycle 3 — 2026-09-05
+
+**Q1 (tech spec). The grown credit sits inside the DrumGizmo link — is that the
+attribution you want to ship?**
+Answer: **B) Split the anchor so each name links to its own source.** Only the
+DrumGizmo half is the link's text; the ride's name renders after it as plain
+text.
+Applied to: R6, R7b, R7c, AC5, AC7b, and Epic 3's tech spec (Track D gains
+`GrooveCard.tsx`).
+
+**Amendment AC7b, forced by that answer.** B's rendering has no clean
+implementation while AC7b forbids adding a snippet key: the alternatives are
+splitting a translatable sentence on `' and '` in the component, or hard-coding
+the ride's name outside `src/lib/snippets/`. AC7b was written to enforce R9 —
+the app says nothing to the player about the re-render — and an attribution key
+is not a notice, so the rule was broader than its reason. It is now narrowed to
+its intent, and R7c names the two-key assembly as the way B is built. Option C's
+rendering and B's are the same line; C was rejected as "needs a PRD amendment",
+and the amendment turns out to be a one-clause correction of an over-broad AC of
+our own making rather than a loosening of R9.
