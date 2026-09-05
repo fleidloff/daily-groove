@@ -654,9 +654,9 @@ describe('GroovePuzzle', () => {
       within(panel).queryByText(new RegExp(`^You said ${wrong} — `)),
     ).toBeNull()
     expect(within(panel).queryByText(/^You said /)).toBeNull()
-    expect(screen.getByLabelText(header.currentStreakName)).toHaveTextContent(
-      header.streakDays({ days: 1 }),
-    )
+    expect(
+      screen.getByLabelText(header.streakName({ days: 1 })),
+    ).toBeInTheDocument()
     expect(
       within(container).getByRole('img', { name: CHANGES_READ }),
     ).toBeInTheDocument()
@@ -876,9 +876,9 @@ describe('GroovePuzzle', () => {
     expect(saved.solved).toBe(true)
     expect(saved.revealed).toBeUndefined()
     expect(saved.answer).toEqual({ root: 'C', flavour: 'Dorian' })
-    expect(screen.getByLabelText(header.currentStreakName)).toHaveTextContent(
-      header.streakDays({ days: 1 }),
-    )
+    expect(
+      screen.getByLabelText(header.streakName({ days: 1 })),
+    ).toBeInTheDocument()
   })
 
   it('carries the preference into the page it opens with (E5 R7, AC7)', async () => {
@@ -988,7 +988,9 @@ describe('GroovePuzzle', () => {
     })
 
     const streakLine = () =>
-      screen.getByLabelText(header.currentStreakName).textContent
+      screen
+        .getByLabelText((name) => name.startsWith(header.currentStreakName))
+        .getAttribute('aria-label')
 
     it('says this is a shared groove rather than today’s puzzle, before any press (R1, R3, AC1)', async () => {
       await renderShared()

@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="en" data-theme="system">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prototype — quick 4, streak always top right</title>
+<style>
+  :root {
+    --color-paper: #f5f2ea;
+    --color-paper-tint: #fbf9f3;
+    --color-paper-shade: #edebe0;
+    --color-surface: #fffdf8;
+    --color-surface-inset: #f3f1e6;
+    --color-border: #e4e2d5;
+    --color-border-strong: #dcdacd;
+    --color-accent: #3f5a42;
+    --color-accent-soft: #7e9b6e;
+    --color-on-accent: #f7f5ec;
+    --color-text: #23291f;
+    --color-text-muted: #8a9180;
+    --color-text-faint: #a0a794;
+    --color-warm: #c4714b;
+    --radius-card: 22px;
+    --radius-panel: 16px;
+    --radius-control: 14px;
+    --shadow-card: 0 1px 0 #ffffff inset, 0 18px 40px -32px rgba(48, 58, 42, 0.45);
+    --font-display: Georgia, "Times New Roman", serif;
+    --font-sans: system-ui, -apple-system, sans-serif;
+    --scaffold: #7c3aed;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --color-paper: #16190f; --color-paper-tint: #1e2217; --color-paper-shade: #0d0f08;
+      --color-surface: #1f2319; --color-surface-inset: #1a1e14;
+      --color-border: #2f3427; --color-border-strong: #3d4334;
+      --color-accent: #8fa87c; --color-accent-soft: #6f8b60; --color-on-accent: #16190f;
+      --color-text: #f0eee2; --color-text-muted: #98a08a; --color-text-faint: #737a66;
+      --color-warm: #d9865c;
+      --shadow-card: 0 1px 0 rgba(255,255,255,.04) inset, 0 18px 40px -32px rgba(0,0,0,.6);
+      --scaffold: #a78bfa;
+    }
+  }
+  :root[data-theme="dark"] {
+    --color-paper: #16190f; --color-paper-tint: #1e2217; --color-paper-shade: #0d0f08;
+    --color-surface: #1f2319; --color-surface-inset: #1a1e14;
+    --color-border: #2f3427; --color-border-strong: #3d4334;
+    --color-accent: #8fa87c; --color-accent-soft: #6f8b60; --color-on-accent: #16190f;
+    --color-text: #f0eee2; --color-text-muted: #98a08a; --color-text-faint: #737a66;
+    --color-warm: #d9865c;
+    --shadow-card: 0 1px 0 rgba(255,255,255,.04) inset, 0 18px 40px -32px rgba(0,0,0,.6);
+    --scaffold: #a78bfa;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 0 0 60px;
+    background: var(--color-paper);
+    color: var(--color-text);
+    font-family: var(--font-sans);
+  }
+
+  /* ---------- scaffolding, not a screen ---------- */
+  .bar {
+    position: sticky; top: 0; z-index: 10;
+    display: flex; flex-wrap: wrap; gap: 14px; align-items: center;
+    padding: 10px 14px;
+    background: #1b1230; color: #efe9ff;
+    font: 12px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace;
+    border-bottom: 2px dashed var(--scaffold);
+  }
+  .bar .tag { color: var(--scaffold); letter-spacing: .08em; text-transform: uppercase; }
+  .bar .group { display: flex; gap: 6px; align-items: center; }
+  .bar .group > span { opacity: .6; margin-right: 2px; }
+  .bar button {
+    font: inherit; cursor: pointer;
+    padding: 5px 10px; border-radius: 6px;
+    border: 1px solid #4c3a76; background: #2a1e47; color: #efe9ff;
+  }
+  .bar button.on { background: var(--scaffold); border-color: var(--scaffold); color: #17102b; }
+  .note {
+    max-width: 1220px; margin: 18px auto 0; padding: 0 20px;
+    font: 12px/1.6 ui-monospace, Menlo, monospace; color: var(--scaffold);
+  }
+
+  /* ---------- the frame ---------- */
+  .frame {
+    margin: 18px auto; background: var(--color-paper);
+    background-image: radial-gradient(120% 80% at 15% 0%, var(--color-paper-tint) 0%, var(--color-paper) 55%, var(--color-paper-shade) 100%);
+    border: 1px solid var(--color-border-strong);
+    border-radius: 18px; overflow: hidden;
+    outline: 2px dashed color-mix(in srgb, var(--scaffold) 45%, transparent);
+    outline-offset: 6px;
+  }
+  .frame[data-w="narrow"] { width: 390px; }
+  .frame[data-w="wide"] { width: min(1220px, calc(100vw - 60px)); }
+
+  .shell { padding: 32px 20px 48px; }
+  .frame[data-w="wide"] .shell { padding: 44px 40px 64px; }
+
+  h1 {
+    margin: 0; font-family: var(--font-display); font-weight: 400;
+    font-size: 34px; line-height: 1.05; letter-spacing: -.015em;
+  }
+  .frame[data-w="wide"] h1 { font-size: 44px; }
+  .tagline { margin: 4px 0 0; color: var(--color-text-muted); font-size: 15px; line-height: 1.55; }
+  .help {
+    font: inherit; cursor: pointer; padding: 0; margin-left: 2px;
+    background: none; border: 0; border-bottom: 1px dotted currentColor; color: var(--color-text-muted);
+  }
+
+  .pill, .select {
+    display: inline-flex; align-items: center; gap: 8px;
+    border: 1px solid var(--color-border-strong); background: var(--color-surface);
+    border-radius: 999px; padding: 8px 16px; font-size: 14px; color: var(--color-text);
+    white-space: nowrap;
+  }
+  .select .lbl { color: var(--color-text-muted); }
+  .select .caret { color: var(--color-text-faint); }
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px; cursor: pointer;
+    border: 1px solid var(--color-border-strong); background: var(--color-surface);
+    border-radius: var(--radius-control); padding: 7px 13px; font: inherit; font-size: 14px;
+    color: var(--color-text);
+  }
+  .streak .dot { color: var(--color-accent-soft); }
+
+  /* ---------- today ---------- */
+  .hdr-today { display: flex; flex-direction: column; gap: 28px; }
+  .frame[data-w="wide"] .hdr-today { flex-direction: row; align-items: center; justify-content: space-between; }
+  .hdr-today .titles { min-width: 0; align-self: flex-start; }
+  .hdr-today .controls { align-self: flex-end; display: flex; gap: 8px; align-items: center; }
+  .frame[data-w="wide"] .hdr-today .controls { align-self: auto; }
+
+  /* ---------- the change ---------- */
+  .hdr-new { display: grid; column-gap: 28px; row-gap: 20px; align-items: start;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: "titles streak" "controls controls"; }
+  .hdr-new .titles { grid-area: titles; min-width: 0; }
+  .hdr-new .streak { grid-area: streak; justify-self: end; }
+  .hdr-new .controls { grid-area: controls; justify-self: end; display: flex; gap: 8px; align-items: center; }
+  .frame[data-w="wide"] .hdr-new[data-opt="b"] {
+    grid-template-areas: "titles streak" "titles controls";
+    row-gap: 10px;
+  }
+  .frame[data-w="wide"] .hdr-new[data-opt="b"] .controls { align-self: end; }
+
+  [data-layout="today"] .hdr-new,
+  [data-layout="a"] .hdr-today,
+  [data-layout="b"] .hdr-today { display: none; }
+
+  /* ---------- rest of the page, out of scope ---------- */
+  .stub {
+    margin-top: 34px; border: 1px dashed var(--color-border-strong); border-radius: var(--radius-card);
+    padding: 26px 20px; text-align: center; color: var(--color-text-faint); font-size: 13px;
+    background: color-mix(in srgb, var(--color-surface) 45%, transparent);
+  }
+  .stub .play {
+    display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+    margin-bottom: 14px; padding: 16px 34px; border-radius: 999px;
+    background: var(--color-accent); color: var(--color-on-accent); font-size: 16px;
+    border: 0; font-family: inherit;
+  }
+</style>
+</head>
+<body>
+
+<nav class="bar">
+  <span class="tag">prototype scaffolding</span>
+  <span class="group" data-set="w"><span>width</span>
+    <button data-v="narrow" class="on">narrow 390</button>
+    <button data-v="wide">wide 1220</button>
+  </span>
+  <span class="group" data-set="layout"><span>layout</span>
+    <button data-v="today" class="on">today</button>
+    <button data-v="a">Q1&nbsp;A (chosen)</button>
+    <button data-v="b">Q1&nbsp;B (not chosen)</button>
+  </span>
+  <span class="group" data-set="streak"><span>streak</span>
+    <button data-v="0" >0</button>
+    <button data-v="1">1</button>
+    <button data-v="5" class="on">5</button>
+    <button data-v="128">128</button>
+  </span>
+  <span class="group" data-set="theme"><span>theme</span>
+    <button data-v="system" class="on">system</button>
+    <button data-v="light">light</button>
+    <button data-v="dark">dark</button>
+  </span>
+</nav>
+
+<p class="note">Fake data. No audio. Newsreader / DM Sans / the jazz hand stand in as Georgia and system-ui, so the title is the wrong face at the right size.</p>
+
+<div class="frame" data-w="narrow" data-layout="today">
+  <div class="shell">
+
+    <header class="hdr-today">
+      <div class="titles">
+        <h1>Eardle - Daily Ear Training</h1>
+        <p class="tagline">Wordle for your ears. Listen to today's groove, figure out the key, and test your musicianship daily. <button class="help">How to play</button></p>
+      </div>
+      <div class="controls">
+        <span class="select"><span class="lbl">Transpose</span><span>E♭</span><span class="caret">▾</span></span>
+        <span class="pill streak"><span class="dot">●</span><span class="old-streak">5 days streak</span></span>
+        <button class="btn">Share</button>
+      </div>
+    </header>
+
+    <header class="hdr-new" data-opt="a">
+      <div class="titles">
+        <h1>Eardle - Daily Ear Training</h1>
+        <p class="tagline">Wordle for your ears. Listen to today's groove, figure out the key, and test your musicianship daily. <button class="help">How to play</button></p>
+      </div>
+      <span class="pill streak" aria-label="Current streak: 5 days">
+        <span aria-hidden="true">🔥</span><span class="new-streak">5</span>
+      </span>
+      <div class="controls">
+        <span class="select"><span class="lbl">Transpose</span><span>E♭</span><span class="caret">▾</span></span>
+        <button class="btn">Share</button>
+      </div>
+    </header>
+
+    <div class="stub">
+      <button class="play">▶ Play today's groove</button>
+      <div>rest of the page — untouched by this ticket</div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  var frame = document.querySelector('.frame');
+  document.querySelectorAll('.bar .group').forEach(function (group) {
+    group.addEventListener('click', function (event) {
+      var button = event.target.closest('button');
+      if (!button) return;
+      group.querySelectorAll('button').forEach(function (b) { b.classList.toggle('on', b === button); });
+      apply(group.dataset.set, button.dataset.v);
+    });
+  });
+
+  function apply(set, value) {
+    if (set === 'w') frame.dataset.w = value;
+    if (set === 'layout') {
+      frame.dataset.layout = value;
+      if (value !== 'today') document.querySelector('.hdr-new').dataset.opt = value;
+    }
+    if (set === 'theme') document.documentElement.dataset.theme = value;
+    if (set === 'streak') {
+      var days = Number(value);
+      document.querySelector('.new-streak').textContent = days;
+      document.querySelector('.old-streak').textContent = days === 0 ? 'No streak yet' : days + (days === 1 ? ' day streak' : ' days streak');
+      document.querySelector('.hdr-new .streak').setAttribute('aria-label', 'Current streak: ' + days + (days === 1 ? ' day' : ' days'));
+    }
+  }
+</script>
+
+</body>
+</html>

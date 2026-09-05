@@ -6,8 +6,8 @@ export type BrandingSnippets = {
 export type HeaderSnippets = {
   helpToggleName: string
   currentStreakName: string
-  noStreakYet: string
-  streakDays: (args: { days: number }) => string
+  streakName: (args: { days: number }) => string
+  streakCount: (args: { days: number }) => string
   share: string
   linkCopied: string
   transpose: string

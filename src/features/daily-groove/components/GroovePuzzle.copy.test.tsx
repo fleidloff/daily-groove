@@ -98,7 +98,7 @@ describe('nothing on the page counts your tries (F19 E1)', () => {
 
     expect(screen.getByRole('heading', { name: intro.title })).toBeInTheDocument()
     expect(readablePage()).toEqual(
-      expect.arrayContaining([intro.closeName, header.currentStreakName]),
+      expect.arrayContaining([intro.closeName, header.streakName({ days: 0 })]),
     )
     expect(offendingCopy(readablePage())).toEqual([])
     expect(document.querySelectorAll('[data-dot-state]')).toHaveLength(0)
@@ -150,8 +150,8 @@ describe('nothing on the page counts your tries (F19 E1)', () => {
       /streak (?:lost|broken|reset|over|ended)/i,
     )
     expect(document.body.textContent).not.toMatch(/back to (?:zero|0)/i)
-    expect(screen.getByLabelText(header.currentStreakName)).toHaveTextContent(
-      header.noStreakYet,
-    )
+    expect(
+      screen.getByLabelText(header.streakName({ days: 0 })),
+    ).toBeInTheDocument()
   })
 })

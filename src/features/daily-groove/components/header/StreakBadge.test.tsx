@@ -4,24 +4,32 @@ import { header } from '@/lib/snippets'
 import { StreakBadge } from './StreakBadge'
 
 describe('StreakBadge', () => {
-  it('renders a legible empty state at zero rather than "0 days streak" (R4, AC4)', () => {
+  it('renders the fire and the count, and nothing else (quick 4)', () => {
+    render(<StreakBadge streak={5} />)
+    expect(screen.getByLabelText(header.streakName({ days: 5 })).textContent).toBe(
+      '🔥5',
+    )
+  })
+
+  it('renders a zero rather than words when there is no streak (quick 4)', () => {
     render(<StreakBadge streak={0} />)
-    expect(screen.getByText(header.noStreakYet)).toBeInTheDocument()
-    expect(screen.queryByText(/\b0 days?\b/)).not.toBeInTheDocument()
+    expect(screen.getByLabelText(header.streakName({ days: 0 })).textContent).toBe(
+      '🔥0',
+    )
   })
 
-  it('renders the singular at one (R3, AC3)', () => {
-    render(<StreakBadge streak={1} />)
-    expect(screen.getByText(header.streakDays({ days: 1 }))).toBeInTheDocument()
+  it('keeps the fire out of the accessible name (quick 4)', () => {
+    render(<StreakBadge streak={5} />)
+    expect(screen.getByText('🔥')).toHaveAttribute('aria-hidden', 'true')
   })
 
-  it('renders the plural above one (R3, AC3)', () => {
-    render(<StreakBadge streak={3} />)
-    expect(screen.getByText(header.streakDays({ days: 3 }))).toBeInTheDocument()
-  })
-
-  it('is labelled as the current streak', () => {
+  it('names the streak with its count for a screen reader (quick 4)', () => {
     render(<StreakBadge streak={12} />)
-    expect(screen.getByLabelText(header.currentStreakName)).toBeInTheDocument()
+    expect(
+      screen.getByLabelText(header.streakName({ days: 12 })),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByLabelText(header.streakName({ days: 12 })).textContent,
+    ).not.toMatch(/day/i)
   })
 })

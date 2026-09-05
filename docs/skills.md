@@ -89,6 +89,22 @@ you want to re-check an epic later, or after changing code by hand. It runs the
 tests, types, lint and build, traces every acceptance criterion, and reports
 done / partly / not done. It diagnoses, it doesn't fix.
 
+## `/prototype`
+
+Off the chain, and optional. `/prototype feature-8` turns settled PRDs into one
+clickable HTML file under `specs/features/feature-8/prototype/` — the app's own
+tokens, phone width, every state the PRD names reachable from a switcher bar at
+the top. `/prototype 7` does the same for a quick ticket.
+
+It refuses to run while a PRD still has open questions, for the same reason
+`/writespec` does: drawing a screen decides a hundred things, and a picture the
+user has clicked through quietly becomes the requirement before the question
+gets asked.
+
+What it hands back is a list of everything the drawing had to invent because the
+requirements were silent. That list is the point — it goes into the PRD, and a
+long one is a reason to run `/brainstorm` again.
+
 ## `/create-feature-for-persona`
 
 A different way into step 1, or into the quick door. It walks the live app in
@@ -118,7 +134,8 @@ specs/
     ├── briefing.md              step 1
     ├── roadmap.md               step 2
     ├── prd/epic-*.md            step 3
-    └── tech-spec/epic-*.md      step 4
+    ├── tech-spec/epic-*.md      step 4
+    └── prototype/*.html         optional, /prototype
 ```
 
 The skills keep `specs/features.md` in step as they go, so the index never has

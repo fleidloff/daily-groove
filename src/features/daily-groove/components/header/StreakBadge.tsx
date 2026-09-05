@@ -6,12 +6,11 @@ type StreakBadgeProps = {
 }
 
 export function StreakBadge({ streak }: StreakBadgeProps) {
-  const label =
-    streak === 0 ? header.noStreakYet : header.streakDays({ days: streak })
-
   return (
-    <div aria-label={header.currentStreakName}>
-      <Pill icon="●">{label}</Pill>
+    <div aria-label={header.streakName({ days: streak })}>
+      <Pill icon={<span aria-hidden="true">🔥</span>}>
+        {header.streakCount({ days: streak })}
+      </Pill>
     </div>
   )
 }

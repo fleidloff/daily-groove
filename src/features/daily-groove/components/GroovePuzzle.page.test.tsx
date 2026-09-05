@@ -48,6 +48,9 @@ import { renderFeature } from '../testing/renderFeature'
 import { branding, coaching, header, puzzle, routes, solved } from '@/lib/snippets'
 const { appName: APP_NAME } = branding
 
+const streakBadge = () =>
+  screen.getByLabelText((name: string) => name.startsWith(header.currentStreakName))
+
 describe('GroovePuzzle', () => {
   beforeEach(async () => {
     resetMockStore(mockStore)
@@ -263,9 +266,9 @@ describe('GroovePuzzle', () => {
     expect(panel.querySelectorAll('[role="status"]')).toHaveLength(0)
 
     expect(panel.textContent).not.toMatch(/streak/i)
-    expect(screen.getByLabelText(header.currentStreakName)).toHaveTextContent(
-      header.streakDays({ days: 3 }),
-    )
+    expect(
+      screen.getByLabelText(header.streakName({ days: 3 })),
+    ).toBeInTheDocument()
   })
 
   it('writes the day\'s numerals in the box and nowhere else (F15 E3 R6, AC1)', async () => {
@@ -299,9 +302,9 @@ describe('GroovePuzzle', () => {
 
     expect(mockStore.save).not.toHaveBeenCalled()
     expect(control()).toHaveAccessibleName(coaching.pickRootAndMode)
-    expect(screen.getByLabelText(header.currentStreakName)).toHaveTextContent(
-      header.noStreakYet,
-    )
+    expect(
+      screen.getByLabelText(header.streakName({ days: 0 })),
+    ).toBeInTheDocument()
     expect(screen.queryByText(/no grooves behind you yet/i)).toBeNull()
   })
 
@@ -354,9 +357,9 @@ describe('GroovePuzzle', () => {
     try {
       await renderPuzzle()
 
-      expect(screen.getByLabelText(header.currentStreakName)).toHaveTextContent(
-        header.streakDays({ days: 3 }),
-      )
+      expect(
+        screen.getByLabelText(header.streakName({ days: 3 })),
+      ).toBeInTheDocument()
       expect(localStorage.getItem('daily-groove:v2:results')).not.toBeNull()
     } finally {
       localStorage.removeItem('daily-groove:v2:results')
@@ -695,16 +698,16 @@ describe('GroovePuzzle', () => {
       const user = userEvent.setup()
       await renderShared()
 
-      expect(screen.getByLabelText(header.currentStreakName)).toHaveTextContent(
-        header.streakDays({ days: 3 }),
-      )
+      expect(
+        screen.getByLabelText(header.streakName({ days: 3 })),
+      ).toBeInTheDocument()
       expect(mockStore.getAll).toHaveBeenCalled()
 
       await guess(user, 'C', wrongFlavour())
 
-      expect(screen.getByLabelText(header.currentStreakName)).toHaveTextContent(
-        header.streakDays({ days: 3 }),
-      )
+      expect(
+        screen.getByLabelText(header.streakName({ days: 3 })),
+      ).toBeInTheDocument()
       expect(mockStore.save).not.toHaveBeenCalled()
     })
 
@@ -713,15 +716,13 @@ describe('GroovePuzzle', () => {
       mockStore.getAll.mockResolvedValue([solved(1), solved(2)])
       await renderShared()
 
-      const before = screen.getByLabelText(header.currentStreakName).textContent
-      expect(before).toMatch(header.streakDays({ days: 2 }))
+      const before = streakBadge().getAttribute('aria-label')
+      expect(before).toBe(header.streakName({ days: 2 }))
 
       await guess(user, 'C', 'Aeolian')
 
       expect(control()).toHaveAccessibleName(coaching.checkSolved)
-      expect(screen.getByLabelText(header.currentStreakName).textContent).toBe(
-        before,
-      )
+      expect(streakBadge().getAttribute('aria-label')).toBe(before)
       expect(solutionPanel()?.textContent ?? '').not.toMatch(/3 days/)
       expect(mockStore.save).not.toHaveBeenCalled()
     })
@@ -778,9 +779,9 @@ describe('GroovePuzzle', () => {
         expect(
           screen.queryByRole('heading', { name: 'C Aeolian' }),
         ).not.toBeInTheDocument()
-        expect(screen.getByLabelText(header.currentStreakName)).toHaveTextContent(
-          header.noStreakYet,
-        )
+        expect(
+          screen.getByLabelText(header.streakName({ days: 0 })),
+        ).toBeInTheDocument()
 
         await guess(user, 'C', 'Aeolian')
         expect(await real.get(TODAY())).not.toBeNull()
@@ -931,8 +932,7 @@ describe('GroovePuzzle', () => {
       grooveId: 'groove-02',
     })
 
-    const streakLine = () =>
-      screen.getByLabelText(header.currentStreakName).textContent
+    const streakLine = () => streakBadge().getAttribute('aria-label')
 
     it('sits above the groove card, where the how-to-play box sits (R3, AC1)', async () => {
       const { container } = await renderShared()

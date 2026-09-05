@@ -22,31 +22,27 @@ export function GrooveHeader({
 }: GrooveHeaderProps) {
   return (
     <header>
-      <Row gap="lg" align="center" justify="between" collapseBelow="sm">
-        <div className="min-w-0 self-start sm:self-auto">
-          <Stack gap="xs">
+      <Stack gap="sm">
+        <Stack gap="xs">
+          <Row gap="lg" align="center" justify="between">
             <Heading level={1} size="xl">
               {branding.appName}
             </Heading>
-            <Text tone="muted">
-              {branding.tagline}{' '}
-              {onShowHelp && <HelpToggle onShow={onShowHelp} />}
-            </Text>
-          </Stack>
-        </div>
-
-        <div className="self-end sm:self-auto">
-          {share || transpose ? (
-            <Row gap="sm" align="center">
-              {transpose}
-              <StreakBadge streak={streak} />
-              {share}
-            </Row>
-          ) : (
             <StreakBadge streak={streak} />
-          )}
-        </div>
-      </Row>
+          </Row>
+          <Text tone="muted">
+            {branding.tagline}{' '}
+            {onShowHelp && <HelpToggle onShow={onShowHelp} />}
+          </Text>
+        </Stack>
+
+        {share || transpose ? (
+          <Row gap="sm" align="center" justify="end">
+            {transpose}
+            {share}
+          </Row>
+        ) : null}
+      </Stack>
     </header>
   )
 }

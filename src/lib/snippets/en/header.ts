@@ -1,10 +1,13 @@
 import type { HeaderSnippets } from '../types'
 
+const currentStreakName = 'Current streak'
+
 export const header = {
   helpToggleName: 'How to play',
-  currentStreakName: 'Current streak',
-  noStreakYet: 'No streak yet',
-  streakDays: ({ days }) => `${days} day${days === 1 ? '' : 's'} streak`,
+  currentStreakName,
+  streakName: ({ days }) =>
+    `${currentStreakName}: ${days} day${days === 1 ? '' : 's'}`,
+  streakCount: ({ days }) => `${days}`,
   share: 'Share',
   linkCopied: 'Link copied',
   transpose: 'Transpose',

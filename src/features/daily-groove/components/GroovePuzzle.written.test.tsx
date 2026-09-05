@@ -74,11 +74,9 @@ describe('GroovePuzzle — written pitch', () => {
     const box = transposeBox()
     expect(box).toHaveValue('C')
     expect(box.closest('header')).not.toBeNull()
-    const anchor = screen
-      .getByLabelText(header.currentStreakName)
-      .closest('.self-end') as HTMLElement
-    expect(anchor).toContainElement(box)
-    expect(anchor).toContainElement(
+    const controls = box.closest('.justify-end') as HTMLElement
+    expect(controls).not.toBeNull()
+    expect(controls).toContainElement(
       screen.getByRole('button', { name: header.share }),
     )
     expect(within(grooveCard()).queryByRole('combobox')).toBeNull()

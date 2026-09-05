@@ -80,9 +80,9 @@ describe('GroovePuzzle', () => {
       ).toBeInTheDocument()
       expect(screen.queryByText('Saturday')).not.toBeInTheDocument()
       expect(screen.queryByText('daily-groove')).not.toBeInTheDocument()
-      expect(screen.getByLabelText(header.currentStreakName)).toHaveTextContent(
-        header.noStreakYet,
-      )
+      expect(
+        screen.getByLabelText(header.streakName({ days: 0 })),
+      ).toBeInTheDocument()
     } finally {
       vi.useRealTimers()
     }
@@ -100,9 +100,9 @@ describe('GroovePuzzle', () => {
 
     await renderPuzzle()
 
-    expect(screen.getByLabelText(header.currentStreakName)).toHaveTextContent(
-      header.streakDays({ days: 1 }),
-    )
+    expect(
+      screen.getByLabelText(header.streakName({ days: 1 })),
+    ).toBeInTheDocument()
   })
 
   it('reads the recomputed streak, unannounced, once the day is given up on (F19 E1 R7, AC9)', async () => {
@@ -113,9 +113,9 @@ describe('GroovePuzzle', () => {
     ])
     const user = userEvent.setup()
     await renderPuzzle()
-    expect(screen.getByLabelText(header.currentStreakName)).toHaveTextContent(
-      header.streakDays({ days: 3 }),
-    )
+    expect(
+      screen.getByLabelText(header.streakName({ days: 3 })),
+    ).toBeInTheDocument()
 
     await guess(user, 'G', wrongFlavour())
     await guess(user, 'D', otherWrongFlavour())
@@ -123,9 +123,9 @@ describe('GroovePuzzle', () => {
     await user.click(giveUp() as HTMLElement)
     await user.click(giveUp() as HTMLElement)
 
-    expect(screen.getByLabelText(header.currentStreakName)).toHaveTextContent(
-      header.noStreakYet,
-    )
+    expect(
+      screen.getByLabelText(header.streakName({ days: 0 })),
+    ).toBeInTheDocument()
     expect(screen.queryByRole('alert')).toBeNull()
     expect(document.body.textContent).not.toMatch(
       /streak (?:lost|broken|reset|over|ended)/i,
@@ -256,7 +256,9 @@ describe('GroovePuzzle', () => {
       renderPuzzle(<GroovePuzzle groove={groove} mode="shared" />)
 
     const streakLine = () =>
-      screen.getByLabelText(header.currentStreakName).textContent
+      screen
+        .getByLabelText((name) => name.startsWith(header.currentStreakName))
+        .getAttribute('aria-label')
 
     it('renders the header with the player’s real streak, as on / (R7a, AC12)', async () => {
       mockStore.getAll.mockResolvedValue([
@@ -266,7 +268,7 @@ describe('GroovePuzzle', () => {
       ])
 
       const shared = await renderShared()
-      expect(streakLine()).toMatch(header.streakDays({ days: 3 }))
+      expect(streakLine()).toBe(header.streakName({ days: 3 }))
       const sharedHeader = streakLine()
       shared.unmount()
 

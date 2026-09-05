@@ -32,6 +32,34 @@ change you just made. Leave a comment only for something genuinely non-obvious
 (a workaround, a platform quirk, a ticket reference). Never write prose in a
 comment.
 
+## The terminal title is yours to write
+
+`.claude/settings.json` sets `CLAUDE_CODE_DISABLE_TERMINAL_TITLE`, so Claude
+Code writes no title of its own in this repo. Its hooks own the tab instead:
+`◐` while a turn is running, `✳` while it waits for you. You supply the words
+after the glyph.
+
+```bash
+.claude/scripts/title.sh "F8) writing GrooveHeader tests"
+.claude/scripts/title.sh "Q4) moving StreakBadge"
+.claude/scripts/title.sh "reading the lint zones"
+```
+
+- Whenever you know which feature or quick ticket the session is on, its number
+  goes first: `F<N>)` for `specs/features/feature-N/`, `Q<N>)` for
+  `specs/quick/N-slug.md`. A candidate keeps its letter — `FA)`.
+- Set it as soon as the number is known — the skill's argument (`/brainstorm
+  feature-8`), the ticket you just allocated, the spec folder you are reading —
+  and keep the prefix on every title after that until the session moves on.
+- No number in play, and the title is still the task: three to five words, what
+  you are doing now. Until you set one, the tab shows the folder name.
+- The text sticks until you replace it, so replace it when the task changes.
+  Nothing else will.
+- Applies to every step of the chain in [docs/skills.md](docs/skills.md), and to
+  `/quick-feature`, `/verify-epic` and `/prototype`.
+- **Only the main session sets it.** Dispatched agents never do; several of them
+  run at once and would overwrite each other.
+
 ## Changing what the grooves sound like
 
 **[docs/music.md](docs/music.md)** — the musical model of the generator under

@@ -9,6 +9,11 @@ import { renderFeature } from '../../testing/renderFeature'
 
 const { appName: APP_NAME, tagline: TAGLINE } = branding
 
+const streakBadge = (days: number) =>
+  screen.getByLabelText(header.streakName({ days }))
+const controlsRow = (days: number) =>
+  streakBadge(days).closest('header')?.querySelector('.justify-end') as HTMLElement
+
 describe('GrooveHeader', () => {
   it('drops the wordmark, and the date with it (F8 E1 R11, AC9)', () => {
     render(<GrooveHeader streak={12} onShowHelp={() => {}} />)
@@ -103,28 +108,24 @@ describe('GrooveHeader', () => {
     expect(screen.getByText(TAGLINE)).toBeInTheDocument()
   })
 
-  it('keeps the streak at the right even when the header stacks (F8 E2 R10a, AC9a)', () => {
+  it('puts the streak at the end of the title line (quick 4)', () => {
     render(<GrooveHeader streak={12} onShowHelp={() => {}} />)
 
-    const anchor = screen.getByLabelText(header.currentStreakName)
-      .parentElement as HTMLElement
-    expect(anchor.className).toContain('self-end')
-    expect(anchor.className).toContain('sm:self-auto')
+    const badge = streakBadge(12)
+    const title = screen.getByRole('heading', { level: 1 })
+    const row = badge.parentElement as HTMLElement
+
+    expect(row).toContainElement(title)
+    expect(row).not.toContainElement(screen.getByText(TAGLINE))
+    expect(row.className).toContain('justify-between')
+    expect(
+      title.compareDocumentPosition(badge) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy()
   })
 
-  it('anchors the title block to the left when the header stacks (F8 E2 R10a)', () => {
+  it('carries the streak as a fire and a count (quick 4)', () => {
     render(<GrooveHeader streak={12} onShowHelp={() => {}} />)
-
-    const anchor = screen.getByRole('heading', { level: 1 })
-      .parentElement?.parentElement as HTMLElement
-    expect(anchor.className).toContain('self-start')
-    expect(anchor.className).toContain('sm:self-auto')
-  })
-
-  it('carries the streak pill (R3)', () => {
-    render(<GrooveHeader streak={12} onShowHelp={() => {}} />)
-    const badge = screen.getByLabelText(header.currentStreakName)
-    expect(badge).toHaveTextContent(header.streakDays({ days: 12 }))
+    expect(streakBadge(12).textContent).toBe('🔥12')
   })
 })
 
@@ -132,7 +133,7 @@ describe('through the composed page', () => {
   it("shows the streak badge alongside the puzzle (AC6)", async () => {
     await renderFeature();
 
-    expect(screen.getByLabelText(header.currentStreakName)).toBeInTheDocument();
+    expect(screen.getByLabelText(header.streakName({ days: 0 }))).toBeInTheDocument();
   })
 })
 
@@ -145,13 +146,8 @@ describe('the header row (F8 E2)', () => {
     'utf8',
   )
 
-  it('aligns its two sides on their centres (F8 E2 R8, R9, AC8)', () => {
-    expect(source).toMatch(/<Row[^>]*align="center"/)
-    expect(source).not.toMatch(/<Row[^>]*align="start"/)
-  })
-
-  it('still stacks below the collapse breakpoint (F8 E2 R10, AC9)', () => {
-    expect(source).toMatch(/<Row[^>]*collapseBelow="sm"/)
+  it('never collapses, so the streak keeps its corner at every width (quick 4)', () => {
+    expect(source).not.toContain('collapseBelow')
   })
 })
 
@@ -162,27 +158,28 @@ describe('the share slot (F12 E2)', () => {
     </button>
   )
 
-  it('renders the slot inside the header, beside the streak pill (R1, R1a, AC1, AC11)', () => {
+  it('renders the slot inside the header, below the tagline (R1, R1a, AC1, AC11; quick 4)', () => {
     render(<GrooveHeader streak={12} onShowHelp={() => {}} share={slot()} />)
 
     const share = screen.getByRole('button', { name: 'Share' })
-    const badge = screen.getByLabelText(header.currentStreakName)
+    const row = controlsRow(12)
 
     expect(share.closest('header')).not.toBeNull()
-    const anchor = badge.closest('.self-end') as HTMLElement
-    expect(anchor).not.toBeNull()
-    expect(anchor).toContainElement(share)
+    expect(row).toContainElement(share)
+    expect(row).not.toContainElement(streakBadge(12))
+    expect(
+      screen
+        .getByText(TAGLINE)
+        .compareDocumentPosition(share) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy()
   })
 
-  it('keeps both at the end of their line when the header stacks (R1b, AC11)', () => {
+  it('keeps the slot at the end of its own line (R1b, AC11; quick 4)', () => {
     render(<GrooveHeader streak={12} onShowHelp={() => {}} share={slot()} />)
 
-    const anchor = screen
-      .getByLabelText(header.currentStreakName)
-      .closest('.self-end') as HTMLElement
-    expect(anchor.className).toContain('self-end')
-    expect(anchor.className).toContain('sm:self-auto')
-    expect(anchor).toContainElement(screen.getByRole('button', { name: 'Share' }))
+    const row = controlsRow(12)
+    expect(row.className).toContain('justify-end')
+    expect(row).toContainElement(screen.getByRole('button', { name: 'Share' }))
   })
 
   it('renders unchanged when no slot is given (R1)', () => {
@@ -193,9 +190,8 @@ describe('the share slot (F12 E2)', () => {
       screen.getByRole('heading', { level: 1, name: APP_NAME }),
     ).toBeInTheDocument()
     expect(screen.getByText(TAGLINE)).toBeInTheDocument()
-    const badge = screen.getByLabelText(header.currentStreakName)
-    expect(badge).toHaveTextContent(header.streakDays({ days: 12 }))
-    expect((badge.parentElement as HTMLElement).className).toContain('self-end')
+    expect(streakBadge(12).textContent).toBe('🔥12')
+    expect(controlsRow(12)).toBeNull()
   })
 
   it('learns nothing about sharing to render it (R1a)', () => {
@@ -225,7 +221,7 @@ describe('the transpose slot (F23 E1)', () => {
     </button>
   )
 
-  it('renders the slot inside the header, first of the three, ahead of the streak and share (R1, AC1)', () => {
+  it('renders the slot inside the header, ahead of share (R1, AC1; quick 4)', () => {
     render(
       <GrooveHeader
         streak={12}
@@ -237,27 +233,22 @@ describe('the transpose slot (F23 E1)', () => {
 
     const shareButton = screen.getByRole('button', { name: 'Share' })
     const pill = screen.getByRole('button', { name: 'Transpose' })
-    const badge = screen.getByLabelText(header.currentStreakName)
-    const anchor = badge.closest('.self-end') as HTMLElement
+    const row = controlsRow(12)
 
-    expect(anchor).toContainElement(shareButton)
-    expect(anchor).toContainElement(pill)
+    expect(row).toContainElement(shareButton)
+    expect(row).toContainElement(pill)
     expect(
-      pill.compareDocumentPosition(badge) & Node.DOCUMENT_POSITION_FOLLOWING,
-    ).toBeTruthy()
-    expect(
-      badge.compareDocumentPosition(shareButton) &
+      pill.compareDocumentPosition(shareButton) &
         Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy()
   })
 
-  it('renders the slot beside the streak when share is absent (R1)', () => {
+  it('renders the slot on the controls line when share is absent (R1)', () => {
     render(
       <GrooveHeader streak={12} onShowHelp={() => {}} transpose={transpose()} />,
     )
 
-    const badge = screen.getByLabelText(header.currentStreakName)
-    expect(badge.closest('.self-end')).toContainElement(
+    expect(controlsRow(12)).toContainElement(
       screen.getByRole('button', { name: 'Transpose' }),
     )
   })

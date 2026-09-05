@@ -60,14 +60,15 @@ describe('the language folder is private to the index', () => {
 describe('an interpolating snippet is a function of its arguments', () => {
   it('returns the same string for the same arguments', () => {
     expect(snippets.puzzle.bpm({ bpm: 96 })).toBe(snippets.puzzle.bpm({ bpm: 96 }))
-    expect(snippets.header.streakDays({ days: 3 })).toBe(
-      snippets.header.streakDays({ days: 3 }),
+    expect(snippets.header.streakName({ days: 3 })).toBe(
+      snippets.header.streakName({ days: 3 }),
     )
   })
 
   it('renders its argument into the string', () => {
     expect(snippets.puzzle.bpm({ bpm: 96 })).toContain('96')
-    expect(snippets.header.streakDays({ days: 3 })).toContain('3')
+    expect(snippets.header.streakName({ days: 3 })).toContain('3')
+    expect(snippets.header.streakCount({ days: 3 })).toBe('3')
   })
 })
 
