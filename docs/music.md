@@ -32,10 +32,11 @@ always render the same audio and the same words describing it. Every choice —
 tempo, root, flavour, harmony, which rhythm variant — is drawn from a seeded
 generator, never from the clock or `Math.random`.
 
-## The twelve voices
+## The fifteen voices
 
-`kick` · `snare` · `hatClosed` · `hatOpen` · `ride` · `rim` · `tomHigh` ·
-`tomLow` · `bongoHigh` · `bongoLow` · `bass` · `comp`
+`kick` · `snare` · `hatClosed` · `hatOpen` · `ride` · `rideBell` · `rim` ·
+`tomHigh` · `tomLow` · `bongoHigh` · `bongoLow` · `claves` · `cowbell` ·
+`bass` · `comp`
 
 Two toms and two bongos, not three and one: the library holds a high and a low
 tom, and inventing a middle one by pitching a neighbour gives a detuned copy. A
@@ -46,12 +47,27 @@ bongo *is* two drums, and the interplay between them is the sound — a single
 crash-ride wash. It exists to carry a pulse. Before it the kit had exactly one
 way of stating time, a closed hi-hat, so every feel marked its beat identically.
 A feel that takes the ride hands it that job, and its hat drops to punctuation —
-see *Rhythm* below.
+see *Rhythm* below. `rideBell` is the same cymbal in the same session struck on
+the bell, so a feel can accent without changing instrument.
 
-Samples come from three libraries, one of which carries an obligation:
+**Three voices are in the pack and in no template.** `rideBell`, `claves` and
+`cowbell` were sourced, prepared and levelled ahead of the feels that will want
+them; a voice nothing plays costs a render nothing. Sourcing a voice and playing
+it are two decisions, and this list records the first.
+
+`claves` and `rim` never sound in the same groove — both are the dry, high crack
+a feel reaches for once, and a kit carrying two of them has neither. A style that
+wants the claves gives up its rim; `straight-funk` and `bright-straight` are the
+two feels that hold a rim today, and they are the two that must choose.
+
+Samples come from four libraries, two of which carry an obligation.
 **MuldjordKit is CC-BY 4.0 and a rendered groove must credit "Drum samples
-provided by DrumGizmo.org"**. The bongos (VCSL) and bass/comp (VSCO 2 CE) are
-CC0. See `scripts/grooves/samples/README.md`.
+provided by DrumGizmo.org"**; DRSKit, which supplies the ride, is CC-BY 4.0 as
+well and carries a second string of its own — **"Ride cymbal samples from
+DRSKit, provided by DrumGizmo.org"**. The bongos, claves and cowbell (VCSL) and
+bass/comp (VSCO 2 CE) are CC0. See `scripts/grooves/samples/README.md`, which
+records why the ride is DRSKit's over a library that measured better on every
+axis, and why it ships one velocity layer on purpose.
 
 ## Scales: the twelve flavours
 
@@ -139,14 +155,21 @@ clue to the feel and vice versa.
 | `straight-funk` | 94–106 | 16 | 0.18 | dorian, mixolydian | 4 | 18–44 | hat |
 | `swung-sixteenth` | 106–116 | 16 | 0.44 | phrygian-dominant, harmonic-major | 4 | 16–42 | ride |
 | `shuffle` | 78–92 | 8 | 0.64 | blues, aeolian | 4 | 16–38 | ride |
-| `half-time` | 68–80 | 16 | 0.28 | phrygian, harmonic-minor | 2 | 14–48 | ride |
+| `half-time` | 68–80 | 16 | 0.28 | phrygian, harmonic-minor | 2 | 14–48 | hat |
 | `bright-straight` | 116–132 | 8 | 0.06 | lydian, ionian | 4 | 17–40 | hat |
-| `open-ballad` | 62–74 | 8 | 0.02 | melodic-minor, lydian-dominant | 2 | 8–30 | ride |
+| `open-ballad` | 62–74 | 8 | 0.02 | melodic-minor, lydian-dominant | 2 | 8–30 | hat |
 
-Four of the six ride. The two that do not are the two straight feels, where a
-closed hat is the idiomatic timekeeper. `bright-straight` is the only feel with
+Two of the six ride, and they are the two that genuinely swing: `swung-sixteenth`
+at 0.44 and `shuffle` at 0.64. The other four keep the closed hat on the pulse,
+where it is the idiomatic timekeeper. `bright-straight` is the only feel with
 bongos, and the only one besides `straight-funk` with a rim. Slow feels declare
 fewer passes: four passes at 68 bpm is a 56-second file.
+
+`half-time` and `open-ballad` were considered for the ride and **declined**. At
+swing 0.28 and 0.02 they are straight in all but name, so a ride over either
+would be a cymbal laid over a straight groove rather than a jazz pulse; they keep
+their hat, their kick and their committed renders. That is recorded here so the
+next reader does not re-add them as an oversight.
 
 **Swing** is off-beat displacement: `0` straight, `1` lands on the next on-beat,
 a triplet shuffle ≈ `0.67`. An off-beat is delayed by `swing × half a
@@ -164,19 +187,40 @@ plays the same phrase at its own resolution.
 | :-- | :-- | :-- |
 | `KICK_PATTERNS` | 5 | |
 | `HAT_PATTERNS` | 3 | eighths, sixteenths, or a broken figure — when the hat keeps time |
-| `HAT_PUNCTUATION_PATTERNS` | 3 | when a ride keeps time instead. Every step odd, 2–3 a bar |
-| `RIDE_PATTERNS` | 3 | eighths, eighths over a quarter skeleton, and a swung-eighth figure |
+| `HAT_PUNCTUATION_PATTERNS` | 3 | when a ride keeps time instead. Every figure holds beats 2 and 4, 2–4 a bar |
+| `RIDE_PATTERNS` | 3 per subdivision | keyed by the feel's subdivision — 3 figures for 8, 3 for 16. Every figure keeps every quarter and outnumbers the busiest foot hat |
 | `BASS_PATTERNS` | 4 | |
 | `SNARE_GHOST_PATTERNS` | 5 | every step odd — a ghost fills the space *between* backbeats |
 | `BONGO_PATTERNS` | 4 | sparse, off the strong positions, always across both drums |
 | `COMP_PATTERNS` | 4 | |
 
-**Who keeps time.** A feel that declares `ride` hands the pulse to it and the hat
-drops to `HAT_PUNCTUATION_PATTERNS` — off-sixteenths only, so the hat cannot mark
-a position the ride is using. A hat playing every off-beat would still be marking
-a subdivision, which is exactly what handing the time over is meant to stop. Ride
-figures are denser than hat punctuation by construction, because on a ride feel
-that voice *is* the pulse.
+**Who keeps time.** A feel that declares `ride` hands the pulse to it, drops
+`hatOpen` from the kit entirely, and its closed hat falls back to
+`HAT_PUNCTUATION_PATTERNS` — two to four points a bar, every figure holding beats
+2 and 4. That is the left foot, not a subdivision, which is what handing the time
+over is meant to leave behind. Ride figures are denser than hat punctuation by
+construction, because on a riding feel that voice *is* the pulse. The ride sits
+out the fill bar and reduces to quarters in the thinned variation bar, so a fill
+lands in the space the cymbal leaves; the foot hat plays its figure in both.
+
+This document used to say that hat played off-sixteenths, and gave as the reason
+that it must never mark a position the ride was already using. That reason was
+**wrong** — not too narrow, wrong — and it is retracted rather than reworded. A
+ride playing eighths lands on beats 2 and 4 along with the foot hat, and a ping
+and a foot together on the backbeat is the sound a drummer is after, not a
+collision. What had to go was the hat *stating a subdivision*, which is the job
+the ride was handed; where its two to four points fall was never the problem.
+
+**Feathering.** A riding feel's kick carries a *feather* under the drawn
+`KICK_PATTERNS` figure: the quarter notes the figure left empty, in every bar of
+the loop, struck below the `0.5` threshold that separates a ghost from a
+backbeat. It is fixed placement computed from the bar's own kick steps rather
+than a drawn pool, so it costs no randomness, re-keys nothing and needs no new
+sample. Where the drawn figure already carries a quarter, that hit stands at its
+own velocity and no feather is added under it — the drawn figure is the groove
+and the feather is the floor beneath it. Feathering reaches exactly the feels the
+ride does: it is the other half of one jazz gesture, not a second improvement
+that can be taken on its own.
 
 Accent cycles run over each voice's own hits and are deliberately coprime with
 the bar so they never fall into lockstep: `HAT_ACCENTS` (4 entries),

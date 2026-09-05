@@ -45,15 +45,22 @@ These break something structural and are their own features:
   a bar; a 3/4 or 12/8 feel wants a 12- or 24-step grid, which touches
   `events.ts` throughout.
 
-## The claves and the cowbell arrive unheard
+## The claves and the cowbell arrive heard once, in isolation
 
 Feature-24 sources `claves`, `cowbell` and `rideBell` into the sample pack and
-plays none of them — son montuno above all is what they were bought for. Their
-round robins were verified by counting files in `pack.json`, never by ear,
-because nothing in that feature renders them. **So the first style that reaches
-for the claves owns their listening pass**, and should expect to find out there
-whether a bare wood transient machine-guns over a four-bar loop. Budget for
-re-sourcing one voice rather than assuming the pack is settled.
+plays none of them — son montuno above all is what they were bought for. The
+samples themselves were auditioned during that feature and liked, so the
+sourcing is settled: budget nothing for re-sourcing.
+
+**What is not settled is the sequence.** Their round robins were verified by
+counting files in `pack.json` and by measuring them, never by ear, because
+nothing in feature-24 renders them. A sample that sounds good once tells you
+nothing about the two failures that only appear across a repeating loop — a bare
+wood transient machine-gunning over four bars, and the cowbell's 0.9 dB
+overshoot, where a weak hit can land louder than a strong one. **So the first
+style that reaches for the claves still owns their listening pass**, and
+`samples/README.md` lists the three specific things to listen for. It is a
+shorter pass than it was, not a cancelled one.
 
 ## How it would go
 

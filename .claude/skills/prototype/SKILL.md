@@ -72,6 +72,10 @@ something words are circling.
 - **`docs/persona.md`.** Sam is on a phone, twenty minutes before dinner. That
   decides the frame width, the tap targets and what has to be visible without
   scrolling — the same tie-breaker `/brainstorm` §2 uses.
+  Where the drawing has to invent something the requirements left silent *and*
+  the invention is the player's business — what sits above the fold, whether a
+  control is there at all, what the copy calls a mode — dispatch the `sam` agent
+  and record its verdict in the invented-list, instead of settling it by taste.
 - **`src/app/globals.css`.** The `@theme` block is the palette, the radii and
   the shadow. Copy the values; do not invent a second set.
 - **The nearest existing components**, for shapes you are reusing — a chip row,

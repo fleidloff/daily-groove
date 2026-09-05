@@ -96,6 +96,13 @@ prefer:
 - **one coherent shippable thing** over a theme that would need three epics to
   mean anything.
 
+**Let the `sam` agent break the tie.** When two or three findings are close,
+hand it what you saw — the moments, in the persona's words, not your categories
+— and ask which one would change their next session most. It cannot drive the
+browser, so it judges what you report rather than what it saw; give it the
+quotes and the copy verbatim so it is judging the app and not your summary of
+it. Its answer is the choice, and its reasoning is what §6 writes down.
+
 **Then check it isn't already on the plan.** Read `specs/features.md`, all
 three tables:
 

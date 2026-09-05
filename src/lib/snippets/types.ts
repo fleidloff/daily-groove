@@ -42,6 +42,7 @@ export type PuzzleSnippets = {
   simpleModeOff: string
   tapSounds: string
   drumCredit: string
+  drumCreditPublisher: string
   sharedNotice: string
   backToToday: string
   playTodayIntro: string

@@ -153,6 +153,40 @@
         }
       ]
     },
+    "ride": {
+      "layers": [
+        {
+          "maxVelocity": 1,
+          "files": [
+            "ride/DRSKit_ride_tip_5.flac",
+            "ride/DRSKit_ride_tip_6.flac",
+            "ride/DRSKit_ride_tip_7.flac"
+          ],
+          "nominalVelocity": 0.5
+        }
+      ]
+    },
+    "rideBell": {
+      "layers": [
+        {
+          "maxVelocity": 0.7,
+          "files": [
+            "rideBell/DRSKit_rideBell_tip_7.flac",
+            "rideBell/DRSKit_rideBell_tip_8.flac"
+          ],
+          "nominalVelocity": 0.6026
+        },
+        {
+          "maxVelocity": 1,
+          "files": [
+            "rideBell/DRSKit_rideBell_tip_9.flac",
+            "rideBell/DRSKit_rideBell_tip_10.flac",
+            "rideBell/DRSKit_rideBell_tip_11.flac"
+          ],
+          "nominalVelocity": 0.85
+        }
+      ]
+    },
     "rim": {
       "layers": [
         {
@@ -284,6 +318,30 @@
             "bongoLow/BongoL_Hit1_v3_rr2_Mid.flac"
           ],
           "nominalVelocity": 0.9
+        }
+      ]
+    },
+    "claves": {
+      "layers": [
+        {
+          "maxVelocity": 1,
+          "files": [
+            "claves/claves_mf.flac",
+            "claves/claves_mf_3.flac"
+          ],
+          "nominalVelocity": 0.5
+        }
+      ]
+    },
+    "cowbell": {
+      "layers": [
+        {
+          "maxVelocity": 1,
+          "files": [
+            "cowbell/Cowbell1_Hit_v4_rr1_Mid.flac",
+            "cowbell/Cowbell2_Normal_v2_rr1_Mid.flac"
+          ],
+          "nominalVelocity": 0.5
         }
       ]
     },

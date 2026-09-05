@@ -2,6 +2,10 @@ import { readFileSync, readdirSync, existsSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
+import { readLock, sha256File } from '../lock.ts'
+import { VELOCITIES } from '../events.ts'
+import { shuffle } from '../templates/shuffle.ts'
+import { VOICE_NAMES } from '../types.ts'
 import type { PackDeclaration, VelocityLayer, VoiceName } from '../types.ts'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
@@ -10,14 +14,35 @@ const provenance = JSON.parse(readFileSync(join(HERE, 'provenance.json'), 'utf8'
   pack: string
   licence: string
   attribution?: string
+  attributions?: string[]
   samples: {
     file: string
     source: string
     sourceFile: string
     url: string
     licence: string
+    modifications?: string
     attribution?: string
   }[]
+}
+
+const README = readFileSync(join(HERE, 'README.md'), 'utf8')
+const LOCK_PATH = join(HERE, '..', 'grooves.lock.json')
+
+const NEW_PERCUSSION: VoiceName[] = ['claves', 'cowbell']
+
+const NEW_VOICES: VoiceName[] = [...NEW_PERCUSSION, 'ride', 'rideBell']
+
+function layersOf(voice: VoiceName): VelocityLayer[] {
+  return decl.voices[voice]?.layers ?? []
+}
+
+function readmeTable(heading: string): string[] {
+  const after = README.split(heading)[1] ?? ''
+  return after
+    .split('\n')
+    .slice(0, 60)
+    .filter((line) => line.trimStart().startsWith('|'))
 }
 
 function audioFiles(dir = HERE, prefix = ''): string[] {
@@ -139,15 +164,33 @@ describe('every sample is CC0 and accounted for', () => {
     expect(provenance.licence).toContain('CC-BY-4.0')
   })
 
-  it('records the required attribution for every sample that is not CC0', () => {
+  it('records the required attribution on every row that is not CC0', () => {
     const attributed = provenance.samples.filter((s) => s.licence !== 'CC0')
     expect(attributed.length, 'no non-CC0 samples to check').toBeGreaterThan(0)
     for (const s of attributed) {
-      expect(s.attribution, `${s.file} is ${s.licence} but names no attribution`).toBe(
-        'Drum samples provided by DrumGizmo.org',
-      )
+      expect(
+        s.attribution?.length ?? 0,
+        `${s.file} is ${s.licence} but names no attribution`,
+      ).toBeGreaterThan(0)
     }
-    expect(provenance.attribution).toBe('Drum samples provided by DrumGizmo.org')
+  })
+
+  it('lists the distinct attributions the pack owes, so a second one is visible', () => {
+    const owed = [
+      ...new Set(provenance.samples.filter((s) => s.licence !== 'CC0').map((s) => s.attribution!)),
+    ].sort()
+    expect(Array.isArray(provenance.attributions)).toBe(true)
+    expect(provenance.attributions).toEqual(owed)
+    expect(provenance.attributions!.length).toBeGreaterThan(0)
+    expect(provenance.attributions).toContain('Drum samples provided by DrumGizmo.org')
+  })
+
+  it('owes a second attribution once a second CC-BY library ships, which is Epic 3’s flag', () => {
+    if (decl.voices.ride === undefined) return
+    expect(provenance.attributions).toContain(
+      'Ride cymbal samples from DRSKit, provided by DrumGizmo.org',
+    )
+    expect(provenance.attributions!.length).toBe(2)
   })
 
   it('ships the licence text alongside the audio', () => {
@@ -157,6 +200,18 @@ describe('every sample is CC0 and accounted for', () => {
     expect(readFileSync(join(HERE, 'LICENSE-MuldjordKit.txt'), 'utf8')).toContain(
       'Attribution 4.0 International',
     )
+  })
+
+  it('ships a licence text for every library that requires one', () => {
+    const required = new Set(
+      provenance.samples
+        .filter((s) => s.licence !== 'CC0')
+        .map((s) => `LICENSE-${s.source.split(/[\s,(]/)[0].trim()}.txt`),
+    )
+    for (const file of required) {
+      expect(existsSync(join(HERE, file)), `${file} is required but missing`).toBe(true)
+      expect(readFileSync(join(HERE, file), 'utf8')).toContain('Attribution 4.0 International')
+    }
   })
 })
 
@@ -245,5 +300,231 @@ describe('the pack is stocked for Epic 2', () => {
         `${voice} carries velocity layers on only ${layered} of its ${notes.length} notes`,
       ).toBeGreaterThan(notes.length)
     }
+  })
+})
+
+describe('the four voices feature-24 adds are stocked, sourced and levelled', () => {
+  it('declares every one of them with at least one velocity layer', () => {
+    for (const voice of NEW_VOICES) {
+      expect(decl.voices[voice], `${voice} is not declared`).toBeDefined()
+      expect(layersOf(voice).length, `${voice} declares no layer`).toBeGreaterThanOrEqual(1)
+    }
+  })
+
+  it('gives every layer two or more round-robin alternates', () => {
+    for (const voice of NEW_VOICES) {
+      for (const layer of layersOf(voice)) {
+        expect(
+          layer.files.length,
+          `${voice} layer at ${layer.maxVelocity} cannot round-robin`,
+        ).toBeGreaterThanOrEqual(2)
+        expect(new Set(layer.files).size, `${voice} repeats a file inside one layer`).toBe(
+          layer.files.length,
+        )
+      }
+    }
+  })
+
+  it('declares an explicit nominalVelocity on every layer', () => {
+    for (const voice of NEW_VOICES) {
+      for (const layer of layersOf(voice)) {
+        expect(
+          typeof layer.nominalVelocity,
+          `${voice} layer at ${layer.maxVelocity} defaults to its band midpoint`,
+        ).toBe('number')
+        expect(layer.nominalVelocity!).toBeGreaterThan(0)
+        expect(layer.nominalVelocity!).toBeLessThanOrEqual(1)
+      }
+    }
+  })
+
+  it('orders the layers ascending and tops them out at exactly 1', () => {
+    for (const voice of NEW_VOICES) {
+      const v = layersOf(voice).map((l) => l.maxVelocity)
+      expect([...v].sort((a, b) => a - b), `${voice} layers are out of order`).toEqual(v)
+      expect(v[v.length - 1], `${voice} tops out below 1`).toBe(1)
+    }
+  })
+
+  it('keeps every declared layer inside MAX_LAYER_GAIN at the voice\u2019s strongest hit', () => {
+    for (const voice of NEW_VOICES) {
+      for (const layer of layersOf(voice)) {
+        expect(
+          VELOCITIES[voice].strong / layer.nominalVelocity!,
+          `${voice} layer at ${layer.maxVelocity} asks for more than 2x its recorded level`,
+        ).toBeLessThan(2)
+      }
+    }
+  })
+
+  it('leaves the ride headroom for the jitter humanize adds on top of a strong hit', () => {
+    const loudest = VELOCITIES.ride.strong + shuffle.humanize.velocity
+    for (const layer of layersOf('ride')) {
+      expect(
+        loudest / layer.nominalVelocity!,
+        `a humanized strong ride hit asks its layer for more than 2x its recorded level`,
+      ).toBeLessThan(2)
+    }
+  })
+
+  it('provenances every file the four voices ship', () => {
+    const rows = provenance.samples.filter((s) => /^(claves|cowbell|ride|rideBell)\//.test(s.file))
+    const declared = new Set(NEW_VOICES.flatMap((v) => layersOf(v).flatMap((l) => l.files)))
+    expect(new Set(rows.map((s) => s.file))).toEqual(declared)
+    for (const s of rows) {
+      expect(s.source?.length, `${s.file} has no source`).toBeGreaterThan(0)
+      expect(s.sourceFile?.length, `${s.file} has no upstream path`).toBeGreaterThan(0)
+      expect(s.url?.length, `${s.file} has no url`).toBeGreaterThan(0)
+      expect(s.modifications?.length, `${s.file} does not say what was done to it`).toBeGreaterThan(
+        0,
+      )
+      expect(['CC0', 'CC-BY-4.0'], `${s.file} is licensed "${s.licence}"`).toContain(s.licence)
+    }
+  })
+
+  it('names the decay envelope in the ride\u2019s modifications, not only in the README', () => {
+    const rows = provenance.samples.filter((s) => s.file.startsWith('ride/'))
+    expect(rows.length, 'the ride ships no files').toBeGreaterThan(0)
+    for (const s of rows) {
+      expect(s.modifications, `${s.file} does not record its decay envelope`).toMatch(
+        /decay envelope/i,
+      )
+    }
+  })
+})
+
+describe('the pack declares the whole vocabulary the generator can ask for', () => {
+  it('declares exactly the voices VOICE_NAMES names', () => {
+    expect(Object.keys(decl.voices).sort()).toEqual([...VOICE_NAMES].sort())
+  })
+})
+
+describe('the README documents the pack it ships beside', () => {
+  it('maps every voice pack.json declares', () => {
+    const listed = new Set(
+      readmeTable('## Voice mapping').flatMap((line) => [
+        ...(line.split('|')[1] ?? '').matchAll(/`([^`]+)`/g),
+      ].map((m) => m[1])),
+    )
+    for (const voice of Object.keys(decl.voices)) {
+      expect(listed.has(voice), `${voice} is declared but has no voice-mapping row`).toBe(true)
+    }
+  })
+
+  it('names every library provenance.json draws on', () => {
+    for (const source of new Set(provenance.samples.map((s) => s.source))) {
+      const library = source.split(/[,(]/)[0].trim()
+      expect(README.includes(library), `${library} supplies files but is not in the README`).toBe(
+        true,
+      )
+    }
+  })
+
+  it('records a levelling band for every layer pack.json declares', () => {
+    const rows = new Set(
+      readmeTable('### The bands as committed')
+        .map((line) => /\|\s*`([^`]+)`\s*\|\s*([\d.]+)\s*\|\s*([\d.]+)\s*\|\s*(\d+)\s*\|/.exec(line))
+        .filter((m): m is RegExpExecArray => m !== null)
+        .map((m) => `${m[1]}|${Number(m[2])}|${Number(m[3])}|${Number(m[4])}`),
+    )
+    for (const [voice, block] of Object.entries(decl.voices)) {
+      for (const layer of block?.layers ?? []) {
+        const key = `${voice}|${layer.maxVelocity}|${layer.nominalVelocity}|${layer.files.length}`
+        expect(rows.has(key), `the levelling table has no row for ${key}`).toBe(true)
+      }
+    }
+  })
+
+  it('records a length cap for every voice it levels', () => {
+    const capped = new Set(
+      readmeTable('### Length caps').flatMap((line) => [
+        ...(line.split('|')[1] ?? '').matchAll(/`([^`]+)`/g),
+      ].map((m) => m[1])),
+    )
+    for (const [voice, block] of Object.entries(decl.voices)) {
+      if ((block?.layers ?? []).length === 0) continue
+      expect(capped.has(voice), `${voice} ships with no recorded length cap`).toBe(true)
+    }
+  })
+
+  it('no longer says the pack has no ride, once one is declared', () => {
+    if (decl.voices.ride === undefined) return
+    expect(README).not.toContain('The pack has no ride')
+  })
+})
+
+function readmeTables(): string[][][] {
+  const tables: string[][][] = []
+  let current: string[][] | null = null
+  for (const line of README.split('\n')) {
+    if (!line.trimStart().startsWith('|')) {
+      current = null
+      continue
+    }
+    const cells = line.trim().replace(/^\||\|$/g, '').split('|').map((cell) => cell.trim())
+    if (current === null) {
+      current = []
+      tables.push(current)
+    }
+    if (cells.every((cell) => /^:?-+:?$/.test(cell))) continue
+    current.push(cells)
+  }
+  return tables
+}
+
+describe('the README records the ride audition R5 asked for — R4, R5, AC13b', () => {
+  const CANDIDATES = [
+    { library: 'DRSKit', verdict: /chosen/i },
+    { library: 'CrocellKit', verdict: /rejected/i },
+    { library: 'Zildjian', verdict: /rejected/i },
+  ]
+
+  const shortlist = readmeTables().find((rows) =>
+    CANDIDATES.every(({ library }) => rows.some((row) => row.join(' ').includes(library))),
+  )
+
+  it('carries one table naming all three candidate libraries', () => {
+    expect(
+      shortlist,
+      `no README table names all of ${CANDIDATES.map((c) => c.library).join(', ')} — the shortlist R5 requires is the epic's report, and it is gone`,
+    ).toBeDefined()
+    expect(shortlist!.length, 'the shortlist table has no rows under its header').toBeGreaterThan(
+      CANDIDATES.length,
+    )
+  })
+
+  it('gives every candidate a verdict and the licence it was checked under', () => {
+    for (const { library, verdict } of CANDIDATES) {
+      const row = shortlist!.find((cells) => cells.join(' ').includes(library))
+      expect(row, `${library} has no row in the shortlist`).toBeDefined()
+      const text = row!.join(' ')
+      expect(text, `${library} is listed with no verdict`).toMatch(verdict)
+      expect(text, `${library} is listed with no licence`).toMatch(/CC0|CC-BY/)
+    }
+  })
+
+  it('names exactly one of them as the library that shipped', () => {
+    const chosen = shortlist!.filter((cells) => /chosen/i.test(cells.join(' ')))
+    expect(
+      chosen.length,
+      'the shortlist does not say which candidate was chosen, or says it of more than one',
+    ).toBe(1)
+    expect(chosen[0].join(' ')).toContain('DRSKit')
+  })
+
+  it('says why the candidate that was never heard was rejected — R4', () => {
+    const row = shortlist!.find((cells) => cells.join(' ').includes('Zildjian'))!.join(' ')
+    expect(
+      row,
+      'the R4 rejection counts against R5\u2019s bound of three, so the reason has to travel with it',
+    ).toMatch(/round.?robin|alternate|one sample|single velocity|one velocity/i)
+  })
+})
+
+describe('the lock is in step with the pack it hashes', () => {
+  it('records the current pack.json hash, so prebuild does not fail as pack-stale', () => {
+    const lock = readLock(LOCK_PATH)
+    expect(lock, 'grooves.lock.json is missing or unreadable').not.toBeNull()
+    expect(lock!.packSha256).toBe(sha256File(join(HERE, 'pack.json')))
   })
 })

@@ -1,6 +1,6 @@
 {
   "pack": "vcsl-funk",
-  "licence": "CC0 1.0 Universal (VCSL, VSCO 2 CE) and CC-BY-4.0 (MuldjordKit)",
+  "licence": "CC0 1.0 Universal (VCSL, VSCO 2 CE) and CC-BY-4.0 (MuldjordKit, DRSKit)",
   "samples": [
     {
       "file": "bass/BKCtbss_Pizz_E0_v1_rr1.flac",
@@ -1232,7 +1232,115 @@
       "url": "https://github.com/sgossner/VCSL",
       "licence": "CC0",
       "modifications": "trimmed, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC"
+    },
+    {
+      "file": "claves/claves_mf.flac",
+      "source": "Versilian Community Sample Library (VCSL)",
+      "sourceFile": "Idiophones/Struck Idiophones/Claves/Legacy/claves_mf.wav",
+      "url": "https://github.com/sgossner/VCSL",
+      "licence": "CC0",
+      "modifications": "capped at 0.4 s, faded out over the last 80 ms, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept; not normalised: the take-to-take level difference is the round-robin variation the renderer plays)"
+    },
+    {
+      "file": "claves/claves_mf_3.flac",
+      "source": "Versilian Community Sample Library (VCSL)",
+      "sourceFile": "Idiophones/Struck Idiophones/Claves/Legacy/claves_mf_3.wav",
+      "url": "https://github.com/sgossner/VCSL",
+      "licence": "CC0",
+      "modifications": "capped at 0.4 s, faded out over the last 80 ms, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept; not normalised: the take-to-take level difference is the round-robin variation the renderer plays)"
+    },
+    {
+      "file": "cowbell/Cowbell1_Hit_v4_rr1_Mid.flac",
+      "source": "Versilian Community Sample Library (VCSL)",
+      "sourceFile": "Idiophones/Struck Idiophones/Cowbells/Cowbell1_Hit_v4_rr1_Mid.wav",
+      "url": "https://github.com/sgossner/VCSL",
+      "licence": "CC0",
+      "modifications": "capped at 0.8 s, faded out over the last 80 ms, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept; not normalised: the bell-to-bell level difference is the round-robin variation the renderer plays)"
+    },
+    {
+      "file": "cowbell/Cowbell2_Normal_v2_rr1_Mid.flac",
+      "source": "Versilian Community Sample Library (VCSL)",
+      "sourceFile": "Idiophones/Struck Idiophones/Cowbells/Cowbell2_Normal_v2_rr1_Mid.wav",
+      "url": "https://github.com/sgossner/VCSL",
+      "licence": "CC0",
+      "modifications": "capped at 0.8 s, faded out over the last 80 ms, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept; not normalised: the bell-to-bell level difference is the round-robin variation the renderer plays)"
+    },
+    {
+      "file": "ride/DRSKit_ride_tip_5.flac",
+      "source": "DRSKit v2.1, by the DrumGizmo team — Paiste Formula 602 thin crash used as a ride, bow struck with the stick tip (Ride_tip)",
+      "sourceFile": "DRSKit/Ride_tip/samples/5-Ride_tip.wav",
+      "url": "https://drumgizmo.org/wiki/doku.php?id=kits:drskit",
+      "licence": "CC-BY-4.0",
+      "attribution": "Ride cymbal samples from DRSKit, provided by DrumGizmo.org",
+      "modifications": "capped at 2 s, decay envelope (parabolic fade from 0.10 s to the cap) in place of the 80 ms end fade, single close mic (DrumGizmo channel 8, Beyerdynamic MCE 86 II on the ride) taken as the mono channel (one microphone, not a stereo fold), 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept; not normalised: the level difference between velocity layers is the dynamic information the renderer reads)"
+    },
+    {
+      "file": "ride/DRSKit_ride_tip_6.flac",
+      "source": "DRSKit v2.1, by the DrumGizmo team — Paiste Formula 602 thin crash used as a ride, bow struck with the stick tip (Ride_tip)",
+      "sourceFile": "DRSKit/Ride_tip/samples/6-Ride_tip.wav",
+      "url": "https://drumgizmo.org/wiki/doku.php?id=kits:drskit",
+      "licence": "CC-BY-4.0",
+      "attribution": "Ride cymbal samples from DRSKit, provided by DrumGizmo.org",
+      "modifications": "capped at 2 s, decay envelope (parabolic fade from 0.10 s to the cap) in place of the 80 ms end fade, single close mic (DrumGizmo channel 8, Beyerdynamic MCE 86 II on the ride) taken as the mono channel (one microphone, not a stereo fold), 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept; not normalised: the level difference between velocity layers is the dynamic information the renderer reads)"
+    },
+    {
+      "file": "ride/DRSKit_ride_tip_7.flac",
+      "source": "DRSKit v2.1, by the DrumGizmo team — Paiste Formula 602 thin crash used as a ride, bow struck with the stick tip (Ride_tip)",
+      "sourceFile": "DRSKit/Ride_tip/samples/7-Ride_tip.wav",
+      "url": "https://drumgizmo.org/wiki/doku.php?id=kits:drskit",
+      "licence": "CC-BY-4.0",
+      "attribution": "Ride cymbal samples from DRSKit, provided by DrumGizmo.org",
+      "modifications": "capped at 2 s, decay envelope (parabolic fade from 0.10 s to the cap) in place of the 80 ms end fade, single close mic (DrumGizmo channel 8, Beyerdynamic MCE 86 II on the ride) taken as the mono channel (one microphone, not a stereo fold), 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept; not normalised: the level difference between velocity layers is the dynamic information the renderer reads)"
+    },
+    {
+      "file": "rideBell/DRSKit_rideBell_tip_7.flac",
+      "source": "DRSKit v2.1, by the DrumGizmo team — same ride cymbal, bell struck with the stick tip (Ride_tip_bell)",
+      "sourceFile": "DRSKit/Ride_tip_bell/samples/7-Ride_tip_bell.wav",
+      "url": "https://drumgizmo.org/wiki/doku.php?id=kits:drskit",
+      "licence": "CC-BY-4.0",
+      "attribution": "Ride cymbal samples from DRSKit, provided by DrumGizmo.org",
+      "modifications": "capped at 2 s, faded out over the last 80 ms, single close mic (DrumGizmo channel 8, Beyerdynamic MCE 86 II on the ride) taken as the mono channel (one microphone, not a stereo fold), 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept; not normalised: the level difference between velocity layers is the dynamic information the renderer reads)"
+    },
+    {
+      "file": "rideBell/DRSKit_rideBell_tip_8.flac",
+      "source": "DRSKit v2.1, by the DrumGizmo team — same ride cymbal, bell struck with the stick tip (Ride_tip_bell)",
+      "sourceFile": "DRSKit/Ride_tip_bell/samples/8-Ride_tip_bell.wav",
+      "url": "https://drumgizmo.org/wiki/doku.php?id=kits:drskit",
+      "licence": "CC-BY-4.0",
+      "attribution": "Ride cymbal samples from DRSKit, provided by DrumGizmo.org",
+      "modifications": "capped at 2 s, faded out over the last 80 ms, single close mic (DrumGizmo channel 8, Beyerdynamic MCE 86 II on the ride) taken as the mono channel (one microphone, not a stereo fold), 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept; not normalised: the level difference between velocity layers is the dynamic information the renderer reads)"
+    },
+    {
+      "file": "rideBell/DRSKit_rideBell_tip_9.flac",
+      "source": "DRSKit v2.1, by the DrumGizmo team — same ride cymbal, bell struck with the stick tip (Ride_tip_bell)",
+      "sourceFile": "DRSKit/Ride_tip_bell/samples/9-Ride_tip_bell.wav",
+      "url": "https://drumgizmo.org/wiki/doku.php?id=kits:drskit",
+      "licence": "CC-BY-4.0",
+      "attribution": "Ride cymbal samples from DRSKit, provided by DrumGizmo.org",
+      "modifications": "capped at 2 s, faded out over the last 80 ms, single close mic (DrumGizmo channel 8, Beyerdynamic MCE 86 II on the ride) taken as the mono channel (one microphone, not a stereo fold), 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept; not normalised: the level difference between velocity layers is the dynamic information the renderer reads)"
+    },
+    {
+      "file": "rideBell/DRSKit_rideBell_tip_10.flac",
+      "source": "DRSKit v2.1, by the DrumGizmo team — same ride cymbal, bell struck with the stick tip (Ride_tip_bell)",
+      "sourceFile": "DRSKit/Ride_tip_bell/samples/10-Ride_tip_bell.wav",
+      "url": "https://drumgizmo.org/wiki/doku.php?id=kits:drskit",
+      "licence": "CC-BY-4.0",
+      "attribution": "Ride cymbal samples from DRSKit, provided by DrumGizmo.org",
+      "modifications": "capped at 2 s, faded out over the last 80 ms, single close mic (DrumGizmo channel 8, Beyerdynamic MCE 86 II on the ride) taken as the mono channel (one microphone, not a stereo fold), 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept; not normalised: the level difference between velocity layers is the dynamic information the renderer reads)"
+    },
+    {
+      "file": "rideBell/DRSKit_rideBell_tip_11.flac",
+      "source": "DRSKit v2.1, by the DrumGizmo team — same ride cymbal, bell struck with the stick tip (Ride_tip_bell)",
+      "sourceFile": "DRSKit/Ride_tip_bell/samples/11-Ride_tip_bell.wav",
+      "url": "https://drumgizmo.org/wiki/doku.php?id=kits:drskit",
+      "licence": "CC-BY-4.0",
+      "attribution": "Ride cymbal samples from DRSKit, provided by DrumGizmo.org",
+      "modifications": "capped at 2 s, faded out over the last 80 ms, single close mic (DrumGizmo channel 8, Beyerdynamic MCE 86 II on the ride) taken as the mono channel (one microphone, not a stereo fold), 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept; not normalised: the level difference between velocity layers is the dynamic information the renderer reads)"
     }
   ],
-  "attribution": "Drum samples provided by DrumGizmo.org"
+  "attribution": "Drum samples provided by DrumGizmo.org",
+  "attributions": [
+    "Drum samples provided by DrumGizmo.org",
+    "Ride cymbal samples from DRSKit, provided by DrumGizmo.org"
+  ]
 }

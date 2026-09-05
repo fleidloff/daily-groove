@@ -22,6 +22,8 @@ export const GHOST_LABEL = 'ghosts'
 
 export const BONGO_LABEL = 'bongo'
 
+export const RIDE_LABEL = 'ride'
+
 const BASS_BASE_MIDI = 24
 
 const BASS_OCTAVE_LIFT = 12
@@ -43,6 +45,7 @@ export const BACKING_VOICES: VoiceName[] = [
   'snare',
   'hatClosed',
   'hatOpen',
+  'ride',
   'rim',
   'tomHigh',
   'tomLow',
@@ -59,11 +62,15 @@ const GHOST_VELOCITY_RANGE: [number, number] = [0.15, 0.25]
 
 const MIN_VELOCITY = 0.05
 
-const VELOCITIES: Record<VoiceName, { strong: number; medium: number; weak: number }> = {
+export const VELOCITIES: Record<VoiceName, { strong: number; medium: number; weak: number }> = {
   kick: { strong: 0.98, medium: 0.86, weak: 0.74 },
   snare: { strong: 1, medium: 0.7, weak: 0.45 },
   hatClosed: { strong: 0.75, medium: 0.45, weak: 0.32 },
   hatOpen: { strong: 0.75, medium: 0.68, weak: 0.6 },
+  ride: { strong: 0.78, medium: 0.62, weak: 0.55 },
+  rideBell: { strong: 0.8, medium: 0.66, weak: 0.55 },
+  claves: { strong: 0.7, medium: 0.6, weak: 0.5 },
+  cowbell: { strong: 0.74, medium: 0.62, weak: 0.52 },
   rim: { strong: 0.55, medium: 0.5, weak: 0.42 },
   tomHigh: { strong: 0.92, medium: 0.8, weak: 0.68 },
   tomLow: { strong: 0.95, medium: 0.83, weak: 0.71 },
@@ -80,7 +87,13 @@ function velocityFor(voice: VoiceName, step: number): number {
   return shape.weak
 }
 
-const HAT_ACCENTS = [1, 0.72, 0.88, 0.66]
+export const HAT_ACCENTS = [1, 0.72, 0.88, 0.66]
+
+// Three, so the cycle is coprime with the four-beat bar and never locks to
+// it, and shallow, because a wavering pulse reads worse than a flat one.
+export const RIDE_ACCENTS = [1, 0.9, 0.95]
+
+export const RIDE_SUSTAIN_SIXTEENTHS = 8
 
 const COMP_ACCENTS = [1.12, 1, 0.88, 1.12, 0.88]
 
@@ -103,6 +116,52 @@ const HAT_PATTERNS: number[][] = [
   [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
   [0, 2, 3, 4, 6, 8, 10, 11, 12, 14],
 ]
+
+// A riding feel's hat is the left foot under the ride, so every figure holds
+// beats 2 and 4; the second picks up the "and" of 4 that hatOpen vacated.
+export const HAT_PUNCTUATION_PATTERNS: number[][] = [
+  [4, 12],
+  [4, 12, 14],
+  [0, 4, 8, 12],
+]
+
+// On a riding feel the ride is the pulse, so every figure keeps every quarter
+// and outnumbers the busiest foot hat.
+export const RIDE_PATTERNS: Partial<Record<FeelTemplate['subdivision'], number[][]>> = {
+  8: [
+    [0, 2, 4, 6, 8, 10, 12, 14],
+    [0, 4, 6, 8, 12, 14],
+    [0, 4, 6, 8, 12],
+  ],
+  // At swing 0.44 applySwing delays the odd sixteenths, so a step on 3, 7, 11
+  // or 15 is the "a" of its beat — a late flick, not the shuffle's triplet ping.
+  //
+  // Signed off 2026-09-05: Fred heard six renders of groove-40 and said "5 sounds
+  // best, go with the proposal" — cell 5, the 6-hit member below. A listening pass,
+  // not a measurement. The 8-hit member it replaces was heard first and rejected
+  // ("in groove 40, the ride is too loud. It get's a bit too much"). The members
+  // differ by where the flick lands rather than by how many there are, because this
+  // feel's bar is 25-35 % shorter than the shuffle's and the count that matters is
+  // per second, not per bar.
+  16: [
+    [0, 3, 4, 8, 11, 12],
+    [0, 4, 7, 8, 12, 15],
+    [0, 4, 8, 12, 15],
+  ],
+}
+
+export const QUARTER_STEPS_16 = [0, 4, 8, 12]
+
+// The loudest round value whose humanized ceiling (0.21 + 0.13) still sits
+// inside the softest recorded kick layer, whose maxVelocity is 0.3465.
+export const FEATHER_VELOCITY = 0.21
+
+export function featherSteps(
+  sounding: number[],
+  subdivision: FeelTemplate['subdivision'],
+): number[] {
+  return gridSteps(QUARTER_STEPS_16, subdivision).filter((step) => !sounding.includes(step))
+}
 
 const BASS_PATTERNS: number[][] = [
   [0, 6, 10],
@@ -176,11 +235,15 @@ export const FILLS: Record<string, { fill: FillPhrase; variation?: FillPhrase }>
 
 const TOM_VOICES: VoiceName[] = ['tomHigh', 'tomLow']
 
-const FILL_DURATIONS: Record<VoiceName, number> = {
+export const FILL_DURATIONS: Record<VoiceName, number> = {
   kick: 2,
   snare: 2,
   hatClosed: 1,
   hatOpen: 2,
+  ride: 8,
+  rideBell: 8,
+  claves: 1,
+  cowbell: 1,
   rim: 1,
   tomHigh: 2,
   tomLow: 2,
@@ -326,10 +389,33 @@ export function buildEvents(
   const grid = (steps: number[]) => gridSteps(steps, template.subdivision)
   const placement = placementFor(template.id)
 
+  const plays = (voice: VoiceName) => template.voices.includes(voice)
+  const rides = plays('ride')
+
   const kickSteps = grid(pick(rhythmRng, KICK_PATTERNS))
-  const hatSteps = grid(pick(rhythmRng, HAT_PATTERNS))
+  const hatSteps = grid(pick(rhythmRng, rides ? HAT_PUNCTUATION_PATTERNS : HAT_PATTERNS))
   const bassSteps = grid(pick(rhythmRng, BASS_PATTERNS))
   const compSteps = grid(pick(rhythmRng, COMP_PATTERNS))
+
+  const ridePool = RIDE_PATTERNS[template.subdivision]
+  if (rides && !ridePool) {
+    throw new Error(
+      `${template.id}: no ride pattern pool for subdivision ${template.subdivision}`,
+    )
+  }
+  const rideSteps =
+    rides && ridePool
+      ? grid(pick(rngFor(`${spec.template}:${spec.seed}:${RIDE_LABEL}`), ridePool))
+      : []
+  const quarterSteps = Array.from(
+    { length: template.subdivision },
+    (_, step) => step,
+  ).filter((step) => step % (template.subdivision / BEATS_PER_BAR) === 0)
+
+  const rideAccents = new Map<number, number>()
+  rideSteps.forEach((step, index) => {
+    rideAccents.set(step, RIDE_ACCENTS[index % RIDE_ACCENTS.length])
+  })
 
   const playsBongo = template.voices.includes('bongoHigh')
   const bongoFigure = playsBongo
@@ -357,7 +443,9 @@ export function buildEvents(
     (GHOST_VELOCITY_RANGE[1] - GHOST_VELOCITY_RANGE[0]) * rhythmRng()
 
   const hatAccents = new Map<number, number>()
-  const hatLine = [...new Set([...hatSteps, ...hatOpenSteps])].sort((a, b) => a - b)
+  const hatLine = [
+    ...new Set([...hatSteps, ...(plays('hatOpen') ? hatOpenSteps : [])]),
+  ].sort((a, b) => a - b)
   hatLine.forEach((step, index) => {
     hatAccents.set(step, HAT_ACCENTS[index % HAT_ACCENTS.length])
   })
@@ -372,6 +460,9 @@ export function buildEvents(
     if (voice === 'hatClosed' || voice === 'hatOpen') {
       return clampVelocity(base * (hatAccents.get(step) ?? 1))
     }
+    if (voice === 'ride') {
+      return clampVelocity(base * (rideAccents.get(step) ?? 1))
+    }
     if (voice !== 'comp') return base
     const index = compIndex.get(step)
     if (index === undefined) return base
@@ -384,7 +475,6 @@ export function buildEvents(
   const sixteenthSec = barSec / PATTERN_RESOLUTION
 
   const events: NoteEvent[] = []
-  const plays = (voice: VoiceName) => template.voices.includes(voice)
 
   const add = (
     voice: VoiceName,
@@ -554,12 +644,15 @@ export function buildEvents(
   const variationPhrase = resolvePhrase(declared.variation ?? withoutToms(declared.fill))
   const middlePass = middlePassOf(template.passes)
 
-  const phraseForBar = (pass: number, barInPass: number): [VoiceName, number[]][] | null => {
+  const barRole = (pass: number, barInPass: number): 'fill' | 'variation' | null => {
     if (barInPass !== BARS_PER_PASS - 1) return null
-    if (pass === template.passes - 1) return fillPhrase
-    if (middlePass !== null && pass === middlePass) return variationPhrase
+    if (pass === template.passes - 1) return 'fill'
+    if (middlePass !== null && pass === middlePass) return 'variation'
     return null
   }
+
+  const phraseForRole = (role: 'fill' | 'variation') =>
+    role === 'fill' ? fillPhrase : variationPhrase
 
   for (let pass = 0; pass < template.passes; pass++) {
     const start = events.length
@@ -569,10 +662,16 @@ export function buildEvents(
 
       const ghosts = plays('snare') ? ghostsForBar() : []
 
-      const phrase = phraseForBar(pass, barInPass)
-      if (phrase) {
-        for (const [voice, steps] of phrase) {
+      const role = barRole(pass, barInPass)
+      if (role) {
+        for (const [voice, steps] of phraseForRole(role)) {
           for (const step of steps) add(voice, bar, step, FILL_DURATIONS[voice])
+        }
+        if (rides) {
+          if (plays('hatClosed')) for (const step of hatSteps) add('hatClosed', bar, step, 1)
+          if (role === 'variation') {
+            for (const step of quarterSteps) add('ride', bar, step, RIDE_SUSTAIN_SIXTEENTHS)
+          }
         }
       } else {
         if (plays('kick')) for (const step of kickSteps) add('kick', bar, step, 2)
@@ -587,6 +686,7 @@ export function buildEvents(
           for (const step of closed) add('hatClosed', bar, step, 1)
         }
         if (plays('hatOpen')) for (const step of hatOpenSteps) add('hatOpen', bar, step, 2)
+        if (rides) for (const step of rideSteps) add('ride', bar, step, RIDE_SUSTAIN_SIXTEENTHS)
         if (plays('rim') && placement.rimBars.includes(barInPass)) {
           for (const step of rimSteps) add('rim', bar, step, 1)
         }
@@ -603,6 +703,15 @@ export function buildEvents(
             const base = velocityFor('bongoLow', sixteenth)
             add('bongoLow', bar, step, 1, undefined, clampVelocity(base * (bongoAccents.get(step) ?? 1)))
           }
+        }
+      }
+
+      if (rides && plays('kick')) {
+        const sounding = role
+          ? (phraseForRole(role).find(([voice]) => voice === 'kick')?.[1] ?? [])
+          : kickSteps
+        for (const step of featherSteps(sounding, template.subdivision)) {
+          add('kick', bar, step, 2, undefined, FEATHER_VELOCITY)
         }
       }
 

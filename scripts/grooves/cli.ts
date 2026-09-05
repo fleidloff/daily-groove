@@ -142,11 +142,95 @@ export async function generate(options: GenerateOptions = {}): Promise<GenerateR
   return { entries, pcm }
 }
 
+export type CliArgs = {
+  only: string[]
+  outDir?: string
+  packDir?: string
+  manifestOnly: boolean
+}
+
+export function parseArgs(argv: readonly string[]): CliArgs {
+  const args: CliArgs = { only: [], manifestOnly: false }
+
+  const valueFor = (flag: string, i: number): string => {
+    const value = argv[i + 1]
+    if (value === undefined || value.startsWith('--')) {
+      throw new Error(`${flag} needs a value`)
+    }
+    return value
+  }
+
+  for (let i = 0; i < argv.length; i++) {
+    const token = argv[i]
+    switch (token) {
+      case '--manifest-only':
+        args.manifestOnly = true
+        break
+      case '--only':
+        args.only.push(valueFor(token, i))
+        i++
+        break
+      case '--out':
+        args.outDir = valueFor(token, i)
+        i++
+        break
+      case '--pack':
+        args.packDir = valueFor(token, i)
+        i++
+        break
+      default:
+        throw new Error(`unknown argument: ${token}`)
+    }
+  }
+
+  return args
+}
+
+export function optionsFrom(args: CliArgs): GenerateOptions {
+  const options: GenerateOptions = { encode: !args.manifestOnly }
+
+  if (args.outDir !== undefined) {
+    options.outDir = args.outDir
+    options.manifestPath = join(args.outDir, 'grooves.generated.ts')
+    options.lockPath = join(args.outDir, 'grooves.lock.json')
+  }
+
+  if (args.packDir !== undefined) options.packDir = args.packDir
+
+  if (args.only.length > 0) {
+    const wanted = new Set(args.only)
+    const catalogue = readCatalogue().filter((spec) => wanted.has(spec.id))
+    const missing = args.only.filter((id) => !catalogue.some((spec) => spec.id === id))
+    if (missing.length > 0) {
+      throw new Error(`--only: no catalogue entry named ${missing.join(', ')}`)
+    }
+    options.catalogue = catalogue
+    options.heardIn = {}
+  }
+
+  return options
+}
+
 const invokedDirectly = process.argv[1] === fileURLToPath(import.meta.url)
 if (invokedDirectly) {
-  const manifestOnly = process.argv.slice(2).includes('--manifest-only')
-  const { entries } = await generate({ encode: !manifestOnly })
-  if (manifestOnly) console.log('manifest-only: no audio was encoded')
+  let args: CliArgs
+  try {
+    args = parseArgs(process.argv.slice(2))
+  } catch (error) {
+    console.error(String(error instanceof Error ? error.message : error))
+    process.exit(1)
+  }
+
+  let options: GenerateOptions
+  try {
+    options = optionsFrom(args)
+  } catch (error) {
+    console.error(String(error instanceof Error ? error.message : error))
+    process.exit(1)
+  }
+
+  const { entries } = await generate(options)
+  if (args.manifestOnly) console.log('manifest-only: no audio was encoded')
   console.log(`rendered ${entries.length} grooves`)
   for (const e of entries) {
     console.log(`  ${e.id}  ${e.name.padEnd(22)} ${e.scale.padEnd(20)} ${e.chord.padEnd(10)} ${e.bpm}bpm`)

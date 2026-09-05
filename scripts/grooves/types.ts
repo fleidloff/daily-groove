@@ -2,18 +2,25 @@ import type { Root } from '../../src/lib/groove.ts'
 import type { FlavourSlug as Flavour } from '../../src/lib/theory/names.ts'
 export type { FlavourSlug as Flavour } from '../../src/lib/theory/names.ts'
 
-export type VoiceName =
-  | 'kick'
-  | 'snare'
-  | 'hatClosed'
-  | 'hatOpen'
-  | 'rim'
-  | 'tomHigh'
-  | 'tomLow'
-  | 'bongoHigh'
-  | 'bongoLow'
-  | 'bass'
-  | 'comp'
+export const VOICE_NAMES = [
+  'kick',
+  'snare',
+  'hatClosed',
+  'hatOpen',
+  'ride',
+  'rideBell',
+  'rim',
+  'tomHigh',
+  'tomLow',
+  'bongoHigh',
+  'bongoLow',
+  'claves',
+  'cowbell',
+  'bass',
+  'comp',
+] as const
+
+export type VoiceName = (typeof VOICE_NAMES)[number]
 
 export type Pcm = {
   sampleRate: number

@@ -17,7 +17,8 @@ export const puzzle = {
   simpleModeOn: 'Six roots, Major or Minor',
   simpleModeOff: 'Twelve roots, four modes',
   tapSounds: 'Tap sounds',
-  drumCredit: 'Drum samples provided by DrumGizmo.org',
+  drumCredit: 'Drum samples from MuldjordKit and DRSKit,',
+  drumCreditPublisher: ' provided by DrumGizmo.org',
   sharedNotice:
     "This is a shared groove, not today's puzzle. Playing it won't change your streak, and it won't use up your day.",
   backToToday: "Back to today's puzzle",

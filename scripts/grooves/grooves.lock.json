@@ -24,12 +24,12 @@
     },
     {
       "id": "groove-07",
-      "sha256": "b71159067563900d227fe8f2d3beb93b34a728b6a90770a246fc05bcce781017",
+      "sha256": "9aa8353349c5cdac68050614f86b938e525769775854ab83c5648114a43f4333",
       "bytes": 1014430
     },
     {
       "id": "groove-08",
-      "sha256": "b6edfd6e4e24741da554f274a1e635c16b5679468d97348fe94037a435c878fd",
+      "sha256": "2c38d2d91dc3b20477b796a147f29ac567c7a7bc0e9e48bc46411ee0fb203889",
       "bytes": 1014430
     },
     {
@@ -74,7 +74,7 @@
     },
     {
       "id": "groove-19",
-      "sha256": "95ed2f7c26d9076dc1e001f44c9c686d96ff4152357bff8309c694b7e3917821",
+      "sha256": "8cdced782323500217851cd3616fa8c9a17df7f07b7eaaa5605d1235b5a14320",
       "bytes": 1168030
     },
     {
@@ -94,12 +94,12 @@
     },
     {
       "id": "groove-28",
-      "sha256": "72f6c1196af2472948ce7dffae82f6451943d4967cd553e4b8a0ae3b2060e26d",
+      "sha256": "82ee344e403152f87d547dda32900a386ff1a36c506d964fee26c0e00dab77ab",
       "bytes": 855187
     },
     {
       "id": "groove-34",
-      "sha256": "5329f585e39fdc402d9a5f2fc12f4238f3543632f80e5ca6aa609ee24f28adda",
+      "sha256": "a9c2613a41db08b929a670b2f1d091a93c19942f9cdebb52a97dd8d9f07545e5",
       "bytes": 855187
     },
     {
@@ -109,17 +109,17 @@
     },
     {
       "id": "groove-40",
-      "sha256": "b960567450b5274d284e635a143ff26a59fe924edb39ccbc434022df8bcb7bf1",
+      "sha256": "5445c891a2fe810af53ed22675dbe7c805a99b1f9418714bac958c20ea259728",
       "bytes": 839514
     },
     {
       "id": "groove-42",
-      "sha256": "0f37710c87e76ce31ed8c5f90e8ff428726cea049064e666e94b2b17d166ef3c",
+      "sha256": "f6215cee404b7bedde89440a6277007186cf31f3c3956d70d8088a4b237094fa",
       "bytes": 1098439
     },
     {
       "id": "groove-44",
-      "sha256": "5975c6a0e33a71535c13f2fb1b6295515a15304c1d384b7bad0778db29a5899b",
+      "sha256": "72376d55994c474111a8cc4622bca34ab84940762f2d3181c52848f66b2f47f8",
       "bytes": 1139190
     },
     {
@@ -129,7 +129,7 @@
     },
     {
       "id": "groove-48",
-      "sha256": "8aefe5c62f0c45d5319424fb293589a57e191a54555643b16f21558fd497a9f5",
+      "sha256": "5d4df888c35c9b0f185403f29be3290bf989c413c85f7b52bdd1675905dd61bd",
       "bytes": 810048
     },
     {
@@ -139,7 +139,7 @@
     },
     {
       "id": "groove-50",
-      "sha256": "71c7008bf6560b0451734247043acc8764328d6c1f5d526c643ec53d58ea71d8",
+      "sha256": "92ee3eb86a74fd17d489135e2db1aea3021d5ab925d3a572fd1430997a79aa23",
       "bytes": 810048
     },
     {
@@ -149,7 +149,7 @@
     },
     {
       "id": "groove-52",
-      "sha256": "93f69b5bed0ef1bc42efb7fff0eb07b929ee304c0bdb88b809f30ab427396871",
+      "sha256": "4296c8dea285a70056a8bbe4ff24cf6b78fbe0d0c95c0ab1c46cbd524afbc498",
       "bytes": 1073362
     }
   ],
@@ -276,5 +276,5 @@
     }
   ],
   "notesManifestSha256": "ed63a057f7658fee2758b9b33d73aa77e111d0818c85f80462ace167dad60c21",
-  "packSha256": "04bb9096b4d29f459ed6bbf9682a4a65d89832a42ebe68c7d5de609864193b07"
+  "packSha256": "01e0229a5ca201d4d39c059a946a361e26298b528506f715630a087cbb92b28d"
 }

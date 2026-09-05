@@ -11,7 +11,16 @@ import { loadPack } from './pack.ts'
 import { templateById } from './templates/index.ts'
 import { renderVoices } from './voices.ts'
 import { OVERHANG_BARS, SAMPLE_RATE } from './cli.ts'
-import { DEFAULT_MANIFEST_PATH, DEFAULT_PACK_DIR, generate, toGroove } from './cli.ts'
+import {
+  DEFAULT_LOCK_PATH,
+  DEFAULT_MANIFEST_PATH,
+  DEFAULT_OUT_DIR,
+  DEFAULT_PACK_DIR,
+  generate,
+  optionsFrom,
+  parseArgs,
+  toGroove,
+} from './cli.ts'
 import { FLAVOURS, displayFlavour } from '../../src/lib/theory/names.ts'
 import { placeholderPack } from './testing/placeholderPack.ts'
 import type { GrooveSpec } from './types.ts'
@@ -398,4 +407,83 @@ describe('the committed mp3s', () => {
       expect(trailMs, `${spec.id} has ${trailMs.toFixed(1)}ms of trailing silence`).toBeLessThan(15)
     }
   }, 60_000)
+})
+
+describe('the audition rig', () => {
+  it('sends audio, manifest and lock to the scratch directory --out names', () => {
+    const options = optionsFrom(parseArgs(['--out', '/tmp/audition-x']))
+
+    expect(options).toMatchObject({
+      outDir: '/tmp/audition-x',
+      manifestPath: join('/tmp/audition-x', 'grooves.generated.ts'),
+      lockPath: join('/tmp/audition-x', 'grooves.lock.json'),
+    })
+    expect(options.outDir).not.toBe(DEFAULT_OUT_DIR)
+    expect(options.manifestPath).not.toBe(DEFAULT_MANIFEST_PATH)
+    expect(options.lockPath).not.toBe(DEFAULT_LOCK_PATH)
+  })
+
+  it('narrows the catalogue to the ids --only names, and asks nothing of heard-in.json', () => {
+    const options = optionsFrom(parseArgs(['--only', 'groove-07']))
+    const expected = readCatalogue().filter((s) => s.id === 'groove-07')
+
+    expect(expected).toHaveLength(1)
+    expect(options.catalogue).toEqual(expected)
+    expect(options.heardIn).toEqual({})
+  })
+
+  it('takes --only more than once', () => {
+    const options = optionsFrom(parseArgs(['--only', 'groove-07', '--only', 'groove-01']))
+    expect(options.catalogue?.map((s) => s.id)).toEqual(['groove-01', 'groove-07'])
+  })
+
+  it('names an --only id the catalogue does not hold, instead of rendering everything', () => {
+    expect(() => optionsFrom(parseArgs(['--only', 'groove-99']))).toThrow(/groove-99/)
+  })
+
+  it('points packDir at the throwaway pack --pack names', () => {
+    expect(optionsFrom(parseArgs(['--pack', '/tmp/pack-1'])).packDir).toBe('/tmp/pack-1')
+  })
+
+  it('names a flag that was given no value', () => {
+    expect(() => parseArgs(['--pack'])).toThrow(/--pack/)
+    expect(() => parseArgs(['--out'])).toThrow(/--out/)
+    expect(() => parseArgs(['--only'])).toThrow(/--only/)
+    expect(() => parseArgs(['--out', '--pack', '/tmp/p'])).toThrow(/--out/)
+  })
+
+  it('names an unknown token rather than falling back to a full render', () => {
+    expect(() => parseArgs(['--outdir', '/tmp/x'])).toThrow(/--outdir/)
+    expect(() => parseArgs(['groove-07'])).toThrow(/groove-07/)
+  })
+
+  it('still reads --manifest-only, off the same parse', () => {
+    expect(parseArgs(['--manifest-only']).manifestOnly).toBe(true)
+    expect(parseArgs([]).manifestOnly).toBe(false)
+    expect(optionsFrom(parseArgs(['--manifest-only'])).encode).toBe(false)
+  })
+
+  it('asks for exactly today’s options when no flag is given', () => {
+    const options = optionsFrom(parseArgs([]))
+    expect(Object.keys(options)).toEqual(['encode'])
+    expect(options.encode).toBe(true)
+  })
+
+  it('renders one groove into a temp directory and leaves the committed render alone', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'audition-'))
+    const manifestBefore = sha256File(DEFAULT_MANIFEST_PATH)
+    const manifestMtimeBefore = statSync(DEFAULT_MANIFEST_PATH).mtimeMs
+    const lockBefore = readLock(DEFAULT_LOCK_PATH)
+
+    await generate({
+      ...optionsFrom(parseArgs(['--only', 'groove-07', '--out', dir])),
+      pack: placeholderPack(),
+      encode: false,
+    })
+
+    expect(existsSync(join(dir, 'grooves.generated.ts'))).toBe(true)
+    expect(sha256File(DEFAULT_MANIFEST_PATH)).toBe(manifestBefore)
+    expect(statSync(DEFAULT_MANIFEST_PATH).mtimeMs).toBe(manifestMtimeBefore)
+    expect(readLock(DEFAULT_LOCK_PATH)).toEqual(lockBefore)
+  }, RENDER_TIMEOUT_MS)
 })

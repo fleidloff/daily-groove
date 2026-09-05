@@ -64,15 +64,28 @@ at once, and a groove whose harmony moved is a past puzzle whose answer moved.
 
 - **R6** — If a CC-BY library supplied the ride, the sample credit already on the
   groove box grows to name both sources on **one line**, reading `Drum samples
-  provided by DrumGizmo.org and <Ride>`, where `<Ride>` is the attribution text
-  that library's licence names. Only the DrumGizmo half is the text of the
-  `drumgizmo.org` link; ` and <Ride>` renders after the anchor closes, so a link
-  never has inside it the name of something it does not point at. It keeps the shape and roughly the length of the
-  sentence Sam already skims past — a credit should stay something you can
-  not-read in one glance, because legal text growing on the page is the same
-  friction as being asked for an account before the first sound plays.
-  `puzzle.drumCredit` in `src/lib/snippets/en/puzzle.ts` and its assertion in
-  `snippets.test.ts` change together.
+  from MuldjordKit and DRSKit, provided by DrumGizmo.org`. Only `Drum samples
+  from MuldjordKit and DRSKit,` is the text of the `drumgizmo.org` link; the
+  trailing ` provided by DrumGizmo.org` renders after the anchor closes, so a link
+  never has inside it the name of something it does not point at. It keeps the
+  shape and roughly the length of the sentence Sam already skims past — a credit
+  should stay something you can not-read in one glance, because legal text growing
+  on the page is the same friction as being asked for an account before the first
+  sound plays. `puzzle.drumCredit` in `src/lib/snippets/en/puzzle.ts` and its
+  assertion in `snippets.test.ts` change together.
+
+  **Amended after Track D built the original wording, 2026-09-05.** R6 first asked
+  for `Drum samples provided by DrumGizmo.org and <Ride>`, `<Ride>` being the
+  attribution string the library's licence names. Track D built exactly that and
+  reported that it cannot satisfy the length clause: **both kits come from the
+  same publisher**, so DRSKit's attribution ends `provided by DrumGizmo.org` and
+  the rendered line said `DrumGizmo.org` twice, growing 38 → 111 characters.
+
+  Naming both kits once and the publisher once is 74 characters, and it fixes
+  something the original never noticed: **the committed line names neither kit.**
+  It credits MuldjordKit for the first time. This costs the constraint that
+  `drumCredit` keeps its exact words — see the amendment to R7c and AC5 — and that
+  trade was the user's call, not the implementer's.
 - **R7** — The credit stays where it is and keeps the shape it already has:
   `GrooveCard.tsx` renders `puzzle.drumCredit` as the text of a link to
   `drumgizmo.org`, followed by a second link reading `CC BY 4.0`. It does not
@@ -83,11 +96,17 @@ at once, and a groove whose harmony moved is a past puzzle whose answer moved.
   two that are there today — a third would be the growth of legal text on the page
   that R6 exists to avoid. The ride's name is plain text between them.
 - **R7c** — The line is assembled from two snippet keys, not from splitting one.
-  `puzzle.drumCredit` keeps the words it has and stays the anchor's text; a second
-  key carries ` and <Ride>` and renders outside the anchor. Splitting a sentence in
-  the component on `' and '` would make the rendering depend on the punctuation of
-  a translatable string, and hard-coding the ride's name in `GrooveCard.tsx` would
-  put user-facing text outside `src/lib/snippets/`.
+  `puzzle.drumCredit` is the anchor's text; a second key carries the remainder and
+  renders outside the anchor. Splitting a sentence in the component on `' and '`
+  would make the rendering depend on the punctuation of a translatable string, and
+  hard-coding a library's name in `GrooveCard.tsx` would put user-facing text
+  outside `src/lib/snippets/`.
+
+  **Amended 2026-09-05, with R6.** R7c originally required `drumCredit` to keep
+  the words it has. The chosen wording names both kits inside the anchor, so
+  `drumCredit` becomes `Drum samples from MuldjordKit and DRSKit,` and the second
+  key becomes ` provided by DrumGizmo.org`. The two-key structure, and the reason
+  for it, are unchanged — only which words fall on which side of the anchor.
 - **R8** — If the ride library is CC0, nothing in `src/` changes and this epic
   does not touch the app's source at all.
 
@@ -141,18 +160,31 @@ render all 30 to a scratch dir
 - **AC4** (R4) — Given all thirty rendered grooves, the gate returns no failure,
   and each groove's RMS sits within −29…−20 dBFS.
 - **AC5** (R6, R7c, R8) — Given a CC-BY ride library, the credit line renders as
-  `Drum samples provided by DrumGizmo.org and <Ride> · CC BY 4.0`, with
-  `snippets.puzzle.drumCredit` unchanged at `Drum samples provided by
-  DrumGizmo.org` and supplying the anchor's text, and the second key supplying
-  ` and <Ride>` outside it; `snippets.test.ts` asserts both strings. Given a CC0
-  ride library, `git diff` shows no change under `src/`.
+  `Drum samples from MuldjordKit and DRSKit, provided by DrumGizmo.org · CC BY
+  4.0`, with `snippets.puzzle.drumCredit` at `Drum samples from MuldjordKit and
+  DRSKit,` supplying the anchor's text, and the second key supplying
+  ` provided by DrumGizmo.org` outside it; `snippets.test.ts` asserts both
+  strings. Given a CC0 ride library, `git diff` shows no change under `src/`.
+
+  **Amended 2026-09-05.** AC5 previously pinned `drumCredit` as *unchanged*. That
+  is what the amendment to R6 gives up, and it is given up deliberately: holding
+  `drumCredit` fixed forces the publisher's name to appear twice. The clause it
+  keeps is the one that matters — both strings asserted, so the line cannot drift
+  without a test saying so.
 - **AC6** (R7, R7b) — Given the groove box, exactly one credit line renders, in
   the position it renders in today, carrying exactly two anchors — the
   `drumgizmo.org` link whose text is `puzzle.drumCredit`, and the `CC BY 4.0`
   licence link.
 - **AC7** (R9) — Given a stored result from before this feature, when the player
   opens the app or a share link to that groove, then the puzzle, the answer, the
-  attempts, the streak and every word on the page are what they were.
+  attempts and the streak are what they were, and no word on the page tells the
+  player anything about the re-render.
+
+  **Corrected 2026-09-05, after verification found it self-contradictory.** AC7
+  read "every word on the page are what they were", which AC5 deliberately
+  breaks: the sample credit line's words change in this very epic. Both could not
+  hold. The intent R9 carries is the player's *game state* surviving untouched,
+  plus AC7b's no-notice rule — not a freeze on every string in the app.
 - **AC7b** (R9) — Given the diff for this epic, no snippet is added under
   `src/lib/snippets/` that says anything to the player about the re-render, and
   the only keys touched there are the two that carry the sample attribution, and

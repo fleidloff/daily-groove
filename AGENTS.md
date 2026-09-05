@@ -86,9 +86,17 @@ Four of the five skills in [docs/skills.md](docs/skills.md) are built around
 agents rather than around one assistant doing the work in sequence:
 `/writespec` hands each PRD to an `architect`, `/implement-feature` fans out a
 worker per unit and runs `/verify-epic`'s `verifier` at the end of every epic,
-and `.claude/agents/` defines the five roles they draw from — `architect`,
-`implementer`, `test-writer`, `verifier`, `musician`. A tech spec's tracks
+and `.claude/agents/` defines the six roles they draw from — `architect`,
+`implementer`, `test-writer`, `verifier`, `musician`, `sam`. A tech spec's tracks
 declare a role each for exactly that reason.
+
+`sam` is the odd one out, because it builds nothing. It *is* the player in
+[docs/persona.md](docs/persona.md), and `/roadmap`, `/brainstorm`, `/prototype`
+and `/create-feature-for-persona` dispatch it whenever a decision turns on what
+that player would do rather than on what the code needs. The answer comes back
+in first person, quoting the line of the persona it rests on, so a product call
+is made in the player's voice instead of by whoever is holding the keyboard —
+and it answers "no persona bearing" for the questions that aren't its business.
 
 **Running those skills is standing permission to dispatch the agents they
 name.** Don't stop to ask. The parallelism is the design: the epics of a feature

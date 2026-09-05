@@ -128,10 +128,25 @@ describe('feature-22 wording', () => {
     expect(snippets.puzzle.simpleMode).toBe('Simple mode')
   })
 
-  it('holds the drum credit under puzzle (F22 E2 R8)', () => {
+  it('names both kits in the drum credit under puzzle (F22 E2 R8, F24 E3 R6, AC5)', () => {
     expect(snippets.puzzle.drumCredit).toBe(
-      'Drum samples provided by DrumGizmo.org',
+      'Drum samples from MuldjordKit and DRSKit,',
     )
+  })
+
+  it('carries the publisher clause in its own key (F24 E3 R6, R7c, AC5)', () => {
+    expect(snippets.puzzle.drumCreditPublisher).toBe(' provided by DrumGizmo.org')
+    expect(snippets.puzzle.drumCreditPublisher.startsWith(' ')).toBe(true)
+    expect(
+      `${snippets.puzzle.drumCredit}${snippets.puzzle.drumCreditPublisher}`,
+    ).toBe('Drum samples from MuldjordKit and DRSKit, provided by DrumGizmo.org')
+  })
+
+  it('names the publisher once and each kit once (F24 E3 R6)', () => {
+    const line = `${snippets.puzzle.drumCredit}${snippets.puzzle.drumCreditPublisher}`
+    for (const name of ['DrumGizmo.org', 'MuldjordKit', 'DRSKit']) {
+      expect(line.split(name), name).toHaveLength(2)
+    }
   })
 
   it('opens the ladder on the listening line, on and off (F22 E2 R6, R7)', () => {
@@ -212,5 +227,45 @@ describe('the concert line (F23 E2)', () => {
     const line = snippets.solved.concertPitch({ root: 'F♯', flavour: 'Blues' })
     expect(line.indexOf('F♯')).toBeLessThan(line.indexOf('Blues'))
     expect(line.indexOf('Blues')).toBeLessThan(line.indexOf('concert'))
+  })
+})
+
+describe('the puzzle key set is pinned (F24 E3 R9, AC7b)', () => {
+  it('holds exactly these keys and no other', () => {
+    expect(Object.keys(snippets.puzzle).sort()).toEqual([
+      'audioError',
+      'audioRetry',
+      'backToToday',
+      'bpm',
+      'drumCredit',
+      'drumCreditPublisher',
+      'giveUp',
+      'giveUpArmed',
+      'guessTitle',
+      'hint',
+      'loading',
+      'modeGroup',
+      'playName',
+      'playText',
+      'playTodayIntro',
+      'playTodayOutro',
+      'rootGroup',
+      'ruledOut',
+      'sharedGroove',
+      'sharedNotice',
+      'simpleMode',
+      'simpleModeOff',
+      'simpleModeOn',
+      'tapSounds',
+    ])
+  })
+
+  it('adds nothing that speaks to the player about the re-render', () => {
+    for (const [key, value] of Object.entries(snippets.puzzle)) {
+      if (typeof value !== 'string') continue
+      expect(`${key} ${value}`.toLowerCase()).not.toMatch(
+        /re-?record|re-?render|new audio|updated|improved|changelog/,
+      )
+    }
   })
 })

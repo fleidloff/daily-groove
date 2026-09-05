@@ -46,6 +46,13 @@ trained musician, the absolute beginner or the theory student is not
 automatically wrong — but it is a different bet from the rest of the feature,
 and saying so is what stops it drifting to the front of the plan unexamined.
 
+**Dispatch the `sam` agent for the calls the persona owns.** Which epic reaches
+the player first, whether an epic ships anything they would notice, whether a
+slice is worth a release on its own — those are questions about them, so ask
+them. Hand it the epic list, or the two orderings you are choosing between, and
+quote what comes back. It answers "no persona bearing" for anything structural,
+which is the honest answer more often than not.
+
 **Read the project's conventions** if they exist — `AGENTS.md`, `CLAUDE.md`,
 `docs/architecture.md`, `docs/testing.md`. Epics should land as the repo
 expects them to (feature slices, colocated tests, whatever the project says),

@@ -1,4 +1,10 @@
-import { mkdtempSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
+import {
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
@@ -98,6 +104,13 @@ describe('findMissingFloorRules', () => {
     },
   )
 
+  it('skips a definition named as exempt', () => {
+    writeFileSync(join(dir, 'complete.md'), COMPLETE)
+    writeFileSync(join(dir, 'incomplete.md'), INCOMPLETE)
+
+    expect(findMissingFloorRules(dir, ['incomplete.md'])).toEqual([])
+  })
+
   it('passes a directory whose definitions all carry the floor', () => {
     writeFileSync(join(dir, 'complete.md'), COMPLETE)
     writeFileSync(join(dir, 'also-complete.md'), COMPLETE)
@@ -120,11 +133,14 @@ describe('the definitions carry the floor', () => {
     'architect',
     'implementer',
     'musician',
+    'sam',
     'test-writer',
     'verifier',
   ]
 
-  it('has a definition for each of the five roles', () => {
+  const WRITES_NOTHING = ['sam.md']
+
+  it('has a definition for each of the six roles', () => {
     expect(
       readdirSync(AGENTS)
         .filter((name) => name.endsWith('.md'))
@@ -132,7 +148,15 @@ describe('the definitions carry the floor', () => {
     ).toEqual(ROLES.map((role) => `${role}.md`))
   })
 
-  it('leaves no floor rule missing from any definition', () => {
-    expect(findMissingFloorRules(AGENTS)).toEqual([])
+  it('leaves no floor rule missing from any definition that writes code', () => {
+    expect(findMissingFloorRules(AGENTS, WRITES_NOTHING)).toEqual([])
+  })
+
+  it('exempts only definitions that forbid themselves from writing', () => {
+    for (const file of WRITES_NOTHING) {
+      expect(readFileSync(join(AGENTS, file), 'utf8')).toMatch(
+        /(?:write|edit)s? (?:no|nothing)|do(?:es)?n(?:'|\u2019)?t write/i,
+      )
+    }
   })
 })

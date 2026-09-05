@@ -9,7 +9,17 @@ import type {
 
 const DEFAULT_SAMPLE_RATE = 44100
 
-const PERCUSSIVE: VoiceName[] = ['kick', 'snare', 'hatClosed', 'hatOpen', 'rim']
+const PERCUSSIVE: VoiceName[] = [
+  'kick',
+  'snare',
+  'hatClosed',
+  'hatOpen',
+  'ride',
+  'rideBell',
+  'rim',
+  'claves',
+  'cowbell',
+]
 const PITCHED: VoiceName[] = ['bass', 'comp']
 
 const DECAY: Record<string, number> = {
@@ -17,7 +27,11 @@ const DECAY: Record<string, number> = {
   snare: 0.22,
   hatClosed: 0.06,
   hatOpen: 0.32,
+  ride: 1.4,
+  rideBell: 0.9,
   rim: 0.08,
+  claves: 0.08,
+  cowbell: 0.35,
 }
 
 const NOTES: Record<string, number[]> = {

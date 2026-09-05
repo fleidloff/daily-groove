@@ -51,6 +51,7 @@ export function GrooveCard({ groove, meta, nextGroove, children }: GrooveCardPro
             >
               {puzzle.drumCredit}
             </a>
+            {puzzle.drumCreditPublisher}
             {' · '}
             <a
               href={DRUM_CREDIT_LICENCE_URL}

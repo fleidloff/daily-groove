@@ -38,6 +38,15 @@ makes sense for the trained musician, the absolute beginner or the theory
 student is one you should name as such — that is a reason to rank it last, not a
 reason to leave it out.
 
+**Ask the `sam` agent when the answer is the player's, not yours.** Dispatch it
+with the one question, or with the options you are weighing, whenever a
+requirement, an acceptance criterion or a recommendation turns on what the
+player would actually do. It answers in first person and quotes the line it
+rests on, which is exactly what a requirement's *why* needs, and it answers "no
+persona bearing" when the question isn't its business — take that as the answer
+rather than pressing. Reading `docs/persona.md` yourself stays the baseline;
+dispatch when a fork is genuinely open, not for every sentence.
+
 Read the project's conventions (`AGENTS.md`, `docs/architecture.md`,
 `docs/testing.md`) so acceptance criteria match how this repo validates work.
 

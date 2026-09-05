@@ -205,6 +205,7 @@ describe('GrooveCard', () => {
 
   describe('the drum samples credit', () => {
     const SOURCE = puzzle.drumCredit
+    const PUBLISHER = 'provided by DrumGizmo.org'
 
     it('names the credit in the exact words the licence requires', () => {
       render(<GrooveCard groove={GROOVE} meta={metaFor(GROOVE)} />)
@@ -248,6 +249,32 @@ describe('GrooveCard', () => {
       expect(footer.nextElementSibling).toBeNull()
       expect(footer.className).toContain('mt-auto')
       expect(column.className).toContain('h-full')
+    })
+
+    it('names both kits on the same line, in one link (F24 E3 R6, R7, R7b, AC5, AC6)', () => {
+      render(<GrooveCard groove={GROOVE} meta={metaFor(GROOVE)} />)
+      const anchor = screen.getByRole('link', { name: SOURCE })
+      const paragraph = anchor.closest('p') as HTMLElement
+
+      expect(paragraph.textContent).toBe(
+        `${puzzle.drumCredit}${puzzle.drumCreditPublisher} · CC BY 4.0`,
+      )
+      expect(within(paragraph).getAllByRole('link')).toHaveLength(2)
+      for (const kit of ['MuldjordKit', 'DRSKit']) {
+        expect(anchor.textContent ?? '', kit).toContain(kit)
+      }
+    })
+
+    it('leaves the publisher clause outside every link (F24 E3 R6, R7b, AC5, AC6)', () => {
+      render(<GrooveCard groove={GROOVE} meta={metaFor(GROOVE)} />)
+      const paragraph = screen
+        .getByRole('link', { name: SOURCE })
+        .closest('p') as HTMLElement
+
+      for (const link of screen.getAllByRole('link')) {
+        expect(link.textContent ?? '').not.toContain(PUBLISHER)
+      }
+      expect(paragraph.textContent).toContain(PUBLISHER)
     })
 
     it('stays the quietest thing in the card', () => {

@@ -3,13 +3,21 @@ import type { FeelTemplate, GrooveSpec, MusicMeta, NoteEvent, VoiceName } from '
 import type { Harmony } from './theory/harmony.ts'
 import {
   BACKING_VOICES,
+  BONGO_LABEL,
   COMP_REGISTER_CEILING,
   COMP_REGISTER_LOW,
   DEFAULT_FILL,
   FILLS,
+  GHOST_LABEL,
   GHOST_VELOCITY_THRESHOLD,
+  HAT_ACCENTS,
+  HAT_PUNCTUATION_PATTERNS,
   MUSIC_LABEL,
   RHYTHM_LABEL,
+  RIDE_ACCENTS,
+  RIDE_LABEL,
+  RIDE_PATTERNS,
+  RIDE_SUSTAIN_SIXTEENTHS,
   buildEvents,
   middlePassOf,
   playedVoicing,
@@ -1507,16 +1515,23 @@ describe('buildEvents — the last pass ends with a fill — R5, R6, R7, R8, R9,
     })
 
     it('has no crash to write there — the vocabulary holds none', () => {
-      for (const voice of BACKING_VOICES) expect(voice).not.toMatch(/crash|cymbal|ride/)
+      for (const voice of BACKING_VOICES) expect(voice).not.toMatch(/crash|cymbal/)
       for (const feel of allTemplates()) {
         const { events } = buildEvents({ id: 'g', uuid: UUID, template: feel.id, seed: 1 }, feel)
-        for (const event of events) expect(event.voice).not.toMatch(/crash|cymbal|ride/)
+        for (const event of events) expect(event.voice).not.toMatch(/crash|cymbal/)
       }
       const phrases = [DEFAULT_FILL, ...Object.values(FILLS).flatMap((e) => [e.fill, e.variation])]
       for (const phrase of phrases) {
         for (const voice of Object.keys(phrase ?? {})) {
-          expect(voice).not.toMatch(/crash|cymbal|ride/)
+          expect(voice).not.toMatch(/crash|cymbal/)
         }
+      }
+    })
+
+    it('lets the ride onto the backing track, and nothing else new — R13, AC2', () => {
+      expect(BACKING_VOICES).toContain('ride')
+      for (const voice of ['rideBell', 'claves', 'cowbell'] as VoiceName[]) {
+        expect(BACKING_VOICES, `${voice} is played by no template`).not.toContain(voice)
       }
     })
   })
@@ -1976,3 +1991,336 @@ describe('the bongo — feature-13', () => {
   })
 })
 
+
+describe('a cymbal keeps the time — feature-24 epic-1', () => {
+  const SHUFFLE = templateById('shuffle')
+
+  const dryRide = (feel: FeelTemplate = SHUFFLE): FeelTemplate => ({
+    ...feel,
+    humanize: { timingMs: 0, velocity: 0, lean: {}, driftDepth: 0 },
+  })
+
+  function gridded(steps: number[], subdivision: number): number[] {
+    const seen = new Set<number>()
+    const out: number[] = []
+    for (const source of [...steps].sort((a, b) => a - b)) {
+      const step = Math.min(subdivision - 1, Math.round((source * subdivision) / 16))
+      if (seen.has(step)) continue
+      seen.add(step)
+      out.push(step)
+    }
+    return out
+  }
+
+  function barsOf(feel: FeelTemplate, seed: number, spec = { template: feel.id }) {
+    const built = buildEvents(
+      { id: 'g', uuid: UUID, template: spec.template, seed },
+      feel,
+    )
+    const stepSec = ((60 / built.music.bpm) * 4) / feel.subdivision
+    const bars: { voice: VoiceName; step: number; velocity: number; durationSec: number }[][] =
+      Array.from({ length: built.music.loopBars }, () => [])
+    for (const event of built.events) {
+      const grid = Math.round(event.timeSec / stepSec)
+      bars[Math.floor(grid / feel.subdivision)].push({
+        voice: event.voice,
+        step: grid % feel.subdivision,
+        velocity: event.velocity,
+        durationSec: event.durationSec,
+      })
+    }
+    return { bars, music: built.music, events: built.events }
+  }
+
+  const stepsIn = (bar: { voice: VoiceName; step: number }[], voice: VoiceName) =>
+    bar.filter((e) => e.voice === voice).map((e) => e.step).sort((a, b) => a - b)
+
+  describe('the foot hat — R18, R18b, AC9d', () => {
+    it('holds three figures, every one of them on beats two and four', () => {
+      expect(HAT_PUNCTUATION_PATTERNS).toHaveLength(3)
+      for (const figure of HAT_PUNCTUATION_PATTERNS) {
+        expect(figure, `${figure}`).toContain(4)
+        expect(figure, `${figure}`).toContain(12)
+      }
+    })
+
+    it('gives every figure two to four hits, ascending, unique, inside the bar', () => {
+      for (const figure of HAT_PUNCTUATION_PATTERNS) {
+        expect(figure.length, `${figure}`).toBeGreaterThanOrEqual(2)
+        expect(figure.length, `${figure}`).toBeLessThanOrEqual(4)
+        expect(new Set(figure).size, `${figure}`).toBe(figure.length)
+        expect([...figure].sort((a, b) => a - b), `${figure}`).toEqual(figure)
+        for (const step of figure) {
+          expect(step, `${figure}`).toBeGreaterThanOrEqual(0)
+          expect(step, `${figure}`).toBeLessThan(16)
+        }
+      }
+    })
+
+    it('picks the step the open hat vacates up in one of them — R18b', () => {
+      expect(HAT_PUNCTUATION_PATTERNS.some((figure) => figure.includes(14))).toBe(true)
+      expect(HAT_PUNCTUATION_PATTERNS[1]).toContain(14)
+    })
+  })
+
+  describe('the ride pool and its own stream — R15, R16, R17, AC8, AC11', () => {
+    it('draws on a label of its own', () => {
+      expect(RIDE_LABEL).toBe('ride')
+      for (const other of [MUSIC_LABEL, RHYTHM_LABEL, GHOST_LABEL, BONGO_LABEL]) {
+        expect(RIDE_LABEL).not.toBe(other)
+      }
+    })
+
+    it('holds three subdivision-8 figures, every one keeping every quarter — R16', () => {
+      const pool = RIDE_PATTERNS[8] as number[][]
+      expect(pool).toHaveLength(3)
+      const quarters = [0, 2, 4, 6]
+      for (const figure of pool) {
+        const steps = gridded(figure, 8)
+        for (const quarter of quarters) expect(steps, `${figure}`).toContain(quarter)
+      }
+    })
+
+    it('is busier than the busiest foot hat — R16, AC11', () => {
+      const busiestHat = Math.max(
+        ...HAT_PUNCTUATION_PATTERNS.map((figure) => gridded(figure, 8).length),
+      )
+      const sparsestRide = Math.min(
+        ...(RIDE_PATTERNS[8] as number[][]).map((figure) => gridded(figure, 8).length),
+      )
+      expect(sparsestRide).toBeGreaterThan(busiestHat)
+    })
+
+    it('accents on a shallow cycle of three, coprime with the bar — R17', () => {
+      expect(RIDE_ACCENTS).toHaveLength(3)
+      expect(4 % RIDE_ACCENTS.length).not.toBe(0)
+      expect(Math.min(...RIDE_ACCENTS)).toBeGreaterThan(Math.min(...HAT_ACCENTS))
+      expect(Math.max(...RIDE_ACCENTS)).toBeLessThanOrEqual(1)
+    })
+
+    it('rides busier than it hats, in every ordinary bar — AC11', () => {
+      for (let seed = 1; seed <= 8; seed += 1) {
+        const { bars } = barsOf(dryRide(), seed)
+        for (let bar = 0; bar < bars.length; bar += 1) {
+          if (bar === 15 || bar === 7) continue
+          const ride = stepsIn(bars[bar], 'ride').length
+          const hat = stepsIn(bars[bar], 'hatClosed').length
+          expect(ride, `seed ${seed} bar ${bar}`).toBeGreaterThan(hat)
+        }
+      }
+    })
+
+    it('plays a pool member as its ride figure, in every ordinary bar at every seed — AC8', () => {
+      const options = (RIDE_PATTERNS[8] as number[][]).map((figure) =>
+        gridded(figure, SHUFFLE.subdivision).join(','),
+      )
+      for (let seed = 1; seed <= 8; seed += 1) {
+        const { bars } = barsOf(dryRide(), seed)
+        const drawn = new Set<string>()
+        for (let bar = 0; bar < bars.length; bar += 1) {
+          if (bar === 15 || bar === 7) continue
+          const figure = stepsIn(bars[bar], 'ride').join(',')
+          expect(
+            options,
+            `seed ${seed} bar ${bar} rides [${figure}], which is in no RIDE_PATTERNS member`,
+          ).toContain(figure)
+          drawn.add(figure)
+        }
+        expect(drawn.size, `seed ${seed} rides more than one figure over the loop`).toBe(1)
+      }
+    })
+
+    it('re-rolls only the ride when the pool is reordered, for every feel that rides — AC8', () => {
+      const feels = allTemplates().map((feel) => dryRide(feel))
+      const riding = feels.filter((feel) => feel.voices.includes('ride'))
+      expect(
+        riding.length,
+        'no feel rides, so reordering a pool could not move anything',
+      ).toBeGreaterThan(0)
+
+      const before = new Map<string, ReturnType<typeof barsOf>>()
+      for (const feel of feels) {
+        for (let seed = 1; seed <= 6; seed += 1) {
+          before.set(`${feel.id}:${seed}`, barsOf(feel, seed))
+        }
+      }
+
+      const strip = (built: ReturnType<typeof barsOf>) =>
+        built.events.filter((e) => e.voice !== 'ride')
+
+      for (const rider of riding) {
+        const pool = RIDE_PATTERNS[rider.subdivision] as number[][] | undefined
+        expect(
+          pool,
+          `${rider.id} rides on subdivision ${rider.subdivision}, which RIDE_PATTERNS does not stock`,
+        ).toBeDefined()
+        try {
+          pool!.push(pool!.shift() as number[])
+          let moved = 0
+          for (const feel of feels) {
+            for (let seed = 1; seed <= 6; seed += 1) {
+              const was = before.get(`${feel.id}:${seed}`)!
+              const after = barsOf(feel, seed)
+              const where = `${feel.id} seed ${seed}, with ${rider.id}'s pool reordered`
+              if (
+                feel.id === rider.id &&
+                stepsIn(after.bars[0], 'ride').join(',') !== stepsIn(was.bars[0], 'ride').join(',')
+              ) {
+                moved += 1
+              }
+              expect(strip(after), where).toEqual(strip(was))
+              expect(after.music, where).toEqual(was.music)
+            }
+          }
+          expect(
+            moved,
+            `reordering the subdivision-${rider.subdivision} pool moved no ride figure in ${rider.id}`,
+          ).toBeGreaterThan(0)
+        } finally {
+          pool!.unshift(pool!.pop() as number[])
+        }
+      }
+    })
+  })
+
+  describe('a riding feel swaps one pool for another — R18, R21b, AC9', () => {
+    const synthetic: FeelTemplate = {
+      ...SHUFFLE,
+      id: 'test-ride',
+      voices: [...SHUFFLE.voices.filter((v) => v !== 'hatOpen'), 'ride'],
+    }
+
+    it('reads the foot-hat pool where a straight feel reads the hat pool', () => {
+      const options = HAT_PUNCTUATION_PATTERNS.map((figure) =>
+        gridded(figure, synthetic.subdivision).join(','),
+      )
+      for (let seed = 1; seed <= 8; seed += 1) {
+        const { bars } = barsOf(dryRide(synthetic), seed, { template: 'shuffle' })
+        expect(options, `seed ${seed}`).toContain(stepsIn(bars[0], 'hatClosed').join(','))
+      }
+    })
+
+    it('runs the hat accent cycle over the hits it plays, from index zero — R21b', () => {
+      for (let seed = 1; seed <= 6; seed += 1) {
+        const { bars } = barsOf(dryRide(synthetic), seed, { template: 'shuffle' })
+        const hats = bars[0]
+          .filter((e) => e.voice === 'hatClosed')
+          .sort((a, b) => a.step - b.step)
+        expect(hats.length).toBeGreaterThan(1)
+        hats.forEach((hat, index) => {
+          const sixteenth = (hat.step * 16) / synthetic.subdivision
+          const shape =
+            sixteenth % 4 === 0 ? 0.75 : sixteenth % 2 === 0 ? 0.45 : 0.32
+          expect(hat.velocity, `seed ${seed} hat ${index}`).toBeCloseTo(
+            shape * HAT_ACCENTS[index % HAT_ACCENTS.length],
+            9,
+          )
+        })
+      }
+    })
+
+    it('leaves a straight feel drawing exactly what it drew — AC10', () => {
+      const funk = templateById('straight-funk')
+      const { bars } = barsOf(dryRide(funk), 1)
+      const hatPool = [
+        [0, 2, 4, 6, 8, 10, 12, 14],
+        Array.from({ length: 16 }, (_, i) => i),
+        [0, 2, 3, 4, 6, 8, 10, 11, 12, 14],
+      ].map((figure) => gridded(figure, funk.subdivision))
+      const played = [
+        ...stepsIn(bars[0], 'hatClosed'),
+        ...stepsIn(bars[0], 'hatOpen'),
+      ].sort((a, b) => a - b)
+      expect(hatPool.map((f) => f.join(','))).toContain(played.join(','))
+    })
+  })
+
+  describe('shuffle takes the ride and loses the open hat — R20, R21, AC7, AC9b', () => {
+    it('re-kits the template and moves nothing else', () => {
+      expect(SHUFFLE.voices).toContain('ride')
+      expect(SHUFFLE.voices).toContain('hatClosed')
+      expect(SHUFFLE.voices).not.toContain('hatOpen')
+      expect(typeof SHUFFLE.gain.ride).toBe('number')
+      expect(typeof SHUFFLE.pan.ride).toBe('number')
+      expect(SHUFFLE.gain.hatOpen).toBeUndefined()
+      expect(SHUFFLE.pan.hatOpen).toBeUndefined()
+      expect(SHUFFLE.humanize.lean.hatOpen).toBeUndefined()
+      expect(typeof SHUFFLE.humanize.lean.ride).toBe('number')
+
+      expect(SHUFFLE.tempoRange).toEqual([78, 92])
+      expect(SHUFFLE.subdivision).toBe(8)
+      expect(SHUFFLE.swing).toBe(0.64)
+      expect(SHUFFLE.passes).toBe(4)
+      expect(SHUFFLE.flavours).toEqual(['blues', 'aeolian'])
+      expect(SHUFFLE.density).toEqual({ minPerBar: 16, maxPerBar: 38 })
+    })
+
+    it('writes no open hat at any seed — AC9b', () => {
+      for (let seed = 1; seed <= 8; seed += 1) {
+        const { events } = barsOf(SHUFFLE, seed)
+        expect(events.some((e) => e.voice === 'hatOpen'), `seed ${seed}`).toBe(false)
+        expect(events.some((e) => e.voice === 'ride'), `seed ${seed}`).toBe(true)
+      }
+    })
+
+    it('leaves every feel that does not ride playing its open hat on the and of four', () => {
+      const straight = allTemplates().filter((f) => !f.voices.includes('ride'))
+      expect(straight.length, 'every feel rides, so this case checks nothing').toBeGreaterThan(0)
+      for (const { id } of straight) {
+        const feel = templateById(id)
+        expect(feel.voices, id).toContain('hatOpen')
+        const { bars } = barsOf(dryRide(feel), 1)
+        const opens = stepsIn(bars[0], 'hatOpen')
+        expect(opens, id).toEqual(gridded([14], feel.subdivision))
+      }
+    })
+  })
+
+  describe('the fill bar, the variation bar and the foot that does not stop — R21c, R21d, R21e, AC9, AC9c', () => {
+    const FILL_BAR = 15
+    const VARIATION_BAR = (middlePassOf(4) as number) * 4 + 3
+
+    it('takes the ride out of the fill bar and brings it back on the downbeat — R21c', () => {
+      for (let seed = 1; seed <= 8; seed += 1) {
+        const { bars } = barsOf(dryRide(), seed)
+        expect(stepsIn(bars[FILL_BAR], 'ride'), `seed ${seed}`).toEqual([])
+        expect(stepsIn(bars[0], 'ride'), `seed ${seed}`).toContain(0)
+      }
+    })
+
+    it('thins the ride to quarter notes in the variation bar — R21d', () => {
+      for (let seed = 1; seed <= 8; seed += 1) {
+        const { bars } = barsOf(dryRide(), seed)
+        expect(stepsIn(bars[VARIATION_BAR], 'ride'), `seed ${seed}`).toEqual([0, 2, 4, 6])
+      }
+    })
+
+    it('keeps the foot hat playing in all sixteen bars — R21e, AC9', () => {
+      const options = HAT_PUNCTUATION_PATTERNS.map((figure) =>
+        gridded(figure, SHUFFLE.subdivision).join(','),
+      )
+      for (let seed = 1; seed <= 8; seed += 1) {
+        const { bars } = barsOf(dryRide(), seed)
+        const drawn = stepsIn(bars[0], 'hatClosed').join(',')
+        expect(options, `seed ${seed}`).toContain(drawn)
+        for (let bar = 0; bar < bars.length; bar += 1) {
+          const hats = stepsIn(bars[bar], 'hatClosed')
+          expect(hats.join(','), `seed ${seed} bar ${bar}`).toBe(drawn)
+          expect(hats.length, `seed ${seed} bar ${bar}`).toBeGreaterThanOrEqual(2)
+          expect(hats.length, `seed ${seed} bar ${bar}`).toBeLessThanOrEqual(4)
+        }
+      }
+    })
+
+    it('lets every ride ping ring for half a bar', () => {
+      const { bars, music } = barsOf(dryRide(), 1)
+      const sixteenthSec = ((60 / music.bpm) * 4) / 16
+      for (const bar of bars) {
+        for (const event of bar) {
+          if (event.voice !== 'ride') continue
+          expect(event.durationSec).toBeCloseTo(RIDE_SUSTAIN_SIXTEENTHS * sixteenthSec, 9)
+        }
+      }
+    })
+  })
+})

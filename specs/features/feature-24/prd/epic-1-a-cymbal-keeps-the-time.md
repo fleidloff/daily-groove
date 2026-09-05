@@ -78,10 +78,18 @@ part of closing that gap that can fail, so it goes first and it goes alone.
   rejected without an audition. A ride ping is the most-repeated event in the
   file — eight or more a bar over four bars — and one identical sample at one
   level is the machine-gun artefact feature-9 spent a whole feature undoing.
-- **R5** — **Three** candidate libraries are prepared and heard. An unbounded
-  audition has no failure state and so can never report one; three is enough to
-  tell a systematic problem from an unlucky pick. If none of the three passes the
-  listening decision, this epic ends in a report naming every library auditioned
+- **R5** — **Three** candidate libraries are considered, and they are prepared
+  and heard **one at a time, in order of fit, stopping at the first that passes**.
+  A candidate is only fetched when the ones before it have failed. An unbounded audition has no
+  failure state and so can never report one; three is enough to tell a systematic
+  problem from an unlucky pick. A candidate rejected under R4 counts against the
+  bound — R4 exists precisely so that a library with nothing to build alternates
+  from is not dressed up as an audition — and the report names it with its reason
+  alongside the ones that were heard. The bound is what gives a *rejection* its
+  meaning: one candidate cannot distinguish "this library is wrong" from "a jazz
+  ride on this kit is wrong", which is the ambiguity feature-13 ended in. A
+  *pass*, by contrast, needs no comparison — so a second candidate is fetched only
+  when the first has failed. If none of the three passes, this epic ends in a report naming every library auditioned
   and why each failed. The ride stays out of `VoiceName` and out of the pack; the claves, the cowbell and the ride bell
   are still prepared, declared and committed; Epics 2 and 3 do not run. A wrong
   ride recorded as a rejected candidate is worth more than a wrong ride shipped,
@@ -288,9 +296,11 @@ byte-identical.
 - **AC13** (R8) — Given the same `shuffle` groove rendered twice, the two files
   are byte-identical; given one render, the ride alternates chosen differ between
   passes.
-- **AC13b** (R5) — Given a run in which the first candidate fails, at least two
-  further libraries are prepared and heard before the epic reports the stopping
-  outcome.
+- **AC13b** (R4, R5) — Given a run in which the first candidate passes, the report
+  names it, the candidates not reached, and why they were not. Given a run in
+  which the first candidate fails, the report names three considered libraries
+  before the epic reports the stopping outcome, each with a verdict, and every one
+  not rejected under R4 was rendered and heard.
 - **AC14** (R3) — Given an audition render, `public/grooves/` is unmodified and
   no candidate's files have entered `samples/`.
 - **AC14b** (R6) — Given the pack with the four new voices declared,
@@ -430,3 +440,38 @@ fails `npm run build` as `pack-stale` unless the hash is brought back into step.
 Only `npm run notes` rewrites it, and doing so re-renders no groove audio. R5b
 now makes that this epic's job rather than a red carried into Epic 2.
 Applied to: R5b, AC14, AC14b.
+
+### Cycle 4 — 2026-09-05
+
+**Amendment to R5, forced by what the search actually found.** Cycle 1's Q4
+settled the bound at three candidates "prepared and heard". Research during
+implementation found that the licence bar in R1 and the round-robin bar in R4
+between them leave **two** libraries in existence: DRSKit and CrocellKit, both
+CC-BY 4.0. Salamander is CC-BY-SA 3.0 and Tchackpoum's derived-kit terms are
+CC-BY-SA 4.0 — share-alike is not CC-BY, and AC5 pins every row to CC0 or
+CC-BY-4.0, so both are rejected on licence without an audition. The only CC0 lead
+is a Freesound Zildjian A Ping Ride offering two bow hits at a single velocity,
+which R4 rejects unheard for exactly the reason R4 was written.
+
+R5 now reads "three considered", with an R4 rejection counting against the bound
+and named in the report. The bound and its failure state are unchanged; what
+changed is the recognition that rejecting a candidate on a stated rule *is* a
+verdict, and pretending otherwise would mean auditioning a library already known
+to fail. Applied to: R5, AC13b.
+
+### Cycle 5 — 2026-09-05
+
+**R5 becomes sequential.** Cycle 4 read as though every non-R4-rejected candidate
+is prepared and heard regardless of outcome. Inspecting DRSKit on disk changed
+the calculation: its `Ride_tip_chain` is the bow-with-the-stick-tip articulation
+R6 names, `Ride_tip_bell_chain` gives `rideBell` from the same cymbal and
+session, and eleven samples carrying measured `power` values group into layers
+with real alternates. Fetching a second 5.6 GB library before hearing the first
+buys nothing if the first passes.
+
+The bound of three still stands, and so does its purpose — but that purpose is
+asymmetric. A rejection needs the comparison, because one candidate cannot
+separate "this library is wrong" from "a jazz ride on this kit is wrong", and
+that ambiguity is where feature-13 stopped. A pass needs no comparison at all.
+So candidates are heard in order of fit and the audition stops at the first that
+passes. Applied to: R5, AC13b.

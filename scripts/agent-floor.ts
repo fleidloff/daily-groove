@@ -42,7 +42,10 @@ export const FLOOR_RULES: FloorRule[] = [
   },
 ]
 
-export function findMissingFloorRules(dir: string): string[] {
+export function findMissingFloorRules(
+  dir: string,
+  exempt: string[] = [],
+): string[] {
   let entries: string[]
   try {
     entries = readdirSync(dir)
@@ -56,7 +59,7 @@ export function findMissingFloorRules(dir: string): string[] {
   }
 
   const missing: string[] = []
-  for (const file of definitions) {
+  for (const file of definitions.filter((name) => !exempt.includes(name))) {
     const source = readFileSync(join(dir, file), 'utf8')
     for (const rule of FLOOR_RULES) {
       if (!rule.mustMatch.test(source)) missing.push(`${file}: ${rule.id}`)

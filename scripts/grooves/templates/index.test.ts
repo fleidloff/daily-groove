@@ -67,11 +67,75 @@ describe('the template set — R1, AC1', () => {
     expect(new Set(voiceSets).size).toBeGreaterThan(1)
   })
 
-  it('gives every template both hats', () => {
+  it('gives every template a closed hat, and an open one unless it rides', () => {
     for (const template of allTemplates()) {
       expect(template.voices, `${template.id} plays no closed hat`).toContain('hatClosed')
+      if (template.voices.includes('ride')) {
+        expect(
+          template.voices,
+          `${template.id} rides and still carries an open hat`,
+        ).not.toContain('hatOpen')
+        expect(template.gain.hatOpen, `${template.id} rides and still gains an open hat`)
+          .toBeUndefined()
+        expect(template.pan.hatOpen, `${template.id} rides and still pans an open hat`)
+          .toBeUndefined()
+        expect(
+          template.humanize.lean.hatOpen,
+          `${template.id} rides and still leans an open hat`,
+        ).toBeUndefined()
+        continue
+      }
       expect(template.voices, `${template.id} plays no open hat`).toContain('hatOpen')
+      expect(typeof template.gain.hatOpen, `${template.id}.gain.hatOpen`).toBe('number')
+      expect(typeof template.pan.hatOpen, `${template.id}.pan.hatOpen`).toBe('number')
     }
+  })
+})
+
+describe('the two feels that ride — feature-24 epic-2, R1, R11, AC1, AC2, AC8, AC10', () => {
+  it('rides on exactly two of the six, and names them', () => {
+    const riding = allTemplates()
+      .filter((t) => t.voices.includes('ride'))
+      .map((t) => t.id)
+      .sort()
+    expect(riding).toEqual(['shuffle', 'swung-sixteenth'])
+  })
+
+  it('places each ride in its own feel’s mix rather than copying one', () => {
+    const gains = allTemplates()
+      .filter((t) => t.voices.includes('ride'))
+      .map((t) => t.gain.ride)
+    for (const gain of gains) expect(typeof gain).toBe('number')
+    expect(new Set(gains).size, 'both riding feels put the ride at the same gain').toBe(
+      gains.length,
+    )
+  })
+
+  it('leans and pans the ride on every feel that plays one', () => {
+    for (const template of allTemplates()) {
+      if (!template.voices.includes('ride')) continue
+      expect(typeof template.pan.ride, `${template.id}.pan.ride`).toBe('number')
+      expect(typeof template.humanize.lean.ride, `${template.id}.lean.ride`).toBe('number')
+    }
+  })
+
+  it('does not raise the kick to accommodate the feather — AC8', () => {
+    expect(templateById('shuffle').gain.kick).toBe(-10)
+    expect(templateById('swung-sixteenth').gain.kick).toBe(-8)
+  })
+
+  it('leaves everything about swung-sixteenth but the cymbal where it was — AC1', () => {
+    const feel = templateById('swung-sixteenth')
+    expect(feel.tempoRange).toEqual([106, 116])
+    expect(feel.subdivision).toBe(16)
+    expect(feel.swing).toBe(0.44)
+    expect(feel.passes).toBe(4)
+    expect(feel.flavours).toEqual(['phrygian-dominant', 'harmonic-major'])
+    expect(feel.density).toEqual({ minPerBar: 16, maxPerBar: 42 })
+    expect(feel.gain.hatClosed).toBe(-12)
+    expect(feel.pan.hatClosed).toBe(0.33)
+    expect(feel.humanize.lean.snare).toBe(11)
+    expect(feel.humanize.lean.hatClosed).toBe(-5)
   })
 })
 
