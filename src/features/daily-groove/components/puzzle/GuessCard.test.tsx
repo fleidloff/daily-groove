@@ -9,6 +9,7 @@ import { flavourOptions, flavourPool, simpleRootOptions } from '@/lib/theory/mus
 import { ROOTS } from '@/lib/theory/roots'
 import { FAMILIES, type Family } from '@/lib/theory/families'
 import { scheduleLick } from '@/lib/theory/phrase'
+import { variationFor } from '../../hooks/useModeLick'
 import { simpleLickMode } from '@/lib/theory/simpleModes'
 import { GROOVES } from '../../data/grooves.generated'
 import {
@@ -92,7 +93,12 @@ const fetchedNotes = () =>
   fetchedUrls().filter((url) => url.startsWith('/notes/'))
 
 const lickPhrase = (flavour: Flavour) =>
-  scheduleLick({ flavour, root: GROOVE.root, bpm: GROOVE.bpm })
+  scheduleLick({
+    flavour,
+    root: GROOVE.root,
+    bpm: GROOVE.bpm,
+    variation: variationFor(GROOVE.uuid),
+  })
 
 const lickFiles = (...modes: Flavour[]) => {
   const wanted: string[] = []
@@ -1164,7 +1170,12 @@ describe('GuessCard', () => {
   })
 
   const lickLength = (flavour: Flavour) =>
-    scheduleLick({ flavour, root: GROOVE.root, bpm: GROOVE.bpm }).length
+    scheduleLick({
+      flavour,
+      root: GROOVE.root,
+      bpm: GROOVE.bpm,
+      variation: variationFor(GROOVE.uuid),
+    }).length
 
   it('reports the root and asks for its note on the same tap (R1, R2, AC1)', async () => {
     const user = userEvent.setup()

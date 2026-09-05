@@ -13,7 +13,8 @@ import { flavourPool } from '@/lib/theory/music'
 import { ROOTS } from '@/lib/theory/roots'
 import { GROOVES } from '../data/grooves.generated'
 import { installFakeAudioContext } from '../testing/fakeAudioContext'
-import { useModeLick } from './useModeLick'
+import { LICK_VARIATIONS } from '@/lib/theory/licks'
+import { useModeLick, variationFor } from './useModeLick'
 
 const POOL = flavourPool(GROOVES)
 
@@ -46,6 +47,7 @@ function inputs(extra: {
   voice?: LickVoice
   clock?: { nextBeat: (now: number) => number | null }
   output?: ReferenceOutput
+  seed?: string
 }) {
   return {
     pitches: PITCHES,
@@ -56,6 +58,7 @@ function inputs(extra: {
     output: extra.output ?? referenceOutput(),
     clock: extra.clock,
     voice: extra.voice,
+    seed: extra.seed,
   }
 }
 
@@ -120,6 +123,65 @@ describe('useModeLick', () => {
       expect(phrase.length, POOL[index]).toBeGreaterThan(0)
     })
     expect(new Set(phrases.map((p) => JSON.stringify(p))).size).toBe(POOL.length)
+  })
+
+  it('plays the variation the seed picks, for every mode alike', () => {
+    const voice = makeVoice()
+    const seed = GROOVES[0].uuid
+    const variation = variationFor(seed)
+    const { result } = renderHook(() => useModeLick(inputs({ voice, seed })))
+
+    act(() => {
+      result.current.playMode('Lydian')
+      result.current.playMode('Dorian')
+    })
+
+    expect(voice.play).toHaveBeenNthCalledWith(
+      1,
+      scheduleLick({ flavour: 'Lydian', root: 'C', bpm: 96, variation }),
+    )
+    expect(voice.play).toHaveBeenNthCalledWith(
+      2,
+      scheduleLick({ flavour: 'Dorian', root: 'C', bpm: 96, variation }),
+    )
+  })
+
+  it('plays the same phrase every time the day is the same', () => {
+    const voice = makeVoice()
+    const { result, rerender } = renderHook(() => useModeLick(inputs({ voice, seed: 'a-uuid' })))
+
+    act(() => {
+      result.current.playMode('Aeolian')
+    })
+    rerender()
+    act(() => {
+      result.current.playMode('Aeolian')
+    })
+
+    const play = voice.play as unknown as ReturnType<typeof vi.fn>
+    expect(play.mock.calls[0][0]).toEqual(play.mock.calls[1][0])
+  })
+
+  it('falls back to the first variation when no groove seeds it', () => {
+    const voice = makeVoice()
+    const { result } = renderHook(() => useModeLick(inputs({ voice })))
+
+    act(() => {
+      result.current.playMode('Blues')
+    })
+
+    expect(voice.play).toHaveBeenCalledWith(
+      scheduleLick({ flavour: 'Blues', root: 'C', bpm: 96, variation: 0 }),
+    )
+  })
+
+  it('spreads the catalogue across all three variations', () => {
+    const picked = new Set(GROOVES.map((groove) => variationFor(groove.uuid)))
+    expect(picked.size).toBe(LICK_VARIATIONS)
+    for (const variation of picked) {
+      expect(variation).toBeGreaterThanOrEqual(0)
+      expect(variation).toBeLessThan(LICK_VARIATIONS)
+    }
   })
 
   it('asks the voice for nothing when the mode has no lick (R19, R20)', () => {

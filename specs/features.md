@@ -66,7 +66,7 @@ Status runs 📝 **Drafted** → ❓ **Questions open** → ✅ **Done**.
 | [2](quick/2-always-four-chords.md) | Always four chords | ✅ Done | Every groove names four chords, one per bar — the home chord written out where a 3-chord cycle used to wrap, with no audio re-rendered. |
 | [3](quick/3-when-is-the-next-groove.md) | Next groove line | ✅ Done | Counts down to the next groove in the groove card, above the tempo line, once today's is solved or given up; says to reload once midnight has passed. |
 | [4](quick/4-streak-always-top-right.md) | Streak top right | ✅ Done | Pins the streak to the top right of the header at every width, as a fire emoji and a number that shows 0 when there is no streak. |
-| [5](quick/5-lick-variations.md) | Lick variations | ❓ Questions open | Gives every mode three licks instead of one, one of them picked for the day, so tapping a mode stops being a phrase you can memorise. |
+| [5](quick/5-lick-variations.md) | Lick variations | ✅ Done | Gives every mode three licks instead of one, one of them picked for the day, so tapping a mode stops being a phrase you can memorise. |
 
 ---
 

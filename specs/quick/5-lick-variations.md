@@ -42,3 +42,24 @@ Moved from feature-25's briefing.
 * Assumption: a shared groove opened on another day plays *that* day's pick, not the pick of the day the groove was set. The lick is a hint, not part of the answer.
 * Assumption: transpose does not move the pick. The hook is handed `answer.root`, the concert root, so a sax player and a guitarist hear the same lick.
 * `phrase.test.ts`'s "scales %s with the tempo, pitch for pitch" compares bpm 67 against bpm 130 for one root; it stays true only while the variation is pinned across both calls. That test is what rules Q1-C out.
+
+## Answered — Q1-B, Q2-B
+
+* Q1-B ticked. Re-running §2 against it: **question 2 fails.** `GroovePuzzle.tsx` is the shell, so the modules are theory (`licks.ts`, `phrase.ts`), audio (`useModeLick.ts`) and shell (one prop on the `useModeLick` call) — three of six. `/quick-feature` §2 sends that to `/create-feature` and forbids trimming the ticket until it fits.
+* The failure is marginal and the ticket should say so rather than only cite the rule: under Q1-B the change is four files plus their tests, no generated data, one revert. The shell edit is `seed={groove.uuid}` — a prop, not a behaviour. The rule is a proxy for blast radius, and here the proxy is stricter than the thing it stands for.
+* Q1-A reaches the same visible behaviour and stays at two modules. The only difference: A seeds on the calendar day, B on the groove. They diverge in exactly one place — a shared groove opened on a different day plays that day's lick under A, and the groove's own lick under B.
+* Q2-B ticked: one variation index for the whole day, every mode chip on the same one. Costs nothing under either Q1 answer.
+
+## Built
+
+Q1-B and Q2-B, with the two-module rule waived in chat: "still keep it in quick-feature and just go on. I accept the risk."
+
+* `src/lib/theory/licks.ts` — `LICKS` is now three phrases per mode (36 in all); the existing twelve stay as variation 1 and 24 are new. `LICK_VARIATIONS = 3`; `lickFor(flavour, variation = 0)` wraps the index in both directions.
+* `src/lib/theory/phrase.ts` — `scheduleLick` takes an optional `variation`, defaulting to the first.
+* `src/features/daily-groove/hooks/useModeLick.ts` — optional `seed`; `variationFor(seed)` is `hashString(seed) % LICK_VARIATIONS`, memoised, and drives every mode the same way (Q2-B). No seed means variation 1.
+* `src/features/daily-groove/components/GroovePuzzle.tsx` — `seed: groove.uuid`. One line, and the shell edit the size test objected to.
+* **How the 24 were written.** `licks.test.ts` already held four gates and they now judge all 36 rather than 12: 4–12 notes rising in time and ending by beat 4.5, the mode's signature degrees present, a pitch-class set **no other scale can hold**, and no repeated pitch sequence or rhythm anywhere in the set. The uniqueness gate is the binding one — it is what stops a second Ionian phrase from also fitting Lydian, and it rejected five drafts. Range was checked against `LOWEST_MIDI`/`HIGHEST_MIDI` from every root, which caps degrees at 7 for the seven-note scales and 6 for Blues.
+* tests: `licks.test.ts` (20, was 15 — three-per-mode, every gate over all 36, `lickFor`'s variation and its wrap); `phrase.test.ts` (24, was 22 — the variation is played and the three differ, twelve distinct sequences in *every* variation, range from every root × variation); `useModeLick.test.ts` (17, was 13 — the seed's variation on every mode, the same phrase twice on the same day, variation 1 with no seed, and the catalogue spreading across all three); `GroovePuzzle.sounding.test.tsx` (+1 — a second groove sounds a different variation of the same mode) and `GuessCard.test.tsx`, both now asserting against the day's own variation rather than the first.
+* The harness groove picks variation 2 of 3, so the component suites would fail if `seed` were dropped — the wiring is asserted, not assumed.
+* checks: lint — clean / tsc — pass / test — 138 files, 2821 pass / build — pass
+* **Not heard.** Nothing in this run listened to the 24 new licks. They are correct against the gates and idiomatic on paper; whether each one sounds like its mode is still an open ear-check.

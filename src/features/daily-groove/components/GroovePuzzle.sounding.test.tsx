@@ -54,6 +54,7 @@ import { referenceOutput } from '../lib/audio/output'
 import { answerOf, flavourPool, simpleRootOptions } from '@/lib/theory/music'
 import { FAMILIES, familyOf, type Family } from '@/lib/theory/families'
 import { scheduleLick, type ScheduledNote } from '@/lib/theory/phrase'
+import { variationFor } from '../hooks/useModeLick'
 import { simpleLickMode } from '@/lib/theory/simpleModes'
 import { createLocalPreferenceStore } from '../lib/persistence/preferences'
 import { dateLine } from '../lib/presentation/date'
@@ -690,6 +691,7 @@ describe('GroovePuzzle', () => {
         flavour: mode,
         root: GROOVE.root,
         bpm: GROOVE.bpm,
+        variation: variationFor(GROOVE.uuid),
       })
       expect(phrase.length).toBeGreaterThan(0)
 
@@ -707,6 +709,31 @@ describe('GroovePuzzle', () => {
       ).toHaveAttribute('aria-pressed', 'true')
     })
 
+    it('sounds another groove’s variation of the same mode (Q5)', async () => {
+      const user = userEvent.setup()
+      const other: Groove = { ...GROOVE, uuid: '00000000-0000-4000-8000-000000000002' }
+      expect(variationFor(other.uuid)).not.toBe(variationFor(GROOVE.uuid))
+      await renderPuzzle(<GroovePuzzle groove={other} />)
+
+      const mode = flavours()[0]
+      const phrase = scheduleLick({
+        flavour: mode,
+        root: other.root,
+        bpm: other.bpm,
+        variation: variationFor(other.uuid),
+      })
+      const day = scheduleLick({
+        flavour: mode,
+        root: GROOVE.root,
+        bpm: GROOVE.bpm,
+        variation: variationFor(GROOVE.uuid),
+      })
+      expect(phraseShape(phrase)).not.toEqual(phraseShape(day))
+
+      await tapMode(user, mode)
+      expect(soundedPhrase(await soundedLick(0, phrase.length))).toEqual(phraseShape(phrase))
+    })
+
     it('sounds the selected mode again when it is tapped again (H1, R1, AC2)', async () => {
       const user = userEvent.setup()
       await renderPuzzle()
@@ -716,6 +743,7 @@ describe('GroovePuzzle', () => {
         flavour: mode,
         root: GROOVE.root,
         bpm: GROOVE.bpm,
+        variation: variationFor(GROOVE.uuid),
       })
 
       await tapMode(user, mode)
@@ -742,6 +770,7 @@ describe('GroovePuzzle', () => {
         flavour: day.flavour,
         root: day.root,
         bpm: DORIAN.bpm,
+        variation: variationFor(DORIAN.uuid),
       })
       await tapMode(user, own)
       expect(soundedPhrase(await soundedLick(0, dayPhrase.length))).toEqual(
@@ -762,6 +791,7 @@ describe('GroovePuzzle', () => {
         flavour: resolved as Flavour,
         root: day.root,
         bpm: DORIAN.bpm,
+        variation: variationFor(DORIAN.uuid),
       })
       await tapMode(user, other)
       expect(
@@ -789,6 +819,7 @@ describe('GroovePuzzle', () => {
         flavour: day.flavour,
         root: day.root,
         bpm: MIXOLYDIAN.bpm,
+        variation: variationFor(MIXOLYDIAN.uuid),
       })
       expect(dayPhrase.length).toBeGreaterThan(0)
       await tapMode(user, 'Major')
@@ -811,6 +842,7 @@ describe('GroovePuzzle', () => {
         flavour: resolved as Flavour,
         root: day.root,
         bpm: MIXOLYDIAN.bpm,
+        variation: variationFor(MIXOLYDIAN.uuid),
       })
       await tapMode(user, 'Minor')
       expect(
@@ -842,6 +874,7 @@ describe('GroovePuzzle', () => {
           }) as Flavour,
           root: day.root,
           bpm: DORIAN.bpm,
+          variation: variationFor(DORIAN.uuid),
         }),
       )
 
@@ -875,6 +908,7 @@ describe('GroovePuzzle', () => {
         flavour: mode,
         root: GROOVE.root,
         bpm: GROOVE.bpm,
+        variation: variationFor(GROOVE.uuid),
       })
       await tapMode(user, mode)
       const nodes = await soundedLick(before, phrase.length)
@@ -902,6 +936,7 @@ describe('GroovePuzzle', () => {
         flavour: mode,
         root: GROOVE.root,
         bpm: GROOVE.bpm,
+        variation: variationFor(GROOVE.uuid),
       })
 
       await tapMode(user, mode)
@@ -923,6 +958,7 @@ describe('GroovePuzzle', () => {
         flavour: mode,
         root: GROOVE.root,
         bpm: GROOVE.bpm,
+        variation: variationFor(GROOVE.uuid),
       })
       await tapMode(user, mode)
       const nodes = await soundedLick(before, phrase.length)
@@ -944,11 +980,13 @@ describe('GroovePuzzle', () => {
         flavour: one,
         root: GROOVE.root,
         bpm: GROOVE.bpm,
+        variation: variationFor(GROOVE.uuid),
       })
       const second = scheduleLick({
         flavour: two,
         root: GROOVE.root,
         bpm: GROOVE.bpm,
+        variation: variationFor(GROOVE.uuid),
       })
 
       await tapMode(user, one)
@@ -979,6 +1017,7 @@ describe('GroovePuzzle', () => {
         flavour: mode,
         root: GROOVE.root,
         bpm: GROOVE.bpm,
+        variation: variationFor(GROOVE.uuid),
       })
       await tapMode(user, mode)
       await soundedLick(1, phrase.length)
@@ -1004,6 +1043,7 @@ describe('GroovePuzzle', () => {
         flavour: mode,
         root: GROOVE.root,
         bpm: GROOVE.bpm,
+        variation: variationFor(GROOVE.uuid),
       })
       await tapMode(user, mode)
       const nodes = await soundedLick(before, phrase.length)
@@ -1061,6 +1101,7 @@ describe('GroovePuzzle', () => {
         flavour: mode,
         root: GROOVE.root,
         bpm: GROOVE.bpm,
+        variation: variationFor(GROOVE.uuid),
       })
 
       await user.click(chip())

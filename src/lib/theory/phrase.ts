@@ -38,9 +38,10 @@ export function scheduleLick(input: {
   flavour: Flavour
   root: Root
   bpm: number
+  variation?: number
 }): ScheduledNote[] {
-  const { flavour, root, bpm } = input
-  const lick = lickFor(flavour)
+  const { flavour, root, bpm, variation = 0 } = input
+  const lick = lickFor(flavour, variation)
   if (lick === null) return []
   if (!Number.isFinite(bpm) || bpm <= 0) return []
 

@@ -173,6 +173,7 @@ function GroovePuzzleView({
     level: REFERENCE_LEVEL,
     fadeSeconds: REFERENCE_FADE_SECONDS,
     output: referenceOutput(),
+    seed: groove.uuid,
   })
 
   const [helpOverride, setHelpOverride] = useState<boolean | null>(null)

@@ -6,7 +6,7 @@ import {
   rootMidiOf,
   scheduleLick,
 } from './phrase'
-import { LICKS } from './licks'
+import { LICKS, LICK_VARIATIONS } from './licks'
 import { ROOTS } from './roots'
 import { FLAVOURS, displayFlavour } from './names'
 import { UnknownFlavourError, UnknownRootError } from './notes'
@@ -56,10 +56,10 @@ describe('degreeSemitones', () => {
 describe('scheduleLick', () => {
   it('turns a lick, a root and a tempo into the notes to schedule', () => {
     const notes = scheduleLick({ flavour: 'Lydian', root: 'C', bpm: 120 })
-    expect(notes).toHaveLength(LICKS.Lydian.length)
+    expect(notes).toHaveLength(LICKS.Lydian[0].length)
     expect(notes[0].offsetSeconds).toBe(0)
     notes.forEach((note, i) => {
-      const written = LICKS.Lydian[i]
+      const written = LICKS.Lydian[0][i]
       expect(note.midi).toBe(60 + degreeSemitones('Lydian', written.degree))
       expect(note.offsetSeconds).toBeCloseTo(written.beat * 0.5, 12)
       expect(note.durationSeconds).toBeCloseTo(written.beats * 0.5, 12)
@@ -67,8 +67,8 @@ describe('scheduleLick', () => {
   })
 
   it.each(POOL)('scales %s with the tempo, pitch for pitch', (flavour) => {
-    const slow = scheduleLick({ flavour, root: 'F', bpm: 67 })
-    const fast = scheduleLick({ flavour, root: 'F', bpm: 130 })
+    const slow = scheduleLick({ flavour, root: 'F', bpm: 67, variation: 2 })
+    const fast = scheduleLick({ flavour, root: 'F', bpm: 130, variation: 2 })
     expect(slow.map((n) => n.midi)).toEqual(fast.map((n) => n.midi))
     const ratio = 130 / 67
     slow.forEach((note, i) => {
@@ -77,14 +77,38 @@ describe('scheduleLick', () => {
     })
   })
 
-  it('stays inside the rendered range, from every root', () => {
+  it('stays inside the rendered range, from every root and every variation', () => {
     for (const flavour of POOL) {
       for (const root of ROOTS) {
-        for (const note of scheduleLick({ flavour, root, bpm: 100 })) {
-          expect(note.midi, `${flavour} on ${root}`).toBeGreaterThanOrEqual(LOWEST_MIDI)
-          expect(note.midi, `${flavour} on ${root}`).toBeLessThanOrEqual(HIGHEST_MIDI)
+        for (let v = 0; v < LICK_VARIATIONS; v += 1) {
+          for (const note of scheduleLick({ flavour, root, bpm: 100, variation: v })) {
+            expect(note.midi, `${flavour} v${v} on ${root}`).toBeGreaterThanOrEqual(LOWEST_MIDI)
+            expect(note.midi, `${flavour} v${v} on ${root}`).toBeLessThanOrEqual(HIGHEST_MIDI)
+          }
         }
       }
+    }
+  })
+
+  it('plays the variation it is handed, and the first when it is handed none', () => {
+    const first = scheduleLick({ flavour: 'Dorian', root: 'C', bpm: 100 })
+    const second = scheduleLick({ flavour: 'Dorian', root: 'C', bpm: 100, variation: 1 })
+    const third = scheduleLick({ flavour: 'Dorian', root: 'C', bpm: 100, variation: 2 })
+    expect(first).toEqual(scheduleLick({ flavour: 'Dorian', root: 'C', bpm: 100, variation: 0 }))
+    const shapes = [first, second, third].map((notes) =>
+      JSON.stringify(notes.map((n) => [n.midi, n.offsetSeconds])),
+    )
+    expect(new Set(shapes).size).toBe(LICK_VARIATIONS)
+  })
+
+  it('gives twelve different sequences of pitches from one root, in every variation', () => {
+    for (let v = 0; v < LICK_VARIATIONS; v += 1) {
+      const sequences = POOL.map((flavour) =>
+        JSON.stringify(
+          scheduleLick({ flavour, root: 'C', bpm: 100, variation: v }).map((n) => n.midi),
+        ),
+      )
+      expect(new Set(sequences).size, `variation ${v}`).toBe(12)
     }
   })
 
