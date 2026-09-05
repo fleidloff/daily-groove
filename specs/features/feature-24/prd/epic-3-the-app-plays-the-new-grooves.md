@@ -174,7 +174,7 @@ Tick one option per question (`- [x]`), or write your own, then re-run
 the groove box, and is asserted verbatim in `snippets.test.ts:133`. One line has
 to carry both obligations. `<Ride>` below stands for whatever Epic 1 picked.
 
-- [ ] A) `Drum samples provided by DrumGizmo.org and <Ride>` *(recommended — the
+- [x] A) `Drum samples provided by DrumGizmo.org and <Ride>` *(recommended — the
       smallest edit that names both sources, and it keeps the sentence Sam already
       skims the same shape and roughly the same length. Persona: "an account, a
       paywall, or a permission prompt before the first sound plays" is what loses
@@ -192,7 +192,7 @@ to carry both obligations. `<Ride>` below stands for whatever Epic 1 picked.
 Eleven puzzles Sam may already have played and shared will play a different take
 from tomorrow. Same answer, same streak, different cymbal.
 
-- [ ] A) Nothing at all *(recommended — persona: "one thing per day, not a
+- [x] A) Nothing at all *(recommended — persona: "one thing per day, not a
       curriculum" and "homework" is what loses them, and a notice about a change
       to audio they cannot A/B is a thing to read that helps nobody play. The
       roadmap already puts every player-facing change out of scope for this epic

@@ -6,8 +6,8 @@ Feature: [briefing.md](../briefing.md) · [roadmap.md](../roadmap.md)
 
 Source a jazz ride from a library chosen for it, prepare it and three other new
 percussion voices into the sample pack, and render one `shuffle` groove where
-the cymbal carries the pulse and the hi-hat has dropped to punctuation. Nothing
-reaches the app: this epic ends in a listening decision — the cymbal is right and
+the cymbal carries the pulse and the hi-hat has dropped to the foot pattern,
+always on beats 2 and 4. Nothing reaches the app: this epic ends in a listening decision — the cymbal is right and
 Epics 2 and 3 follow, or it is not and the feature stops here with the percussion
 kept and the ride recorded as another failed candidate.
 
@@ -36,7 +36,8 @@ part of closing that gap that can fail, so it goes first and it goes alone.
 - `RIDE_LABEL` as a new labelled RNG stream, and a subdivision-8 ride pattern
   pool drawn on it
 - `shuffle` takes the ride: its `voices`, `gain` and `pan`
-- `shuffle`'s hat drops to punctuation
+- `shuffle`'s closed hat drops to a foot pattern always containing beats 2 and
+  4, and its open hat leaves the kit
 - lift the ride half of the `events.test.ts:1510` ban, keep the crash half
 - record the levelling method so Epic 2 applies it rather than re-deriving it
 - licence, provenance and `samples/README.md`
@@ -73,11 +74,14 @@ part of closing that gap that can fail, so it goes first and it goes alone.
   rejected without an audition. A ride ping is the most-repeated event in the
   file — eight or more a bar over four bars — and one identical sample at one
   level is the machine-gun artefact feature-9 spent a whole feature undoing.
-- **R5** — If no candidate passes the listening decision, this epic ends in a
-  report naming every library auditioned and why each failed. The ride stays out
-  of `VoiceName` and out of the pack; the claves, the cowbell and the ride bell
+- **R5** — **Three** candidate libraries are prepared and heard. An unbounded
+  audition has no failure state and so can never report one; three is enough to
+  tell a systematic problem from an unlucky pick. If none of the three passes the
+  listening decision, this epic ends in a report naming every library auditioned
+  and why each failed. The ride stays out of `VoiceName` and out of the pack; the claves, the cowbell and the ride bell
   are still prepared, declared and committed; Epics 2 and 3 do not run. A wrong
-  ride recorded as a rejected candidate is worth more than a wrong ride shipped.
+  ride recorded as a rejected candidate is worth more than a wrong ride shipped,
+  so the least-wrong of the three is not shipped quietly at a low gain.
 
 ### The pack
 
@@ -128,31 +132,61 @@ part of closing that gap that can fail, so it goes first and it goes alone.
   `RIDE_LABEL`, never on `rhythmRng`. A draw inserted into `rhythmRng` would
   re-roll the rhythm of all thirty grooves, including the four feels that will
   never ride.
-- **R16** — The pool holds three figures for subdivision 8, denser than hat
-  punctuation by construction, because on a riding feel the ride *is* the pulse.
+- **R16** — The pool holds three figures for subdivision 8, every one of them
+  denser than the busiest foot-hat figure, because on a riding feel the ride *is*
+  the pulse and the hat is not.
 - **R17** — Ride accents run on their own shallow cycle of three, coprime with
   the bar. A ride whose accent pattern locks to the bar is a machine; one that
   wavers hard is a drummer losing time. Shallower than `HAT_ACCENTS` because a
   wavering pulse is worse than a flat one.
-- **R18** — A feel that declares `ride` draws its hat figure from
-  `HAT_PUNCTUATION_PATTERNS` instead of `HAT_PATTERNS`, as a single `pick` at the
-  position `rhythmRng` already draws the hat at. The number of draws on
-  `rhythmRng` and their order are unchanged, so every feel that does not ride
-  renders byte-identically.
-- **R19** — Hat punctuation resolves onto the feel's own subdivision by the
-  odd-preserving mapping `ghostSteps` already implements, not by `gridSteps`.
-  `gridSteps` rounds: at subdivision 8 it maps 16-grid step 3 to step 2 and step
-  7 to step 4 — both on the beat, which is exactly where a hat that has handed
-  the pulse over may not be.
+- **R18** — On a feel that declares `ride`, the closed hat draws from
+  `HAT_PUNCTUATION_PATTERNS` instead of `HAT_PATTERNS` — one `pick`, at the
+  position `rhythmRng` already draws the hat at. The pool holds three figures and
+  **every one of them contains beats 2 and 4**, the jazz drummer's left foot under
+  the snare. What varies is what else the foot adds: the bare pair, the pair plus
+  a pickup on the "and" of beat 4, and all four beats. Two to four hits a bar, and
+  the same figure in every bar of the groove.
+- **R18b** — The pickup figure puts the closed hat on the step the open hat
+  vacated. Losing `hatOpen` (R21) leaves the "and" of beat 4 empty on a riding
+  feel, and one of the three foot-hat figures fills it with a closed hit — the
+  pickup into the next bar survives, played by the voice that stayed.
+- **R19** — The hat and the ride are allowed to sound together. A ride playing
+  eighths lands on beats 2 and 4 as well, and a ping and a foot hat on the
+  backbeat is the sound, not a collision. The rule at `docs/music.md:167` — that
+  punctuation steps must be odd "so the hat cannot mark a position the ride is
+  using" — does not survive this and is corrected in Epic 2 along with the rest
+  of that section.
+- **R19b** — The number of draws on `rhythmRng` and their order do not change for
+  any feel — a riding feel swaps which pool the hat's single `pick` reads from and
+  nothing else. A straight feel draws exactly what it draws today, so all four
+  render byte-identically.
 
 ### `shuffle` takes the ride
 
 - **R20** — `shuffle` is the only feel this epic changes. Its `voices` gains
-  `ride` and its `gain` and `pan` gain an entry for it. Its `flavours`,
-  `tempoRange`, `subdivision`, `swing` and `passes` are untouched — every one of
-  those is a re-key of the feel's answers, and this feature moves no answers.
-- **R21** — `shuffle` keeps `hatClosed`. The ride takes the timekeeping; the hat
-  stays in the kit at punctuation duty.
+  `ride` and loses `hatOpen`; its `gain`, `pan` and `humanize.lean` gain an entry
+  for `ride` and lose their `hatOpen` entries. Its `flavours`, `tempoRange`,
+  `subdivision`, `swing` and `passes` are untouched — every one of those is a
+  re-key of the feel's answers, and this feature moves no answers.
+- **R21** — `shuffle` keeps `hatClosed` and drops `hatOpen`. A jazz kit's open
+  hat is the foot opening under the ride, not a stick hit on the "and" of 4, and
+  one hat sound is enough beside a cymbal. `DEFAULT_PLACEMENT`'s open hat on
+  16-grid step `[14]` is untouched — the four straight feels still play it; a
+  riding feel simply does not declare the voice.
+- **R21b** — The hat accent cycle runs over the hat hits the feel actually plays.
+  With `hatOpen` gone from a riding feel, its step no longer enters that feel's
+  hat line and no longer shifts the closed hat's accent indices. The four
+  straight feels all play `hatOpen`, so their accent cycles are unchanged.
+- **R21c** — The ride is silent in the bar that plays a **fill**, and returns on
+  the downbeat of the bar after it. The fill is the snare's bar, and the cymbal
+  coming back in is what marks the loop point.
+- **R21d** — In the bar that plays the thinned **variation**, the ride reduces to
+  quarter notes rather than dropping out. The variation is a mid-loop event and
+  the fill is the loop's seam, so the two bars are as different on the cymbal as
+  they already are on the snare — and the loop point keeps a marker that fires
+  once.
+- **R21e** — The hat keeps its drawn foot figure through both the fill bar and the
+  variation bar. A drummer's left foot does not stop for a fill.
 - **R22** — The ride sits under the snare and above the hat it replaced. Which
   half of the level carries what is decided and recorded: the sample's own
   recorded loudness lives in `pack.json` per layer as `nominalVelocity`, the mix
@@ -181,13 +215,13 @@ Who keeps time, per feel, after this epic:
 
 ```mermaid
 flowchart TD
-  T{template declares ride?} -->|no| H[hat draws HAT_PATTERNS<br/>hat keeps the pulse]
-  T -->|yes| R[ride draws RIDE_PATTERNS on RIDE_LABEL<br/>ride keeps the pulse]
-  R --> P[hat draws HAT_PUNCTUATION_PATTERNS<br/>odd steps only, 2-3 a bar]
+  T{template declares ride?} -->|no| H[hat draws HAT_PATTERNS<br/>hat keeps the pulse<br/>open hat on the and of 4]
+  T -->|yes| R[ride draws RIDE_PATTERNS on RIDE_LABEL<br/>ride keeps the pulse<br/>out for the fill bar, quarters for the variation]
+  R --> P[closed hat draws HAT_PUNCTUATION_PATTERNS<br/>every figure holds beats 2 and 4<br/>no open hat in the kit]
 ```
 
-Both branches spend exactly one `rhythmRng` draw on the hat, at the same point in
-the stream. That is what keeps the nineteen grooves this feature does not touch
+Neither branch changes what any feel draws from `rhythmRng`, or in what order.
+That is what keeps the nineteen grooves this feature does not touch
 byte-identical.
 
 ## Acceptance criteria
@@ -218,10 +252,22 @@ byte-identical.
   a member of the subdivision-8 ride pool, and rebuilding it with the ride pool
   reordered changes the ride figure and changes no kick, bass, comp, ghost or
   bongo step of any feel.
-- **AC9** (R18, R19) — Given a `shuffle` groove at any seed, every `hatClosed`
-  step is odd, there are two or three of them per bar, and none of them
-  coincides with a ride step.
-- **AC10** (R18) — Given each of `straight-funk`, `bright-straight`,
+- **AC9** (R18, R21e) — Given a `shuffle` groove at any seed, every bar's
+  `hatClosed` steps are the same member of `HAT_PUNCTUATION_PATTERNS` resolved
+  onto the feel's subdivision, that member contains beats 2 and 4, there are two
+  to four hits a bar, and the figure is played in the fill bar and the variation
+  bar as well.
+- **AC9d** (R18) — Given `HAT_PUNCTUATION_PATTERNS`, it holds three figures and
+  every one of them contains 16-grid steps 4 and 12.
+- **AC9b** (R21, R21b) — Given the `shuffle` template, `voices` excludes
+  `hatOpen` and `gain`, `pan` and `humanize.lean` have no `hatOpen` entry; given a
+  `shuffle` groove at any seed, no `hatOpen` event exists. Given each of the four
+  straight feels, `hatOpen` still plays on the "and" of beat 4.
+- **AC9c** (R21c, R21d) — Given a `shuffle` groove at any seed, no `ride` event
+  falls in the bar that plays the fill, a `ride` event falls on the downbeat of
+  the bar after it, and the bar that plays the thinned variation carries `ride`
+  events on its quarter-note positions and nowhere else.
+- **AC10** (R19b) — Given each of `straight-funk`, `bright-straight`,
   `half-time`, `open-ballad` and `swung-sixteenth` at every catalogue seed, the
   built events are identical to those built before this epic — same voices, same
   steps, same velocities, same `MusicMeta`.
@@ -232,12 +278,16 @@ byte-identical.
 - **AC13** (R8) — Given the same `shuffle` groove rendered twice, the two files
   are byte-identical; given one render, the ride alternates chosen differ between
   passes.
+- **AC13b** (R5) — Given a run in which the first candidate fails, at least two
+  further libraries are prepared and heard before the epic reports the stopping
+  outcome.
 - **AC14** (R3) — Given an audition render, `public/grooves/` is unmodified and
   `grooves.lock.json` still verifies.
-- **AC15** (R5) — Given a run in which no candidate passes, `VoiceName` holds
-  fourteen members and no `ride`, the pack declares `claves`, `cowbell` and
-  `rideBell` and no `ride`, `events.test.ts` still bans `ride`, and the report
-  names every library auditioned with its reason for rejection.
+- **AC15** (R5) — Given a run in which none of the three candidates passes,
+  `VoiceName` holds fourteen members and no `ride`, the pack declares `claves`,
+  `cowbell` and `rideBell` and no `ride`, `events.test.ts` still bans `ride`, and
+  the report names all three libraries auditioned with each one's reason for
+  rejection.
 - **AC16** (R24) — The epic reports done only after a listening sign-off on a
   rendered `shuffle` groove has been recorded.
 
@@ -249,6 +299,13 @@ Nothing precedes this epic. What it hands forward:
 - `samples/pack.json`'s `voices` keys, final.
 - `RIDE_LABEL` and the ride pattern pool's shape, for Epic 2 to add its
   subdivision-16 figures to.
+- `HAT_PUNCTUATION_PATTERNS` at its final shape — three figures, every one
+  holding beats 2 and 4 — and the absence of `hatOpen` on a riding feel, both of
+  which `swung-sixteenth` inherits in Epic 2 unchanged.
+- The fill rule: ride out for the fill bar, quarter notes for the variation bar.
+- A larger `docs/music.md` correction than Epic 2 was scoped for: line 167's
+  odd-steps rule and the reasoning under "Who keeps time" are overturned, not
+  just the count of riding feels.
 - The levelling method, recorded in `samples/README.md`, for Epic 2 to apply to
   `swung-sixteenth` without re-deriving it.
 - A flag on whether a CC-BY library entered the pack, which is what decides
@@ -267,91 +324,67 @@ Nothing precedes this epic. What it hands forward:
   every other humanize value. Proposed and heard, not asserted.
 - **The exact ride figures are the musician's call.** Three for subdivision 8 —
   eighths, eighths over a quarter skeleton, and a swung-eighth figure is the
-  shape `docs/music.md:167` already sketches, and the musician may replace it.
+  shape `docs/music.md` already sketches, and the musician may replace it.
+- **Which of the three foot-hat figures reads best at which tempo is the
+  musician's call**, as is whether the "all four beats" figure earns its place at
+  all once heard. The pool's shape — three figures, every one holding beats 2 and
+  4 — is fixed; its exact members are a tuning knob under the listening sign-off.
 - **A candidate's velocity-layer count follows what the library recorded.** Two
   layers with alternates is acceptable where that is all the recording supports,
   as `rim` and `hatOpen` already are; inventing a layer split the recording does
   not carry is the same erasure normalising would be.
 
-## Open questions
+## Question log
 
-Tick one option per question (`- [x]`), or write your own, then re-run
-`/brainstorm feature-24 epic-1`.
+Answered questions, kept for traceability. The requirements above are the source
+of truth — this records how they got there. Append-only.
 
-### Q1. Where does a riding feel's hi-hat go?
+### Cycle 1 — 2026-09-05
 
-`docs/music.md:167` says every punctuation step is odd — off-beats only, so the
-hat cannot mark a position the ride is using. The jazz idiom is the opposite: the
-hi-hat foot plays **beats 2 and 4**, on the beat, under the snare. Both are
-"punctuation" and they are different sounds.
+**Q1. Where does a riding feel's hi-hat go?**
+Answer: **A) Beats 2 and 4 — the foot hat.** It is what a jazz drummer's left
+foot does, and `docs/music.md:167`'s odd-steps rule was written before any ride
+existed.
+Applied to: R18, R19, R19b, AC9, AC10, Behaviour details, Scope, Summary,
+Dependencies. Overturned the previous R19, which routed hat punctuation through
+`ghostSteps` to force odd steps, and the previous AC9 clause requiring the hat
+never to coincide with a ride step — on beats 2 and 4 it does coincide, and that
+is the sound.
 
-- [ ] A) Beats 2 and 4 — the foot hat *(recommended — it is what a jazz drummer's
-      left foot does, and the briefing asks for "a jazz ride" and a hat "dropped to
-      punctuation", which is that. Nothing in the roadmap or briefing requires the
-      off-beat rule; `docs/music.md`'s line was written before any ride existed and
-      Epic 2 is already correcting that document downwards. No persona bearing —
-      Sam hears one groove and does not read the rule)*
-- [ ] B) Odd steps only, 2–3 a bar, as `docs/music.md:167` states — keeps the
-      document and the code agreeing without moving either
-- [ ] C) Beats 2 and 4 on `shuffle`, off-beats on `swung-sixteenth` — the foot hat
-      belongs to the swung-eighth idiom, and a sixteenth feel at 110 is closer to
-      fusion
-- [ ] D) Draw from a pool that holds both shapes, so a seed decides
+**Q2. What happens to the open hat on a riding feel?**
+Answer: **B) Drop it on riding feels.** A jazz kit's open hat is the foot opening
+under the ride, and one hat sound is enough beside a cymbal.
+Applied to: R20, R21, R21b, AC9b, Scope. `DEFAULT_PLACEMENT` is unchanged — the
+voice leaves the template rather than the placement leaving the code.
 
-### Q2. What happens to the open hat on a riding feel?
+**Q3. Does the ride play through the fill bar?**
+Answer: **B) The ride drops out for the fill bar and returns on the downbeat.**
+The fill is the snare's bar, and the cymbal re-entering is what marks the loop
+point.
+Applied to: R21c, AC9c, Behaviour details, Assumptions.
 
-`DEFAULT_PLACEMENT` fixes the open hat on 16-grid step `[14]` — the "and" of
-beat 4, a pickup into the next bar. It is not drawn; it is placement, like the
-backbeat.
+**Q4. When does the audition stop and the feature stop with it?**
+Answer: **A) Three candidate libraries prepared and heard; if none passes, stop
+and report.** An unbounded audition has no failure state and so cannot report
+one.
+Applied to: R5, AC13b, AC15.
 
-- [ ] A) Keep it exactly where it is *(recommended — it is one hit a bar in the
-      pickup position, not a statement of the pulse, so it does not compete with
-      the ride. It is also `DEFAULT_PLACEMENT`, and `docs/music.md` calls placement
-      the part that is not drawn because "a groove whose backbeat moves is a
-      different groove". Cheapest thing that can be wrong, and the listening pass
-      will say so)*
-- [ ] B) Drop it on riding feels — a jazz kit's open hat is the foot opening under
-      the ride, not a stick hit on the "and" of 4, and one hat sound is enough
-      beside a cymbal
-- [ ] C) Keep it but pull its gain down on the riding feels only, so it reads as a
-      colour rather than a pickup
-- [ ] D) Move it to the "and" of 2 on riding feels — an open-hat splash mid-bar,
-      away from the ride's densest region
+### Cycle 2 — 2026-09-05
 
-### Q3. Does the ride play through the fill bar?
+**Q5. Is the foot hat drawn, or is it placement?**
+Answer: **B) A pool of three, every entry containing 2 and 4** — the bare pair,
+the pair plus a pickup, and all four beats, so the seed still varies the kit's
+density.
+Applied to: R18, R18b, R19b, AC9, AC9d, Assumptions, Dependencies.
+`HAT_PUNCTUATION_PATTERNS` therefore exists as real code and stays in
+`docs/music.md`; Epic 2's docs correction rewrites that row rather than deleting
+it. The pickup figure lands on the "and" of beat 4, the step `hatOpen` vacated in
+Cycle 1's Q2.
 
-The last bar of the final pass plays a fill, and on loops of three or more passes
-the middle pass's last bar plays a thinned variation. `DEFAULT_FILL` resolves on
-the snare.
-
-- [ ] A) The ride keeps playing its figure straight through the fill
-      *(recommended — the roadmap's Epic 1 scope adds a pattern pool and says
-      nothing about fills, and a cymbal that stops for a bar is a hole in the
-      pulse the loop returns from. A jazz drummer's ride is the one thing that
-      does not stop for the fill. No persona bearing; the reason is musical)*
-- [ ] B) The ride drops out for the fill bar and returns on the downbeat — the
-      fill is the snare's bar, and the cymbal re-entering is what marks the loop
-      point
-- [ ] C) The ride thins to the quarter-note skeleton for the fill bar, so the
-      pulse survives but the snare has room
-- [ ] D) The ride plays a crash-substitute accent on the downbeat after the fill —
-      the loudest ride hit of the loop, standing in for the crash the pack refuses
-      to hold
-
-### Q4. When does the audition stop and the feature stop with it?
-
-R5 makes "no cymbal passes" a real outcome. What triggers it needs to be
-decidable rather than a matter of stamina.
-
-- [ ] A) Three candidate libraries prepared and heard; if none passes, stop and
-      report *(recommended — the briefing says "find the sample library first …
-      auditioned before anything is built", which makes this a bounded search
-      rather than an open one, and three is enough to tell a systematic problem
-      from an unlucky pick. No persona bearing; the reason is that an unbounded
-      audition has no failure state and so cannot report one)*
-- [ ] B) One candidate, chosen carefully — if it fails, the failure is
-      information and stopping immediately is cheaper than a second render
-- [ ] C) Keep auditioning until one passes; there is a CC-BY jazz ride out there
-      and the feature is worth the search
-- [ ] D) Three candidates, and if none passes, fall back to the least-wrong one
-      with its gain pulled well down rather than shipping no ride at all
+**Q6. Does the ride drop out of the thinned variation bar too?**
+Answer: **C) The ride thins to quarter notes in the variation bar and drops out
+entirely in the fill bar**, so the two bars are as different on the cymbal as the
+snare phrases already are.
+Applied to: R21c, R21d, R21e, AC9c, diagram, Dependencies. Replaced the Cycle 1
+assumption that one rule covered both bars, and preserves Q3's reasoning — the
+loop point keeps a marker that fires once.
