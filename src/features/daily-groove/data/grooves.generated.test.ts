@@ -450,15 +450,15 @@ describe('the rotation is the generated catalogue', () => {
     )
   })
 
-  it("keeps the day's row at four options including the answer (R9, AC2)", () => {
+  it("keeps the day's row at six options including the answer (R9, AC2)", () => {
     for (let i = 0; i < 40; i++) {
       const date = new Date(2026, 0, 1 + i)
       const groove = GROOVES[i % GROOVES.length]
       const options = flavourOptions(date, groove, GROOVES)
 
-      expect(options).toHaveLength(4)
+      expect(options).toHaveLength(6)
       expect(options).toContain(groove.flavour)
-      expect(new Set(options).size).toBe(4)
+      expect(new Set(options).size).toBe(6)
     }
   })
 

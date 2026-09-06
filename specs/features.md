@@ -40,7 +40,7 @@ tested and verified). Lettered candidates sit at ✏️ **Briefed** until promot
 | [22](features/feature-22/) | Gentle first round | ✅ Done | Meets a first-time player in Simple mode — six roots, Major or Minor — names both ways to play on the switch and in the how-to-play box, moves the listening advice into the hint and the drum credit onto the groove box, and tidies the give-up ending. |
 | [23](features/feature-23/) | Transpose for the sax | ✅ Done | Lets a sax or trumpet player play the whole puzzle in their instrument's written pitch — the root chips, the check, the heading, the chords and the notes — remembered across days, while the audio and the share link stay in concert pitch. |
 | [24](features/feature-24/) | Swing ride | ✅ Done | Gives the two feels that genuinely swing a jazz ride to keep time instead of a hi-hat, feathers the kick beneath it, and sources the claves, cowbell and ride bell the styles in `new-styles.md` will need. |
-| [25](features/feature-25/) | Five new styles | 📋 Planned | Adds Bossa Nova, son montuno, reggae one-drop, second line and boom-bap to the six feels, lets a feel own two to four modes that other feels may share, and reshuffles the whole rota so new grooves always mix through the old ones. |
+| [25](features/feature-25/) | Five new styles | 🛠 Ready to implement | Adds Bossa Nova, son montuno, reggae one-drop, second line and boom-bap to the six feels, lets a feel own two to four modes that other feels may share, and reshuffles the whole rota so new grooves always mix through the old ones. |
 
 ## Prepared candidates
 
@@ -69,10 +69,10 @@ Status runs 📝 **Drafted** → ❓ **Questions open** → 🛠 **Ready to buil
 | [3](quick/3-when-is-the-next-groove.md) | Next groove line | ✅ Done | Counts down to the next groove in the groove card, above the tempo line, once today's is solved or given up; says to reload once midnight has passed. |
 | [4](quick/4-streak-always-top-right.md) | Streak top right | ✅ Done | Pins the streak to the top right of the header at every width, as a fire emoji and a number that shows 0 when there is no streak. |
 | [5](quick/5-lick-variations.md) | Lick variations | ✅ Done | Gives every mode three licks instead of one, one of them picked for the day, so tapping a mode stops being a phrase you can memorise. |
-| [6](quick/6-six-mode-options.md) | Six mode options | ❓ Questions open | Offers six mode chips instead of four, laid out as two rows of three, with simple mode still major/minor. |
-| [7](quick/7-dev-groove-preview.md) | Dev groove preview | 📝 Drafted | Adds a dev-only page listing every groove by date, so upcoming ones can be played and their lick variations heard over them before they ship. |
+| [6](quick/6-six-mode-options.md) | Six mode options | ✅ Done | Offers six mode chips instead of four, laid out as two rows of three, with simple mode still major/minor. |
+| [7](quick/7-dev-groove-preview.md) | Dev groove preview | ❓ Questions open | Adds a dev-only page listing every groove by date, so upcoming ones can be played and their lick variations heard over them before they ship. |
 | [8](quick/8-comp-velocity-layer-jump.md) | Comp velocity layers | 📝 Drafted | Evens out the piano comp so a note crossing a sample-layer boundary stops jumping ~7.5 dB above the rest of the part. |
-| [9](quick/9-how-to-play-above-the-buttons.md) | How to play placement | 📝 Drafted | Puts the how-to-play box right under the subtitle and moves the transpose and share buttons down to sit directly above the groove box. |
+| [9](quick/9-how-to-play-above-the-buttons.md) | How to play placement | ❓ Questions open | Puts the how-to-play box right under the subtitle and moves the transpose and share buttons down to sit directly above the groove box. |
 
 ---
 

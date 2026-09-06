@@ -23,7 +23,9 @@ collide with a registry-wide assertion nobody wrote them against —
 `events.test.ts`'s *"plays toms, which the figure never does"* lets a tom sound
 in the fill bar and **nowhere else, for every template** — so the one existing
 test this epic changes is that one, and it is changed by narrowing it to what it
-was standing for rather than by exempting a style from it. See Q3.
+was standing for rather than by exempting a style from it. Step A4 makes that
+change, and it is this epic's only edit to a file whose other cases belong to
+other epics.
 
 ## Architecture
 
@@ -36,7 +38,7 @@ was standing for rather than by exempting a style from it. See Q3.
 | what the template declares, pinned | `scripts/grooves/templates/index.test.ts` |
 | the style's fixed hits (open hat, rim, rim bars) | `scripts/grooves/events.ts` → `PLACEMENTS['second-line']` |
 | the fill and the variation | `scripts/grooves/events.ts` → `FILLS['second-line']` |
-| the toms stop being the fill's alone | `scripts/grooves/events.test.ts` → one existing case |
+| the toms stop being the fill's alone | `scripts/grooves/events.test.ts` → the single case `plays toms, which the figure never does — R10`, narrowed in place |
 | every second-line behaviour this epic asserts | `scripts/grooves/second-line.test.ts` *(new)* |
 | six grooves, the manifest, the lock, the audio | `catalogue.json`, `grooves.lock.json`, `public/grooves/groove-NN.mp3`, `src/features/daily-groove/data/grooves.generated.ts` |
 | the feel table row and the rim sentence | `docs/music.md`, `scripts/grooves/docs.test.ts` |
@@ -100,11 +102,21 @@ readings cannot be true, and Epic 1's C7 saw only half of the coupling — its r
 about the pass's last bar. What the assertion was standing in for is *"the toms
 are what marks a fill"*, and a style whose ordinary figure includes toms is the
 case it never had to consider. Step A4 narrows it accordingly: the fill still
-plays both toms on every template, and a bar before the fill plays a tom only
-where the template declares one, and then exactly the declared line. That keeps
-the guard — a tom leaking into an ordinary bar of a template that declared none
-still fails — and it is a change to a shared file, so Q3 asks whether it is
-this epic's to make.
+plays both toms on every template, a bar before the fill plays a tom only where
+the template declares one, and where a template does declare one its ordinary
+bars play exactly that line and its variation bar plays none. The guard survives
+as three claims instead of two — a tom leaking into an ordinary bar of a template
+that declared none still fails, and so does a template that declares toms and
+then drops or moves them.
+
+**The protocol for that shared file.** `events.test.ts` is 2281 lines and Epic 1
+adds cases to it in its Steps E7 and E8, so this epic works to a rule rather than
+to a diff: it rebases before it edits, it narrows the one case it finds under the
+name `plays toms, which the figure never does — R10` rather than restoring the
+version quoted above, and it adds **no** other case to the file — every other
+assertion this epic makes lives in `second-line.test.ts`. If a rebase shows that
+case already rewritten by Epic 1, this epic narrows what is there; if it shows
+the case gone, **stop and report** rather than re-creating it.
 
 **Bass follows kick, as a property of two declared pools.** Nothing in
 `events.ts` learns to derive one line from the other. The constraint is written
@@ -115,16 +127,24 @@ into the pools and asserted twice:
   same `rhythmRng`, so agreement has to hold for every pair, which makes "the
   kick figures share a common anchor set, and the bass only ever plays anchors"
   the only shape that works.
-- *On rendered output (AC4):* in every ordinary bar, each `bass` event sits on a
-  step the same bar's `kick` sounds, **or** on the bar's last step
+- *On rendered output (AC4):* in every **ordinary** bar, each `bass` event sits
+  on a step the same bar's `kick` sounds, **or** on the bar's last step
   (`subdivision - 1`). That exception is `events.ts`'s chord-approach note, which
   it places itself when the next bar's root changes and which no pool declares.
 
-Fill and variation bars are excluded from the per-bar form of AC4, and the
-exclusion is named rather than silent: in those bars the kick line is the fill
-phrase's, so including them would force the fill's kick to carry the bass anchors
-and would flatten the fill vocabulary R7 exists to buy. Q2 asks whether that is
-the right trade.
+**AC4 is asserted per ordinary bar, and the two bars it excludes are named.** The
+fill bar (`(passes - 1) * 4 + 3`) and the variation bar
+(`middlePassOf(passes) * 4 + 3`) are outside it, because in those two bars the
+kick line comes from the `FILLS` phrase rather than from `patterns.kick`.
+Including them would force `FILLS['second-line'].fill.kick` to contain every step
+of every bass figure, which flattens the fill's kick to the anchor set and takes
+away the degree of freedom R7 exists to buy. Per-bar rather than per-groove is
+the other half of the decision: a union-over-the-loop reading would pass a groove
+whose bass and kick agree only when averaged over sixteen bars, which is not what
+"the bass follows the kick" means to anyone listening. The exclusion is asserted
+at both ends — Step A7 checks every ordinary bar, and Step A9 checks that the two
+excluded bars sound the resolved phrase and states in the same case that no
+kick-anchor claim is made about them.
 
 **The density band, measured then declared.** `straight-funk` runs 18–44. This
 style is busier in the kit and sparser in the keys, so the band is derived, in
@@ -188,8 +208,9 @@ assertions, all of which the template has to satisfy rather than amend:
 **What this epic does not do.** No new voice, no change to `VOICE_NAMES`,
 `VELOCITIES` or `FILL_DURATIONS`, no new mechanism in `events.ts`, no key added
 to Epic 1's `patterns` block, no edit to any existing template, no edit to the
-shared pools, no change to `src/` except the regenerated manifest, and no rota
-change.
+shared pools, no new case in `events.test.ts`, no change to `src/` except the
+regenerated manifest and — only if this epic's own mint is what breaches the cap
+— the dominance guard's second copy, and no rota change.
 
 **Wave 2, honestly.** Three epics add a template at once. The PRD names four
 shared files; there are three more groups:
@@ -199,10 +220,23 @@ shared files; there are three more groups:
 | `templates/index.ts` | Epics 2, 4 | one import and one entry appended; a conflict is trivial |
 | `templates/index.test.ts` | Epics 2, 4 | each epic adds its own `describe`; a conflict is trivial |
 | `scripts/grooves/events.ts` | Epics 2, 4 | **not in the PRD's list**, but since Epic 1's D2 and D4 this epic's diff here is two appended record keys — `PLACEMENTS['second-line']` and `FILLS['second-line']` — the same shape Epics 2 and 4 append. Textual conflicts, not semantic |
-| `scripts/grooves/events.test.ts` | Epic 1 (Steps E7, E8), Epics 2, 4 | **not in the PRD's list.** One existing case changed, in a 2281-line file. Epic 1 adds new cases elsewhere in it; Step A4 must be rebased onto whatever landed |
+| `scripts/grooves/events.test.ts` | Epic 1 (Steps E7, E8), Epics 2, 4 | **not in the PRD's list.** Exactly one existing case changed — `plays toms, which the figure never does — R10` — in a 2281-line file, and no case added. Epic 1 adds new cases elsewhere in it; Step A4 rebases onto whatever landed and narrows what it finds |
+| `scripts/grooves/catalogue.test.ts`, `src/features/daily-groove/data/grooves.generated.test.ts` | Epics 1, 2, 4 | the dominance guard, one copy each. Epic 1 owns both edits; this epic touches them only if its own six answers push a mode past the cap, and then widens both in step |
 | `catalogue.json`, `grooves.lock.json`, `grooves.generated.ts`, `public/grooves/` | Epics 2, 4 | rewritten wholesale by a mint. **Rebase before minting, never after** |
 | `docs/music.md`, `docs.test.ts` | Epics 1, 2, 4 (and feature-24) | one table row each; Epic 1's H2 asserts a row per registered template, so the assertions are registry-derived and no epic edits another's case |
 | `eventsFixture.ts`, `events.fixture.json` | Epics 1, 2, 4 | regenerated by its own writer after a rebase |
+
+**The dominance cap the mint has to clear.** Epic 1 keeps the guard a ratio and
+moves the number from 3× to 5×, in both copies of
+*"lets no mode dominate the answers"* — `scripts/grooves/catalogue.test.ts` and
+`src/features/daily-groove/data/grooves.generated.test.ts`. Both edits are Epic
+1's; this epic mints against them. Six grooves over blues and mixolydian add
+three or four answers to each, which is the direction that *reduces* the spread
+rather than widening it, so the expectation is that the cap is not touched here.
+If this epic's own mint is what pushes a mode past 5×, Track C widens both copies
+in step — never one — and reports the counts it measured, because a ratio the two
+copies disagree about is a guard that passes the generator tier and fails the app
+tier.
 
 **Why minting is strictly serial.** `selectSeeds` reads the catalogue on disk to
 keep every `root|flavour` answer and every `scale|progression` pair unique, and
@@ -325,10 +359,21 @@ PLACEMENTS['second-line'] = { hatOpen: […], rim: […], rimBars: [0, 1, 2, 3] 
 FILLS['second-line'] = { fill: { …, tomHigh: […], tomLow: […] }, variation: { /* no toms */ } }
 ```
 
-**Definition used by every step below.** An **off-beat step** is a step whose
-sixteenth-grid position is not a multiple of four —
-`(step * 16 / template.subdivision) % 4 !== 0`. It is grid-relative, so it means
-the same thing whichever subdivision the musician picks.
+**Two definitions used by every step below.**
+
+An **off-beat step** is a step whose sixteenth-grid position is not a multiple of
+four — `(step * 16 / template.subdivision) % 4 !== 0`. It is grid-relative, so it
+means the same thing whichever subdivision the musician picks.
+
+An **ordinary bar** is any bar of the loop that is neither the fill bar,
+`(passes - 1) * 4 + 3`, nor the variation bar,
+`middlePassOf(passes) * 4 + 3`. `second-line.test.ts` carries its own four-line
+`ordinaryBars(feel, music)` helper returning those bar indices —
+`events.test.ts`'s `phraseBars` is local to that file and is not exported. Every
+per-bar claim in this spec is a claim about ordinary bars: AC4's bass-follows-kick
+(Step A7), AC5's per-bar toms (Step A5), AC6's comp count (Step A8), AC3's snare
+figure (Step A2) and the density measurement (Step A11). What the two excluded
+bars sound is asserted separately, in Step A9.
 
 **Test command.** Every track owns generator-tier files — `docs/music.md` routes
 there too, per `scripts/tiers.ts` — so every track runs `npm run test:gen`.
@@ -348,7 +393,10 @@ manifest.
   `scripts/grooves/templates/index.test.ts`,
   `scripts/grooves/second-line.test.ts` *(new)*,
   `scripts/grooves/events.ts` (two appended record keys only),
-  `scripts/grooves/events.test.ts` (one existing case)
+  `scripts/grooves/events.test.ts` (**shared** — exactly the one case
+  `plays toms, which the figure never does — R10`, narrowed in place, plus the
+  local helper Step A4 adds beside `drumBars`; no other case in that file is this
+  epic's to read or write)
 - **Role** — `musician`. It decides three to four snare figures with their tom
   accents, a clave-ish kick pool, the bass pool that agrees with it, a comp
   reduced to one stab, a fill vocabulary, a swing value, a tempo range, nine
@@ -406,7 +454,11 @@ track.
   `scripts/grooves/grooves.lock.json`,
   `src/features/daily-groove/data/grooves.generated.ts`,
   `public/grooves/groove-NN.mp3` (the six new files),
-  `scripts/grooves/eventsFixture.ts`, `scripts/grooves/events.fixture.json`
+  `scripts/grooves/eventsFixture.ts`, `scripts/grooves/events.fixture.json`, and
+  — only if its own six answers breach the 5× dominance cap —
+  `scripts/grooves/catalogue.test.ts` and
+  `src/features/daily-groove/data/grooves.generated.test.ts`, one line each,
+  widened together
 - **Role** — `musician`. Minting is where the gate's verdict and the listening
   verdict arrive, and a rejection is a musical problem in the template, not a
   budget to raise.
@@ -489,8 +541,9 @@ Covers: R3, AC3, AC12
 
 - **Test first** — `second-line.test.ts`: build `second-line` at seeds 1–20, and
   at every catalogue seed it has once Track C has run; for every ordinary bar of
-  the loop (any bar that is not the fill or variation bar — the file needs its own
-  three-line `phraseBars` helper, `events.test.ts`'s being local to that file):
+  the loop, as the Contracts' `ordinaryBars(feel, music)` helper defines it — this
+  step is where that helper is written, and Steps A5, A7, A8 and A11 use the one
+  it leaves behind:
   - the bar's `snare` steps at or above `GHOST_VELOCITY_THRESHOLD` equal
     `grid(m.snare)` for exactly one member `m` of `patterns.kit`
   - it is the same `m` in every ordinary bar of the loop
@@ -534,32 +587,50 @@ Covers: R3, AC12
 
 Covers: R5, AC5
 
-This is the one existing test this epic changes, and the reason Q3 is open.
+This is the one existing test this epic changes, and the only line it writes in a
+file whose other cases belong to Epic 1 and to Epics 2 and 4. **Rebase before
+editing**, and narrow the case as it stands after that rebase rather than the
+version quoted in the Architecture section.
 
-- **Test first** — `scripts/grooves/events.test.ts`, the case
+- **Test first** — `scripts/grooves/events.test.ts`, inside
+  `describe('the fill — R5, R7, R10, AC4')`, the case
   `plays toms, which the figure never does — R10`. Rewrite it as the guarantee it
-  was standing in for, keeping both halves testable:
-  - **unchanged, every template:** the fill bar plays exactly `tomHigh` and
-    `tomLow`
-  - **for every template that declares no `patterns.kit` tom line:** no bar
+  was standing in for, as three claims:
+  - **unchanged, every template:** the fill bar (`bars.length - 1`) plays exactly
+    `tomHigh` and `tomLow`
+  - **for every template that declares no tom line in `patterns.kit`:** no bar
     before the fill bar plays a tom — the original assertion, now scoped to the
-    templates it was written for
-  - **for every template that declares one:** every ordinary bar plays exactly
-    the declared tom line, resolved by `gridSteps`, and the variation bar plays
-    none — so a leaked tom still fails, and the exemption is a positive
-    assertion rather than a hole
-  - rename the case to say what it now guarantees, and keep the `— R10` tag with
-    this epic's `R5` beside it so the next reader can find both requirements
+    templates it was written for. A template with no `patterns.kit` at all is in
+    this branch
+  - **for every template that does declare one:** every ordinary bar plays
+    exactly the union of the declared `tomHigh` and `tomLow` steps of the figure
+    that bar sounds, and the variation bar (`middlePassOf(feel.passes) * 4 + 3`)
+    plays none — so a leaked tom still fails, a dropped or moved tom fails too,
+    and the branch is a positive assertion rather than a hole
+  - the third claim needs the declared steps on the feel's own grid. Add a
+    four-line `kitTomSteps(feel)` helper beside `drumBars` in the same
+    `describe`, mirroring `events.ts`'s private `gridSteps`:
+    `Math.min(feel.subdivision - 1, Math.round((step * feel.subdivision) / 16))`,
+    deduplicated and sorted. `events.ts` exports neither `gridSteps` nor
+    `PATTERN_RESOLUTION`, so the helper is local — and at `second-line`'s
+    subdivision of 16 it is the identity, which is what makes it cheap to read
+  - rename the case to say what it now guarantees —
+    `plays toms in the fill, and elsewhere only where a kit figure declares them
+    — R10, R5` — so the next reader finds both requirements
 
   Run it: fails with `second-line bar 0 plays tomHigh` before the rewrite, and
   the rewrite is red until Epic 1's Step E7 emits the kit toms.
-- **Implement** — the rewritten case. No source change: Epic 1's E7 emits the
-  tom lines in the ordinary-bar branch already.
-- **Green when** — the case passes for every registered template, and
-  deleting one tom step from `secondLine.patterns.kit[0].tomLow` in a scratch
-  edit makes it fail — the check that the new branch is not vacuous.
+- **Implement** — the rewritten case, and nothing else in the file. No source
+  change: Epic 1's E7 emits the tom lines in the ordinary-bar branch already.
+- **Green when** — the case passes for every registered template, and two scratch
+  edits each make it fail: deleting one step from
+  `secondLine.patterns.kit[0].tomLow` (the third claim is not vacuous), and
+  adding a tom step to `straight-funk`'s ordinary bars (the second claim still
+  guards the templates it always guarded).
 - **Refactor** — none. Do not add a `second-line` special case: a named
-  exemption is what the next style would copy.
+  exemption is what the next style would copy, and the third claim is written
+  over `patterns.kit` precisely so Epics 2 and 4 inherit it by declaring rather
+  than by being listed.
 
 #### Step A5 — the toms and the rim are in the figure, not seasoning
 
@@ -587,7 +658,7 @@ Covers: R5, AC5
 
 #### Step A6 — the kick's clave, and the bass that only plays its anchors
 
-Covers: R4
+Covers: R4, AC4
 
 - **Test first** — `second-line.test.ts`, against the declared pools with nothing
   rendered:
@@ -621,18 +692,23 @@ Covers: R4
 Covers: R4, AC4
 
 - **Test first** — `second-line.test.ts`, at seeds 1–20 and every catalogue seed:
-  for every ordinary bar of the loop, every `bass` event's step is either a step
-  the same bar's `kick` sounds, or `template.subdivision - 1`. Assert
-  additionally that the case is not vacuous — the loop inspects at least twelve
-  bars, and at least one bar carries three or more bass events. Run it: fails on
-  the shared `BASS_PATTERNS`' `[0, 8, 14]` before A6's pool lands, with the bar
-  index and the offending step in the message.
+  for every bar `ordinaryBars(feel, music)` returns, every `bass` event's step is
+  either a step the same bar's `kick` sounds, or `template.subdivision - 1`.
+  Assert additionally that the case is not vacuous — the loop inspects at least
+  twelve bars, and at least one bar carries three or more bass events — and that
+  it is scoped, by asserting `ordinaryBars` excludes exactly two bars of a
+  sixteen-bar loop, the fill bar and the variation bar. Run it: fails on the
+  shared `BASS_PATTERNS`' `[0, 8, 14]` before A6's pool lands, with the bar index
+  and the offending step in the message.
 - **Implement** — nothing beyond A6. The property follows from the pools; the
   step's product is the assertion that the rendered output has it, including
   after `events.ts`'s rest, repeat, octave-lift and approach passes have had
   their way with the line.
-- **Green when** — every ordinary bar of every seed passes.
-- **Refactor** — none.
+- **Green when** — every ordinary bar of every seed passes, and the scoping
+  assertion names the two excluded bars.
+- **Refactor** — none. Do not extend the loop to the fill and variation bars to
+  make the case look stronger: their kick comes from the `FILLS` phrase, and
+  Step A9 is where those two bars are asserted.
 
 #### Step A8 — the keys are sparser than any feel that has them
 
@@ -657,14 +733,15 @@ Covers: R6, AC6
 
 #### Step A9 — the fill is the style, and the variation is the thinning
 
-Covers: R7, AC7
+Covers: R7, AC4, AC7
 
 - **Test first** — `second-line.test.ts`:
   - `FILLS['second-line']` exists and declares both `fill` and `variation`
   - neither phrase deep-equals `DEFAULT_FILL`, nor `withoutToms(DEFAULT_FILL)`
-  - the `fill` phrase names `tomHigh` and `tomLow` — the registry case
-    *"plays toms, which the figure never does"* requires exactly both in the fill
-    bar of every template
+  - the `fill` phrase names `tomHigh` and `tomLow` — the registry case Step A4
+    rewrites, *"plays toms in the fill, and elsewhere only where a kit figure
+    declares them"*, still requires exactly both in the fill bar of every
+    template
   - the `variation` phrase names **neither** tom, because
     *"takes the toms out of the variation"* is registry-wide over every four-pass
     template. It is declared explicitly rather than left to `withoutToms(fill)`
@@ -684,6 +761,13 @@ Covers: R7, AC7
     `fill` phrase plus the bass and comp lines, and the variation bar's equal the
     resolved `variation` phrase plus the same; the fill bar carries no `snare`
     step from the kit figure that the phrase does not name
+  - rendered, the two bars Step A7 excludes: in the fill bar and the variation
+    bar, the `kick` steps equal the resolved phrase's `kick` line and **not** the
+    drawn `patterns.kick` figure, and the `bass` line is non-empty. This is the
+    other end of AC4's scope — it says what those two bars are instead of leaving
+    them merely unasserted. Give the case a name that carries the scope rather
+    than a comment — `sounds the phrase's kick in the fill and the variation,
+    where the bass-follows-kick claim does not apply`
 
   Run it: fails with `expected undefined to be an object` on
   `FILLS['second-line']`.
@@ -693,7 +777,7 @@ Covers: R7, AC7
   *is* position zero of the file, so anything that lands there is heard at the
   top of every playback. Keep the kick on step `0`. A second line's fill is a
   bar-long snare figure with the toms answering, not a tom run to a crash.
-- **Green when** — the eight groups of assertions pass and the three registry
+- **Green when** — the nine groups of assertions pass and the three registry
   cases named in them are green for `second-line`.
 - **Refactor** — none.
 
@@ -928,11 +1012,14 @@ Covers: R8, AC8, AC12
   - `catalogue-gate.test.ts` — all seven checks on every groove, now including six
     with a busy kit and a one-stab comp
   - `catalogue.test.ts` — every registered template has grooves; no repeated
-    `root|flavour`; no repeated `scale|progression`; the dominance cap (Epic 1's
-    Step C7 widened it to 5× and made it report both counts) holds with blues and
-    mixolydian each carrying three or four more answers than before
-  - `events.test.ts` — the rewritten tom case for every registered template, and
-    the 120-seed density case for eight or more feels
+    `root|flavour`; no repeated `scale|progression`; the dominance cap — still a
+    ratio, and 5× since Epic 1 — holds with blues and mixolydian each carrying
+    three or four more answers than before. Read the same case's second copy in
+    `src/features/daily-groove/data/grooves.generated.test.ts` under `npm test`;
+    the two must agree
+  - `events.test.ts` — the rewritten tom case for every registered template, its
+    fill claim and its declared-line claim both exercised, and the 120-seed
+    density case for eight or more feels
   - `eventsFixture.test.ts` — nothing outside this template moved
   - `patterns.test.ts` — Epic 1's validation suite; `second-line`'s block is the
     first real `kit` declaration to pass through it
@@ -998,7 +1085,7 @@ Covers: R10, AC10
 | AC1 | A10 |
 | AC2 | A10 |
 | AC3 | A1, A2 |
-| AC4 | A7 |
+| AC4 | A6, A7, A9 |
 | AC5 | A4, A5 |
 | AC6 | A8 |
 | AC7 | A9 |
@@ -1019,9 +1106,8 @@ Covers: R10, AC10
   a fixed accent under a drawn snare figure is arbitrary in five grooves out of
   six, and C7's "leave `bars[BARS_PER_PASS - 1]` empty" plus `events.test.ts`'s
   "no tom before the fill bar" leave a `figures` tom line with no bar it may
-  sound in at all. If Q3 comes back saying the registry case may not be touched,
-  `figures` does not become the answer — R5 does not survive either way, and the
-  question goes back to the PRD.
+  sound in at all. Narrowing the registry case is what opens a legal bar for the
+  toms, and it opens it for `patterns.kit`'s lines; `figures` stays unused.
 - **"Same order of magnitude as the snare's" is read as within 6 dB.** Literally
   it would be 20 dB, which no gain in this repo is away from its snare. Six dB is
   one halving of amplitude, and `straight-funk` and `half-time` both keep their
@@ -1119,29 +1205,64 @@ which is why this is asked as Q3 rather than assumed. Widening the case wrongly
 would let a tom leak into an ordinary bar of any template unnoticed, which is
 what the positive branch is there to prevent.
 
-## Open questions
+### Cycle 2 — 2026-09-06 — the scope of AC4, and the registry tom case
 
-Tick one option per question (`- [x]`), or write your own, then re-run
-`/writespec feature-25 epic-3`.
+**D4. AC4 is asserted per ordinary bar, with the fill bar and the variation bar
+named as excluded.** The question was whether "the bass follows the kick" is a
+claim about every bar, about every bar including the two the `FILLS` phrase owns,
+or about the loop as a whole. Per ordinary bar is the reading that says something:
+in the two phrase bars the kick line comes from `FILLS['second-line']` rather than
+from `patterns.kick`, so asserting the property there would force the fill's kick
+to contain every bass-figure step, flatten it to the anchor set, and spend the
+degree of freedom R7 exists to buy. The loop-wide union reading was rejected for
+the opposite reason: it would pass a groove whose bass and kick agree only when
+averaged over sixteen bars. The exclusion is written down at both ends rather
+than left as a silence — Step A7 asserts the ordinary bars and asserts that
+exactly two are excluded, and Step A9 asserts what those two sound instead.
+Changed: *Architecture*'s bass-follows-kick section, which now names the two bar
+indices and why; Contracts gains the `ordinaryBars(feel, music)` definition
+beside the off-beat-step one; Step A2 (writes the helper), Step A7 (uses it, and
+gains the scoping assertion), Step A9 (gains the phrase-owns-the-kick case and
+`AC4` in its Covers line); the coverage table's AC4 row.
+Cost of reversal: before the mint, moving to the per-bar-including-the-fill
+reading costs the fill's kick line — it grows to hold the anchor set, and Step
+A9's fill assertions are rewritten around it. After the mint it also costs a
+re-render of the six grooves, because the fill's kick changes what they sound
+like. The loop-wide reading is cheaper to move to and worth less, and moving to
+it would leave AC4 asserting almost nothing.
 
-### Q2. Is AC4 asserted per bar, with the fill and variation bars excluded?
+**D5. The registry-wide tom case is narrowed by this epic, in `events.test.ts`,
+and that is the only case in that file this epic writes.** `events.test.ts`'s
+*"plays toms, which the figure never does — R10"* let a tom sound in the fill bar
+and in no other bar of the loop, for every template, which contradicts AC5's
+"both toms once per pass" outright. Leaving the case alone would have meant
+giving up AC5, which is a requirement change and belongs in `/brainstorm`, not
+here; handing the edit to Epic 1 would have blocked this epic on another epic's
+rework of a case only this epic needs changed, and Epic 1 may already have
+merged. So the case becomes three claims: the fill bar plays both toms on every
+template; no bar before the fill plays a tom on any template that declares no kit
+tom line; and on a template that does declare one, every ordinary bar plays
+exactly that line and the variation bar plays none. The guard is stronger than it
+was — a leaked tom still fails, and now a dropped or moved one does too — and no
+style is exempted by name, because the third claim keys off `patterns.kit` and so
+Epics 2 and 4 inherit it by declaring rather than by being listed.
+Changed: *Approach*; *Architecture*'s narrowing section, which gains the protocol
+for the shared file; Step A4 rewritten with the case's new name, the local
+`kitTomSteps(feel)` helper — `events.ts` exports neither `gridSteps` nor
+`PATTERN_RESOLUTION` — and two non-vacuity checks instead of one; Step A9's
+reference to the case's old name; Track A's `Owns`, which now says exactly which
+case and that no case is added; the wave-2 shared-file table; Assumptions' note
+on `figures`.
+Cost of reversal: rewriting one case back, plus finding a bar the toms may sound
+in — which the contract does not offer, so reversing this means reversing D2 as
+well and then giving up R5 and AC5. After the mint it also costs a re-render,
+because the toms would have to leave the figure.
 
-In a fill bar the kick line comes from the `FILLS` phrase, not from
-`patterns.kick`, so "the bass follows the kick" can only hold there if the fill's
-kick line also carries the bass anchors.
-
-- [x] **A) Per ordinary bar, fill and variation bars excluded, and the exclusion named in the spec.** *(recommended — it keeps the fill vocabulary free, which is the thing R7 exists to buy, and "bass follows kick" is a statement about the groove rather than about the punctuation. Reversal is cheap before the mint — the fill's kick line grows to include the anchor set — and costs a re-render of the six grooves after it.)*
-- [ ] B) Per bar including the fill, so `FILLS['second-line'].fill.kick` must contain every bass-figure step. *(Musically defensible: a tuba player keeps the figure through a drum fill. It flattens the fill's kick to the anchor set and takes one degree of freedom away from Step A9.)*
-- [ ] C) Over the whole groove rather than per bar — the union of bass steps inside the union of kick steps. *(Matches the AC's literal wording, is the weakest of the three, and would pass a groove whose bass and kick agree only when averaged over sixteen bars.)*
-
-### Q3. May this epic narrow `events.test.ts`'s `plays toms, which the figure never does`?
-
-The case is registry-wide and lets a tom sound in the fill bar and in no other
-bar of the loop, for every template. AC5 asks for both toms once per pass. One of
-the two has to move, and the case lives in a file Epic 1 and Epics 2 and 4 also
-touch.
-
-- [x] **A) Narrow it, as Step A4 describes: the fill claim for every template, the "no tom before the fill" claim for every template declaring no kit tom line, and a positive "plays exactly its declared line" claim for one that does.** *(recommended — the case was standing in for "the toms are what marks a fill", and a style whose figure includes toms is a case it never had to consider. The guard survives as a positive assertion rather than an exemption, so a leaked tom still fails. Reversal costs the rewrite of one case; after the mint it also costs a re-render, because the toms would have to leave the figure.)*
-- [ ] B) Leave the case alone and give up AC5's "once per pass" — the toms sound in the fill bar only, and R5's "toms earning their place" is satisfied by the fill and the rim. *(No test changes, no shared-file risk. It contradicts the PRD's R5 and AC5, so it is a requirement change and belongs in `/brainstorm` rather than here.)*
-- [ ] C) Ask Epic 1 to make the change, since it already owns `events.test.ts` in Steps E7 and E8 and its C7 is where the coupling was half-noticed. *(Puts the edit in one place with the rest of the mechanism's tests. It also blocks this epic on another epic's rework of a case only this epic needs changed, and Epic 1 may already have merged.)*
-- [ ] D) Keep the case and satisfy R5 with the rim and one tom only. *(The case forbids `tomHigh` and `tomLow` equally, so it does not help — recorded so the option is visibly closed rather than missed.)*
+**Absorbed from Epic 1, not decided here.** Epic 1 keeps the dominance guard a
+ratio and moves it from 3× to 5×, in both copies of
+*"lets no mode dominate the answers"* — `scripts/grooves/catalogue.test.ts` and
+`src/features/daily-groove/data/grooves.generated.test.ts`. Epic 1 owns both
+edits; a later style epic widens both copies together if its own mint demands it.
+Changed: *Architecture* gains the paragraph on the cap the mint has to clear;
+Track C's `Owns` and the wave-2 shared-file table name the two copies as a mint
+contingency; Step I1 states the ratio and requires the two copies to agree.

@@ -92,6 +92,11 @@ and `.claude/agents/` defines the six roles they draw from — `architect`,
 `implementer`, `test-writer`, `verifier`, `musician`, `sam`. A tech spec's tracks
 declare a role each for exactly that reason.
 
+The quick door draws on the same roles, in sequence rather than in parallel:
+`/implement-quick-feature` runs `test-writer` → `implementer` → `verifier` over
+the one unit, and the verifier grades the ticket's `## Done when` bullets in
+place of a PRD's acceptance criteria.
+
 `sam` is the odd one out, because it builds nothing. It *is* the player in
 [docs/persona.md](docs/persona.md), and `/roadmap`, `/brainstorm`, `/prototype`
 and `/create-feature-for-persona` dispatch it whenever a decision turns on what

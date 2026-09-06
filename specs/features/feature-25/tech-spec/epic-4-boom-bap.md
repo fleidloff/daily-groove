@@ -86,6 +86,19 @@ registered templates it is closest to, and the two numbers the epic reserves.
   template on purpose. The top of the reserved band is 92 for that reason.
 - **Swing.** 0.34 sits 0.06 above `half-time` and 0.10 below `swung-sixteenth`.
   The retune's room is upward, to 0.40, because 0.44 is taken.
+- **Ghosts.** The template declares its own `patterns.snareGhosts` pool, and that
+  pool is the whole of the ghost-note balance boom-bap controls: how many ghosts
+  a bar carries and which odd sixteenths they land on. How *loud* a ghost is
+  belongs to the generator, not to a template — `GHOST_VELOCITY_RANGE` is a
+  module constant in `events.ts` drawn once per groove, and the mix applies the
+  single `gain.snare` to backbeats and ghosts alike. So the figure is the lever,
+  it lives entirely inside `templates/boom-bap.ts`, and moving it costs no edit
+  to a file another wave-2 epic is minting through.
+- **Comp.** One onset a bar, its position drawn per groove from boom-bap's own
+  single-step figures. `COMP_PATTERNS`'s sparsest shared figure carries two
+  onsets, so a declared pool is the only way under the three templates R5 names —
+  and one stab a bar at 88 bpm is the idiom rather than a concession to the
+  assertion: the keys are a sample hit, not a comp.
 - **Kit.** Dropping the toms is what makes the kit itself distinct — with them,
   boom-bap declares exactly `half-time`'s eight voices and the whole difference
   has to be carried by tempo, swing, figures and mix. It also makes
@@ -137,10 +150,14 @@ not the reverse.
 | `docs/music.md` (one feel-table row) | Epics 1, 2, 3 | **ship branch only** |
 | `specs/new-styles.md` (the boom-bap row) | nobody | **stop branch only** |
 | `events.ts` | Epics 2, 3 | never |
+| `types.ts` | Epic 1 | never |
 
 Everything shared with Epics 2 and 3 sits behind the verdict, so a stopped
 boom-bap cannot break their minting: it never entered the registry, never
-appended to the catalogue and never rewrote the lock.
+appended to the catalogue and never rewrote the lock. The last two rows are the
+ones the retune could have reached and does not: every parameter R9 names —
+swing, tempo range, ghost figure — is a field of `boomBap`, so the second hearing
+costs the same one file the first one did.
 
 ## Contracts
 
@@ -174,7 +191,9 @@ What is contract and what is a knob:
   copied, and the *relation* in `gain`: `kick` and `snare` are the two highest
   numbers the template declares, strictly above every other voice (R3, AC3).
 - **Knobs the `musician` settles** — every exact number, the flavour list within
-  R2's two-to-four, `passes`, and whether the toms come back. `passes: 3` is
+  R2's two-to-four, `passes`, the three figure pools, and whether the toms come
+  back. Three of those knobs are also the retune's, and they are the only three:
+  `swing`, `tempoRange` and `patterns.snareGhosts`. `passes: 3` is
   chosen because it is unique in the registry (the others declare 4 or 2) and
   gives a 12-bar, ~33 s loop with one variation bar and one fill bar.
 - **Frozen the moment the first groove is minted** — `flavours` (R2), because
@@ -198,13 +217,31 @@ reason the bands are wider than the values.
 
 Three pools, and only three:
 
+Each is a pool of figures in the shape its shared pool already uses — `number[][]`
+on the 16-step grid — and `pick` draws one figure from it.
+
 ```ts
 patterns: {
-  kick:        [ /* 3–5 steps, boom-bap kick figures on the 16-grid */ ],
-  comp:        [ /* every figure exactly one step — see Q2 */ ],
-  snareGhosts: [ /* 1–4 odd steps, 0…15 */ ],
+  kick:        [ /* figures of 3–5 steps, 0…15 */ ],
+  comp:        [ /* figures of exactly one step, 0…15 */ ],
+  snareGhosts: [ /* figures of 1–4 odd steps, 0…15 */ ],
 }
 ```
+
+- **`comp` carries one onset a bar.** Every figure in the pool is a single step;
+  `buildEvents` draws the comp figure once per groove, outside the bar loop, so
+  which step a groove stabs on varies from groove to groove and never within one.
+  That is what puts boom-bap strictly under `straight-funk`, `swung-sixteenth`
+  and `bright-straight`, which all draw `COMP_PATTERNS` and so play two or three
+  (R5, AC4).
+- **`snareGhosts` carries the ghost-note balance in full.** `ghostsForBar` draws
+  a fresh figure from the pool for every bar, so the pool sets both how many
+  ghosts a bar has and which odd sixteenths they fall on, and both vary across
+  the twelve bars. It does not set their level: `GHOST_VELOCITY_RANGE` is
+  `events.ts`'s constant, drawn once per groove, and `gain.snare` covers
+  backbeats and ghosts together. The retune (R9) moves this pool and nothing else
+  about the ghosts — `types.ts` gains no velocity field and `events.ts` is not
+  opened (AC8).
 
 - The **key names come from Epic 1's tech spec verbatim.** Epic 1's R12 names
   seven per-voice fields — kick, foot hat, ride, bass, comp, bongos and snare
@@ -351,11 +388,14 @@ shipping unheard audio.
 
 Runs **only** if Track C's distinctness verdict is negative.
 
-- **Goal** — swing, tempo range and ghost-note balance moved, with a written
-  prediction of what each change should do *before* the render, and a second
-  hearing that is final.
+- **Goal** — `swing`, `tempoRange` and `patterns.snareGhosts` moved, with a
+  written prediction of what each change should do *before* the render, and a
+  second hearing that is final.
 - **Owns** — `scripts/grooves/templates/boom-bap.ts`,
-  `scripts/grooves/templates/boom-bap.test.ts`, and a second scratch tree
+  `scripts/grooves/templates/boom-bap.test.ts`, and a second scratch tree. All
+  three retuned parameters are fields of `boomBap`, so this track owns every file
+  it needs and shares none with Epics 1, 2 or 3 — `types.ts` and `events.ts`
+  stay shut.
 - **Role** — `musician`
 - **Depends on** — C's verdict
 - **Parallel with** — none
@@ -480,9 +520,11 @@ Covers: R3, AC3
 Covers: R3, R4, AC3
 
 - **Test first** — `boom-bap.test.ts`: assert `boomBap.patterns?.snareGhosts` is
-  a non-empty array of 1–4 ascending, unique, **odd** steps inside `0…15` — odd
-  because `ghostSteps` snaps a ghost between the backbeats and a declared even
-  step would silently move. Then, for `seed` 1…40, build
+  a non-empty pool of figures, each one 1–4 ascending, unique, **odd** steps
+  inside `0…15` — odd because `ghostSteps` snaps a ghost between the backbeats
+  and a declared even step would silently move — and that the pool holds at least
+  two distinct figures, since `ghostsForBar` draws per bar and a one-figure pool
+  makes every bar's ghosts identical. Then, for `seed` 1…40, build
   `buildEvents({ id: 'x', uuid: '', template: 'boom-bap', seed }, boomBap)`, split
   the `snare` events by `GHOST_VELOCITY_THRESHOLD` (import from `../events.ts`),
   and assert: both sets are non-empty; `Math.max(...ghostVelocities) <
@@ -498,8 +540,10 @@ Covers: R3, R4, AC3
 - **Green when** — all forty seeds separate cleanly.
 - **Refactor** — none. The velocity separation is structural — ghosts are struck
   at `0.15–0.25` and a backbeat at `1.0` — so this step is a guard against a
-  future template-level change to that, and the ghost *figure* is the only lever
-  the retune has on the balance (see Q1).
+  future template-level change to that, not a knob this epic turns. The figure
+  pool is the whole of boom-bap's ghost balance and the only ghost lever the
+  retune has, which is why this step's shape assertions are written to survive
+  D2 changing its contents.
 
 #### Step A5 — the comp is sparser than any of the three named templates renders
 
@@ -511,13 +555,17 @@ Covers: R5, AC4
   of `boom-bap`, `straight-funk`, `swung-sixteenth` and `bright-straight`, count
   distinct comp *onsets* per bar (unique `timeSec` quantised to the bar's
   sixteenth grid — a comp event is one note of a voicing, so raw event counts
-  measure the voicing, not the figure), and assert boom-bap's maximum is strictly
-  below the minimum of the other three. Run it: fails, `patterns.comp` is
-  undefined.
-- **Implement** — declare `patterns.comp` with one-step figures at the positions
+  measure the voicing, not the figure), and assert that boom-bap is **exactly 1
+  in every bar of every seed** while each of the other three is at least 2. The
+  strict form is the assertion, not "below the minimum": one onset a bar is what
+  the template declares, so a seed that renders two means a figure with two steps
+  got into the pool. Run it: fails, `patterns.comp` is undefined.
+- **Implement** — declare `patterns.comp` as single-step figures at the positions
   the `musician` chooses (the "and" of 2 and beat 3 are the idiomatic stabs).
-- **Green when** — boom-bap renders 1 onset a bar against the other three's 2 or
-  3.
+  Which of them a groove plays is `pick`'s one draw per groove, so the pool is
+  the vocabulary and the bar count stays 1 whichever figure comes up.
+- **Green when** — boom-bap renders exactly 1 onset a bar against the other
+  three's 2 or 3, on all forty seeds.
 - **Refactor** — none. `COMP_PATTERNS` is module-private in `events.ts`, so the
   comparison goes through rendered events rather than through a new export; that
   also keeps it honest, since it measures what the feel actually plays.
@@ -741,9 +789,12 @@ Covers: R9, AC8
   while `boom-bap.ts` still holds the values that were heard.
 - **Implement** — a three-row table in the epic's report: parameter, old → new,
   what the change is expected to do to the sound, and which neighbour it pulls
-  away from. All three rows are required — `swing` (within C2's `[0.30, 0.40]`),
-  `tempoRange` (within 85–95, both ends ≤ 92) and the ghost-note balance
-  (`patterns.snareGhosts`, per Q1's answer).
+  away from. All three rows are required, and the three parameters are named:
+  `swing` (within C2's `[0.30, 0.40]`), `tempoRange` (within 85–95, both ends
+  ≤ 92) and `patterns.snareGhosts` — the ghost-note balance being how many ghosts
+  a bar carries and on which odd sixteenths, since level is `events.ts`'s and not
+  this template's. A ghost row that predicts a change in loudness is predicting
+  something no field in this epic can deliver; write it as figure and placement.
 - **Green when** — the table names all three parameters with both values and an
   expectation each, and no value has yet changed in the file.
 - **Refactor** — none. R9 asks for the prediction because a retune whose
@@ -755,12 +806,16 @@ Covers: R9, AC8
 
 - **Test first** — `boom-bap.test.ts`: update A1's `swing` and `tempoRange`
   assertions to the retuned values, still inside C2's bands, and A4's
-  `snareGhosts` assertion to the new figure. Add the guard that makes "not a
-  rewrite" machine-checkable: `boomBap.flavours` sorted still equals A2's
-  literal, and `patterns.kick` and `patterns.comp` still deep-equal the literals
-  they held at the first hearing, written into the test. Run them: the first three
-  fail against the shipped values, the last two pass and must keep passing.
-- **Implement** — change exactly those three fields in `boom-bap.ts`.
+  `snareGhosts` assertion to the new pool — its shape rules (odd, ascending,
+  unique, 1–4 steps, at least two figures) are unchanged and still asserted, only
+  the contents move. Add the guard that makes "not a rewrite" machine-checkable:
+  `boomBap.flavours` sorted still equals A2's literal, and `patterns.kick` and
+  `patterns.comp` still deep-equal the literals they held at the first hearing,
+  written into the test. Run them: the first three fail against the shipped
+  values, the last two pass and must keep passing.
+- **Implement** — change exactly those three fields in `boom-bap.ts`. Nothing
+  outside that file is opened: no `FeelTemplate` field is added for this, and
+  `events.ts` keeps its ghost velocity range and its shared pools.
 - **Green when** — the retuned assertions pass, the frozen ones still pass, and
   A5's and A6's rendered assertions still hold — if the density band no longer
   covers 200 seeds, widening it is part of the retune and is recorded in D1's
@@ -955,9 +1010,9 @@ Covers: AC8a, AC11
   or 3 mints between C3 and E2, re-run C1 and re-hear.
 - **The demo path from the PRD**, on the ship branch, by hand: `npm run dev`,
   open one of the six by uuid from `grooves.generated.ts`, play it, and hear an
-  88 bpm groove with swung sixteenths, a hard kick and snare and ghosts
-  underneath — then solve it, to check the bass still carries the answer under a
-  drum-forward mix.
+  88 bpm groove with swung sixteenths, a hard kick and snare, ghosts underneath
+  and one keys stab a bar — then solve it, to check the bass still carries the
+  answer under a drum-forward mix with a comp that plays once a bar.
 - **The full set before either Wave 4 track reports:** `npm run test:gen`,
   `npm test`, `npm run lint`, `npm run build` — `build` runs `prebuild`, which
   runs `grooves:verify`, which is what catches a manifest missing its `HEARD_IN`
@@ -1009,6 +1064,14 @@ Covers: AC8a, AC11
   edit at all. If the `musician` wants the toms back, the cost is one shared-file
   line at boom-bap's own key in `FILLS` — and a kit that no longer distinguishes
   it from its neighbour.
+- **Ghost level is the generator's, not the template's.** A template can say how
+  many ghosts a bar has and where they land; it cannot say how loud they are.
+  `GHOST_VELOCITY_RANGE` is `events.ts`'s `[0.15, 0.25]`, one draw per groove, and
+  the mix applies one `gain.snare` to backbeats and ghosts alike. So R3's
+  velocity margin (A4's 0.2) is a property this epic asserts rather than one it
+  sets, and R9's ghost-note balance is placement and count. A hearing that wants
+  the ghosts quieter or louder is asking for a `FeelTemplate` field, which is a
+  change to `types.ts` and `events.ts` and belongs to whoever owns them.
 - **The backbeat is `DEFAULT_PLACEMENT`'s `[4, 12]`**, so there is no
   `PLACEMENTS` entry either. A boom-bap backbeat is the default backbeat; what
   makes it boom-bap is the swing and what sits between the backbeats.
@@ -1106,32 +1169,43 @@ judged is the feel rather than the mode. Naming them in the spec also makes the
 second hearing (D4) directly comparable to the first.
 Changed: steps C3 and D4.
 
-## Open questions
 
-Tick one option per question (`- [x]`), or write your own, then re-run
-`/writespec feature-25 epic-4`.
+### Cycle 2 — 2026-09-06
 
-### Q1. What is the "ghost-note balance" the retune (R9, AC8) is allowed to move?
+**Q1. What is the "ghost-note balance" the retune (R9, AC8) is allowed to move?**
+Decision: **The figure only — `patterns.snareGhosts`: how many ghosts a bar
+carries, and on which odd sixteenths.** Ghost velocity is a shared constant,
+`GHOST_VELOCITY_RANGE = [0.15, 0.25]` in `events.ts` with one draw per groove,
+and the mix applies the template's single `gain.snare` to backbeats and ghosts
+alike — so placement and count are the whole of what a template can say about its
+ghosts today, and saying more means a new `FeelTemplate` field in `types.ts` and
+a read of it in `events.ts`, two files Epics 2 and 3 are minting through while
+this epic runs. Placement is also the more distinctive lever at swung sixteenths,
+because the odd steps are exactly where the swing is audible: moving a ghost from
+step 3 to step 7 changes the feel more than a velocity trim would. The risk the
+answer accepts is real and worth naming: a first verdict of "the ghosts are too
+loud" has no lever at all, and the honest response would be to land option B —
+the optional `ghostVelocity` on `FeelTemplate` — in the middle of wave 2, in
+shared generator files, with a retune already in flight. Reversal costs nothing
+while the grooves are unminted, and the two hearings' audio would have to be
+re-rendered after it.
+Changed: the *Architecture* neighbours list gains a **Ghosts** bullet and a
+`types.ts` row in the file table; C1's knob list; C3's `snareGhosts` bullet;
+Track D's goal and `Owns`; steps A4, D1, D2; one assumption.
 
-Ghost velocity is a shared constant — `GHOST_VELOCITY_RANGE = [0.15, 0.25]` in
-`events.ts`, one draw per groove — and the mix applies the template's single
-`gain.snare` to backbeats and ghosts alike. So today a template can change
-*where and how many* ghosts it plays, and nothing else about them. Steps A4, D1
-and D2 change with the answer.
-
-- [x] A) **The figure only** — `patterns.snareGhosts`: how many ghosts, and on which odd sixteenths *(recommended — nothing outside `templates/boom-bap.ts` moves, and with swung sixteenths the odd steps are exactly where the swing is audible, so placement is the more distinctive lever anyway. Reversal costs nothing while the grooves are unminted; the risk it accepts is that a verdict of "the ghosts are too loud" has no lever at all, and would land option B mid-wave-2)*
-- [ ] B) **Add an optional `ghostVelocity?: [number, number]` to `FeelTemplate` in Wave 1**, omitted by every other template and so behaviour-neutral, proved by `rerender-check.ts` and feature-24's `events.fixture.json` *(costs ~5 lines in `types.ts` and `events.ts` — two files Epics 2 and 3 also touch — and adds a field Epic 1's frozen contract did not include, which the PRD puts out of scope)*
-- [ ] C) **A now, B only if the first verdict names ghost level** — the cheapest start, at the price of editing two shared generator files at the moment two other epics are minting through them
-- [ ] D) **Retune swing and tempo only**, and drop ghosts from R9 — needs the PRD amended, since AC8 asserts all three changed
-
-### Q2. How sparse is "sparser than the three named templates" (R5, AC4)?
-
-`COMP_PATTERNS`'s four shared figures carry two or three steps, so its *sparsest*
-figure is two onsets a bar. Read literally, "below the lowest of the three named
-templates'" means boom-bap plays at most one comp onset a bar. Step A5 changes
-with the answer, and reversing it after the mint re-renders all six grooves.
-
-- [x] A) **One onset a bar**, position drawn per groove — the literal reading *(recommended — it is the only reading under which AC4 passes unambiguously, and one stab a bar at 88 bpm is the idiom: the keys are a sample hit, not a comp. Reversal before the mint is one pool edit; after the mint it is six re-rendered grooves and a second hearing's worth of doubt about which audio was signed off)*
-- [ ] B) **Two onsets a bar**, with AC4 read as "fewer than the busiest of the three declare" (three) — a fuller comp, and an assertion that passes on a looser reading of the same sentence
-- [ ] C) **One onset in some bars and two in others**, drawn per bar — needs a mechanism `patterns` does not have (a pool is drawn once per groove), so it is a change to `events.ts` and to Epic 1's contract
-- [ ] D) **Fewer comp *events* per bar rather than onsets** — measured after voicing, which lets one onset of a three-note voicing count as three and makes the comparison about `playedVoicing`, not about the figure
+**Q2. How sparse is "sparser than the three named templates" (R5, AC4)?**
+Decision: **One comp onset a bar, its position drawn per groove — the literal
+reading.** `COMP_PATTERNS`'s four shared figures carry two or three steps, and
+`straight-funk`, `swung-sixteenth` and `bright-straight` all draw from it, so
+"below the lowest of the three named templates'" is one. It is the only reading
+under which AC4 passes without an argument about which sentence it means, and it
+is the idiom rather than a concession to the assertion — one stab a bar at 88 bpm
+is a sample hit, not a comp. The pool is therefore single-step figures only, and
+because `buildEvents` draws the comp figure once per groove, outside the bar
+loop, the count is one in every bar of every seed and only *which* step varies.
+That makes A5's assertion the strict form — exactly 1 — rather than a comparison
+that a two-step figure could sneak past. Reversal before the mint is one pool
+edit; after it, six re-rendered grooves and a second hearing's worth of doubt
+about which audio was signed off.
+Changed: the *Architecture* neighbours list gains a **Comp** bullet; C3's
+`comp` bullet; step A5.

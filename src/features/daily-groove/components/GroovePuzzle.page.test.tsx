@@ -598,7 +598,7 @@ describe('GroovePuzzle', () => {
       const roots = screen.getByRole("radiogroup", { name: puzzle.rootGroup });
       const flavours = screen.getByRole("radiogroup", { name: puzzle.modeGroup });
       expect(within(roots).getAllByRole("button")).toHaveLength(12);
-      expect(within(flavours).getAllByRole("button")).toHaveLength(4);
+      expect(within(flavours).getAllByRole("button")).toHaveLength(6);
 
       expect(screen.queryAllByRole("checkbox")).toHaveLength(0);
     })

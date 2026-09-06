@@ -65,9 +65,12 @@ interviews you like `/create-feature` does, writes only `What` and `Done when`,
 and stops — the ticket then enters `/quick-feature N` as a hand-written one.
 
 `/implement-quick-feature N` builds it, and refuses a ticket that was never
-analyzed or still has a question open. No epics, no agents except the `musician`
-for anything under `scripts/grooves/`, and the full lint / test / build set
-before reporting.
+analyzed or still has a question open. No epics and no waves, but the same three
+agents in sequence over the one unit — `test-writer`, then `implementer`, then
+`verifier` as the gate, plus the `musician` for anything under
+`scripts/grooves/`. The verifier grades the ticket's `## Done when` bullets the
+way it grades an epic's acceptance criteria, over the full lint / test / build
+set, and the lead fixes what it finds.
 
 Neither is the cheap door for a real feature. Four questions decide:
 five bullets or fewer, at most two of the six modules in

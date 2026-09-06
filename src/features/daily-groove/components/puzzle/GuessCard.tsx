@@ -112,7 +112,7 @@ export function GuessCard({ onHearRoot, onHearMode }: GuessCardProps) {
           onPress={disarming((option: string) => onHearMode(option as Flavour))}
           disabled={false}
           settled={view.over}
-          columns={{ base: 2, wide: 4 }}
+          columns={{ base: 2, wide: 3 }}
           adornment={tapSounds ? '♪' : undefined}
           optionStates={chipStates(view.flavours)}
         />

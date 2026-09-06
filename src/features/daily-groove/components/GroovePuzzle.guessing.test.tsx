@@ -104,7 +104,7 @@ describe('GroovePuzzle', () => {
 
     expect(screen.getByRole('button', { name: puzzle.playName.play })).toBeInTheDocument()
     expect(within(rootGroup()).getAllByRole('button')).toHaveLength(12)
-    expect(within(flavourGroup()).getAllByRole('button')).toHaveLength(4)
+    expect(within(flavourGroup()).getAllByRole('button')).toHaveLength(6)
     expect(screen.queryAllByRole('checkbox')).toHaveLength(0)
   })
 
@@ -741,14 +741,14 @@ describe('GroovePuzzle', () => {
     expect(nudgeLine()).not.toBeInTheDocument()
   })
 
-  it('offers all twelve roots and four modes with simple mode off (E5 R2, R4, AC2, AC3)', async () => {
+  it('offers all twelve roots and six modes with simple mode off (E5 R2, R4, AC2, AC3)', async () => {
     await renderPuzzle(<GroovePuzzle groove={DORIAN} />)
 
     expect(chipTexts(rootGroup())).toEqual(ROOTS)
     expect(chipTexts(flavourGroup())).toEqual(
       flavourOptions(new Date(), DORIAN, GROOVES),
     )
-    expect(chipTexts(flavourGroup())).toHaveLength(4)
+    expect(chipTexts(flavourGroup())).toHaveLength(6)
     expect(chipTexts(flavourGroup())).not.toContain('Minor')
     expect(chipTexts(flavourGroup())).not.toContain('Major')
   })
@@ -1256,7 +1256,7 @@ describe('GroovePuzzle', () => {
       await user.click(screen.getByRole('switch', { name: puzzle.simpleMode }))
 
       expect(dimmedIn(flavourGroup())).toEqual([])
-      expect(liveIn(flavourGroup())).toHaveLength(4)
+      expect(liveIn(flavourGroup())).toHaveLength(6)
     })
 
     it('locks the mode row to the mode a check got right (R1, R1a, AC2, AC3)', async () => {

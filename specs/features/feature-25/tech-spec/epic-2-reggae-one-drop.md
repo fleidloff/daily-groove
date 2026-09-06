@@ -10,13 +10,20 @@ grooves — but the style is defined by three *absences*, and each one is a
 different mechanism. Beat one is empty because the template declares its own kick
 pool (every member of `KICK_PATTERNS` hits step 0). The backbeat is gone because
 `placementFor` spreads `PLACEMENTS[id]` over `DEFAULT_PLACEMENT`, so a `snare`
-key *replaces* `[4, 12]` rather than adding to it. And the default fill is gone
+key *replaces* `[4, 12]` rather than adding to it — and reggae spends that on
+moving the snare onto beat 3 with the kick. And the default fill is gone
 because `DEFAULT_FILL` puts a kick on step 0 and a snare on step 4 — so a
 `FILLS` entry is not optional here, contrary to the PRD's last assumption: AC3
 and AC5 say "every rendered groove" and "every bar", and the fill bar is a bar.
-The work splits into the musician's template (wave 1, testable without touching
-the registry), the document row (wave 2), and registration-plus-mint (wave 2),
-which is the only part that has to queue behind Epics 3 and 4.
+
+What the absences leave is one composite event: **kick, snare and rim struck
+together on beat 3, in every bar of the loop.** The kick comes from the
+template's own pool, the snare from the `PLACEMENTS` entry, and the rim from a
+fixed figure on the template — `figures` emits in every bar including the fill
+bar, where a placement line does not reach. The work splits into the musician's
+template (wave 1, testable without touching the registry), the document row
+(wave 2), and registration-plus-mint (wave 2), which is the only part that has to
+queue behind Epics 3 and 4.
 
 ## Architecture
 
@@ -25,7 +32,8 @@ which is the only part that has to queue behind Epics 3 and 4.
 | Change | File |
 | :-- | :-- |
 | the template: tempo, swing, flavours, voices, mix, humanize, passes, density, and its own kick / comp / hat pools | `scripts/grooves/templates/reggae-one-drop.ts` *(new)* |
-| the rim on beat 3, and the backbeat replaced rather than added to | `scripts/grooves/events.ts` → one `PLACEMENTS` entry |
+| the rim on beat 3, in every bar including the fill | `scripts/grooves/templates/reggae-one-drop.ts` → `figures` |
+| the snare on beat 3, and the backbeat replaced rather than added to | `scripts/grooves/events.ts` → one `PLACEMENTS` entry |
 | a fill that keeps beat one empty and the snare off 4 and 12 | `scripts/grooves/events.ts` → one `FILLS` entry |
 | every one-drop behaviour this epic asserts | `scripts/grooves/reggae.test.ts` *(new)* |
 | registration | `scripts/grooves/templates/index.ts` |
@@ -40,7 +48,7 @@ which is the only part that has to queue behind Epics 3 and 4.
 beat one empty     →  template.patterns.kick    every member's min step is 8
                       (KICK_PATTERNS members all start at 0 — unusable)
 
-no backbeat        →  PLACEMENTS['reggae-one-drop'].snare
+no backbeat        →  PLACEMENTS['reggae-one-drop'].snare = [8]
                       placementFor = { ...DEFAULT, ...PLACEMENTS[id] }
                       so the key REPLACES [4, 12]; it does not merge
 
@@ -48,6 +56,18 @@ fill bar included  →  FILLS['reggae-one-drop']
                       FILLS[id] ?? { fill: DEFAULT_FILL } — also a replacement.
                       DEFAULT_FILL = kick [0], snare [0,2,4,6,14] would break
                       AC3 (kick on 0) and AC5 (snare on 4) in the fill bar alone
+```
+
+**And the one presence, precisely.** The rim is a fixed figure on the template,
+not a placement line:
+
+```
+rim on every 3     →  reggaeOneDrop.figures = [{ voice: 'rim', bars: [[8]] }]
+                      C7 emits a figure in EVERY bar, fill bar included, at zero
+                      RNG cost, and a figure naming rim suppresses the voice's
+                      placement line — so PLACEMENTS['reggae-one-drop'] declares
+                      no rim and no rimBars, and DEFAULT_PLACEMENT's rim [15] on
+                      bars 1 and 3 never fires
 ```
 
 **What each acceptance criterion is measured on.** Every step assertion runs on a
@@ -104,7 +124,8 @@ Frozen before any track starts.
 **Epic 1's tech spec exists and its Contracts section is frozen.** This epic
 builds against C1 (the `patterns` block), C4 (`grooves:add --template`), C7 (the
 fixed figure) and C9 (the registry reservation) as written there, not against
-Epic 1's PRD. The three keys this epic declares:
+Epic 1's PRD. The three pattern keys this epic declares, and the `figures` field
+it declares beside them:
 
 ```ts
 // scripts/grooves/types.ts — Epic 1 C1, quoted
@@ -122,7 +143,7 @@ export type PatternPools = {
 export type FeelTemplate = {
   // …every field it has today, with `subdivision: Subdivision`…
   patterns?: PatternPools
-  figures?: FixedFigure[]     // C7 — see Step A5
+  figures?: FixedFigure[]     // declared — R4, the beat-3 rim. Step A5
 }
 ```
 
@@ -147,15 +168,18 @@ The five rules of C1 that bear on this epic:
   never both** — `assertPatterns` rejects the pair. Reggae's snare is fixed, not
   drawn, so it takes the `PLACEMENTS` road and declares no `kit`.
 
-And two contracts this epic reads but does not use as its primary road:
+And the rest of Epic 1's contracts this epic builds on:
 
 - **C7's `FixedFigure`** — `{ voice, bars: number[][] }`, emitted in **every**
   bar including the fill and variation bars, zero RNG draws, and **a figure
-  naming `rim` or `hatOpen` suppresses that voice's placement line**. That gives
-  Step A5 a second home for the beat-3 rim; the trade-off is recorded there.
+  naming `rim` or `hatOpen` suppresses that voice's placement line**. This is the
+  beat-3 rim's home: `figures: [{ voice: 'rim', bars: [[8]] }]`, so the rim
+  sounds in the fill bar with the kick and the snare, which a placement line
+  cannot do. Because the figure suppresses the placement line by itself, there is
+  no `rim` key to reconcile in `PLACEMENTS` and none is written.
 - **C8** — `patterns`' keys are frozen and complete, and `FeelTemplate` beside
-  them is append-only under four conditions. This epic adds no field, so C8 does
-  not bind it.
+  them is append-only under four conditions. This epic declares `figures`, a
+  field C7 already adds, and adds no field of its own, so C8 does not bind it.
 - **C4** — `npm run grooves:add 6 -- --template <id>` is the documented
   invocation; an unknown id throws before the pack loads and writes nothing. And
   `addGrooves` now passes its own `heardIn` table into `writeManifest`, so a mint
@@ -173,13 +197,14 @@ export const reggaeOneDrop: FeelTemplate = {
   swing: 0.04,            // reserved, see below
   subdivision: 8 | 16,    // the musician's
   passes: 2,              // forced by R11, see below
-  flavours: [/* 2–4, the musician's — Step A2 */],
-  voices: [/* includes kick, snare, hatClosed, hatOpen, bass, comp — see below */],
+  flavours: [/* 2–4, the musician's, clearing the 5× cap — Step A2 */],
+  voices: [/* includes kick, snare, rim, hatClosed, hatOpen, bass, comp — see below */],
   patterns: {
     kick: /* every member's minimum step is exactly 8 */,
     comp: /* every step off-beat */,
     hatClosed: /* every step off-beat */,
   },
+  figures: [{ voice: 'rim', bars: [[8]] }],
   /* humanize, gain, pan, density — the musician's, bounded by R8 and R10 */
 }
 ```
@@ -187,16 +212,16 @@ export const reggaeOneDrop: FeelTemplate = {
 ```ts
 // scripts/grooves/events.ts
 PLACEMENTS['reggae-one-drop'] = {
-  snare: /* [] or [8] — Q2. Never containing 4 or 12 */,
-  rim:   [8],
-  rimBars: /* [0,1,2,3] or a subset — AC4 reads "every bar the placement declares" */,
+  snare: [8],  // replaces DEFAULT_PLACEMENT's [4, 12]; the snare joins the drop
+  // rim / rimBars: omitted. The figure above suppresses the placement line
   // hatOpen: omitted keeps DEFAULT_PLACEMENT's [14], which is an off-beat
 }
 
 FILLS['reggae-one-drop'] = {
   fill: {
-    kick: [8],   // mandatory: every bar's earliest kick is beat 3 (AC3)
-    /* snare / rim / tom lines, none of them on 4 or 12 (AC5) */
+    kick:  [8],  // mandatory: every bar's earliest kick is beat 3 (AC3)
+    snare: [8, /* …the musician's, never 4 or 12 (AC5) */],
+    // no rim line: the figure already puts a rim on step 8 of this bar
   },
 }
 ```
@@ -246,14 +271,15 @@ integration step run `npm run test:all`.
 
 - **Goal** — `reggae-one-drop.ts` exists and renders, from `buildEvents`
   directly: no kick on beat one and the first kick of every bar on beat 3, a rim
-  with it, no snare on 2 or 4, the hat and the comp on the off-beats, a bass
+  and a snare with it, no snare on 2 or 4, the hat and the comp on the off-beats, a bass
   loud enough to carry it, inside a density band measured over 120 seeds, at two
   passes.
 - **Owns** — `scripts/grooves/templates/reggae-one-drop.ts` *(new)*,
   `scripts/grooves/reggae.test.ts` *(new)*, `scripts/grooves/events.ts`.
-  **Re-checked against Epic 1's frozen C1:** the hat no longer needs an
-  `events.ts` change, so what is left there is two additive entries — one in
-  `PLACEMENTS` (Steps A5, A6) and one in `FILLS` (Step A4). Track A still owns
+  **Re-checked against Epic 1's frozen C1 and C7:** the hat needs no `events.ts`
+  change, and neither does the rim — it is a `figures` entry on the template
+  (Step A5). What is left in `events.ts` is two additive entries: the snare in
+  `PLACEMENTS` (Step A6) and the fill in `FILLS` (Step A4). Track A still owns
   the file, for two lines rather than three.
 - **Role** — `musician`. Every decision in it is a decision about what the groove
   sounds like: the kick figures, the skank, the subdivision, the mix, the
@@ -269,12 +295,10 @@ integration step run `npm run test:all`.
   report.
 
 *Note on ownership:* `events.ts`, the template file and `reggae.test.ts` cannot be
-split. The `PLACEMENTS` entry is what makes the template's snare and rim
-assertions pass, the `FILLS` entry is what makes them pass *in the fill bar*, and
+split. The `PLACEMENTS` entry is what makes the template's snare assertions pass,
+the `FILLS` entry is what makes the beat-3 composite hold *in the fill bar*, and
 the template is red until both exist. A track that cannot be given disjoint files
-is not a track, so these are one. If Q2 sends the rim to `template.figures`
-instead of `PLACEMENTS`, the `events.ts` share shrinks to the `FILLS` entry
-alone; the track's boundary does not move.
+is not a track, so these are one.
 
 ### Track B — the document says what the template declares
 
@@ -345,8 +369,9 @@ Covers: R1, AC1
 
 - **Test first** — `reggae.test.ts`: `reggaeOneDrop.tempoRange[0] >= 70` and
   `[1] <= 80`; `lo < hi`; `swing > 0` and `swing <= 0.05`; `subdivision` is 8 or
-  16; `voices` contains `kick`, `snare`, `hatClosed`, `hatOpen`, `bass`, `comp`
-  and no duplicates; `voices` contains none of `claves`, `cowbell`, `rideBell`,
+  16; `voices` contains `kick`, `snare`, `rim`, `hatClosed`, `hatOpen`, `bass`,
+  `comp` and no duplicates — `rim` because the beat-3 figure needs the voice
+  declared to sound; `voices` contains none of `claves`, `cowbell`, `rideBell`,
   `ride`; `gain[v]` and `pan[v]` are numbers for every `v` in `voices` with
   `pan` inside `[-1, 1]`; `humanize.lean.snare > 0`, `lean.hatClosed <= 0`,
   `lean.hatOpen <= 0`, every leaned voice is played; `0 < driftDepth <= 0.01`;
@@ -378,35 +403,36 @@ Covers: R2, AC2
 
 - **Test first** — `reggae.test.ts`: `flavours.length` is between 2 and 4;
   `new Set(flavours).size === flavours.length`; every entry is in `FLAVOURS`
-  from `src/lib/theory/names.ts`; `flavours` does not contain `locrian`.
+  from `src/lib/theory/names.ts`; `flavours` contains neither `locrian` nor
+  `ionian` — the second because the dominance cap rules it out, with the
+  arithmetic in the *Implement* note so the assertion is not a bare taboo.
   Run it: fails with `expected 0 to be greater than or equal to 2` if the list
   is still a placeholder.
-- **Implement** — the `flavours` list. `new-styles.md` proposes aeolian,
-  mixolydian and ionian; the list is the musician's, and how much room it has
-  depends on Epic 1's Q1 — see the conditional below. The
-  measured counts to work from, over the thirty committed grooves:
+- **Implement** — the `flavours` list, chosen to clear a literal 5× cap. The
+  dominance guard keeps its ratio shape and its number is 5×, in both copies:
+  `catalogue.test.ts`'s *"lets no mode dominate the answers"* and the app-tier
+  duplicate in `grooves.generated.test.ts`. Over a floor of 1 — `melodic-minor`
+  and `lydian-dominant` hold one groove each — that allows a maximum of 5 for any
+  mode, and six grooves over a three-flavour list adds about 2 to each of them.
+  The measured counts to work from, over the thirty committed grooves:
   mixolydian 3, dorian 3, aeolian 3, lydian 3, ionian 3, phrygian 3,
   phrygian-dominant 3, blues 3, harmonic-major 2, harmonic-minor 2,
   melodic-minor 1, lydian-dominant 1 — plus whatever Epic 1's bossa added.
+  **`ionian` is what the cap costs this epic.** `new-styles.md` proposes aeolian,
+  mixolydian and ionian, but `ionian` is already offered by `bright-straight` and
+  by bossa, so reggae would be its third source and it lands near 7 against a
+  ceiling of 5. Swap it for a mode with fewer grooves behind it — `harmonic-minor`
+  and `melodic-minor` are the two with the most headroom and both suit a minor
+  one-drop — or declare two flavours instead of three. **Measure the counts on
+  the tree after Epic 1's mint, not from the table above**, and say in the report
+  that the list was constrained by a test rather than only by ear.
   **Once the first groove is minted this list is frozen** (`docs/music.md`,
   *What must never change*): the draw is `pick(musicRng, template.flavours)`, so
   reordering or editing it re-rolls the mode of every seed on the template.
-  **The dominance guard is Epic 1's, not this epic's** — it owns both copies and
-  its own Q1 asks whether to replace the guard's shape rather than its number.
-  This step is conditional on that answer, and the condition is the only thing
-  left of this spec's superseded Q3:
-  - **Epic 1's Q1 answered B, C or D** — the guard stops being sensitive to a
-    floor of one, and reggae's list is chosen musically with no arithmetic
-    constraint at all. `new-styles.md`'s aeolian / mixolydian / ionian stands.
-  - **Epic 1's Q1 answered A** — a literal 5× over a floor of 1 allows a maximum
-    of 5, and `ionian` would be offered by `bright-straight`, bossa **and**
-    reggae, landing near 7. Then the list has to clear the cap: swap `ionian` for
-    a mode with fewer grooves behind it, or declare two flavours instead of
-    three. Measure the counts after Epic 1's mint rather than from the table
-    above, and say in the report that the list was constrained by a test.
-  Either way, **do not widen either copy of the cap from this epic.** They are
-  Epic 1's files in this feature, and a second widening from here would read as
-  the guard being in the way.
+  **Do not widen either copy of the cap from this epic.** Both are Epic 1's
+  files in this feature; a second widening from here would read as the guard
+  being in the way. If no honest three-mode list clears 5× after the mint, that
+  is a finding for Epic 1, and Step C3 says how it travels.
 - **Green when** — the four assertions pass.
 - **Refactor** — none.
 
@@ -457,47 +483,51 @@ Covers: R3, AC3
   entirely. `passes: 2` means `middlePassOf(2)` is `null` and no variation bar
   ever plays, so only `fill` matters; `withoutToms(fill)` still computes a
   variation phrase and it is never reached.
-  A one-drop's fill is the drop with the kit answering it — proposals:
-  `{ kick: [8], snare: [8, 11, 14], rim: [8] }`, or, sparser,
-  `{ kick: [8], rim: [8], snare: [14] }`.
+  A one-drop's fill is the drop with the kit answering it, so the phrase carries
+  `kick: [8]` and a snare line that starts on 8 — proposals:
+  `{ kick: [8], snare: [8, 11, 14] }`, or, sparser, `{ kick: [8], snare: [8] }`.
+  **The phrase declares no `rim` line.** The rim on step 8 of the fill bar comes
+  from the template's `figures` entry (Step A5), which emits in every bar; a
+  `rim: [8]` here would stack a second rim on the same step and trip
+  `events.test.ts`'s *"never stacks two hits of one voice on the same step of a
+  coarser grid"*.
 - **Green when** — all eight bars at all twenty-four seeds carry a kick whose
   earliest event is beat 3.
 - **Refactor** — none. Resist declaring the fill as `{ ...DEFAULT_FILL, kick: [8] }`:
   its snare line still holds step 4 and would break Step A6.
 
-#### Step A5 — the rim sounds with the kick on beat 3
+#### Step A5 — the rim sounds with the kick on beat 3, in every bar
 
 Covers: R4, AC4
 
-- **Test first** — `reggae.test.ts`, on a dry clone at seeds 1–24: in every bar
-  the placement declares a rim, there is a `rim` event whose step equals the
-  bar's earliest `kick` step; and there is no `rim` event in any bar the
-  placement does not declare. Derive the declared bars from the mechanism the
-  template actually uses — every bar if the rim is a `figures` entry, otherwise
-  `PLACEMENTS['reggae-one-drop'].rimBars ?? DEFAULT_PLACEMENT.rimBars` — never
-  from a literal, so AC4's "every bar the placement declares" is read off the
-  declaration. Run it: fails with `expected [ 7 ] to equal [ 4 ]` — the inherited
-  `rim: [15]` pickup.
-- **Implement** — the rim has two homes now that Epic 1's C7 is frozen, and the
-  choice is the musician's, folded into Q2 because it is the same decision about
-  what sounds on beat 3:
-  - **`PLACEMENTS['reggae-one-drop']` gains `rim: [8]` and `rimBars`.** The
-    rim emission sits inside `buildEvents`'s ordinary-bar branch, so a
-    placement rim is **absent from the fill bar**. `rimBars: [0, 1, 2, 3]` is
-    recommended over inheriting `[1, 3]`: R4 reads as a fixed part of the groove
-    rather than a pickup, and the rim is the only voice besides the kick marking
-    beat 3.
-  - **`template.figures = [{ voice: 'rim', bars: [[8]] }]`.** C7 emits a fixed
-    figure in **every** bar, fill bar included, at zero RNG cost, and a figure
-    naming `rim` suppresses the voice's placement line — so the two cannot be
-    declared together and there is nothing to reconcile. This is the road that
-    puts the rim on the drop in the fill bar too, which is what "the fill is the
-    drop" argues for.
+- **Test first** — `reggae.test.ts`:
+  - a unit case with no groove built: `reggaeOneDrop.figures` holds exactly one
+    entry, its `voice` is `'rim'`, and its `bars` is `[[8]]` — one bar-pattern,
+    one step, the same step the kick pool's minimum is. Assert the step against
+    `Math.min(...)` of every kick pool member rather than against the literal 8,
+    so the two can never drift apart silently.
+  - a rendered case, on a dry clone at seeds 1–24, over **every** bar of the loop
+    including the fill bar: the bar holds exactly one `rim` event, and its step
+    equals the bar's earliest `kick` step. AC4's "every bar the placement
+    declares" resolves to every bar, because a fixed figure is emitted in all of
+    them and the figure suppresses the placement line — so the assertion loops
+    the bars rather than reading `rimBars`.
+  - and: `PLACEMENTS['reggae-one-drop']` declares neither `rim` nor `rimBars`,
+    so the suppression is never asked to resolve a conflict.
 
-  Whichever is chosen, AC4's "every bar the placement declares" is satisfied,
-  because the test derives the declared bars from the mechanism rather than from
-  a literal.
-- **Green when** — the coincidence holds in every declared bar at every seed.
+  Run it: the rendered case fails with `expected [ 7 ] to equal [ 4 ]` before the
+  figure exists — the inherited `DEFAULT_PLACEMENT.rim: [15]` pickup, on bars 1
+  and 3 only.
+- **Implement** — `figures: [{ voice: 'rim', bars: [[8]] }]` on the template, and
+  nothing in `events.ts`. C7 emits a fixed figure in **every** bar, fill bar
+  included, at zero RNG cost, and a figure naming `rim` suppresses the voice's
+  placement line — so `DEFAULT_PLACEMENT`'s `rim: [15]` on `rimBars: [1, 3]`
+  never fires and there is nothing to reconcile. This is what puts the rim on
+  the drop in the fill bar too, alongside the fill phrase's kick and snare: beat
+  3 is one composite event in all eight bars, which is the whole reading of "the
+  fill is the drop".
+- **Green when** — the coincidence holds in every bar at every seed, the fill bar
+  included, and no bar carries a second rim.
 - **Refactor** — none.
 
 #### Step A6 — the backbeat does not survive
@@ -507,22 +537,30 @@ Covers: R5, AC5
 - **Test first** — `reggae.test.ts`:
   - a unit case with no groove built: `placementFor` is not exported, so assert
     the semantics through `PLACEMENTS` and `DEFAULT_PLACEMENT` — the entry
-    declares a `snare` key, and `{ ...DEFAULT_PLACEMENT, ...PLACEMENTS['reggae-one-drop'] }.snare`
-    contains neither 4 nor 12. This is the assertion that says *replaces*, not
-    *adds*, and it fails if someone later "fixes" the spread into a merge.
+    declares `snare: [8]`, and
+    `{ ...DEFAULT_PLACEMENT, ...PLACEMENTS['reggae-one-drop'] }.snare` equals
+    `[8]` and contains neither 4 nor 12. This is the assertion that says
+    *replaces*, not *adds*, and it fails if someone later "fixes" the spread into
+    a merge.
   - a rendered case, on a dry clone at seeds 1–24, over **every** bar including
     the fill bar and including ghost-velocity events: no `snare` event's
     sixteenth-grid position is 4 or 12.
+  - and the composite, since the snare is now part of it: in every bar the
+    full-velocity `snare` event sits on the bar's earliest `kick` step, the same
+    step as the rim. Assert it against the ghost velocity so the ghosts, which
+    land elsewhere, do not have to be excluded by step.
 
   Run it: the rendered case fails with `expected [4, 12] not to contain 4`
   before the entry exists.
-- **Implement** — `scripts/grooves/events.ts`: the `snare` key of the
-  `PLACEMENTS` entry, and the fill phrase's snare line from Step A4 kept off 4
-  and 12. Q2 settles whether the key is `[]` (no snare in an ordinary bar; the
-  snare survives as ghost notes only) or `[8]` (snare with the kick and rim on
-  beat 3, which is what a rimshot one-drop actually is). Either clears R5.
-  `ghostSteps` forces every ghost onto an odd step, so ghosts can never land on
-  4 or 12 and need no guard.
+- **Implement** — `scripts/grooves/events.ts`: `snare: [8]` in the `PLACEMENTS`
+  entry, and the fill phrase's snare line from Step A4 starting on 8 and never
+  touching 4 or 12. A rimshot one-drop is a rim and a snare struck together on
+  beat 3, so the snare joins the kick and the rim rather than falling silent; the
+  backbeat is gone because the key replaces `[4, 12]`, not because the voice
+  stops playing. `ghostSteps` forces every ghost onto an odd step of the
+  template grid and `ghostsForBar` filters out anything already in `snareSteps`,
+  so ghosts can never land on 4 or 12 nor double the beat-3 hit, and need no
+  guard.
   **Reggae declares no `patterns.kit`.** Epic 1's C1 gives a drawn snare figure
   that home and rejects a template declaring `PLACEMENTS[id].snare` and
   `patterns.kit` together. A one-drop's snare is fixed, not drawn — the whole
@@ -615,8 +653,8 @@ Covers: R8
   loudest today:
   - `gain: { kick: -9, snare: -8, hatClosed: -10, hatOpen: -17, rim: -9, bass: 2, comp: -6 }`
     — the bass above everything, the comp pushed back because a skank is a
-    percussion part rather than a pad, the rim up with the kick because together
-    they are the only thing on beat 3.
+    percussion part rather than a pad, the rim and the snare balanced against the
+    kick because the three of them are one struck event on beat 3.
   - `pan: { kick: 0, snare: -0.05, hatClosed: 0.3, hatOpen: 0.32, rim: -0.28, bass: 0, comp: 0.24 }`
     — the rim opposite the hats, so the two halves of the off-beat are not
     stacked in one ear.
@@ -640,9 +678,11 @@ Covers: R10, AC8
   in the step's output. Run it: fails with `expected Infinity to be greater than
   or equal to 0` before the band is declared.
 - **Implement** — measure first, declare second. A rough budget per ordinary bar
-  at subdivision 8 with a three-note voicing: kick 1–3, rim 0–1, snare 0–1 plus
+  at subdivision 8 with a three-note voicing: kick 1–3, rim 1, snare 1 plus
   2–3 ghosts, hat 3–4, bass ~3, comp 3×(2–4 steps) = 6–12. That is roughly
-  13–27 events a bar, against `open-ballad`'s 8–30 and `half-time`'s 14–48.
+  17–27 events a bar, against `open-ballad`'s 8–30 and `half-time`'s 14–48 — the
+  beat-3 rim and snare are in every bar, so the floor is a little higher than a
+  bare drop's.
   Proposed starting band `{ minPerBar: 9, maxPerBar: 32 }` — but the number that
   goes in the template is the measured one with headroom, taken **before** any
   mint. **If a seed falls outside the band, thin or thicken the figures, not the
@@ -836,12 +876,13 @@ Covers: R9, AC7
     concert already shows for that root**, which is what the case's own name
     asserts. A new line that is not is a bug in the answer, not in the test.
   - `it('lets no mode dominate the answers')` — the app-tier copy of the
-    dominance guard. **This one is not this epic's to move.** Epic 1 owns both
-    copies (its Steps C7 and G4) and its own Q1 decides the guard's shape for
-    the whole feature. Run it; if it fails after this epic's mint, the finding is
-    that Epic 1's answer did not survive sixty grooves — report it with both
-    counts and the mode that broke it, and take it back to Epic 1's Q1. Do not
-    widen it from here, and do not let the two copies drift apart.
+    dominance guard, a ratio capped at 5×. **This one is not this epic's to
+    move.** Epic 1 owns both copies (its Steps C7 and G4) and set the number for
+    the whole feature. Run it; Step A2's flavour list is chosen so it passes. If
+    it fails anyway after this epic's mint, the finding is that 5× did not
+    survive sixty grooves — report it with both counts and the mode that broke
+    it, and hand it back to Epic 1 as a widening of both copies. Do not widen it
+    from here, and do not let the two copies drift apart.
 - **Implement** — the two literal edits this epic's mint genuinely moves, and
   nothing else in that file.
 - **Green when** — `npm run test:all` is green, or the only failure is the
@@ -890,8 +931,8 @@ Covers: R9, AC7
   groove and runs all seven checks; it now covers six grooves with nothing on
   beat one. Read the failures, not the summary. The likeliest for this style is
   **loudness**: masters are peak-pinned onto `PEAK_CEILING = 0.891`, so RMS is a
-  function of crest factor, and a sparse groove whose loudest transient is a
-  kick-and-rim on beat 3 can measure below the `-29 dBFS` floor even though it
+  function of crest factor, and a sparse groove whose loudest transient is the
+  kick, snare and rim together on beat 3 can measure below the `-29 dBFS` floor even though it
   is well balanced. The fix is the mix — Step A9's gains, the bass and the comp
   first — and never `LOUDNESS_FLOOR_DB`. A `density` failure is Step A10's, and
   the same rule applies: the figures move, not the band.
@@ -950,8 +991,9 @@ Covers: R12, AC10
     keep time?** This is the sentence AC10 asks to be recorded and the risk the
     PRD names, and it is per groove, not per template — a figure that works at
     72 bpm may fall apart at 80.
-  - the kick and rim on beat 3 read as one event, not as two things that happen
-    near each other.
+  - the kick, the snare and the rim on beat 3 read as one event, not as three
+    things that happen near each other — in the fill bar as much as in the seven
+    before it.
   - the skank is a chord and a hat, not a chord under a hat — the comp and the
     closed hat are on the same steps and can mask each other.
   - the bass is carrying it rather than merely being loud.
@@ -981,7 +1023,7 @@ Covers: R12, AC10
 | R2 | A2, C1 |
 | R3 | A3, A4 |
 | R4 | A5 |
-| R5 | A6 |
+| R5 | A6, A4 |
 | R6 | A7 |
 | R7 | A8 |
 | R8 | A9 |
@@ -994,7 +1036,7 @@ Covers: R12, AC10
 | AC2 | A2, C1 |
 | AC3 | A3, A4 |
 | AC4 | A5 |
-| AC5 | A6 |
+| AC5 | A6, A4 |
 | AC6 | A7, A8 |
 | AC7 | C2, C3, I1 |
 | AC8 | A10 |
@@ -1031,8 +1073,14 @@ Covers: R12, AC10
   list, and reggae needs `kick`, `hatClosed` and `comp` — all three present.
   Nothing in the frozen contract blocks a requirement of this epic: R3 through
   R8 each have a declared mechanism, and the one gap the first draft found (the
-  hat) is closed by C1's `hatClosed` rule. This epic adds no field to
-  `FeelTemplate`, so C8's four conditions do not bind it.
+  hat) is closed by C1's `hatClosed` rule. Beside `patterns` this epic declares
+  `figures`, which C7 adds; it adds no field of its own, so C8's four conditions
+  do not bind it.
+- **The beat-3 composite needs two mechanisms, not one.** The snare is a
+  placement key because a placement is what replaces `DEFAULT_PLACEMENT`'s
+  backbeat, and the rim is a figure because a placement rim does not reach the
+  fill bar. The fill phrase supplies the kick and the snare of that bar and no
+  rim line, so exactly one rim sounds per bar in all eight.
 - **`reggae.test.ts` is a new file rather than more cases in `events.test.ts`.**
   `events.test.ts` is 2281 lines and Epics 1, 3 and 4 all touch it; a
   topic-named sibling keeps four epics off one file and follows the pattern
@@ -1125,31 +1173,55 @@ Changed: Step C2's *Implement*, and the invocation now matches C4's documented
 Cost of reversal: none. If D6 did not land, an empty `HEARD_IN` after the mint is
 the finding and it goes back to Epic 1, not patched here.
 
-## Open questions
+### Cycle 2 — 2026-09-06 — the beat-3 event, and the guard's number
 
-One question, and it is the one this epic actually owns. Tick an option
-(`- [x]`), or write your own, then re-run `/writespec feature-25 epic-2`.
-Q1 became D2 and Q3 became D3; the numbering is left as it was so the log's
-references still resolve.
+Two decisions. The first was asked here as Q2 and answered; the second is the
+collapse of the conditional D3 left behind, now that Epic 1 has settled the
+dominance guard. Q1 became D2 and Q3 became D3; the numbering above is left as it
+was so the log's references still resolve.
 
-### Q2. What sounds on beat 3 — and does it survive the fill bar?
+**D5. Beat 3 is a composite of kick, snare and rim, and the rim is a fixed
+figure.** Raised here as Q2, answered A. `PLACEMENTS['reggae-one-drop'].snare` is
+`[8]`, so the snare is struck with the kick rather than falling silent — the
+backbeat dies because the key replaces `[4, 12]`, not because the voice stops
+playing, and a rimshot one-drop is a rim and a snare together. The rim moved out
+of `PLACEMENTS` into `figures: [{ voice: 'rim', bars: [[8]] }]`, because C7 emits
+a figure in every bar including the fill bar while a placement rim sits inside
+`buildEvents`'s ordinary-bar branch and never reaches it. C7's suppression rule
+means the two mechanisms cannot both be declared, so there is nothing to
+reconcile: `PLACEMENTS` carries no `rim` and no `rimBars`, and
+`DEFAULT_PLACEMENT`'s `rim: [15]` on bars 1 and 3 never fires. The fill phrase
+gains a snare line starting on 8 and declares no rim line, so exactly one rim
+sounds per bar.
+Changed: Approach (the composite named), the Architecture table (a `figures` row
+added, the `PLACEMENTS` row now the snare) and its *one presence* block,
+Contracts (the C7 and C8 bullets, the template and `events.ts` blocks), Track A's
+*Goal*, *Owns* and ownership note, Step A1 (`rim` in the required voices), Step
+A4 (the fill's snare line, and why it carries no rim), Step A5 (rewritten around
+`figures`), Step A6 (`snare: [8]` settled, plus the composite assertion), Step A9
+(the mix rationale), Step A10 (the density floor), Steps I1 and I4, the
+Assumptions, and the coverage of R5 and AC5, which Step A4 now shares.
+Cost of reversal: one declaration before the mint — the snare key and the figure
+are three lines between them. After the mint it re-renders the six mp3s and voids
+Step I4's sign-off, because what a person signed off is the composite. The
+answers survive either way: no draw reads the placement, the figure or the fill.
 
-R4 puts the *rim* on beat 3 and R5 forbids a snare on 4 and 12, but nothing says
-whether the snare sounds at all. `templates/index.test.ts` requires `snare` in
-`voices` for every template, so the voice is declared either way; the question is
-what `PLACEMENTS['reggae-one-drop'].snare` holds. Reggae declares no
-`patterns.kit` — its snare is fixed, not drawn, and Epic 1's C1 rejects a
-template declaring both.
-
-**The rim's home rides along with the answer.** Epic 1's C7 froze
-`FeelTemplate.figures`, which emits a fixed figure in *every* bar including the
-fill bar and suppresses the voice's placement line. A placement rim is absent
-from the fill bar; a `figures` rim is not. If beat 3 is a composite event — kick,
-rim and snare together — then it should sound in the fill bar too, and the rim
-belongs in `figures`. If the rim is the ordinary-bar signature and the fill is
-where the kit answers, `PLACEMENTS` is right. Step A5 carries both roads.
-
-- [x] A) **`snare: [8]` — the snare sounds with the kick and the rim on beat 3, and the rim goes in `template.figures` so all three sound in the fill bar too** *(recommended — a rimshot one-drop is a rim and a snare struck together, and the rim alone is thinner than the PRD's "kick and rim together on beat 3" is reaching for. `figures` costs no RNG and suppresses the placement line by itself, so there is nothing to reconcile. Reversing after the mint re-renders the six mp3s and voids Step I4's sign-off; reversing before costs one declaration.)*
-- [ ] B) `snare: []` — no snare in an ordinary bar; the snare survives as ghost notes only, and beat 3 is kick and rim *(the most literal reading of R4, and the sparsest. `ghostSteps` forces every ghost odd, so AC5 holds trivially. Same reversal cost.)*
-- [ ] C) `snare: []` in ordinary bars and a snare in the fill phrase only, with the rim in `PLACEMENTS` *(the drop is the fill and the snare is what answers it; the one option that makes the fill bar audibly different from the seven before it)*
-- [ ] D) Mint with A, and if Step I4's listening pass prefers B or C, re-render the six *(honest, and pays the reversal cost on purpose rather than by accident)*
+**D6. The dominance guard is a ratio at 5×, and reggae's list drops `ionian`.**
+D3 left a conditional rather than a decision: the shape of the guard was Epic 1's
+Q1, and reggae's flavour list had room or not depending on the answer. Epic 1
+answered A — the guard keeps its ratio shape and its number becomes a literal 5×,
+in both the generator copy and the app-tier duplicate. Over a floor of 1 that
+allows a maximum of 5 for any mode, and `ionian` — offered by `bright-straight`,
+by bossa and, on `new-styles.md`'s proposal, by reggae — lands near 7. So Step A2
+is no longer conditional on anything: the list is chosen musically *inside* a
+5× cap, `ionian` is out, and the counts are measured on the tree after Epic 1's
+mint rather than read off this spec's table.
+Changed: Step A2 (both the *Test first* assertion and the whole *Implement*
+note — the two-branch conditional is gone), Step C3's dominance bullet, which now
+names the number and says a failure travels back to Epic 1 as a widening of both
+copies rather than as a question.
+Cost of reversal: none from here. The cap lives in two files this epic does not
+own, and a list chosen under a tighter cap stays valid under a looser one. The
+one asymmetry: the list is frozen at the first mint, so widening the cap later
+does not buy `ionian` back for reggae without re-rolling every seed on the
+template.

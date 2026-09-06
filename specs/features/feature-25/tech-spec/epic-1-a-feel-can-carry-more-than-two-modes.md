@@ -24,8 +24,8 @@ of them invented an extension the block could not carry. The block now carries
 eight keys rather than seven, the ambiguous `hat` key is spelled `hatClosed` and
 says which pool it replaces, a drawn kit figure exists for a style whose snare is
 not a backbeat, and a fixed per-bar `figures` list replaces the one-bar clave
-this spec first proposed — which is the decision that settles Epic 5's Q1 as well
-as this spec's. What the contract deliberately does **not** carry is named in
+this spec first proposed — which is the decision that settles Epic 5's open
+question about fixed figures too. What the contract deliberately does **not** carry is named in
 *Architecture* below, with the cost of each omission.
 
 The tail is a genuine chain, not caution: the template cannot be written until
@@ -141,6 +141,22 @@ carries the same 3× cap over the same data, and it goes red on the same mint, s
 R10 lands in two files on either side of the tier boundary. They cannot share a
 constant — an app test may not import from `scripts/` — so both declare
 `DOMINANCE_RATIO = 5` under that exact name and a grep finds the pair.
+
+**The guard stays a ratio, and 5× is the number this epic ships.** It is not the
+number that survives the whole feature, and that is deliberate. Measured today:
+max 3, min 1, clearing 3× with zero margin. `lydian-dominant` and
+`melodic-minor` sit at 1 each because only `open-ballad` offers them. Six bossa
+grooves take their modes to 4, and `ionian` — offered by `bright-straight`, Bossa
+Nova and Epic 2's reggae — climbs toward 7 while the floor stays at 1. **A style
+epic whose mint pushes the commonest mode past five times the rarest widens
+`DOMINANCE_RATIO` in both copies as part of that mint, and records the new spread
+in its report.** That is settled, not contingent: Epics 2–5 cite it rather than
+re-asking, and a widening is one line in `scripts/grooves/catalogue.test.ts` and
+one in `src/features/daily-groove/data/grooves.generated.test.ts`. The
+alternatives — a share of the catalogue, or a ratio graded against a floor of two
+— buy a number that never has to move, at the price of a guard nobody can restate
+to a player. The ratio says what it is for, and the epic holding the evidence for
+where it should sit is the epic that just minted.
 
 ### Why the pin covers shuffle now
 
@@ -334,12 +350,12 @@ machine-checked by an existing or specified assertion.
 | `swing` | `> 0` and `< 0.02` — see C9, Epic 2 has reserved 0.03–0.05 | F2 |
 | `tempoRange` | inside `[120, 140]`, `lo < hi`, its `lo-hi` string unique | F2 |
 | `flavours` | two to four of `FLAVOURS`, no duplicates; frozen at the first mint | F3 |
-| `voices` | holds `kick, snare, hatClosed, bass, comp, rim`; holds none of `ride, rideBell, claves, cowbell` | F6 |
+| `voices` | holds `kick, snare, hatClosed, bass, comp, rim`; holds none of `ride, rideBell, claves, cowbell`. The closed hat is the timekeeper — this feel does not ride | F6 |
 | `humanize` | `lean.snare > 0`, every hat lean `<= 0`, leans only voices it plays, the whole block unique across the registry | existing `index.test.ts` |
 | `gain` / `pan` | one of each per played voice, `pan` in `[-1, 1]`, the `[gain, pan]` pair unique | existing |
 | `passes` | integer `>= 2`; **if `>= 3`, `FILLS['bossa-nova']` declares a `variation` distinct from its `fill`** | F8 |
 | `density` | admits every seed 1–120 | existing `events.test.ts` |
-| `patterns` | at least `kick` and `comp` (R21); `hatClosed`, `bass`, `snareGhosts` optional; `ride`, `bongos` and `kit` left undeclared | F5 |
+| `patterns` | declares `kick`, `comp` and `hatClosed` — the surdo, the syncopated comp and the straight-eighth timekeeper; `bass` and `snareGhosts` optional; `ride`, `bongos` and `kit` left undeclared | F5 |
 | `figures` | one entry, `{ voice: 'rim', bars: [...] }`, two bars — the bossa clave, which suppresses `placement.rim` for this template | F4 |
 
 The `passes` row is the trap worth naming: `withoutToms(DEFAULT_FILL)` is the
@@ -536,8 +552,8 @@ costs nothing if it stops being.
 ### Track F — Bossa Nova
 
 - **Goal** — a seventh feel exists: straight, 120–140, its clave on the rim, its
-  surdo kick and comp figure from its own pools, and the registry's assertions
-  green with seven templates.
+  surdo kick, comp figure and straight-eighth closed hat from its own pools, no
+  ride anywhere in it, and the registry's assertions green with seven templates.
 - **Owns** — `scripts/grooves/templates/bossa-nova.ts` (new),
   `scripts/grooves/templates/index.ts`, the `FILLS['bossa-nova']` entry in
   `scripts/grooves/events.ts` if it declares three or more passes, and the
@@ -551,7 +567,8 @@ costs nothing if it stops being.
 - **Parallel with** — none
 - **Done when** — `npm run test:gen` is green with seven templates, and a bossa
   groove built at any seed carries the declared clave on the rim, the declared
-  surdo on the kick and no voice outside its kit.
+  surdo on the kick, the declared straight eighths on the closed hat and no voice
+  outside its kit.
 
 ### Track G — The mint, the arithmetic and the sign-off
 
@@ -912,13 +929,19 @@ Covers: R10, AC5
   with `DOMINANCE_RATIO = 5` over the real catalogue and assert `null`. Run it:
   fails, no such helper.
 - **Implement** — the helper and the constant in `catalogue.test.ts`.
+  `DOMINANCE_RATIO` is a single named `const` at the top of the file and
+  `dominanceFailure` takes the ratio as an argument, so a later style epic widens
+  the number by editing one line and touches no assertion.
 - **Green when** — the four synthetic cases behave and the real catalogue passes.
   Today's spread is max 3, min 1 — at 3× it passes by exactly nothing, which is
   why the widening is not cosmetic.
 - **Refactor** — name the constant `DOMINANCE_RATIO` here and in
   `src/features/daily-groove/data/grooves.generated.test.ts` (Step G4) so one
   grep finds both halves of R10. They cannot share a declaration: an app test
-  may not import from `scripts/`.
+  may not import from `scripts/`. Name it in the test's failure message too: a
+  style epic whose mint pushes the commonest mode past 5× widens both constants
+  as part of that mint, and the message is what tells it which two lines to
+  open.
 
 #### Step C8 — an even spread is per template, not per flavour
 
@@ -1287,9 +1310,9 @@ Covers: R21, AC14
 - **Refactor** — none. This is the step that replaced this spec's first
   proposal, a one-bar figure in `PLACEMENTS`; see the decision log.
 
-#### Step F5 — the surdo and the comp come from the template's own pools
+#### Step F5 — the surdo, the comp and the timekeeping hat come from the template's own pools
 
-Covers: R21, AC14
+Covers: R11, R12, R21, R22, AC14, AC15
 
 - **Test first** — `events.test.ts`: for six seeds, the set of `kick` steps in a
   bossa groove is one of `bossaNova.patterns!.kick!`'s figures gridded onto
@@ -1297,16 +1320,23 @@ Covers: R21, AC14
   `bossaNova.patterns!.comp!`'s; and neither set is producible by any figure in
   the shared pools — assert directly that the drawn kick set is not in
   `KICK_PATTERNS` gridded, which is what makes "from the template rather than the
-  shared pool" a measurement rather than a claim. Run it: fails until the block
-  is declared.
+  shared pool" a measurement rather than a claim. Then the timekeeper: the set of
+  `hatClosed` steps is one of `bossaNova.patterns!.hatClosed!`'s figures, it is
+  `gridSteps` of a straight eighth-note list, it sounds in every ordinary bar,
+  and no event in the groove names `ride`. Run it: fails until the block is
+  declared — the hat leg fails on the shared `HAT_PATTERNS` draw, which is not
+  straight.
 - **Implement** — the `patterns` block in `bossa-nova.ts`: the surdo kick, the
-  syncopated comp figure, and — the musician's call — a straight-eighth
-  `hatClosed`, a kick-locked `bass` and a sparse `snareGhosts`. `ride`, `bongos`
-  and `kit` stay undeclared: a bossa's snare is the backbeat, so
+  syncopated comp figure, and `hatClosed` as the timekeeper — straight eighths,
+  which is what a bossa's hand keeps time on. The musician settles a kick-locked
+  `bass` and a sparse `snareGhosts` beside them. `ride`, `bongos` and `kit` stay
+  undeclared: this feel does not ride, and a bossa's snare is the backbeat, so
   `DEFAULT_PLACEMENT.snare` is right for it.
-- **Green when** — both voices draw from the template and the "not producible by
-  the shared pool" assertion holds.
-- **Refactor** — none.
+- **Green when** — all three voices draw from the template, the hat is straight,
+  no ride sounds, and the "not producible by the shared pool" assertion holds.
+- **Refactor** — none. Declaring `hatClosed` rather than leaving the timekeeper
+  to `HAT_PATTERNS` is what puts the figure a listener hears on the template,
+  where the musician changes it in one line after G6.
 
 #### Step F6 — it plays no voice it has not been given
 
@@ -1359,7 +1389,7 @@ Covers: R19
 
 #### Step F9 — the open-hat assertion learns about a third case
 
-Covers: R7, R19
+Covers: R7, R19, R22
 
 - **Test first** — `index.test.ts`: rewrite
   `gives every template a closed hat, and an open one unless it rides` as three
@@ -1447,11 +1477,17 @@ Covers: R10, AC5
   `expected 4 to be less than or equal to 3`. Rewrite it around
   `DOMINANCE_RATIO = 5` and a message naming both counts and both flavours, the
   same shape as Step C7's helper.
-- **Implement** — the constant and the message. Leave
+- **Implement** — the constant and the message, `DOMINANCE_RATIO` as a single
+  named `const` at the top of the file so the number moves in one line. Leave
   `counts.size >= 12` exactly as it is: with overlapping sets the catalogue still
   answers to all twelve, and that assertion is the reason to care.
-- **Green when** — `npm test` green.
-- **Refactor** — none. Note in the report that R10 landed in two files.
+- **Green when** — `npm test` green. Today's post-mint spread is max 4, min 1,
+  which clears 5× with one groove of margin — enough for this epic and not for
+  the feature, which is why the widening is written down as a step every later
+  mint may have to repeat.
+- **Refactor** — none. Note in the report that R10 landed in two files, and that
+  a style epic whose mint pushes the commonest mode past 5× widens this constant
+  and `catalogue.test.ts`'s together.
 
 #### Step G5 — the transposing reader's double accidentals
 
@@ -1578,7 +1614,8 @@ The tracks meet at Track G, and the epic is proven in this order:
 7. **The demo path.** Open the app; today's puzzle still resolves and its four
    flavour options still include the answer. Then `/groove/<uuid>` for each of
    the six bossa grooves: play it, hear the rim click a clave, the kick sit as a
-   surdo, the keys on the syncopated comp — and write down what you heard (AC17).
+   surdo, the closed hat keep straight eighths and the keys on the syncopated
+   comp — and write down what you heard (AC17).
 
 ## Requirement coverage
 
@@ -1594,18 +1631,18 @@ The tracks meet at Track G, and the epic is proven in this order:
 | R8 | C9, F3 |
 | R9 | C6, C8, F10 |
 | R10 | C7, G4 |
-| R11 | B1, B6, E1, E7, E8 |
-| R12 | B1, B4, E2, E5, E7 |
+| R11 | B1, B6, E1, E7, E8, F5 |
+| R12 | B1, B4, E2, E5, E7, F5 |
 | R13 | B5, E1, E2, E7 |
 | R14 | A1, A2, A3, E3, G2, G5 |
 | R15 | E3, G2 |
 | R16 | B2, B3, B4, B6, E4, E6 |
 | R17 | D1, D3, D4, D5, D6 |
 | R18 | D2 |
-| R19 | F1, F2, F8 |
+| R19 | F1, F2, F8, F9 |
 | R20 | F3 |
 | R21 | F4 (through `figures`, not `PLACEMENTS` — see the decision log), F5 |
-| R22 | F6 |
+| R22 | F5, F6, F9 |
 | R23 | F7, G1 |
 | R24 | G6 |
 | R25 | H1, H2, H4 |
@@ -1625,7 +1662,7 @@ The tracks meet at Track G, and the epic is proven in this order:
 | AC12 | D2 |
 | AC13 | F2 |
 | AC14 | F4, F5 |
-| AC15 | F6 |
+| AC15 | F5, F6 |
 | AC16 | G1, G3 |
 | AC17 | G6 |
 | AC18 | H1, H2, H3 |
@@ -1645,10 +1682,17 @@ The tracks meet at Track G, and the epic is proven in this order:
   feature-24's own work. In that case Track A's pin still holds this epic
   honest — it is base-relative by construction — but the `git status` leg of AC7
   has to be read as "no mp3 change attributable to this epic".
-- **Bossa Nova keeps time on `hatClosed`, not on the ride.** `new-styles.md`
-  offers either. The hat needs nothing from feature-24 and AC15's list of
-  forbidden voices names `claves`, `cowbell` and `rideBell` but not `ride`, so
-  the choice is open; R22 reads as forbidding all four. Q2 asks.
+- **Bossa Nova keeps time on the closed hat, in straight eighths, and does not
+  ride.** `new-styles.md` offers either. The hat needs nothing from feature-24,
+  which is what keeps the PRD's Dependencies line — "does not wait on
+  feature-24" — true in fact and not only on paper, and it reads R22 as
+  forbidding all four sourced-but-unplayed voices rather than the three AC15
+  happens to list. The timekeeper is `patterns.hatClosed` on the template, not a
+  fallback to `HAT_PATTERNS`, so the figure a listener hears is one line the
+  musician can change. After Track G mints, moving it to the ride re-renders all
+  six mp3s — the answers survive, since the voice list never touches
+  `MUSIC_LABEL`, but six committed files change and a player who has heard them
+  hears something else. Effectively one-way from that point.
 - **R21's mechanism clause is superseded; its behaviour clause is not.** R21 says
   the bossa clave lands on the rim "through a `PLACEMENTS` entry", and the PRD
   assumes `PLACEMENTS` needs no new mechanism. Epic 5's spec is evidence that the
@@ -1671,6 +1715,13 @@ The tracks meet at Track G, and the epic is proven in this order:
   `(0, 0.02)` rather than `(0, 0.05]`. Without the narrowing, two templates
   written in different waves could collide on a value `index.test.ts` asserts
   unique.
+- **The dominance guard stays a ratio, and later epics move its number.** R10 is
+  implemented literally: `DOMINANCE_RATIO = 5` in both copies, no change of
+  shape. The number does not survive sixty grooves — the floor stays at 1 while
+  `ionian`, offered by three templates once Epic 2 lands, climbs toward 7 — so a
+  style epic whose mint breaks the check widens both constants as part of that
+  mint. Each widening is one line per file and the epic doing it is the one that
+  can say what the new spread is.
 - **The `heardIn` bug is fixed here rather than worked around five times.**
   `add.ts` drops the table today; every style epic mints, so every style epic
   would otherwise write an empty `HEARD_IN` and repair it with
@@ -1789,67 +1840,51 @@ Changed: C5's swing row, C9 (new), Step F2.
 Cost of reversal: one line before the mint; after it, a re-render of six mp3s and
 a repeat of the listening sign-off, since swing is what the sign-off is judging.
 
-## Open questions
+### Cycle 2 — 2026-09-06 — the two questions Cycle 1 left open
 
-Tick one option per question (`- [x]`), or write your own, then re-run
-`/writespec feature-25 epic-1`.
+**D7. The dominance guard keeps its ratio shape, and the number becomes 5×.**
+R10 asks for exactly that, and this epic implements it to the letter rather than
+replacing the check with a share of the catalogue or a ratio graded against a
+floor of two. The arithmetic that made those attractive is real and unchanged:
+today's spread is max 3, min 1, clearing 3× with nothing to spare, and by the end
+of feature-25 `ionian` — offered by `bright-straight`, Bossa Nova and reggae —
+sits near 7 against a floor that stays at 1. So 5× is a number this epic clears
+with one groove of margin and the feature does not. The consequence is written
+into the spec as a settled fact rather than a risk: **a style epic whose mint
+pushes the commonest mode past five times the rarest widens `DOMINANCE_RATIO` in
+both copies as part of that mint, and records the new spread in its report.**
+Epics 2–5 cite that line; none of them has to ask again. What the ratio buys over
+a share is that a reader can restate it — one mode may not carry five times what
+the rarest carries — and what it costs is a number that moves. The share form
+`max <= ceil(n / 4)` would never move and cannot be said out loud to a player.
+Changed: the *Architecture* paragraph under the assertion table, Steps C7 and G4
+(the constant becomes a single named `const` per file, the helper takes the ratio
+as an argument, and both failure messages name it), and a new bullet in
+Assumptions.
+Cost of reversal: one line in `scripts/grooves/catalogue.test.ts` and one in
+`src/features/daily-groove/data/grooves.generated.test.ts`, at any point, with no
+re-render and no manifest change. That is what makes a number that will move
+survivable rather than wrong.
 
-### Q1. Will the dominance guard survive sixty grooves, or does it need replacing rather than widening?
-
-R10 widens the cap from 3× to 5× and this spec implements exactly that. It does
-not hold to the end of the feature, and the arithmetic is short enough to check
-here. Measured today: max 3, min 1, passing 3× with zero margin. `lydian-dominant`
-and `melodic-minor` sit at 1 each because only `open-ballad` offers them and it
-has two grooves. Six bossa grooves over four modes take theirs to 4. Six reggae
-grooves add two to each of three modes, and `ionian` is offered by
-`bright-straight`, bossa and reggae — so it lands near 7 while the floor stays at
-1. **5× allows 5.** Epic 2's Q3 raises the same problem from the other side and
-says B — replacing the ratio — is "arguably Epic 1's to make, not Epic 2's".
-
-This epic owns both copies of the guard (`catalogue.test.ts` and the app's
-`grooves.generated.test.ts`), so it is the only place the shape can be changed
-once for the whole feature.
-
-- [x] A) **Implement R10 literally — 5× — and let each style epic widen both
-      copies as its mint demands.** *(recommended only if you want the requirement
-      honoured to the letter. Cost: four more epics each edit two test files they
-      do not otherwise own, each widening reads as "the guard was in the way", and
-      the last one to mint discovers the number. Reversal is a one-line edit at any
-      point, which is why this is survivable rather than wrong.)*
-- [ ] B) **Replace the ratio with a share of the catalogue** — the commonest mode
-      carries no more than a quarter of the grooves, `max <= ceil(n / 4)` — in both
-      copies, now. *(It says what the guard is for: at thirty that allows 8 against
-      today's max of 3, at sixty it allows 15 against a projected 7, and it stops
-      being sensitive to a floor of 1, which is the thing that makes the ratio
-      unusable. It is a deviation from R10's literal 5×, which is why it is your
-      call and not mine. Reversal: one line in each of two files.)*
-- [ ] C) **Keep a ratio but grade it against a floor of two** — `max <= max(min, 2)
-      * 5`. *(The smallest change that survives the feature, and it keeps R10's
-      number. It also encodes "a mode with one groove is not the yardstick", which
-      is true but reads as arithmetic nobody can explain to Sam.)*
-- [ ] D) **Set the ratio now to the value the whole feature clears** — 8× — and say
-      in the test's name that it is a guard against one mode swallowing the
-      catalogue rather than a spread target. *(One number, one edit, no later
-      churn. It is the least honest of the four: 8× over a floor of 1 permits a
-      mode at 8 out of 60, which the share form expresses better.)*
-
-### Q2. What keeps time in a bossa — the closed hat or the ride?
-
-`new-styles.md` says "ride or hat in straight eighths". R22 forbids the four
-voices feature-24 sourced but never played; AC15 names only three of them and
-leaves `ride` out.
-
-- [x] A) **The closed hat.** *(recommended — it makes this epic independent of
-      feature-24, which the PRD's Dependencies section requires, and reads R22 as
-      written. Reversal cost: once the six grooves are minted, moving the
-      timekeeper re-renders all six mp3s. Their answers survive — the voice list
-      does not touch `MUSIC_LABEL` — but six committed files change, and a player
-      who has heard them hears something else. Effectively one-way after Track G.)*
-- [ ] B) **The ride**, with `hatOpen` dropped as `shuffle` does it. *(closer to the
-      idiom, and feature-24's Epic 1 has already landed the mechanism in the tree.
-      Cost: this epic then cannot merge until feature-24's cymbal verdict is in,
-      and if that verdict is Track H — reject all three candidates — Bossa Nova
-      loses its timekeeper after its grooves are minted.)*
-- [ ] C) **The hat now, the ride considered in a later quick ticket** once the
-      cymbal has shipped and been heard. *(keeps both, at the price of a re-render
-      the standing rules discourage.)*
+**D8. Bossa Nova keeps time on the closed hat, in straight eighths, and does not
+ride.** `new-styles.md` offered either. The hat is what makes this epic's
+independence from feature-24 a fact rather than a claim — the PRD's Dependencies
+section says this epic waits on nothing, and a riding bossa would wait on
+feature-24's cymbal verdict, with the failure mode that a rejection there strands
+a feel whose grooves are already minted. It also reads R22 as forbidding all four
+sourced-but-unplayed voices; AC15 lists three of them and leaves `ride` out, and
+the requirement is the wider of the two. The timekeeper is declared as
+`patterns.hatClosed` rather than left to the shared `HAT_PATTERNS` draw, so the
+straight eighths a listener hears are on the template where the musician can
+change them, and the pool is a required key of Bossa Nova's block rather than an
+optional one.
+Changed: C5's `voices` and `patterns` rows, Track F's goal and done-condition,
+Step F5 (retitled, a third voice asserted, and R11 and R12 added to its coverage),
+the demo path in *Integration and verification*, and the Assumptions bullet that
+used to defer the choice.
+Cost of reversal: before Track G mints, one line in `templates/bossa-nova.ts` plus
+the `voices`, `gain`, `pan` and `humanize` entries the ride would need. After it,
+all six mp3s re-render and the listening sign-off runs again. The committed
+answers survive either way — a voice list touches no `MUSIC_LABEL` draw — but six
+files a player has heard would change, so this is effectively one-way once G1
+lands.

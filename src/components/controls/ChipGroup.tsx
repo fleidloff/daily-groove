@@ -4,7 +4,7 @@ import { useId } from 'react'
 import { Chip } from './Chip'
 import { EyebrowLabel } from '@/components/typography/EyebrowLabel'
 
-export type ChipColumns = { base: 2 | 4; wide: 4 | 6 | 7 }
+export type ChipColumns = { base: 2 | 4; wide: 3 | 4 | 6 | 7 }
 
 export type ChipOptionState = {
   unavailable?: boolean
@@ -33,6 +33,7 @@ const COLUMN_CLASS: Record<number, string> = {
 }
 
 const WIDE_CLASS: Record<number, string> = {
+  3: 'md:grid-cols-3',
   4: 'md:grid-cols-4',
   6: 'md:grid-cols-6',
   7: 'md:grid-cols-7',

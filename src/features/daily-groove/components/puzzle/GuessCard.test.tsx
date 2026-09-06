@@ -270,11 +270,11 @@ describe('GuessCard', () => {
     expect(screen.queryByRole('radiogroup', { name: 'Flavour' })).toBeNull()
   })
 
-  it('offers twelve root chips and exactly four flavour chips (AC1)', async () => {
+  it('offers twelve root chips and exactly six flavour chips (AC1)', async () => {
     await openDay()
 
     expect(chipsIn(rootGroup())).toHaveLength(12)
-    expect(chipsIn(flavourGroup())).toHaveLength(4)
+    expect(chipsIn(flavourGroup())).toHaveLength(6)
   })
 
   it('renders the roots and flavours it is given, in order (R1, R2, R3)', async () => {
@@ -686,13 +686,22 @@ describe('GuessCard', () => {
     expect(list.className).toContain('md:grid-cols-6')
   })
 
-  it('lays the four flavours out on 2 columns, rising to 4 (R2a, R4, AC4)', async () => {
+  it('lays the six flavours out on 2 columns, rising to 3 (R2a, R4, AC4)', async () => {
     await openDay()
     const list = chipList(flavourGroup())
 
     expect(list.className).toMatch(/\bgrid\b/)
     expect(list.className).toContain('grid-cols-2')
-    expect(list.className).toContain('md:grid-cols-4')
+    expect(list.className).toContain('md:grid-cols-3')
+  })
+
+  it('lays simple mode out on the same grid as the six modes', async () => {
+    await seedPreferences({ simpleMode: true })
+    await openDay()
+    const list = chipList(flavourGroup())
+
+    expect(list.className).toContain('grid-cols-2')
+    expect(list.className).toContain('md:grid-cols-3')
   })
 
   it('asks for no chip width on either row (R6, AC7)', async () => {

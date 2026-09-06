@@ -16,7 +16,7 @@ export function flavourOptions(
   groove: Groove,
   grooves: Groove[],
 ): Flavour[] {
-  return buildOptions(groove.flavour, flavourPool(grooves), isoDate(date))
+  return buildOptions(groove.flavour, flavourPool(grooves), isoDate(date), 6)
 }
 
 export function simpleRootOptions(date: Date, answer: Answer): Root[] {

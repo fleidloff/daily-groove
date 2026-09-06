@@ -19,9 +19,21 @@ Epic 1 adopted the fixed figure into its own contract as
 `FeelTemplate.figures?: FixedFigure[]` (its C7), so the two-bar clave, the
 timekeeping figure, the placement suppression and the all-sixteen-bars rule
 arrive already built and already tested. What is left in the shared generator is
-`compArpeggio`, which Epic 1 deliberately declined to freeze (its C8, D5) —
-so this epic adds one optional field and one branch, and everything else it does
+`compArpeggio`: one optional field on `FeelTemplate`, one branch in the comp
+block, and one rule — the comp step at position `i` of the template's own comp
+figure sounds the single tone `voicing[(i + pass) % voicing.length]`. Epic 1's
+C8 is what lets this epic append that field without reopening the frozen
+`patterns` contract, and son montuno is the roadmap's wave 3, so `types.ts` and
+the comp emission are this epic's alone while it runs. Everything else it does
 is a template, an audition and a mint.
+
+One tone per step is not free, and the price is paid in Wave 1 rather than
+discovered in Wave 2. Three registry-wide assertions in `events.test.ts`
+describe a comp as a stack of voices — the `COMP_VOICE_DROP` ladder, the
+`compSpreadSec` span and the top-voice shape — and each of them expects more
+than one event per `bar:step` group, so all three fail the moment any template
+declares the flag. Teaching them the arpeggio is Step A3, and it is Track A's
+because Track C does not own that file.
 
 The verdict picks the tail. Both voices hold and the epic mints. One fails and
 one re-sourcing round runs. One fails twice and the substitution runs — and the
@@ -34,7 +46,7 @@ ships whatever the pack turns out to hold.
 
 | Part | Where | What changes |
 | :-- | :-- | :-- |
-| the montuno comp | `types.ts`, `events.ts` | `FeelTemplate.compArpeggio`, one branch inside the comp block |
+| the montuno comp | `types.ts`, `events.ts`, `events.test.ts` | `FeelTemplate.compArpeggio`, one branch inside the comp block, and three registry-wide comp assertions taught the arpeggio |
 | the rig | `cli.ts` | `--template <id> --seed <n>`, so an unminted template can be rendered |
 | the style | `templates/son-montuno.ts` | tempo, swing, flavours, kit, gains, pans, `patterns`, `figures`, density |
 | the pack | `samples/**` | nothing, unless a voice fails its audition |
@@ -104,11 +116,24 @@ list only makes it a *syncopated strum*: R5 rules that out in as many words
 so per-step tone selection cannot go there.
 
 `compArpeggio` is therefore a per-template flag on `FeelTemplate` beside
-`patterns`, which Epic 1's C8 declares append-only: when set, a comp step sounds
-**one** tone of the voicing, rotating by step index and pass. Two consequences
-worth stating before the density band is set — it is eight events a bar instead
-of twenty-four, and the per-voice `COMP_VOICE_DROP` ladder and the strum spread
-both become no-ops because there is one event per step.
+`patterns`, which Epic 1's C8 declares append-only. When it is set, the comp
+step at position `i` of `compSteps` emits exactly one event in bar `b` of pass
+`p`, carrying `compFigure[b][(i + p) % compFigure[b].length]` — the bar's
+voicing ascending, indexed by the step's own position and turned one place per
+pass. `+ p` is the phase term `accentedVelocity` already rotates `COMP_ACCENTS`
+by, so the tone and the accent turn together instead of drifting against each
+other, and the figure stays readable off the template: a reader can say what the
+comp plays without running the generator. C5 has the whole rule.
+
+Three consequences follow, and all three are load-bearing. It is eight events a
+bar instead of twenty-four to thirty-two, because a voicing is three or four
+tones. The per-voice `COMP_VOICE_DROP` ladder and the `compSpreadSec` strum
+spread both become no-ops, since there is only one event per step to apply
+them to —
+which is what breaks the three registry-wide assertions Step A3 amends. And the
+rotation only sounds a whole chord inside a bar when the comp figure has at
+least as many steps as the voicing has tones, which is a constraint on the
+template's own pool rather than on the branch: Step C4 asserts it.
 
 ### What feature-24 actually left behind
 
@@ -255,27 +280,56 @@ bells trading rather than as one bell wobbling.
 
 ### C5 — `compArpeggio`, this epic's own field
 
-Epic 1's C8 allows a later epic to append an optional `FeelTemplate` field
-without reopening its contract, provided four conditions hold. All four are met,
-so this is **settled, not proposed**:
+`compArpeggio` is **not** part of Epic 1's frozen `patterns` block, and that is
+deliberate on both sides. Epic 1's D5 declined to freeze a rotation rule nothing
+there can hear; its C8 makes `FeelTemplate` *beside* `patterns` append-only and
+names four conditions under which a later epic adds a field without reopening
+anything. All four hold, so this is **settled, not proposed**:
 
 | C8's condition | Why it holds |
 | :-- | :-- |
-| optional, and every existing template omits it | seven templates, none declares it |
-| adds, removes and reorders no RNG draw | it changes what a comp step emits, not how many draws happen |
+| optional, and every existing template omits it | ten registered templates by the time this epic runs — the six existing, the bossa and the three wave-2 styles — and none declares it |
+| adds, removes and reorders no RNG draw | it changes what a comp step emits, not how many draws happen; `compSpreadSec` is still drawn from `rhythmRng` in the same position and simply goes unused |
 | changes no shared pool's length and no entry of `MUSIC_LABEL`'s draw order | it reads `compSteps` and the bar's voicing, both already computed |
-| no other epic in flight reads it | one claimant; the three wave-2 epics append a `PLACEMENTS` key and nothing else |
+| no other epic in flight reads it | son montuno is the roadmap's wave 3 and runs alone; the three wave-2 styles have landed, and none of them touches `types.ts` or the comp block |
 
 ```ts
 // scripts/grooves/types.ts, on FeelTemplate
 compArpeggio?: boolean
 ```
 
-When set, each comp step emits **one** event carrying
-`voicing[(compIndex.get(step)! + pass) % voicing.length]`, with `offsetSec` 0,
-velocity `accentedVelocity('comp', step, sixteenth, pass)` and no
-`COMP_VOICE_DROP` ladder. When absent or false, the comp block emits exactly
-what it emits today.
+**The rotation, as arithmetic.** `compFigure[b]` is bar `b`'s played voicing,
+ascending, three or four tones — four, minus the root where the bass already
+sounds it. `compIndex` maps each member of `compSteps` to its position `i` in
+that list. For bar `b` of pass `p`, the comp step at position `i` emits exactly
+one event:
+
+```
+midi       = compFigure[b][(i + p) % compFigure[b].length]
+velocity   = accentedVelocity('comp', step, sixteenth, p)   // COMP_ACCENTS, as today
+offsetSec  = 0                                              // no compSpreadSec
+duration   = 4 sixteenths                                   // unchanged
+```
+
+An eight-step figure over a four-tone voicing therefore sounds tones
+`0,1,2,3,0,1,2,3` in pass 0 and `1,2,3,0,1,2,3,0` in pass 1. `+ p` is the same
+phase term `accentedVelocity` rotates `COMP_ACCENTS` by, so the tone and the
+accent turn together. There is no `COMP_VOICE_DROP` ladder, because a ladder
+needs a stack.
+
+**One constraint follows, and it binds the template rather than the branch.**
+Three registry-wide assertions in `events.test.ts` require a bar's comp to sound
+the *whole* voicing — *plays the harmony its metadata names*, *repeats the
+harmony every four bars, so bar 5 carries bar 1's chord* and *voices the whole
+loop rootless where the bass has the root*. The rotation sounds all of it
+exactly when the figure has at least as many steps as the voicing has tones, and
+a voicing is at most four. So **every member of a `compArpeggio` template's
+`patterns.comp` holds at least four steps.** Step C4 asserts it; C4's pools hold
+seven and eight.
+
+When the field is absent or false, the comp block emits exactly what it emits
+today — every tone of the voicing, the `COMP_VOICE_DROP` ladder, the
+`compSpreadSec` offsets.
 
 ### C6 — the off-catalogue render
 
@@ -352,16 +406,18 @@ Starting values, and Step C1 re-reads the registry before trusting them.
 
 ### Track A — The montuno comp
 
-- **Goal** — a template can declare an arpeggiated comp; the committed grooves
-  build byte-identically.
+- **Goal** — a template can declare an arpeggiated comp, the suite describes
+  what an arpeggiated comp is, and the committed grooves build byte-identically.
 - **Owns** — `scripts/grooves/types.ts` (the `compArpeggio` field),
   `scripts/grooves/events.ts` (the comp block),
   `scripts/grooves/events.test.ts`
-- **Role** — `musician`. The rotation rule is the musical decision Epic 1's D5
-  declined to freeze precisely because it cannot be heard from there.
+- **Role** — `musician`. C5 settles the rotation; whether it reads as a montuno
+  rather than as a broken chord is heard in Step G4, and what comes back lands
+  in this branch.
 - **Depends on** — Epic 1 merged, C5
 - **Parallel with** — Track B
-- **Done when** — `npm run test:gen` green,
+- **Done when** — `npm run test:gen` green with `ARPEGGIO_FIXTURE` in all three
+  registry-wide comp assertions,
   `git diff --stat scripts/grooves/events.fixture.json` empty, and it names
   `son-montuno` nowhere.
 
@@ -456,6 +512,7 @@ Runs **only** if a voice fails twice.
 - **Owns** — `scripts/grooves/catalogue.json`, `public/grooves/*.mp3`,
   `src/features/daily-groove/data/grooves.generated.ts`,
   `src/features/daily-groove/data/grooves.generated.test.ts`,
+  `scripts/grooves/catalogue.test.ts` (the dominance ratio only — see Step G2),
   `scripts/grooves/grooves.lock.json`,
   `scripts/grooves/events.fixture.json`
 - **Role** — `musician`
@@ -513,29 +570,43 @@ the same wave.
 Covers: R5, AC5
 
 - **Test first** — `scripts/grooves/events.test.ts`, new describe *an
-  arpeggiated comp sounds one tone at a time — R5, AC5*. Build a local template
-  from `bright-straight` with `compArpeggio: true` and
-  `patterns: { comp: [[2, 3, 6, 7, 10, 11, 14, 15]] }` at subdivision 16.
-  Assert, over seeds 1–12: exactly one `comp` event per comp step per bar; each
-  carries a `midi` that is a member of that bar's voicing; the sounded tone
-  rotates across steps and shifts by pass; no two comp events share a `timeSec`
-  (no strum spread); every `midi` is still below `COMP_REGISTER_CEILING` and
-  above the bar's lowest bass note, so `events.test.ts`'s existing register
-  assertion and `gate.ts`'s `checkPitch` both still hold. Run it: fails with
-  three or four events per step.
+  arpeggiated comp sounds one tone at a time — R5, AC5*, and a module-level
+  `ARPEGGIO_FIXTURE`: `bright-straight` with `compArpeggio: true` and
+  `patterns: { comp: [[2, 3, 6, 7, 10, 11, 14, 15]] }` at subdivision 16. Step
+  A3 reuses it, so it is a const rather than a local. The oracle is the same
+  template with the flag stripped: un-flagged, every comp step sounds all of
+  `compFigure[b]` ascending, which is how a test reads the bar's voicing without
+  reaching into `events.ts`. Assert, over seeds 1–12:
+  1. exactly one `comp` event per comp step per bar — eight a bar, not
+     twenty-four to thirty-two;
+  2. the event at comp-step position `i` of bar `b` in pass `p` carries
+     `midi === voicing[b][(i + p) % voicing[b].length]`, with `voicing[b]` read
+     off the un-flagged render. Written out for the fixture's eight-step figure
+     over a four-tone voicing, that is tones `0,1,2,3,0,1,2,3` in pass 0 and
+     `1,2,3,0,1,2,3,0` in pass 1;
+  3. every bar sounds every tone of `voicing[b]` at least once, which is what
+     the whole-chord assertions downstream depend on;
+  4. the eight comp onsets of a bar are distinct and strictly increasing, so
+     nothing is stacked inside one step — a strum spread would put two onsets
+     inside one;
+  5. every `midi` is still below `COMP_REGISTER_CEILING` and inside 48…84, so
+     the existing register assertions and `gate.ts`'s `checkPitch` both still
+     hold.
+  Run it: fails with three or four events per step.
 - **Implement** — `scripts/grooves/types.ts`: `compArpeggio?: boolean` on
   `FeelTemplate`. `scripts/grooves/events.ts`: the branch in the comp block per
-  C5.
+  C5. The `compSpreadSec` draw stays exactly where it is, outside the branch and
+  unconditional — moving it would move `rhythmRng` for every template.
 - **Green when** — every assertion passes and `npm run test:gen` is green.
-- **Refactor** — the two branches share the step loop; there is no second copy
-  of the velocity call.
+- **Refactor** — the two branches share the step loop and the one
+  `accentedVelocity` call; the arpeggio branch adds no second copy of either.
 
 #### Step A2 — the flag is inert everywhere it is not set
 
 Covers: R15, AC10
 
-- **Test first** — same describe. The same local template with `compArpeggio`
-  omitted emits `voicing.length` events per comp step with the
+- **Test first** — same describe. `ARPEGGIO_FIXTURE` with the flag stripped
+  emits `voicing.length` events per comp step with the
   `COMP_VOICE_DROP` ladder and the `compSpreadSec` offsets intact, and
   `serialiseGroove` on a real `bright-straight` catalogue spec is identical
   before and after. Then the standing guard:
@@ -550,6 +621,43 @@ Covers: R15, AC10
   is R15's event-level proof: this epic's only shared-generator edit moved
   nothing that was rendered, and it costs no mp3 re-encoding to show it.
 - **Refactor** — none.
+
+#### Step A3 — three registry-wide comp assertions learn the arpeggio
+
+Covers: R5, AC5
+
+`events.test.ts` describes a comp as a stack of voices in three assertions that
+run over `allTemplates()`, and every one of them reads a `bar:step` group and
+expects more than one event in it:
+
+| Assertion | What it expects of one comp strike |
+| :-- | :-- |
+| *leaves kick, snare and bass reading from metric position — R12, AC11* | more than one velocity, following `1 − 0.12 × (n − 1 − i)` |
+| *spreads a chord like a hand rather than stamping it — R4, AC5* | at least two onsets, a span in `(0, 0.015]`, ascending by pitch |
+| *shapes a chord so the top voice sings and the inner voices sit under it — R5, AC6* | more than one velocity, the top pitch the loudest |
+
+An arpeggiated strike is one event, so all three fail the moment a template
+declares the flag. Amending them belongs to Wave 1 and not to Wave 2: Track C
+does not own `events.test.ts`, so a Wave-2 registration would leave
+`npm run test:gen` red on a file no wave-2 track may open — the same trap Step
+C6 keeps out of `docs/music.md`, in a second file.
+
+- **Test first** — the three assertions themselves, amended in place. Each runs
+  over `[...allTemplates(), ARPEGGIO_FIXTURE]` instead of `allTemplates()`, so
+  the arpeggio path is exercised in Wave 1 by a template that is not in the
+  registry and names nothing of this epic. Each keeps its subject for a stacked
+  comp and gains the arpeggio's contract for a template whose `compArpeggio` is
+  set: exactly one event per `bar:step` group, one velocity in it, that velocity
+  equal to `accentedVelocity('comp', step, sixteenth, pass)` with no ladder
+  applied, and no span to measure. Run it: the fixture fails all three — the
+  ladder assertion on `shape.length` being 1, the spread assertion on
+  `chord.length` being 1, the top-voice assertion on a one-element velocity set.
+- **Implement** — nothing in `events.ts`. The three amendments are the work.
+- **Green when** — `npm run test:gen` green, and the ten registered templates
+  still take the stacked path: the ladder, the span and the top-voice shape are
+  asserted for them exactly as they are today.
+- **Refactor** — the three read the flag through one local predicate, so a
+  fourth assertion that grows the same shape has one place to reach for.
 
 ### Track B — An off-catalogue render
 
@@ -705,7 +813,12 @@ Covers: R4, R5, R6, AC4, AC5, AC6
   no member equals any member of `BONGO_PATTERNS`. On rendered output over seeds
   1–12: no `bass` event on step 0 of any bar; at least one `bass` event on the
   gridded "and" of 2 in every bar; the bongo steps are a member of the
-  template's own pool and of no member of `BONGO_PATTERNS`. Run it: fails with
+  template's own pool and of no member of `BONGO_PATTERNS`; **every member of
+  `patterns.comp` holds at least four steps**, which is C5's constraint on an
+  arpeggiated template — a shorter figure could not sound a four-tone voicing
+  inside one bar, and the three whole-chord assertions the registry already runs
+  would fail for this template alone; and every bar of every rendered pass
+  sounds every tone of its chord's played voicing. Run it: fails with
   no `patterns` block.
 - **Implement** — the `patterns` block. Starting values, for the `musician`:
   `bass: [[6, 12], [6, 12, 14], [6, 10, 12]]`,
@@ -733,8 +846,11 @@ Covers: R10, AC12
   problem with the template and comes back here.
 - **Green when** — the suite reports the template's 120-seed spread inside its
   own band. Two percussion voices plus the kit press on this band, and
-  `compArpeggio` pulls the other way by roughly sixteen events a bar, which is
-  the whole reason the band is set after Step A1 rather than before it.
+  `compArpeggio` pulls the other way by exactly
+  `compSteps.length × (voicing.length − 1)` events a bar — sixteen to
+  twenty-four with C4's eight-step figure, since a voicing is three or four
+  tones — which is the whole reason the band is set after Step A1 rather than
+  before it.
 - **Refactor** — none.
 
 #### Step C6 — the feel table gains its row, in the same wave as the template
@@ -1022,16 +1138,21 @@ Covers: R15, AC10
 - **Test first** — `src/features/daily-groove/data/grooves.generated.test.ts`
   § *covers all N catalogued grooves* holds a literal that Epic 1's Step G3
   moved to 36 and each style epic has moved since; it fails with `expected
-  length <N+6> to be <N>`. Update the literal and the test's name. Its
-  § *lets no mode dominate the answers* was widened to 5× by Epic 1's Step G4 —
-  **check it rather than assume it**: this mint is the sixty-groove case Epic 1's
-  own Q1 asks about, and 5× over a floor of 1 is the arithmetic that question
-  says does not hold to the end of the feature. If it fails here, the fix is
-  Epic 1's guard question answered, recorded in this epic's report, not a quiet
-  widening to 6×. § *the answers feature-9 must not move* pins eighteen grooves
-  and must stay green untouched — that is R15 at the answer level.
-- **Implement** — the literal, and whatever Epic 1's Q1 settles on if the cap
-  fails.
+  length <N+6> to be <N>`. Update the literal and the test's name.
+  § *lets no mode dominate the answers* stays a ratio —
+  `Math.max(...n) <= Math.min(...n) * 5` — the literal 5× Epic 1 set in both
+  copies, this one and `scripts/grooves/catalogue.test.ts`. This epic reads that
+  guard rather than redesigning it, but **runs it rather than assuming it**:
+  this is the feature's last mint and the sixty-groove case. If son montuno's
+  three flavours push the spread past 5×, the number moves in **both** copies
+  together — they are one guard in two tiers, and a copy left behind is a guard
+  that disagrees with itself — with the measured per-mode counts in this epic's
+  report saying what the spread actually was. § *the answers feature-9 must not
+  move* pins eighteen grooves and must stay green untouched — that is R15 at the
+  answer level.
+- **Implement** — the literal in *covers all N catalogued grooves*, and, only if
+  the measured spread demands it, one new ratio in both copies of *lets no mode
+  dominate the answers*.
 - **Green when** — `npm run test:all` green; `npm run grooves:verify` clean;
   `git status` shows every mp3 outside the six unchanged;
   `node scripts/grooves/rerender-check.ts` reports every pre-existing groove
@@ -1103,7 +1224,9 @@ Order matters here more than usual, because the whole plan is an ordering claim.
    today the answer is no.
 2. **Wave 1–2 gate.** `npm run test:gen` green — which now includes
    `docs.test.ts`'s registry-derived feel-table assertion, so Step C6's row is
-   part of this gate rather than of step 5 — and
+   part of this gate rather than of step 5, and the three comp assertions Step
+   A3 amended, which is why registering an arpeggiated template in Wave 2 leaves
+   the tier green — and
    `git diff --stat scripts/grooves/events.fixture.json` empty. That pair is
    R15's cheap proof, and after Epic 1's Step A1 it covers **every** committed
    groove rather than twenty-four of them.
@@ -1124,7 +1247,8 @@ Order matters here more than usual, because the whole plan is an ordering claim.
    both.
 7. **The report.** Per-voice audition verdicts (D3), the two measurements (D2),
    the substitution if any in words (F2), six per-groove sign-offs (G4), and
-   whether the app's dominance cap survived sixty grooves (G2).
+   whether the 5× dominance ratio survived sixty grooves, with the measured
+   per-mode counts (G2).
 
 ## Requirement coverage
 
@@ -1134,7 +1258,7 @@ Order matters here more than usual, because the whole plan is an ordering claim.
 | R2 | C1 |
 | R3 | C3 |
 | R4 | C4 |
-| R5 | A1, C4 |
+| R5 | A1, A3, C4 |
 | R6 | C2, C4 |
 | R7 | C2, C3 |
 | R8 | C3 |
@@ -1154,7 +1278,7 @@ Order matters here more than usual, because the whole plan is an ordering claim.
 | AC2 | C1 |
 | AC3 | C3 |
 | AC4 | C4 |
-| AC5 | A1, C4 |
+| AC5 | A1, A3, C4 |
 | AC6 | C2, C4 |
 | AC7 | C3, F1 |
 | AC8 | B1, B2, B3, D1, D2, D3 |
@@ -1167,8 +1291,12 @@ Order matters here more than usual, because the whole plan is an ordering claim.
 | AC13 | G4 |
 | AC14 | C6, H1 |
 
-R8, R13a and R13c are the three the reconcile cycle moved, and all three now
-land on assertions rather than on a type: R8 on Step C3's four assertions, R13a
+R5 gained a step without changing its meaning: A1 is the branch, A3 is the
+suite learning what the branch produces, and C4 is the template's own figure
+under C5's four-step constraint.
+
+R8, R13a and R13c are the three an earlier reconcile cycle moved, and all three
+now land on assertions rather than on a type: R8 on Step C3's four assertions, R13a
 on Step F1 keeping C3's assertion 4 green in the other direction, R13c on Step
 F2's two cases with Step C2's pack check deciding which is legal.
 
@@ -1303,38 +1431,76 @@ document. What it costs is that `docs/music.md` is now named by three tracks in
 three waves, which is the most any file in this spec is split across, and a
 reader has to check the waves are disjoint. They are.
 
-## Open questions
+### Cycle 3 — 2026-09-06 — the rotation rule, and the dominance guard
 
-Tick one option per question (`- [x]`), or write your own, then re-run
-`/writespec feature-25 epic-5` — the answer gets applied to the design and
-steps, moved into the log, and replaced by whatever it opens up.
+**D4. The montuno comp is one tone per comp step, rotating by step index and
+pass.** This settles Cycle 1's Q2 as option A. The comp block emits every tone
+of the voicing at every comp step, so a syncopated step list on top of it is a
+syncopated strum — which R5 rules out in as many words. An arpeggiated
+template's comp step at position `i` therefore sounds
+`compFigure[b][(i + p) % compFigure[b].length]`: bar `b`'s voicing ascending,
+indexed by the step's own position, turned one place per pass. `+ p` is the
+phase term `accentedVelocity` already rotates `COMP_ACCENTS` by, so the tone and
+the accent turn together, and the figure stays readable off the template — a
+reader can say what the comp plays without running the generator, which the
+labelled-stream option would have cost, on top of a `docs/music.md` "what must
+never change" entry from its first mint.
 
-### Q2. How does the comp become a montuno rather than a syncopated strum?
+The field is not in Epic 1's frozen `patterns` block and was never proposed for
+it. Epic 1's D5 declined to freeze a rotation rule nothing there can hear; its
+C8 makes `FeelTemplate` beside `patterns` append-only and names four conditions
+for appending a field, and C5 above checks all four. Son montuno is the
+roadmap's wave 3 and runs alone, so `types.ts` and the comp emission in
+`events.ts` are this epic's alone while it runs.
 
-Epic 1 left this field to this epic on the grounds that its rotation rule is a
-musical decision nobody there can hear (its D5), so the question is still open
-and it is still this spec's to ask. The comp block emits every tone of the
-voicing at every comp step. R5 asks for "an arpeggiated, syncopated pattern
-rather than the block chords `COMP_PATTERNS` carries", so a step list alone does
-not satisfy it.
+Two things it changed that were not visible from the question. **Three
+registry-wide assertions in `events.test.ts` describe a comp as a stack of
+voices** — the `COMP_VOICE_DROP` ladder, the `compSpreadSec` span and the
+top-voice shape — and each expects more than one event per `bar:step` group, so
+all three fail the moment a template declares the flag. Amending them is Step
+A3, in Wave 1, because Track C does not own `events.test.ts` and a Wave-2
+registration would otherwise redden the generator tier on a file no wave-2 track
+may open. That is Cycle 2's D3 trap found in a second file, and it is handled
+the same way — in the wave that owns the file rather than in the wave that
+triggers it. **And the rotation binds the template's own comp pool**: three
+further registry-wide assertions require every bar to sound the whole voicing,
+which the rotation does exactly when a comp figure has at least as many steps as
+the voicing has tones, so every member of `patterns.comp` holds at least four
+steps.
 
-- [x] A) **`compArpeggio`, one tone per step, rotating by step index and pass**
-      *(recommended — Epic 1's C8 sanctions the field, the six existing templates
-      omit it and stay byte-identical, and it is the reading of R5 that produces
-      an actual montuno. It also pulls density down by roughly sixteen events a
-      bar, which is what makes room for two percussion voices inside one band.
-      Cost of reversing: the comp emission block is rewritten and Step C5's band
-      re-measured; after Wave 6 that is six re-rendered grooves and a repeated
-      sign-off.)*
-- [ ] B) **A syncopated step list and nothing else** *(no change to shared code
-      at all, so nothing can leak into another template, and `types.ts` stays
-      untouched. But it is eight block chords a bar instead of four — denser than
-      what `COMP_PATTERNS` already does and further from a montuno — and R5 names
-      block chords as the thing to avoid. It would also push the density band up
-      rather than down, against two percussion voices.)*
-- [ ] C) **One tone per step, but rotating on a labelled RNG stream instead of by
-      step and pass** *(a montuno that varies rather than cycles, which some
-      players do. It opens a new stream, so it is a `docs/music.md` "what must
-      never change" entry from its first mint onward, and it makes the figure
-      un-notatable from the template — a reader could no longer tell what the
-      comp plays by reading the file.)*
+Changed: the Approach, the moving-parts table, Architecture § *The montuno comp
+is a rule, not a step list*, C5 (the arithmetic and the four-step constraint),
+Track A's goal, role and done-condition, Steps A1 and A2, new Step A3, Step C4's
+declaration assertions, Step C5's density arithmetic, step 2 of *Integration and
+verification*, and the coverage table for R5 and AC5.
+
+Cost of reversal: the comp emission block is rewritten, the three amended
+assertions go back to describing a stack, and Track C's density band is
+re-measured. Cheap before Wave 6; after it, six grooves re-render and the Step
+G4 sign-off repeats.
+
+**D5. The dominance guard stays a ratio at a literal 5×, in both copies, and
+this epic reads it rather than setting it.** Epic 1 settled its own Q1 that way:
+*lets no mode dominate the answers* keeps `Math.max(...n) <= Math.min(...n) * n`
+and moves the number from 3 to 5, in `scripts/grooves/catalogue.test.ts` and in
+`src/features/daily-groove/data/grooves.generated.test.ts` both, and those two
+edits are Epic 1's. A ratio survived because it is the shape that scales with a
+catalogue that keeps growing, and 5× clears the near-7-to-2 spread overlapping
+flavour sets produce without clearing so much that the guard stops guarding.
+
+What it changes here is a conditional and an ownership line. Step G2 no longer
+asks what Epic 1 will settle; it runs the guard against the sixty-groove
+catalogue this epic's mint produces, and if the spread has outrun 5× the number
+moves in **both** copies together, with the measured counts in the report. Track
+G therefore owns `scripts/grooves/catalogue.test.ts` for that one ratio
+alongside the app-side manifest test; no other track in this epic opens either
+file.
+
+Changed: Step G2's *Test first* and *Implement*, Track G's ownership, and step 7
+of *Integration and verification*.
+
+Cost of reversal: one number in two files while the catalogue is sixty grooves,
+and nothing re-renders — the guard reads the manifest rather than producing it.
+It is expensive only in the other direction: tightening it back below the spread
+a shipped catalogue already has fails the generator and the app tier at once,
+with no mint able to fix it.

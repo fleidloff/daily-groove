@@ -28,7 +28,15 @@ const GROOVE: Groove = {
   headDelaySeconds: 0,
 }
 
-const CATALOGUE: Groove[] = ['Aeolian', 'Dorian', 'Lydian', 'Blues', 'Ionian'].map(
+const CATALOGUE: Groove[] = [
+  'Aeolian',
+  'Dorian',
+  'Lydian',
+  'Blues',
+  'Ionian',
+  'Phrygian',
+  'Mixolydian',
+].map(
   (flavour, i) => ({ ...GROOVE, id: `groove-0${i + 1}`, flavour }),
 )
 
@@ -71,13 +79,13 @@ describe('flavourOptions', () => {
   )
 
   it.each(dates.map((d) => [d.toDateString(), d] as const))(
-    'on %s returns four options including the answer',
+    'on %s returns six options including the answer',
     (_label, date) => {
       const groove = CATALOGUE[1]
       const options = flavourOptions(date, groove, CATALOGUE)
-      expect(options).toHaveLength(4)
+      expect(options).toHaveLength(6)
       expect(options).toContain(groove.flavour)
-      expect(new Set(options).size).toBe(4)
+      expect(new Set(options).size).toBe(6)
     },
   )
 

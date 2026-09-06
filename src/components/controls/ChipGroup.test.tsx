@@ -14,6 +14,8 @@ const TWELVE = [
 ]
 const FOUR = ['Alpha', 'Beta', 'Gamma', 'a considerably longer label']
 
+const SIX = [...FOUR, 'Delta', 'Epsilon']
+
 const NOTE = '♪'
 
 function renderGroup(overrides: Partial<Parameters<typeof ChipGroup>[0]> = {}) {
@@ -185,9 +187,18 @@ describe('ChipGroup', () => {
     expect(list.className).toContain('md:grid-cols-4')
   })
 
+  it('gives a six-option group 2 columns, rising to 3 (R2a, AC3)', () => {
+    renderGroup({ options: SIX, columns: { base: 2, wide: 3 } })
+    const list = chipList()
+
+    expect(list.className).toContain('grid-cols-2')
+    expect(list.className).toContain('md:grid-cols-3')
+  })
+
   it.each([
     { options: 12, columns: { base: 4, wide: 6 } as ChipColumns },
     { options: 4, columns: { base: 2, wide: 4 } as ChipColumns },
+    { options: 6, columns: { base: 2, wide: 3 } as ChipColumns },
   ])(
     'divides $options options evenly at both column counts (R2, R2a)',
     ({ options, columns }) => {
