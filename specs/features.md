@@ -70,7 +70,7 @@ Status runs 📝 **Drafted** → ❓ **Questions open** → 🛠 **Ready to buil
 | [4](quick/4-streak-always-top-right.md) | Streak top right | ✅ Done | Pins the streak to the top right of the header at every width, as a fire emoji and a number that shows 0 when there is no streak. |
 | [5](quick/5-lick-variations.md) | Lick variations | ✅ Done | Gives every mode three licks instead of one, one of them picked for the day, so tapping a mode stops being a phrase you can memorise. |
 | [6](quick/6-six-mode-options.md) | Six mode options | ✅ Done | Offers six mode chips instead of four, laid out as two rows of three, with simple mode still major/minor. |
-| [7](quick/7-dev-groove-preview.md) | Dev groove preview | ❓ Questions open | Adds a dev-only page listing every groove by date, so upcoming ones can be played and their lick variations heard over them before they ship. |
+| [7](quick/7-dev-groove-preview.md) | Dev groove preview | 🛠 Ready to build | Adds a dev-only page listing every groove by date, so upcoming ones can be played and their lick variations heard over them before they ship. |
 | [8](quick/8-comp-velocity-layer-jump.md) | Comp velocity layers | 📝 Drafted | Evens out the piano comp so a note crossing a sample-layer boundary stops jumping ~7.5 dB above the rest of the part. |
 | [9](quick/9-how-to-play-above-the-buttons.md) | How to play placement | ❓ Questions open | Puts the how-to-play box right under the subtitle and moves the transpose and share buttons down to sit directly above the groove box. |
 

@@ -21,14 +21,14 @@
 The row currently sits inside `<header>` in `GrooveHeader.tsx`. It has to leave, because `## What` puts it *after* `SharedGrooveNotice`, and the notice is composed in `GroovePuzzle.tsx` — no slot arrangement inside the header can reach past its own element.
 
 - [ ] A) Inline in `GroovePuzzle.tsx`, between the notice and the groove-box `Row` *(recommended — engineering reason: the composer already lays out inline `Row`/`div` wrappers, the row is three lines of markup, and nothing new has to be registered)*
-- [ ] B) A new `components/header/GrooveControls.tsx` taking the two slots *(buys a unit test for a row with no logic in it, and costs an entry in the `REGIONS` map of `src/features/daily-groove/structure.test.ts`)*
+- [x] B) A new `components/header/GrooveControls.tsx` taking the two slots *(buys a unit test for a row with no logic in it, and costs an entry in the `REGIONS` map of `src/features/daily-groove/structure.test.ts`)*
 - [ ] C) Keep the slots on `GrooveHeader` and pass the how-to-play box and the shared notice into it as slots too *(fails: `GrooveHeader` would have to learn about shared mode, and `GrooveHeader.test.tsx` asserts it knows nothing about sharing)*
 
 ### Q2. How is the row aligned once it spans the full width above the groove box?
 
 Today it is `justify="end"` inside the header, so the two controls hug the right edge under the streak badge. Below the notice it sits above a full-width two-column layout instead.
 
-- [ ] A) Keep `justify="end"` *(recommended — engineering reason: unchanged look, and the smallest diff; `## Done when` asks only about order)*
+- [x] A) Keep `justify="end"` *(recommended — engineering reason: unchanged look, and the smallest diff; `## Done when` asks only about order)*
 - [ ] B) `justify="between"` — transpose left, share right, matching the width of the groove box
 - [ ] C) `justify="start"` — both left-aligned with the heading
 

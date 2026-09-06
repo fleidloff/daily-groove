@@ -35,6 +35,12 @@ an unresolvable citation is unverifiable evidence — the script rejects it and 
 report fails on it rather than the grade standing. **Partly** and **not done**
 rows carry prose instead; they have no test to cite.
 
+A quick ticket has no acceptance criteria, so its report grades the
+`## Done when` bullets of `specs/quick/N-slug.md` in this same table, labelled
+`D1`, `D2`, … in the order the ticket writes them. Everything else about the
+row — three columns, the citation's shape, what earns **done** — is unchanged,
+and the citation check accepts both labels.
+
 Totals: <x> done · <y> partly · <z> not done
 
 ## Checks

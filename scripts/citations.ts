@@ -9,6 +9,8 @@ const BACKTICKED = /`([^`\n]+)`/
 
 const QUOTED = /["“]([^"”\n]+)["”]/
 
+const GRADED_ROW_LABEL = /^(?:AC|D)\d+[a-z]?$/i
+
 function plain(cell: string): string {
   return cell.replace(/[*_`]/g, '').trim()
 }
@@ -34,7 +36,7 @@ export function parseCitations(markdown: string): Citation[] {
     markdown,
   ).matchAll(ROW)) {
     const ac = plain(acCell)
-    if (!/^AC\d+[a-z]?$/i.test(ac)) continue
+    if (!GRADED_ROW_LABEL.test(ac)) continue
 
     if (plain(statusCell).toLowerCase() !== 'done') continue
 

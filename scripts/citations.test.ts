@@ -42,6 +42,14 @@ Totals: 2 done · 1 partly · 0 not done
 | Lint | pass | |
 `
 
+const QUICK = `## Done when
+
+| Bullet | Status | Evidence |
+| :-- | :-- | :-- |
+| D1 | done | \`src/lib/hash.test.ts\` — "hashes a known string" |
+| D2 | partly | only a look at the page settles this one |
+`
+
 describe('parseCitations', () => {
   it('reads the AC, the file and the test name out of a graded row', () => {
     expect(parseCitations(ONE_ROW)).toEqual([
@@ -63,6 +71,35 @@ describe('parseCitations', () => {
     expect(
       parseCitations(GRADED).some((citation) => citation.ac === 'AC2'),
     ).toBe(false)
+  })
+})
+
+describe('a quick ticket report', () => {
+  it("reads a D row — the label /implement-quick-feature's verifier writes", () => {
+    expect(parseCitations(QUICK)).toEqual([
+      {
+        ac: 'D1',
+        file: 'src/lib/hash.test.ts',
+        testName: 'hashes a known string',
+      },
+    ])
+  })
+
+  it('cites only the D rows graded done', () => {
+    expect(parseCitations(QUICK).some((citation) => citation.ac === 'D2')).toBe(
+      false,
+    )
+  })
+
+  it('leaves a row that is neither an AC nor a Done-when bullet alone', () => {
+    const checks = [
+      '| Check | Result | Notes |',
+      '| :-- | :-- | :-- |',
+      '| Lint | pass | |',
+      '| Done | pass | |',
+    ].join('\n')
+
+    expect(parseCitations(checks)).toEqual([])
   })
 })
 

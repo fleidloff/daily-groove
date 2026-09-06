@@ -39,10 +39,10 @@ exactly as they do for an epic.
 1. **The criteria are the `## Done when` bullets**, in the order the file writes
    them. There is nothing else to grade: `## What` is the change, `## Notes` is
    the analysis, and neither is a criterion.
-2. **Label them `AC1`, `AC2`, … in that order**, and say in one line above the
-   table that ACn is the nth `## Done when` bullet. The rows must keep the
-   epic template's three columns and those labels, because the citation check
-   the caller runs afterwards parses exactly that shape.
+2. **Label them `D1`, `D2`, … in that order** — `D` for the `## Done when`
+   bullet it grades, where an epic's rows read `AC1`. The rows keep the epic
+   template's three columns, because the citation check the caller runs
+   afterwards parses exactly that shape and accepts exactly those two labels.
 3. **The file scope arrives in the brief**, from the ticket's `## Notes` and the
    files the build actually changed. There is no per-track ownership list to
    take a union of. If the brief gives you no scope, say so and grade on what

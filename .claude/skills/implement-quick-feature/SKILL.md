@@ -126,9 +126,9 @@ npm run lint && npm test && npm run build
 
 plus `npm run test:gen` when anything under `scripts/grooves/` changed — grades
 each `## Done when` bullet done / partly / not done, and writes
-`specs/quick/.verify/N.md`. Its report rows are labelled `AC1`…`ACn` in the
-order the ticket writes the bullets, because the citation check parses that
-shape.
+`specs/quick/.verify/N.md`. Its report rows are labelled `D1`…`Dn` in the order
+the ticket writes the bullets — `D` for `## Done when`, where an epic's rows
+read `AC1`. `parseCitations` accepts both.
 
 **Check the citations before relaying anything.** Run `scripts/citations.ts`
 over the report — `parseCitations` on its markdown, then `checkCitations` on the
