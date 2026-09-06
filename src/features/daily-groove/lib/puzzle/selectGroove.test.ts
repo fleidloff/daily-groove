@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import type { Groove } from '../../types'
+import type { Groove, Root } from '../../types'
 import { isoDate } from '@/lib/date'
 import { selectGrooveForDate, dayIndexOf, orderFor, ROTA_EPOCH } from './selectGroove'
 
@@ -66,24 +66,24 @@ const sweep = (set: Groove[]): string => {
 // fail and the epoch did not move, something else reshuffled the rota, and the
 // fix is to find it, not to regenerate this.
 const SWEEP_OVER_THREE = [
-  'bacbcabcacbacbabacacbabcbcabacacbabcbcacabcabcababcacbcbabcacabacbacbcbab',
-  'cabcabcabacabcacbcabcbacbabacacbacbabcbacacbcbacabcbacabcabacbcbacbabacab',
-  'cabcabcbcacababcacbcbabcacbacabcabacbacbcbabacacbcabcababcacbabcacbabcbca',
-  'cabcbacabacbcbabcabcabacbcabcabacacbcbacababcabcbcacababcacbcbacbacabcbac',
-  'abcbacabacbcbabacbcabacacbabcbcacbacbacabcabcbabcabacbcabacacbabcacbabcac',
+  'cbabcabacacbcababcacbcbacabcabcbacabcbabacabcbcacabcbabacabcabcacbcbabacb',
+  'cacabcbabacbcabacbcacababcabcbacbcacabcbacbabcacbacabacbcbabcacbabacbcaba',
+  'cabcacbcbabacbacbcacababcacbabcbcacbabacacbcbacbabcabacacbcbacbacabacbabc',
+  'abcbacacbcababcacbcabacbcbabcacabcababcabcabcbcacabacbcbacabacbcbacababca',
+  'bcabcabcacbcbabcabacbcacbacbacbabacbcabcabacabcbacacbcbacbabacabcacbcbacb',
 ].join('')
 
 const SWEEP_OVER_SIXTEEN = [
-  '3f145872d01ce9832d764a0b5f4e6a79bd30128f5c543d8c9061afbe72b074f835e2a61dc',
-  '973dfbe2910a46c5831b762d4f08ac9e5efa815429b7d6c3078039d4e1b5a6fc23458b17d',
-  '0692eacf03c1d86a72f9eb45c90a34562fbd781e48fe7236c50d9b1aca81ef9327bd45603',
-  'c59e70ad42186fb36087e9dca25b41f79fc05418e2ba3d6401c968f25dbe7a3dc840f913e',
-  'b2a7652abd6197f5e834c017453db2a0e6c98f568e10cf2d3479bac34b180a25d7fe96964',
+  '47ac0bfe1d1c52e67f908bd4a3237da15b6f4e0c89716da2e45cf980b3236c7594df1e8a0',
+  'b6b1708fcae49235ded4c1973f2568ba08db57ca94f3e02612f13c6ead4705b98d80731fc',
+  '46b5a92e6d4e17cf3592b0a8a48bf935c26de170c1e6307492bf58da8a0de173f5269bc49',
+  '0b3d8754e61a2fce49a186d3f527b0cafc6e8514972d0b36ebfc27d950a8431241a8563cb',
+  '0edf97579213a4f80bcd6e09ca7f2d86351e4b0cfed59b281437a6fa32814e7569db0c0c7',
 ].join('')
 
 describe('selectGrooveForDate determinism (under ROTA_EPOCH)', () => {
   it('pins the epoch the sweeps were captured under', () => {
-    expect(ROTA_EPOCH).toBe(2)
+    expect(ROTA_EPOCH).toBe(3)
   })
 
   it('assigns the same groove to every date of a year-long sweep (3 grooves)', () => {
@@ -269,16 +269,16 @@ describe('selectGrooveForDate with a grown rotation (AC6)', () => {
 })
 
 describe('the rota epoch', () => {
-  it('ships as 2', () => {
-    expect(ROTA_EPOCH).toBe(2)
+  it('ships as 3', () => {
+    expect(ROTA_EPOCH).toBe(3)
   })
 
   it('reshuffles every lap when it is bumped (AC1)', () => {
     const grooves = makeGrooves(60)
     const unmoved: string[] = []
     for (let lap = 0; lap <= 5; lap += 1) {
-      const before = orderFor(lap, grooves, 1).map((g) => g.id)
-      const after = orderFor(lap, grooves, 2).map((g) => g.id)
+      const before = orderFor(lap, grooves, 2).map((g) => g.id)
+      const after = orderFor(lap, grooves, 3).map((g) => g.id)
       if (before.join(',') === after.join(',')) unmoved.push(`lap ${lap}`)
     }
     expect(unmoved).toEqual([])
@@ -314,6 +314,83 @@ describe('the rota epoch', () => {
       if (closing === opening) boundaries.push(`day ${indexAt(offset)}: ${opening} twice`)
     }
     expect(boundaries).toEqual([])
+  })
+})
+
+const VARIED_ROOTS: Root[] = ['C', 'D', 'E', 'F', 'G', 'A']
+const VARIED_MODES = ['Dorian', 'Ionian', 'Phrygian', 'Aeolian', 'Lydian', 'Mixolydian']
+const VARIED_STYLES = ['straight-funk', 'shuffle', 'bossa-nova', 'boom-bap']
+
+// The sweep fixtures above are deliberately uniform, so the constraint can never
+// be satisfied on them and they only exercise the fallback. This one has the
+// spread the rule is about.
+const variedGrooves = (count: number): Groove[] =>
+  Array.from({ length: count }, (_, i) => ({
+    ...sweepGroove(`v${String(i).padStart(2, '0')}`),
+    root: VARIED_ROOTS[i % VARIED_ROOTS.length],
+    flavour: VARIED_MODES[(i * 5) % VARIED_MODES.length],
+    style: VARIED_STYLES[i % VARIED_STYLES.length],
+  }))
+
+const clashesOver = (grooves: Groove[], days: number, from = 20_000): string[] => {
+  const played = Array.from({ length: days }, (_, i) =>
+    selectGrooveForDate(dayAt(from + i), grooves),
+  )
+  const clashes: string[] = []
+  for (let i = 2; i < played.length; i += 1) {
+    for (const earlier of [played[i - 1], played[i - 2]] as const) {
+      const day = `day ${indexAt(from + i)}`
+      if (played[i].root === earlier.root) clashes.push(`${day}: root ${played[i].root}`)
+      if (played[i].flavour === earlier.flavour) clashes.push(`${day}: mode ${played[i].flavour}`)
+      if (played[i].style === earlier.style) clashes.push(`${day}: style ${played[i].style}`)
+    }
+  }
+  return clashes
+}
+
+describe('no repeats within three days (quick 11)', () => {
+  it('repeats no root, mode or style over a long run of consecutive days (D1, D2, D3)', () => {
+    expect(clashesOver(variedGrooves(24), 2_000)).toEqual([])
+  })
+
+  it('holds across every lap seam, not just inside a lap (D1, D2, D3)', () => {
+    const grooves = variedGrooves(24)
+    const seams: string[] = []
+    for (let offset = 1; offset < SEAM_SPAN; offset += 1) {
+      if (indexAt(offset) % 24 !== 0) continue
+      seams.push(...clashesOver(grooves, 4, offset - 2))
+    }
+    expect(seams).toEqual([])
+  })
+
+  it('still plays every groove exactly once a lap (D1)', () => {
+    const grooves = variedGrooves(24)
+    const start = lapStart(24, 20_000)
+    const ids = idsOver(grooves, start, 24)
+    expect(new Set(ids).size).toBe(24)
+    expect([...ids].sort()).toEqual(grooves.map((g) => g.id).sort())
+  })
+
+  it('resolves a far-future date to the same member of the set every time', () => {
+    const grooves = variedGrooves(24)
+    const first = selectGrooveForDate(new Date('2099-01-01'), grooves)
+    expect(selectGrooveForDate(new Date('2099-01-01'), grooves)).toBe(first)
+    expect(grooves).toContain(first)
+  })
+
+  it('gives a lap the same order whether it is reached forwards or revisited', () => {
+    const grooves = variedGrooves(24)
+    const far = orderFor(400, grooves).map((g) => g.id)
+    const near = orderFor(12, grooves).map((g) => g.id)
+    expect(orderFor(400, grooves).map((g) => g.id)).toEqual(far)
+    expect(orderFor(12, grooves).map((g) => g.id)).toEqual(near)
+    expect(far).not.toEqual(near)
+  })
+
+  it('treats a missing style as no constraint, so uniform fixtures still resolve', () => {
+    const bare = makeGrooves(16)
+    expect(bare.every((g) => g.style === undefined)).toBe(true)
+    expect(new Set(idsOver(bare, lapStart(16, 20_000), 16)).size).toBe(16)
   })
 })
 

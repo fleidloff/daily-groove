@@ -25,6 +25,7 @@ const FIELDS = [
   'progressionDegrees',
   'root',
   'flavour',
+  'style',
   'bars',
   'loopBars',
   'headDelaySeconds',

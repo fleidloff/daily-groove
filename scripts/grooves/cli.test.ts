@@ -284,6 +284,23 @@ describe('toGroove', () => {
     expect(toGroove(SPECS[1], music, 0.031111, nameFor(SPECS[1].id)).headDelaySeconds).toBe(0.031111)
   })
 
+  it("carries the spec's template onto the entry as its style (quick 11)", () => {
+    const music = {
+      bpm: 96,
+      bars: 4,
+      loopBars: 4,
+      root: 'A',
+      flavour: 'harmonic-minor',
+      scale: 'A harmonic minor',
+      chord: 'AmMaj7',
+      progression: 'Am–Dm–E7',
+      progressionDegrees: [0, 3, 4] as number[],
+    } as const
+    for (const spec of [SPECS[0], SPECS[1]]) {
+      expect(toGroove(spec, music, 0, nameFor(spec.id)).style).toBe(spec.template)
+    }
+  })
+
   it("carries the spec's uuid onto the entry, unchanged", () => {
     const music = {
       bpm: 96,

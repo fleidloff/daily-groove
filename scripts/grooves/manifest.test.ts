@@ -19,6 +19,7 @@ const ENTRY: Groove = {
   progressionDegrees: [0, 3, 4],
   root: 'C♯',
   flavour: 'Harmonic minor',
+  style: 'half-time',
   bars: 4,
   loopBars: 16,
   headDelaySeconds: 0.025057,
@@ -36,6 +37,7 @@ const SECOND: Groove = {
   progressionDegrees: [0, 3, 0],
   root: 'E♭',
   flavour: 'Dorian',
+  style: 'straight-funk',
   bars: 4,
   loopBars: 8,
   headDelaySeconds: 0.026122,
@@ -112,6 +114,16 @@ describe('renderManifest', () => {
       expect(source).toContain(`    id: '${entry.id}',\n    uuid: '${entry.uuid}',`)
     }
     expect(evaluate(source).map((g) => g.uuid)).toEqual([ENTRY.uuid, SECOND.uuid])
+  })
+
+  it("writes each entry's style, between its mode and its bar count (quick 11)", () => {
+    const source = renderManifest([ENTRY, SECOND])
+    expect(source).toMatch(/^ {4}style: 'half-time',$/m)
+    for (const entry of [ENTRY, SECOND]) {
+      expect(source).toContain(`    flavour: '${entry.flavour}',\n    style: '${entry.style}',`)
+    }
+    expect(source.indexOf("style: 'half-time',")).toBeLessThan(source.indexOf('bars: 4,'))
+    expect(evaluate(source).map((g) => g.style)).toEqual([ENTRY.style, SECOND.style])
   })
 
   it("writes each entry's measured head delay, after its bar count", () => {

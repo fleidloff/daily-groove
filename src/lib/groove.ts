@@ -26,6 +26,7 @@ export type Groove = {
   progressionDegrees?: number[]
   root: Root
   flavour: Flavour
+  style?: string
   bars: number
   loopBars?: number
   headDelaySeconds: number

@@ -20,7 +20,7 @@ export const puzzle = {
   drumCredit: 'Drum samples from MuldjordKit and DRSKit,',
   drumCreditPublisher: ' provided by DrumGizmo.org',
   sharedNotice:
-    "This is a shared groove, not today's puzzle. Playing it won't change your streak, and it won't use up your day.",
+    "This is a shared groove, not today's puzzle. Playing it won't change your streak.",
   backToToday: "Back to today's puzzle",
   playTodayIntro: 'That was a shared groove.',
   playTodayOutro: ' — your own streak is waiting.',

@@ -48,6 +48,7 @@ export function toGroove(
     progressionDegrees: music.progressionDegrees,
     root: music.root,
     flavour: displayFlavour(music.flavour),
+    style: spec.template,
     bars: music.bars,
     loopBars: music.loopBars,
     headDelaySeconds,

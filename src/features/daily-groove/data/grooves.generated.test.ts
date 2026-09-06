@@ -57,7 +57,7 @@ describe('the generated groove catalogue', () => {
     expect(GROOVES.length).toBeGreaterThan(0)
   })
 
-  it('gives every entry all fourteen fields, correctly typed', () => {
+  it('gives every entry all fifteen fields, correctly typed', () => {
     for (const g of GROOVES) {
       expect(typeof g.id).toBe('string')
       expect(typeof g.uuid).toBe('string')
@@ -69,10 +69,43 @@ describe('the generated groove catalogue', () => {
       expect(typeof g.progression).toBe('string')
       expect(typeof g.root).toBe('string')
       expect(typeof g.flavour).toBe('string')
+      expect(typeof g.style).toBe('string')
       expect(typeof g.bars).toBe('number')
       expect(typeof g.headDelaySeconds).toBe('number')
       expect(Array.isArray(g.progressionDegrees), g.id).toBe(true)
     }
+  })
+
+  it('gives every entry the style of the template it was rendered from (quick 11)', () => {
+    const catalogue = JSON.parse(
+      readFileSync(join(process.cwd(), 'scripts', 'grooves', 'catalogue.json'), 'utf8'),
+    ) as { id: string; template: string }[]
+    const templates = new Map(catalogue.map((spec) => [spec.id, spec.template]))
+    const named = new Set(templates.values())
+
+    for (const g of GROOVES) {
+      expect(g.style, g.id).toBe(templates.get(g.id))
+      expect(named, g.id).toContain(g.style)
+    }
+  })
+
+  it('never repeats a root, mode or style within three days of the rota (quick 11)', () => {
+    const DAYS = 2_000
+    const start = new Date(2026, 0, 1)
+    const played = Array.from({ length: DAYS }, (_, i) =>
+      selectGrooveForDate(new Date(start.getFullYear(), start.getMonth(), start.getDate() + i), GROOVES),
+    )
+
+    const clashes: string[] = []
+    for (let i = 2; i < played.length; i += 1) {
+      for (const earlier of [played[i - 1], played[i - 2]]) {
+        const where = `${isoDate(new Date(start.getFullYear(), start.getMonth(), start.getDate() + i))}`
+        if (played[i].root === earlier.root) clashes.push(`${where}: root ${played[i].root}`)
+        if (played[i].flavour === earlier.flavour) clashes.push(`${where}: mode ${played[i].flavour}`)
+        if (played[i].style === earlier.style) clashes.push(`${where}: style ${played[i].style}`)
+      }
+    }
+    expect(clashes).toEqual([])
   })
 
   it('gives every entry a canonical v4 uuid, and no two the same', () => {
