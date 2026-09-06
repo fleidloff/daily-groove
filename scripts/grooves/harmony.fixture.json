@@ -480,6 +480,66 @@
       "scale": "F\u266f phrygian",
       "chord": "F\u266fm7",
       "progression": "F\u266fm7\u2013Gmaj7\u2013Bm7\u2013A7"
+    },
+    "groove-77": {
+      "bpm": "70",
+      "bars": "4",
+      "loopBars": "8",
+      "root": "E",
+      "flavour": "Lydian dominant",
+      "scale": "E lydian dominant",
+      "chord": "E7",
+      "progression": "E7\u2013F\u266f7\u2013BmMaj7\u2013A\u266dm7\u266d5"
+    },
+    "groove-78": {
+      "bpm": "65",
+      "bars": "4",
+      "loopBars": "8",
+      "root": "F",
+      "flavour": "Lydian dominant",
+      "scale": "F lydian dominant",
+      "chord": "F7",
+      "progression": "F7\u2013Am7\u266d5\u2013E\u266dmaj7\u266f5\u2013F7"
+    },
+    "groove-79": {
+      "bpm": "68",
+      "bars": "4",
+      "loopBars": "8",
+      "root": "A\u266d",
+      "flavour": "Lydian dominant",
+      "scale": "A\u266d lydian dominant",
+      "chord": "A\u266d7",
+      "progression": "A\u266d7\u2013Dm7\u266d5\u2013Cm7\u266d5\u2013Dm7\u266d5"
+    },
+    "groove-80": {
+      "bpm": "73",
+      "bars": "4",
+      "loopBars": "8",
+      "root": "C",
+      "flavour": "Harmonic minor",
+      "scale": "C harmonic minor",
+      "chord": "CmMaj7",
+      "progression": "CmMaj7\u2013Bdim7\u2013Fm7\u2013E\u266dmaj7\u266f5"
+    },
+    "groove-81": {
+      "bpm": "75",
+      "bars": "4",
+      "loopBars": "8",
+      "root": "A",
+      "flavour": "Harmonic minor",
+      "scale": "A harmonic minor",
+      "chord": "AmMaj7",
+      "progression": "AmMaj7\u2013Cmaj7\u266f5\u2013Bm7\u266d5\u2013Dm7"
+    },
+    "groove-82": {
+      "bpm": "106",
+      "bars": "4",
+      "loopBars": "16",
+      "root": "G",
+      "flavour": "Phrygian dominant",
+      "scale": "G phrygian dominant",
+      "chord": "G7",
+      "progression": "G7\u2013Fm7\u2013CmMaj7\u2013Fm7"
     }
   }
 }

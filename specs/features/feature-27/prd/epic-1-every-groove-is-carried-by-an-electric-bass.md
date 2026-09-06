@@ -57,8 +57,10 @@ lands.
   register coverage, velocity layers, noise floor — and at most three reach the
   ear.
 - **R2** — The shortlist is auditioned against the contrabass on `straight-funk`
-  alone, as a back-to-back pair of renders of the same groove. That one A/B is
-  the go/no-go for the whole feature.
+  alone, as a back-to-back pair of renders of the same groove, written as scratch
+  MP3s into a gitignored folder and played one after the other. That one A/B is
+  the go/no-go for the whole feature, and it happens before anything enters the
+  repo.
 - **R3** — If no candidate beats the contrabass by ear, the work stops there and
   reports. Nothing is committed, the pack is unchanged, and the 48 grooves are
   not re-rendered.
@@ -81,8 +83,10 @@ lands.
   16-bit FLAC, with the source lead-in kept so a bass note lands with the kick it
   is written beside.
 - **R9** — The pack takes the library's own velocity layers. The level jump at
-  each layer boundary is measured across the register, and the layers are
-  flattened to one only if a boundary is audible on that measurement.
+  each layer boundary is measured across the register by quick ticket 8's method,
+  and the layers are flattened to one only if a jump reaches the 7.5 dB that pass
+  measured on the comp — the one figure in this repo that came with a listening
+  verdict attached.
 - **R10** — `provenance.json` records, per file, the library, the source path,
   the licence and the modifications applied.
 
@@ -91,15 +95,18 @@ lands.
 - **R11** — `gain.bass` is re-measured by ear in all nine templates. The current
   values (`-3.1` … `+1.0`) are not a starting point: a pickup and a plucked
   string have different crest factors, so the numbers do not carry over.
-- **R12** — Each feel is balanced on its own merits. The bass-over-kick medians
-  that `boom-bap.test.ts` and `second-line.test.ts` assert against
-  `straight-funk`'s are re-measured to what the new instrument needs, not held at
-  today's figures.
+- **R12** — Each feel is balanced on its own merits, by ear. The bass-over-kick
+  medians that `boom-bap.test.ts` and `second-line.test.ts` assert against
+  `straight-funk`'s are re-measured to what the new instrument needs; today's
+  figures were measured for a plucked contrabass and holding them would be
+  balancing to a number instead of to an ear.
 - **R13** — Every re-rendered groove passes all seven gate checks unchanged,
   including the loudness band of −29…−20 dBFS. A feel that falls out of the band
   is a balance failure to fix, not a band to widen.
-- **R14** — One bass across the whole app. No feel keeps the contrabass, and no
-  feel is dropped from the swap because it is hard to balance.
+- **R14** — One bass across the whole app. No feel keeps the contrabass and the
+  pack carries no second bass set, even if a feel resists: a feel that will not
+  sit right is fixed by ear, because two bass sounds would let the feel be
+  guessed from the instrument rather than from the groove.
 
 ### Signing it off
 
@@ -133,9 +140,9 @@ stateDiagram-v2
 ## Acceptance criteria
 
 - **AC1** (R1, R2) — Given a shortlist of at most three prepared candidates, when
-  the same `straight-funk` groove is rendered with each and with the contrabass,
-  then the pair that decided it is playable back to back and the verdict is
-  recorded in the epic's implementation notes.
+  the same `straight-funk` groove is rendered with each and with the contrabass
+  into a gitignored scratch folder, then the pair that decided it is playable back
+  to back and the verdict is recorded in the epic's implementation notes.
 - **AC2** (R3) — Given no candidate beats the contrabass, when the audition ends,
   then `git status` is clean of pack, catalogue and lock changes and the epic
   reports "no winner" rather than shipping one.
@@ -146,8 +153,8 @@ stateDiagram-v2
   sorted, then no gap between adjacent notes exceeds 4 semitones, asserted by
   `samples/pack.test.ts`.
 - **AC5** (R9) — Given the prepared pack, when the level at each velocity-layer
-  boundary is measured across the register, then either the jump is below the
-  audibility bar or the pack ships one layer, and the measurement is written down.
+  boundary is measured across the register, then either every jump is below 7.5 dB
+  or the pack ships one layer, and the measurements are written down.
 - **AC6** (R10, R4) — Given a non-CC0 library, when `samples/pack.test.ts` runs,
   then every one of its rows carries an attribution and `provenance.attributions`
   contains it.
@@ -179,62 +186,42 @@ its input; if it stays 2, Epic 2 is dropped.
 
 - ffmpeg / ffprobe and the existing `pcmio.ts` path are enough to prepare the
   samples; no new tooling is needed.
-- The audition renders are scratch files, not committed artefacts.
+- The audition's scratch renders go under the epic's gitignored `.implement/`
+  folder, the same place its run reports go.
+- The pack keeps its `vcsl-funk` id. The id names the pack, not its libraries,
+  and renaming it would touch every provenance row for no gain.
 - `docs/music.md`'s "fifteen voices" list and the routing table need one edited
   row each, not a rewrite.
 - Re-rendering grooves players have already heard needs no migration and no
   notice. The audio is explicitly not frozen, and the persona does not go back.
 - `heard-in.json` is keyed by scale, not by instrument, so nothing there moves.
 
-## Open questions
+## Question log
 
-Tick one option per question (`- [x]`), or write your own, then re-run
-`/brainstorm feature-27 epic-1`.
+Answered questions, kept for traceability. The requirements above are the source
+of truth — this records how they got there.
 
-### Q1. How is the go/no-go A/B put in front of your ear?
+### Cycle 1 — 2026-09-06
 
-- [ ] A) A pair of scratch MP3s in a gitignored folder, played back to back
-      *(recommended — the audition happens before anything is committed, and R3
-      says a losing audition leaves no trace in the repo)*
-- [ ] B) `/dev/grooves` gains an A/B switch, so the comparison runs in the app
-      over the real transport
-- [ ] C) The candidate renders are committed to a temp folder, auditioned, then
-      removed
-- [ ] D) One render per candidate on every feel, not just `straight-funk`
+**Q1. How is the go/no-go A/B put in front of your ear?**
+Answer: **A) A pair of scratch MP3s in a gitignored folder, played back to back** —
+a losing audition has to leave no trace in the repo, and nothing about the
+comparison needs the app's transport.
+Applied to: R2, AC1, Assumptions
 
-### Q2. Does the electric bass get to sit louder than the upright did?
+**Q2. Does the electric bass get to sit louder than the upright did?**
+Answer: **A) Balance each feel on its own merits** — the medians were measured for
+a plucked contrabass, so holding them would balance the new instrument to a
+number rather than to an ear.
+Applied to: R12, AC8
 
-- [ ] A) Balance each feel on its own merits; the old bass-over-kick medians are
-      re-measured to whatever the new instrument needs *(recommended — the
-      briefing's reason is that the bass is the voice Sam plays along to most,
-      and holding a figure measured for a different instrument is balancing to
-      a number instead of to an ear)*
-- [ ] B) Hold today's medians as the target, so the mix balance is provably
-      unchanged and only the timbre moves
-- [ ] C) Deliberately raise the bass by a fixed amount everywhere, since a P
-      Bass is the thing to play along to
-- [ ] D) Balance to the band and let the gate's loudness check decide
+**Q3. What if one feel will not sit right with a P Bass?**
+Answer: **A) Fix it by ear; one bass everywhere, no exceptions** — two bass sounds
+would let the feel be guessed from the instrument instead of from the groove.
+Applied to: R14, AC9, Out of scope
 
-### Q3. What if one feel — the ballad, the bossa — will not sit right with a P Bass?
-
-- [ ] A) Fix it by ear; one bass everywhere, no exceptions *(recommended — Sam:
-      "Two bass sounds means that on some mornings the thing I'm playing along
-      to is a different instrument, and I'd start guessing the feel from the
-      bass tone instead of from the groove")*
-- [ ] B) That feel keeps the contrabass, and the pack carries two bass sets
-- [ ] C) Change that feel's bass figure or register so the P Bass works, which
-      re-renders that feel's grooves anyway
-- [ ] D) Stop the whole swap — if it doesn't work everywhere it doesn't ship
-
-### Q4. What counts as an audible velocity-layer boundary?
-
-- [ ] A) Reuse quick ticket 8's method and its measured 7.5 dB as the bar
-      *(recommended — it is the only measurement this repo has made of the
-      problem, and it came with a listening verdict attached)*
-- [ ] B) A tighter fixed bar — 3 dB, the level difference a listener reliably
-      hears
-- [ ] C) Judge it by ear on the `straight-funk` audition and record the verdict,
-      with no numeric bar
-- [ ] D) Skip the question: ship one layer from the start, as the comp now has
-
-No persona bearing on Q4; the reason is engineering.
+**Q4. What counts as an audible velocity-layer boundary?**
+Answer: **A) Reuse quick ticket 8's method and its measured 7.5 dB** — the only
+measurement this repo has made of the problem, and it came with a listening
+verdict attached.
+Applied to: R9, AC5

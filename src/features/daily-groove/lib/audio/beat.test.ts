@@ -105,7 +105,7 @@ describe('secondsToNextBeat', () => {
 
     it('never makes a player wait longer than one beat (AC6)', () => {
       const tempos = GROOVES.map((groove) => groove.bpm)
-      expect(beatSeconds(Math.min(...tempos))).toBeLessThan(0.9)
+      expect(beatSeconds(Math.min(...tempos))).toBeLessThan(0.93)
       expect(beatSeconds(Math.max(...tempos))).toBeLessThan(0.47)
     })
   })
@@ -130,7 +130,7 @@ describe('secondsToNextBeat', () => {
     // A mint that widens the span edits these two and re-reads the bounds above.
     it('spans the tempos the worst-case wait was claimed about', () => {
       const tempos = GROOVES.map((groove) => groove.bpm)
-      expect(Math.min(...tempos)).toBe(67)
+      expect(Math.min(...tempos)).toBe(65)
       expect(Math.max(...tempos)).toBe(134)
     })
   })

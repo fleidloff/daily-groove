@@ -5,8 +5,9 @@ import { seededShuffle } from '@/lib/theory/options'
 // The rota epoch. The one value in the rota that deliberately moves: bumping it
 // remaps every unplayed date, past and future. Every release that mints grooves
 // bumps it. Epoch 1 names the order that existed before the epoch did and is
-// never rendered by the seed. Epoch 3 is the constrained order below.
-export const ROTA_EPOCH = 3
+// never rendered by the seed. Epoch 3 introduced the constrained order below; 4
+// is that same order reshuffled over the six grooves quick-12 minted.
+export const ROTA_EPOCH = 4
 
 export function dayIndexOf(iso: string): number {
   return Math.floor(parseIsoDate(iso).getTime() / 86_400_000)

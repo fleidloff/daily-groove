@@ -65,6 +65,12 @@ const FROZEN_UUIDS: ReadonlyArray<readonly [id: string, uuid: string]> = [
   ['groove-74', 'b79625d9-501e-4477-b42f-81e5506d0b28'],
   ['groove-75', 'cd1d5f2e-8788-44b7-bd47-883cda16ad22'],
   ['groove-76', '2e0d7708-a0d6-4dbc-9277-9a79fd261df9'],
+  ['groove-77', '0073b16f-eb2e-4274-a558-524a4bbcbb5f'],
+  ['groove-78', '858a4f2f-40f1-4ba3-bf17-e17514af33cc'],
+  ['groove-79', 'e109587a-3ad7-45a6-befa-0bfa219d8d04'],
+  ['groove-80', 'cee96f07-6f7b-4d1e-b7b8-eb781c9bde28'],
+  ['groove-81', '2fee212f-5e69-48ec-9a15-d9c0766db26e'],
+  ['groove-82', '394e71a9-f56f-4944-a7e8-428d0760ac1d'],
 ]
 
 describe('the uuids a share link resolves are frozen', () => {

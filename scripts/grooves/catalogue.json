@@ -286,5 +286,41 @@
     "uuid": "2e0d7708-a0d6-4dbc-9277-9a79fd261df9",
     "template": "boom-bap",
     "seed": 1981233067
+  },
+  {
+    "id": "groove-77",
+    "uuid": "0073b16f-eb2e-4274-a558-524a4bbcbb5f",
+    "template": "open-ballad",
+    "seed": 2017948898
+  },
+  {
+    "id": "groove-78",
+    "uuid": "858a4f2f-40f1-4ba3-bf17-e17514af33cc",
+    "template": "open-ballad",
+    "seed": 2017948899
+  },
+  {
+    "id": "groove-79",
+    "uuid": "e109587a-3ad7-45a6-befa-0bfa219d8d04",
+    "template": "open-ballad",
+    "seed": 2017948900
+  },
+  {
+    "id": "groove-80",
+    "uuid": "cee96f07-6f7b-4d1e-b7b8-eb781c9bde28",
+    "template": "half-time",
+    "seed": 2017958260
+  },
+  {
+    "id": "groove-81",
+    "uuid": "2fee212f-5e69-48ec-9a15-d9c0766db26e",
+    "template": "half-time",
+    "seed": 2017958265
+  },
+  {
+    "id": "groove-82",
+    "uuid": "394e71a9-f56f-4944-a7e8-428d0760ac1d",
+    "template": "swung-sixteenth",
+    "seed": 2017967694
   }
 ]

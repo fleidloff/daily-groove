@@ -327,7 +327,7 @@ describe('LeadSheet', () => {
   describe('the widest symbol the catalogue can produce (F17 E3 R3, AC3)', () => {
     it('derives at least one widest symbol from the shipped manifest', () => {
       expect(WIDEST.length).toBeGreaterThan(0)
-      expect(widest, WIDEST.join(' ')).toBe(7)
+      expect(widest, WIDEST.join(' ')).toBe(8)
     })
 
     it.each(WIDEST)('draws %s whole in bar one', (symbol) => {

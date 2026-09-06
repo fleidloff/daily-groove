@@ -26,15 +26,17 @@ import { selectGrooveForDate } from '../lib/puzzle/selectGroove'
 // report. The same constant under the same name lives in the generator's
 // catalogue.test.ts, which this file may not import from — `grep -rn
 // DOMINANCE_RATIO` finds both halves.
-// Widened 5 → 6 by feature-25 epic-4's boom-bap mint. Re-measured over the 48-groove
-// catalogue after epic-2's reggae-one-drop was withdrawn: dorian and phrygian reach 6
-// against lydian-dominant's 1, which open-ballad alone offers, so the spread is exactly
-// 6.00 and 6 is the tightest value that passes. The withdrawal took aeolian 6 → 4,
-// blues and mixolydian 5 → 4 and harmonic-minor 4 → 2; it did not move the extremes.
-// The floor is what keeps this at 6: lydian-dominant's 1, offered by open-ballad and
-// its two grooves alone. Any future mint is likelier to raise the ceiling than the
-// floor, so minting open-ballad up is what buys headroom for every style at once.
-const DOMINANCE_RATIO = 6
+// Tightened 6 → 2 by quick-12's mint, the first time this constant has moved down.
+// Measured over the 54-groove catalogue: dorian and phrygian reach 6, ionian and
+// harmonic-major 5, and the other eight modes sit at 4, so the spread is 1.50. The
+// mint raised the three modes that had been holding the floor, each offered by one
+// template alone — lydian-dominant 1 → 4 from three open-ballad grooves, harmonic-minor
+// 2 → 4 from two half-time, phrygian-dominant 3 → 4 from one swung-sixteenth. 2 is not
+// the tightest value that passes: it leaves the commonest mode room to reach 8 against
+// a floor of 4, which is headroom chosen on purpose rather than a measurement. Before
+// widening it again, check whether the floor can be raised instead — that is what this
+// mint did, and the previous three widenings are what made it worth doing.
+const DOMINANCE_RATIO = 2
 
 function dominanceFailure(counts: Map<string, number>, ratio: number): string | null {
   if (counts.size < 2) return null
@@ -418,8 +420,8 @@ describe('the answers feature-9 must not move', () => {
 })
 
 describe('over the shipped catalogue', () => {
-  it('covers all 48 catalogued grooves', () => {
-    expect(GROOVES).toHaveLength(48)
+  it('covers all 54 catalogued grooves', () => {
+    expect(GROOVES).toHaveLength(54)
   })
 
   it.each(GROOVES.map((groove) => [groove.id, groove] as const))(
@@ -640,8 +642,13 @@ describe('the catalogue read for a transposing instrument (F23 E2)', () => {
         'B♭: F♯ Phrygian → A♭ B♭♭ C♭ D♭ E♭ F♭ G♭',
         'E♭: B Phrygian → A♭ B♭♭ C♭ D♭ E♭ F♭ G♭',
         'F: C♯ Phrygian → A♭ B♭♭ C♭ D♭ E♭ F♭ G♭',
+        // quick-12: open-ballad's three new grooves bring the catalogue's second
+        // lydian-dominant root, E. On E♭ it transposes onto written C♯ lydian
+        // dominant, whose F♯♯ is the C row two entries above — concert's own
+        // spelling for that root.
+        'E♭: E Lydian dominant → C♯ D♯ E♯ F♯♯ G♯ A♯ B',
       ]),
     )
-    expect(doubles).toHaveLength(12)
+    expect(doubles).toHaveLength(13)
   })
 })

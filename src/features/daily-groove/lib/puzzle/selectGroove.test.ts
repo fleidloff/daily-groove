@@ -66,24 +66,24 @@ const sweep = (set: Groove[]): string => {
 // fail and the epoch did not move, something else reshuffled the rota, and the
 // fix is to find it, not to regenerate this.
 const SWEEP_OVER_THREE = [
-  'cbabcabacacbcababcacbcbacabcabcbacabcbabacabcbcacabcbabacabcabcacbcbabacb',
-  'cacabcbabacbcabacbcacababcabcbacbcacabcbacbabcacbacabacbcbabcacbabacbcaba',
-  'cabcacbcbabacbacbcacababcacbabcbcacbabacacbcbacbabcabacacbcbacbacabacbabc',
-  'abcbacacbcababcacbcabacbcbabcacabcababcabcabcbcacabacbcbacabacbcbacababca',
-  'bcabcabcacbcbabcabacbcacbacbacbabacbcabcabacabcbacacbcbacbabacabcacbcbacb',
+  'abcbcabacacbcbabacabcbacabcbcabacacbcbacababcabcacbcababcacbacbacbabcbacb',
+  'acbcacababcbcacababcabcbacbacacbcbacabcbacbabacacbabcbacacbcbacbacababcac',
+  'bacbcbabacabcbacacbcabcbacabacbabcbcacabcabcbabacbcacabacbabcbacbcacabacb',
+  'cbacababcbcabcacbacabcabacbcbacabcabacbabcabcbcacababcacbabcabcbacbacbcab',
+  'acabcbcacbacabcbacabcbacabcababcbcabacbacbcacababcbcacababcabcabcbcacbaba',
 ].join('')
 
 const SWEEP_OVER_SIXTEEN = [
-  '47ac0bfe1d1c52e67f908bd4a3237da15b6f4e0c89716da2e45cf980b3236c7594df1e8a0',
-  'b6b1708fcae49235ded4c1973f2568ba08db57ca94f3e02612f13c6ead4705b98d80731fc',
-  '46b5a92e6d4e17cf3592b0a8a48bf935c26de170c1e6307492bf58da8a0de173f5269bc49',
-  '0b3d8754e61a2fce49a186d3f527b0cafc6e8514972d0b36ebfc27d950a8431241a8563cb',
-  '0edf97579213a4f80bcd6e09ca7f2d86351e4b0cfed59b281437a6fa32814e7569db0c0c7',
+  'de3f51c204c4daf871b962e3052634a8c1be9df075c6dfe1a9b7528304350cba9edf21876',
+  '46eca95f0b4d173283ce256afb14780d9a471f23590cb8d6e73801c6be2945fada53c290d',
+  '47ef1b867a541d8ef6093bc2e784653bf1d90ac2b812ca5473fd6e0939b057e1a6cd28f45',
+  '3846e9a072c1fbdca461e9fd52b80739312be8fc4a0567d17b5df2908ca634e3c12d7958f',
+  'a4eb6034a78f5db9ce60129d15023ec764baf8385eacfb7240d691e0af2c48937b61d5e8f',
 ].join('')
 
 describe('selectGrooveForDate determinism (under ROTA_EPOCH)', () => {
   it('pins the epoch the sweeps were captured under', () => {
-    expect(ROTA_EPOCH).toBe(3)
+    expect(ROTA_EPOCH).toBe(4)
   })
 
   it('assigns the same groove to every date of a year-long sweep (3 grooves)', () => {
@@ -269,8 +269,8 @@ describe('selectGrooveForDate with a grown rotation (AC6)', () => {
 })
 
 describe('the rota epoch', () => {
-  it('ships as 3', () => {
-    expect(ROTA_EPOCH).toBe(3)
+  it('ships as 4', () => {
+    expect(ROTA_EPOCH).toBe(4)
   })
 
   it('reshuffles every lap when it is bumped (AC1)', () => {
@@ -294,7 +294,7 @@ describe('the rota epoch', () => {
   it('carries into the lap-boundary guard, under any epoch (AC6)', () => {
     const grooves = makeGrooves(60)
     const collisions: string[] = []
-    for (const epoch of [1, 2, 3]) {
+    for (const epoch of [1, 2, 3, 4]) {
       for (let lap = 1; lap <= 200; lap += 1) {
         const opening = orderFor(lap, grooves, epoch)[0].id
         const closing = orderFor(lap - 1, grooves, epoch)[59].id

@@ -1974,6 +1974,12 @@ describe('buildEvents — the comp stops being perfect — R1, R2, R3, R4, R5, R
     'groove-74': 'A♭|dorian|A♭ dorian|A♭m7|A♭m7–F♯maj7–B♭m7–A♭m7',
     'groove-75': 'F|aeolian|F aeolian|Fm7|Fm7–E♭7–A♭maj7–Gm7♭5',
     'groove-76': 'F♯|phrygian|F♯ phrygian|F♯m7|F♯m7–Gmaj7–Bm7–A7',
+    'groove-77': 'E|lydian-dominant|E lydian dominant|E7|E7–F♯7–BmMaj7–A♭m7♭5',
+    'groove-78': 'F|lydian-dominant|F lydian dominant|F7|F7–Am7♭5–E♭maj7♯5–F7',
+    'groove-79': 'A♭|lydian-dominant|A♭ lydian dominant|A♭7|A♭7–Dm7♭5–Cm7♭5–Dm7♭5',
+    'groove-80': 'C|harmonic-minor|C harmonic minor|CmMaj7|CmMaj7–Bdim7–Fm7–E♭maj7♯5',
+    'groove-81': 'A|harmonic-minor|A harmonic minor|AmMaj7|AmMaj7–Cmaj7♯5–Bm7♭5–Dm7',
+    'groove-82': 'G|phrygian-dominant|G phrygian dominant|G7|G7–Fm7–CmMaj7–Fm7',
   }
 
   it('names the same music for every groove in the catalogue — R6, AC14', () => {
