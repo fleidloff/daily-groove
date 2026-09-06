@@ -25,11 +25,13 @@ that chain: the documents, which need only the library's name, and the pack's
 test contract, which needs only the measurement record.
 
 The listening is not a step this spec can write. **Four steps in this plan wait
-on a person** — the go/no-go A/B (A4) and one verdict per feel (D1, D2, and the
-loop back from D4) — and each of them says what the person is asked to listen to
-and what they are *not* being asked. `docs/music.md` is explicit that the gains
-are turned by a listening sign-off and that nothing in this repo can hear, so a
-step that claimed to automate one would be lying about its done-condition.
+on a person, and between them they collect ten listening events** — the go/no-go
+A/B (A4, one), `straight-funk`'s balance (D1, one), the other eight feels (D2),
+and whatever the loop back from D3 or D4 costs — and each of them says what the
+person is asked to listen to and what they are *not* being asked.
+`docs/music.md` is explicit that the gains are turned by a listening sign-off and
+that nothing in this repo can hear, so a step that claimed to automate one would
+be lying about its done-condition.
 
 ## Architecture
 
@@ -44,7 +46,7 @@ step that claimed to automate one would be lying about its done-condition.
 | the rulebook | `scripts/grooves/samples/README.md` | source table, voice mapping, note spacing, the two ⚠ bass sections, levelling, length caps, and a new audition section |
 | the pack's tests | `scripts/grooves/pack.test.ts`, `scripts/grooves/samples/pack.test.ts` | every assertion that names the contrabass; a new headroom bound; the attribution count |
 | the mix | the nine `scripts/grooves/templates/<feel>.ts` | `gain.bass` only — nine numbers, `-4.0 … +1.0` today |
-| the medians | `scripts/grooves/templates/boom-bap.test.ts`, `scripts/grooves/second-line.test.ts` | the measured figures the 1.5 dB tolerance was sized against |
+| the medians | `scripts/grooves/templates/boom-bap.test.ts`, `scripts/grooves/second-line.test.ts` | the measured figures the tolerance was sized against. `ON_THE_LINE_DB` stays at 1.5 — C7 |
 | the catalogue | `public/grooves/*.mp3`, `scripts/grooves/grooves.lock.json`, `src/features/daily-groove/data/grooves.generated.ts` | every groove re-renders; the lock's groove hashes and `packSha256` both move |
 | the sign-offs | `scripts/grooves/gate.test.ts` | eight entries re-pinned, four added, the id list grown |
 | the documents | `docs/music.md`, `scripts/grooves/docs.test.ts` | the library count and the routing row that says where a voice's instrument lives |
@@ -74,22 +76,30 @@ under `scripts/`, `src/`, `public/` or `docs/` is touched, `provenance.attributi
 stays at length 2, and Epic 2 is dropped for the same reason it is dropped on a
 CC0 win.
 
-### Nine verdicts, and the one that cannot be pinned
+### Ten listening events, and the one that cannot be pinned
 
 `gate.test.ts`'s `voidSignOff` is unambiguous: a pinned hash must reproduce, from
 the committed tree, the audio a person actually heard. The A/B render cannot
 satisfy that. It is made from a scratch `pack.json` against the *old* committed
-templates, so no committed tree ever reproduces it. So the epic collects:
+templates, so no committed tree ever reproduces it. **So the epic collects ten
+listening events, not nine**, and `straight-funk` is heard twice:
 
 | # | Verdict | Given on | Recorded in | Pinned? |
 | :-- | :-- | :-- | :-- | :-- |
-| 1 | the instrument | the A/B, one `straight-funk` groove, scratch pack | `samples/README.md`'s audition section (Track C), asserted by Track B | no — and cannot be |
+| 1 | the instrument | the A/B, one `straight-funk` groove, scratch pack | `samples/README.md`'s audition section (Track C), asserted by Track B | **no — and cannot be** |
 | 2 | `straight-funk`'s balance | a render from the committed pack and the committed `gain.bass` | `SIGN_OFFS` | yes |
 | 3–10 | the other eight feels, one each | the same, per feel | `SIGN_OFFS` | yes |
 
 That is one more listening event than the PRD's R15/R16 arithmetic implies, and
-it is the subject of **Q1**. What it buys is that every pin in the table
-reproduces, which is the one property the table exists to hold.
+it is what the epic does. R15's ordering is untouched — the instrument is still
+signed off first, on the A/B, before any other feel is balanced — and R16's eight
+feel verdicts are still eight. What is added is `straight-funk`'s own balance
+verdict, which R15 folded into the instrument's and which has to be separate for
+one reason: **every entry in `SIGN_OFFS` must reproduce**, and a pin resting on
+the A/B would not. The cost is one replay of one groove at the moment
+`straight-funk`'s gain is settled, when the listener is already there. Step D1
+collects it; Step A4 says plainly that the A/B verdict is never pinned and where
+it is kept instead.
 
 ### Four feels have never been pinned, and this epic is where that costs
 
@@ -231,12 +241,16 @@ every layer, and Track B pins the bound.
 strings. It is length 2 today. After this epic it is **2 if the winner is CC0, 3
 if the winner is CC-BY 4.0**, and Epic 2 exists iff it is 3.
 
-The file boundary is exact, so the two epics never contend: **Epic 1 owns
-`scripts/grooves/samples/pack.test.ts` and the generator-tier count; Epic 2 owns
-the app's credit line** — `src/lib/snippets/en/puzzle.ts`,
-`src/lib/snippets/snippets.test.ts`,
-`src/features/daily-groove/components/puzzle/GrooveCard.test.tsx` — and touches
-no generator file. Without Step B8, `samples/pack.test.ts`'s
+The boundary is exact, so the two epics never contend:
+
+| Owner | Files |
+| :-- | :-- |
+| **Epic 1** | `scripts/grooves/samples/pack.test.ts` (the count), `provenance.json` (the strings), and every section of `scripts/grooves/samples/README.md` **except** *⚠ The drums and the ride carry an attribution obligation* |
+| **Epic 2** | that one README section, in its own one-step `musician` track after Epic 1's README edit is committed; plus the app's credit line — `src/lib/snippets/en/puzzle.ts`, `src/lib/snippets/snippets.test.ts`, `src/features/daily-groove/components/puzzle/GrooveCard.test.tsx` |
+
+Epic 2 touches no other generator file, and Epic 1 does not pre-empt that
+section — see Step C5s for what goes stale in the window between them and why
+nothing goes red. Without Step B8, `samples/pack.test.ts`'s
 `expect(provenance.attributions!.length).toBe(2)` goes red on a CC-BY win and
 Epic 1 cannot satisfy AC11.
 
@@ -254,6 +268,41 @@ take `npm run test:all` because E writes an app-tier generated file.
 quick ticket 12 mints the difference and is `🛠 Ready to build` as this is
 written. No step in this spec names a count. Every command is run over the
 catalogue as it stands when the epic runs.
+
+### C7 — the harmony-balance bound is a gate, and it does not move
+
+`ON_THE_LINE_DB = 1.5` in `scripts/grooves/templates/boom-bap.test.ts` and
+`scripts/grooves/second-line.test.ts` **stays at 1.5**, and both assertions keep
+their relative form: the median post-gain bass-over-kick (and comp-over-kick)
+distance from `straight-funk`'s, over the six committed grooves of each feel.
+
+```
+|median(feel) − median(straight-funk)| ≤ 1.5 dB    for feel ∈ { boom-bap, second-line }
+                                                    for voice ∈ { comp, bass }
+```
+
+**A breach is a balance failure to fix, not a tolerance to widen.** This is R13's
+stance on the loudness band applied one level up, and the bound has the room for
+it: it was sized at five times the largest deviation ever measured against it
+(0.27 dB), and four times tighter than the floor assertion's own slack. A feel
+whose ear-set `gain.bass` puts it more than 1.5 dB from `straight-funk`'s means
+those two feels really have drifted apart, not that the bound was tight — and the
+answer is another pass at that feel's gain in Step D2, or at `straight-funk`'s
+anchor in D1, never an edit to the constant.
+
+Three things this fixes for Track D. The constant is **not** in its writable
+surface, even though it owns the file the constant lives in. The relative form is
+not converted to a literal — the comment above each assertion says at length that
+a literal would freeze an arithmetic result where this freezes a decision. And
+the assertions are not deleted: `SIGN_OFFS` pinning both feels does not replace
+them, because a pin catches a change to the *audio* and this catches a change to
+the *relationship*, which is what the harmony re-gain's verdict was actually
+about.
+
+What Track D does rewrite is the measured figures in the comments above each
+assertion — see Step D3. Those are the record of what 1.5 dB was sized against,
+and leaving them at the contrabass's numbers would make the bound rest on a
+measurement that no longer exists.
 
 ## Tracks
 
@@ -302,7 +351,9 @@ catalogue as it stands when the epic runs.
 - **Owns** — `scripts/grooves/samples/bass/**`,
   `scripts/grooves/samples/pack.json`,
   `scripts/grooves/samples/provenance.json`,
-  `scripts/grooves/samples/README.md`,
+  `scripts/grooves/samples/README.md` — **every section except
+  *⚠ The drums and the ride carry an attribution obligation***, which Epic 2 owns
+  and edits after this track's README edit is committed,
   `scripts/grooves/samples/LICENSE-<Library>.txt` (new, only on a CC-BY win)
 - **Role** — `musician`. The levelling, the cap, the layer decision and the
   README's reasoning are musical judgements with measurements attached.
@@ -316,22 +367,27 @@ catalogue as it stands when the epic runs.
 
 ### Track D — The mix, by ear
 
-- **Goal** — nine `gain.bass` values a person has heard and accepted, one
-  verdict per feel recorded verbatim, and the two bass-over-kick medians
-  re-measured against what the new instrument actually does.
+- **Goal** — nine `gain.bass` values a person has heard and accepted, one verdict
+  per feel recorded verbatim — verdicts 2 through 10, `straight-funk`'s own
+  included — and the two bass-over-kick medians re-measured against what the new
+  instrument actually does, inside the 1.5 dB C7 fixes.
 - **Owns** — `scripts/grooves/templates/straight-funk.ts`, `shuffle.ts`,
   `swung-sixteenth.ts`, `half-time.ts`, `bright-straight.ts`, `open-ballad.ts`,
   `bossa-nova.ts`, `second-line.ts`, `boom-bap.ts` — **the `gain.bass` line and
   nothing else in any of them** — plus
   `scripts/grooves/templates/boom-bap.test.ts` and
-  `scripts/grooves/second-line.test.ts`
+  `scripts/grooves/second-line.test.ts`, **in which the only writable text is the
+  measured figures in the two comments above the harmony-balance assertions.**
+  `ON_THE_LINE_DB` is C7's and is not this track's to move.
 - **Role** — `musician`.
 - **Depends on** — Track C. A gain set against a scratch pack is a gain nobody
   heard.
 - **Parallel with** — Track G.
-- **Done when** — nine verdicts are recorded, `catalogue-gate.test.ts` passes all
+- **Done when** — nine feel verdicts are recorded (events 2 through 10, one of
+  them `straight-funk`'s second listen), `catalogue-gate.test.ts` passes all
   seven checks over every catalogued groove including the −29…−20 dBFS band, and
-  both median assertions pass with their comment figures re-measured.
+  both median assertions pass at `ON_THE_LINE_DB = 1.5`, unchanged, with their
+  comment figures re-measured.
 
 ### Track E — The re-render and the lock
 
@@ -390,10 +446,18 @@ earlier wave owned, which is unusual for this repo and is a property of the epic
 the pack, the mix, the audio and the sign-offs are four disjoint layers of one
 change.
 
-**The loop this plan admits.** If Step D4 puts a feel outside the loudness band,
-or a Wave-5 re-pin surfaces a render nobody accepted, the work goes back to D for
-that feel alone, then forward through E and F again. R13 is explicit that the
-band does not widen. The loop is per feel, not per epic.
+**The loop this plan admits, and its three triggers.** The work goes back to
+Track D for one feel alone — then forward through E and F again — when any of
+these happens:
+
+- Step D4 puts a feel outside the −29…−20 dBFS loudness band. R13 is explicit
+  that the band does not widen.
+- Step D3 puts `boom-bap`'s or `second-line`'s bass or comp more than 1.5 dB from
+  `straight-funk`'s. C7 is explicit that the tolerance does not widen either.
+- A Wave-5 re-pin surfaces a render nobody accepted.
+
+The loop is per feel, not per epic, and in all three cases what moves is a
+`gain.bass` value, never a constant in a test.
 
 ## Implementation
 
@@ -502,9 +566,17 @@ Covers: R2, R15, AC1 — **human gate**
   the measurement does not separate them.
 - **Implement** — record the verdict verbatim in
   `.implement/audition/verdict.md`. Verbatim, not paraphrased: the words go into
-  `samples/README.md` (Track C) and, for the feel verdicts later, into
-  `SIGN_OFFS.approval` (Track F), where the whole point is that they are the
-  person's own.
+  `samples/README.md`'s audition section (Track C, Step C5s), where Step B9's
+  assertion fails if they are deleted. That README section is this verdict's only
+  committed home.
+- **This verdict is never pinned, and the listener is told so** — it is verdict 1
+  of the ten, the one the architecture table marks *no — and cannot be*. The
+  render behind it comes from a scratch `pack.json` against the old committed
+  templates, so no committed tree will ever reproduce it and `SIGN_OFFS` cannot
+  hold it. **`straight-funk` is therefore heard a second time, at Step D1**, once
+  its `gain.bass` is settled and the render is one the tree reproduces; that
+  second verdict is the one Track F pins. Say so when asking for this one, so the
+  person knows the replay is coming and why.
 - **Green when** — a verdict exists. The epic branches on it.
 - **Refactor** — none.
 
@@ -850,8 +922,6 @@ Covers: R1, R5, R7, R9, R10, AC5
 - **Implement** — `scripts/grooves/samples/README.md`, section by section:
   - *Source and licence* — the four-library table becomes five (or the VSCO 2 CE
     row loses `bass` and keeps `comp`); the count sentence moves with it.
-  - the ⚠ attribution section — a third string, and what its length now says to
-    Epic 2, if the winner is CC-BY.
   - the prepared-file paragraph — the winner's cap and its `ffmpeg` line.
   - *Voice mapping* — the `bass` row: instrument, and layers × round-robins.
   - *Note spacing* — the `bass` bullet, and the paragraph explaining why the grid
@@ -870,6 +940,14 @@ Covers: R1, R5, R7, R9, R10, AC5
     measurements, so nobody re-runs them. If the winner measured worse than a
     loser and won anyway, say so: that is the finding the ride's section exists
     to carry, and it is worth more than the numbers.
+- **Do not touch *⚠ The drums and the ride carry an attribution obligation*.**
+  That section is Epic 2's, edited in its own one-step `musician` track after
+  this one is committed. On a CC-BY win it goes stale in the window between the
+  two epics — it says the pack owes two attributions and that `pack.test.ts`
+  asserts 2, while Step B8 has already moved the assertion to 3. **No test binds
+  that sentence**, so nothing goes red; it is a known and deliberate window, not
+  an oversight, and it closes when Epic 2 lands. On a CC0 win the section is
+  correct as it stands and Epic 2 does not exist.
 - **Green when** — B9 and the three README guards pass.
 - **Refactor** — none.
 
@@ -877,7 +955,13 @@ Covers: R1, R5, R7, R9, R10, AC5
 
 #### Step D1 — `straight-funk`'s `gain.bass` is set by ear, and it anchors the rest
 
-Covers: R11, R15, R16, AC7 — **human gate**
+Covers: R11, AC7, AC10 — **human gate, and the second listening event on
+`straight-funk`**
+
+This is verdict 2 of the ten. Step A4 gave verdict 1 on a scratch pack and it
+cannot be pinned; this one is given on a render the committed tree reproduces,
+and it is the one Track F pins as `straight-funk`'s entry. The listener has
+already been told at A4 that this replay is coming.
 
 - **Test first** — `npm run test:gen scripts/grooves/catalogue-gate.test.ts` over
   the six `straight-funk` grooves: all seven checks, loudness inside −29…−20
@@ -897,15 +981,17 @@ Covers: R11, R15, R16, AC7 — **human gate**
   backing track. Record the verdict verbatim.
 - **The measurement that goes beside it, not instead of it** — post-gain track
   RMS for `bass` against `kick`, median over the six straight-funk grooves. It is
-  `−5.28 dB` today and it is the figure two other feels are asserted against, so
-  it has to be re-measured whether or not anything else moves.
+  `−5.28 dB` today and it is the figure two other feels are asserted against
+  under C7, so it has to be re-measured whether or not anything else moves. **It
+  is the anchor, not a target**: this feel is balanced to the ear alone, and the
+  number is recorded so D3 can measure the other two against it.
 - **Green when** — the verdict is given, the seven gate checks pass on all six,
   and the new median is written down.
 - **Refactor** — none.
 
 #### Step D2 — the other eight feels, one verdict each
 
-Covers: R11, R12, R14, R16 — **human gate, eight times**
+Covers: R11, R12, R14, R16 — **human gate, eight times** — verdicts 3 through 10
 
 - **Test first** — the same seven gate checks, per feel.
 - **Implement** — for each of `shuffle`, `swung-sixteenth`, `half-time`,
@@ -915,6 +1001,12 @@ Covers: R11, R12, R14, R16 — **human gate, eight times**
   becomes that feel's anchor is Track F's input, so choose it deliberately — the
   sharpest test of the balance for that feel, in the shape the existing entries'
   comments use (the densest, the fastest, the one whose bass sits lowest).
+- **`boom-bap` and `second-line` carry one extra constraint, and it is a hard
+  one.** Their ear-set `gain.bass` must also land inside C7's 1.5 dB of
+  `straight-funk`'s median, which D3 measures. Balance them by ear first — that
+  is R12 — and check the bound after; if it breaches, the fix is another pass at
+  the gain, not an edit to `ON_THE_LINE_DB`. Two feels of the eight are gated
+  twice; the other six are gated by the ear and the loudness band alone.
 - **One bass everywhere (R14)** — if a feel resists, it is fixed by ear. No feel
   keeps the contrabass and no second bass set enters the pack; two bass sounds
   would let the feel be guessed from the instrument rather than from the groove,
@@ -945,10 +1037,19 @@ Covers: R12, AC8
      `comp −2.61 / bass −5.15 against straight-funk's −2.69 / −5.28`, and they
      are the record of what the 1.5 dB tolerance was sized against — five times
      the larger deviation, in `boom-bap`'s words. Left stale they are a false
-     record; the numbers are re-measured and rewritten with the same reasoning.
-     If the new deviations no longer justify 1.5 dB, **Q1** decides what moves.
-- **Green when** — both assertions pass and both comments state today's
-  measurements.
+     record; the numbers are re-measured and rewritten with the same reasoning
+     carried over: state the new deviations, and state how much room 1.5 dB still
+     has above the larger of them.
+- **`ON_THE_LINE_DB` stays at 1.5, and a breach is fixed in the gain.** C7 is
+  the rule and this step is where it bites. If either assertion fails, the work
+  goes back to Step D2 for that feel — another pass at its `gain.bass` by ear —
+  or, if `straight-funk`'s own anchor turns out to be what moved, back to D1.
+  What is never the fix: raising the constant, converting the assertion to a
+  literal, or deleting it because `SIGN_OFFS` now pins both feels. A pin catches
+  a change to the audio; this catches a change to the *relationship between two
+  feels*, which is what the harmony verdict it descends from was about.
+- **Green when** — both assertions pass at `ON_THE_LINE_DB = 1.5`, unchanged, and
+  both comments state today's measurements.
 - **Refactor** — none. Do not turn either assertion into a literal: the comment
   above it explains at length why a literal would freeze an arithmetic result
   where the current form freezes a decision.
@@ -1170,16 +1271,16 @@ silent, and a report naming every candidate and why none won.
 | R4 | A1, A6, B7, B8, C3s, C4s |
 | R5 | A2, A6, B1, B2, C2s, C5s |
 | R6 | A2, A6, B3, C2s, C5s |
-| R7 | A2, B3, C5s |
+| R7 | A2, A6, B3, C5s |
 | R8 | A2, C1s |
-| R9 | A6, B4, B5, B6, C2s, C5s |
-| R10 | A6, B7, B9, C3s, C5s, G1 |
+| R9 | A2, A6, B4, B5, B6, C2s, C5s |
+| R10 | A6, B7, B9, C1s, C3s, C5s, G1 |
 | R11 | D1, D2 |
 | R12 | D2, D3 |
-| R13 | D4 |
+| R13 | B4, D4 |
 | R14 | B1, D2, G2 |
 | R15 | A4 |
-| R16 | D1, D2, F2 |
+| R16 | D2, F2 |
 | R17 | F1, F2, F3 |
 | R18 | E1, E2, E3 |
 | AC1 | A2, A3, A4, B9, C5s |
@@ -1191,7 +1292,7 @@ silent, and a report naming every candidate and why none won.
 | AC7 | D1, D4 |
 | AC8 | D3 |
 | AC9 | B1, D2 |
-| AC10 | F1, F2 |
+| AC10 | D1, D2, F1, F2 |
 | AC11 | E1, E2, E3, Integration 1 |
 | AC12 | B3, Integration 4 |
 
@@ -1244,44 +1345,70 @@ silent, and a report naming every candidate and why none won.
 
 ## Decision log
 
-Nothing settled by an answered question yet. Cycle 1's questions are below.
+Settled architectural decisions. The sections above are the source of truth —
+this records how they got there, and what each one cost. Append-only.
 
-## Open questions
+### Cycle 1 — 2026-09-06
 
-Tick one option per question (`- [x]`), or write your own, then re-run
-`/writespec feature-27 epic-1` — the answer gets applied to the design and steps,
-moved into the log, and replaced by whatever it opens up.
+**Q1. When the ear puts a feel's bass more than 1.5 dB from `straight-funk`'s, what gives?**
+Decision: **A) The 1.5 dB stands.** A feel outside it is a balance failure to
+fix, not a tolerance to widen. `ON_THE_LINE_DB` in
+`scripts/grooves/templates/boom-bap.test.ts` and
+`scripts/grooves/second-line.test.ts` does not move, both assertions keep their
+relative form against `straight-funk`, and neither is deleted on the grounds that
+`SIGN_OFFS` now pins both feels.
 
-### Q1. When the ear puts a feel's bass more than 1.5 dB from `straight-funk`'s, what gives?
+Why: it is R13's stance on the loudness band applied one level up, and the bound
+has the room for it — 1.5 dB was sized at five times the largest deviation ever
+measured against it (0.27 dB) and four times tighter than the floor assertion's
+own slack. A breach therefore means those two feels really have drifted from
+`straight-funk`, not that the bound was tight. Reversing this later costs one
+constant in two files and a re-render; reversing it the other way costs a
+listening verdict nobody can re-give.
 
-`boom-bap.test.ts` and `second-line.test.ts` both assert
-`|median(feel) − median(straight-funk)| ≤ 1.5 dB` on post-gain bass-over-kick,
-and their comments say at length that the relative form exists so the test
-freezes *a decision* rather than an arithmetic result. That decision was a
-listening verdict — "the comp (piano) is too quiet. Remember: this app is about
-finding the harmony" — given about a plucked contrabass. R12 now says each feel
-is balanced on its own merits by ear. If the new ear disagrees with the old
-number, one of them has to move, and the choice decides whether a test can
-overrule a listening verdict.
+Changed: new **Contract C7** stating the bound, its form and what it forbids;
+*The moving parts* row for the medians; Track D's **Owns** (the two test files
+are writable only in the comment figures — the constant is not this track's) and
+its **Done when**; *Execution waves*' loop paragraph, which now names three
+triggers rather than one; Step **D2**, which gains the extra constraint on
+`boom-bap` and `second-line` and says the fix is another pass at the gain; Step
+**D3**, which gains an explicit "the constant stays at 1.5, a breach goes back to
+D2 or D1" bullet and drops the sentence deferring to this question; Step **D1**,
+whose measured median is now stated as the anchor D3 measures against rather than
+a target.
 
-- [ ] **A) The 1.5 dB stands. A feel outside it is a balance failure to fix, not a tolerance to widen.** *(recommended — it is exactly R13's stance on the loudness band applied one level up, and the tolerance was already sized at five times the largest measured deviation, so a breach means the two feels really have drifted apart rather than that the bound was tight. Reversing it later costs one constant in two files and a re-render; reversing the other way costs a verdict nobody can re-give.)*
-- [ ] B) Re-measure the tolerance to the new spread, and rewrite the comment's reasoning with it. The relative form and the anchor stay; only the number moves, and it moves for a stated reason.
-- [ ] C) The ear wins outright: if a feel's verdict puts its bass elsewhere, replace the relative assertion for that feel with a pinned literal and record the verdict beside it.
-- [ ] D) Drop both assertions. They were the harmony re-gain's guard, that verdict is superseded, and `SIGN_OFFS` now pins both feels anyway.
+**Q2. Does `straight-funk` get a second listen after the A/B, or does the A/B render become the one that is pinned?**
+Decision: **A) Ten listening events** — one unpinned instrument A/B, then nine
+pinned feel verdicts, `straight-funk`'s own included. R15's ordering is untouched
+and R16's eight are still eight; what is added is `straight-funk`'s balance
+verdict, given on a render the committed tree reproduces.
 
-### Q2. Does `straight-funk` get a second listen after the A/B, or does the A/B render become the one that is pinned?
+Why: `gate.test.ts`'s `voidSignOff` requires a pinned hash to reproduce, from the
+committed tree, the audio a person heard. The A/B render is made from a scratch
+`pack.json` against the old committed templates, so no committed tree will ever
+reproduce it and it cannot legally be pinned. This is the only reading under
+which every entry in `SIGN_OFFS` reproduces, which is the single property that
+table exists to hold. The cost is one replay of one groove at the moment
+`straight-funk`'s gain is settled, when the listener is already there. The A/B
+verdict is still kept — in `samples/README.md`'s audition section, where Step B9
+makes a test fail if it is deleted.
 
-`gate.test.ts`'s `voidSignOff` requires a pinned hash to reproduce, from the
-committed tree, the audio a person heard. The A/B render cannot: it is made from
-a scratch `pack.json` against the old committed templates, and no committed tree
-will ever reproduce it. R15/R16 read as 1 + 8 = nine verdicts, with the
-instrument verdict doubling as `straight-funk`'s. This spec currently assumes ten
-— an unpinned instrument verdict plus nine pinned feel verdicts — and Track D
-Step D1 collects `straight-funk`'s second one. Getting it wrong means either a
-pin resting on audio the tree cannot reproduce, or discovering at Track F that a
-tenth listen is owed after the listener has moved on.
+Changed: *Nine verdicts, and the one that cannot be pinned* is now
+*Ten listening events, and the one that cannot be pinned*, with the hedge that
+deferred to this question replaced by the reasoning above; the *Approach*
+paragraph on human gates, which now names the count; Step **A4**, which gains a
+bullet saying this verdict is never pinned, why, and that the listener is told
+the replay is coming; Step **D1**, retitled in its `Covers` line to R11/AC7/AC10
+— R15 belongs to A4 alone — and opened with a paragraph naming it verdict 2 of
+ten; Step **D2**, whose verdicts are numbered 3 through 10; Track D's **Goal**;
+the coverage table rows for R16 (D1 dropped — those are the *other* eight) and
+AC10 (D1 and D2 added — the pins rest on verdicts those steps collect).
 
-- [ ] **A) Ten listening events: one unpinned instrument A/B, then nine pinned feel verdicts including `straight-funk`'s.** *(recommended — it is the only reading under which every entry in `SIGN_OFFS` reproduces, which is the single property that table exists to hold. The extra cost is one replay of one groove, at the moment `straight-funk`'s gain is settled, which is when the listener is already there. The A/B verdict is still recorded, in `samples/README.md`'s audition section, where Step B9 makes a test fail if it is deleted.)*
-- [ ] B) Nine, as the PRD reads. `straight-funk`'s pin rests on the A/B verdict's words, with the scope field stating plainly that the words were given on a scratch render and that the pinned audio is the committed equivalent at the same gain.
-- [ ] C) Nine, by making the A/B reproducible: settle `straight-funk`'s `gain.bass` inside the audition loop and commit the winning scratch pack verbatim, so the A/B render *is* the committed render. Costs R15's ordering — the instrument is then signed off on a balance rather than before one.
-- [ ] D) Nine, and `straight-funk` is simply not pinned — leave it as one of the feels the table does not cover.
+**Not a question, decided in the same cycle: the `samples/README.md` split with
+Epic 2.** Epic 2 owns
+*⚠ The drums and the ride carry an attribution obligation* in its own one-step
+`musician` track, after Track C's README edit is committed. Track C's **Owns**
+now excludes that section by name, Contract **C4** carries the file boundary as a
+table, and Step **C5s** gains a bullet stating that on a CC-BY win the section is
+stale between the two epics, that no test binds the sentence, and that the window
+is deliberate.

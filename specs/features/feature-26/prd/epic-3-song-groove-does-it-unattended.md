@@ -68,31 +68,48 @@ against `templates/*.ts`.
   produce — degrees of one scale, starting on the tonic, no degree repeating back
   to back. A target the generator cannot reach is a refusal, not a search that
   quietly returns nothing.
-- **R5** — Where the skill is not confident of the tune's own changes, it stops
-  and says what it was unsure about — which reading it was choosing between, or
-  which bar it could not settle. It does not proceed on a guess: a wrong target
-  does not fail loudly, it produces a real groove under a real tune's name, and
-  the only thing between that and the player is whether someone happened to know
-  the tune.
+- **R5** — Where the skill is not confident of the tune's own changes, it **asks**,
+  naming what it was unsure about and the readings it was choosing between. It
+  never proceeds on a silent guess: a wrong target does not fail loudly, it
+  produces a real groove under a real tune's name, and the only thing between that
+  and the player is whether somebody happened to know the tune.
+- **R5a** — Asking is the last resort, not the first move. The skill asks when the
+  uncertainty is about the *tune* — an arrangement it cannot settle, a title that
+  names two songs — because no amount of rendering resolves that. Uncertainty
+  about which reachable target best stands in for changes it does know is settled
+  by R6a instead, by ear.
 
 ### Running it through
 
 - **R6** — The skill calls Epic 2's matcher with the target, and presents the
   ranked candidates with the parts of each score visible.
+- **R6a** — Where more than one target plausibly stands in for the tune — a
+  different four-bar summary, a different style whose flavours also reach it, or
+  the same chords in an order the frozen draw offers — the skill **does not
+  choose**. It takes each through the matcher and carries them all to the
+  audition, because which one sounds like the tune is a question about the audio
+  and no amount of reasoning about degrees settles it.
+- **R6b** — At most three targets reach the audition, each labelled with the
+  target behind it and why it was a candidate. A listening pass over more than
+  three loops stops being a listening pass.
 - **R7** — Where no candidate clears the threshold, the skill reports the nearest
   few, says none qualified, writes nothing, and suggests the tune is one this
   catalogue cannot reach. It never mints under a famous title on a poor match.
-- **R8** — Where a candidate qualifies, the skill renders it into a scratch
-  directory outside the repository, reports the path, and **stops there and
-  waits**. Until the person says to go ahead, `catalogue.json`, the manifest, the
-  lock and `public/grooves/` are untouched.
+- **R8** — Where candidates qualify, the skill renders each into a scratch
+  directory outside the repository, reports the paths and what each one is, and
+  **stops there and waits**. Until the person names one to go ahead with,
+  `catalogue.json`, the manifest, the lock and `public/grooves/` are untouched.
 - **R8a** — The audition is a pause inside one run, not a second command. The
-  skill promotes on the person's word, in the same session, minting through Epic
-  2's route and writing the pin. A groove reaches the catalogue only after
-  somebody has heard it and asked for it, and that is the whole reason the pause
-  exists.
+  skill promotes the candidate the person names, in the same session, minting
+  through Epic 2's route and writing the pin. Exactly one candidate is promoted
+  per run; the rest are discarded with the scratch directory. A groove reaches the
+  catalogue only after somebody has heard it and asked for it, and that is the
+  whole reason the pause exists.
 - **R8b** — A run abandoned at the pause leaves no trace in the repository. There
   is nothing to clean up and nothing to `git checkout` away.
+- **R8b1** — The audition decides which changes, not which take. The committed
+  file is a different render from the scratch one, so the run reports it after the
+  mint and the listening sign-off happens there.
 - **R8c** — Nothing is lost by abandoning a run. Determinism is the generator's
   load-bearing property, so the same target re-run gives the same seed and the
   same audio; a session that ends at the pause costs a re-run, not the work.
@@ -135,27 +152,46 @@ sequenceDiagram
   Skill->>M: the tune, the nine feels, their flavours
   M-->>Skill: style + flavour + four chords, with reasons
   alt the tune's changes are not certain
-    Skill-->>Fred: says so, writes nothing
-  else target is unreachable in the frozen harmony
+    Skill-->>Fred: asks, naming the readings it is between
+    Fred-->>Skill: the reading
+  end
+  alt target is unreachable in the frozen harmony
     Skill-->>Fred: says so, writes nothing
   else
-    Skill->>Match: the target
-    Match-->>Skill: ranked candidates
+    Skill->>Match: one to three targets
+    Match-->>Skill: ranked candidates for each
     alt none over the threshold
       Skill-->>Fred: the nearest few, writes nothing
     else
-      Skill->>Skill: render into a scratch directory
-      Skill-->>Fred: what it decided, and the path to listen to
+      Skill->>Skill: render each into a scratch directory
+      Skill-->>Fred: what it decided, and one path per candidate
       Note over Skill,Fred: the run pauses here
-      Fred->>Skill: go ahead
+      Fred->>Skill: this one
       Skill->>Skill: mint through Epic 2's route, write the pin
+      Skill-->>Fred: the committed render, to sign off
     end
   end
 ```
 
 Every outcome leaves the repository untouched until a person has listened and
-asked for the groove. The expensive mistake is a groove in the catalogue under a
-name it does not deserve, and no single command can make one.
+named a groove. The expensive mistake is a groove in the catalogue under a name it
+does not deserve, and no single command can make one.
+
+The skill stops in three different ways and they are not interchangeable. It
+**asks** when the uncertainty is about the tune, because nothing it can render
+resolves that. It **auditions several** when the uncertainty is about which
+reachable target sounds most like changes it already knows, because that is
+exactly what rendering resolves. It **declines** when the frozen harmony cannot
+reach the tune at all, because there is nothing to ask and nothing to hear.
+
+### The audition and the committed file are different takes
+
+`renderVoices` seeds its round-robin sample choice from the groove's id, so a
+scratch render under a temporary id and the file the mint writes under
+`groove-NN` are not the same audio. The audition therefore decides **which
+changes**, and it is the committed file that gets the listening sign-off
+`docs/music.md` asks for. Treating the scratch render as the thing signed off
+would sign off a take that never ships.
 
 ### Two notes the roadmap does not yet carry
 
@@ -178,16 +214,28 @@ write anything the roadmap describes.
   `chordsForScale` for the named root and flavour, then every one is a chord that
   scale supports and the first is the tonic.
 - **AC3** (R5) — Given a tune whose changes the skill cannot establish, when it
-  runs, then it stops with that reason and the working tree is unchanged.
+  runs, then it asks, naming what it was unsure about and the readings it was
+  choosing between, and the working tree is unchanged.
+- **AC3a** (R5a) — Given a tune whose changes the skill does know but which more
+  than one reachable target could stand in for, when it runs, then it does not
+  ask — it carries the alternatives to the audition.
 - **AC4** (R7) — Given a target no candidate matches above the threshold, when the
   skill runs, then it reports the nearest few and the working tree is unchanged.
-- **AC5** (R8) — Given a candidate that qualifies, when one invocation finishes,
-  then a playable render exists at the reported scratch path and `catalogue.json`,
-  the manifest, the lock and `public/grooves/` are unchanged.
+- **AC5** (R8) — Given candidates that qualify, when one invocation reaches the
+  pause, then a playable render exists at each reported scratch path and
+  `catalogue.json`, the manifest, the lock and `public/grooves/` are unchanged.
+- **AC5e** (R6a, R6b) — Given a tune with more than one plausible target, when the
+  run reaches the pause, then between two and three renders are offered, each
+  labelled with its target and why it was a candidate.
+- **AC5f** (R8a) — Given three candidates at the pause, when the person names one,
+  then exactly that one is minted and no trace of the other two reaches the
+  repository.
+- **AC5g** (R8b1) — Given a promoted groove, when the run finishes, then it names
+  the committed file as the thing to sign off, not the scratch render.
 - **AC5a** (R8b) — Given a run abandoned at the pause, when `git status` is read,
   then the working tree is clean.
-- **AC5b** (R8a, R10) — Given a run at the pause, when the person says to go
-  ahead, then the catalogue gains the groove, its uuid is a key in
+- **AC5b** (R8a, R10) — Given a run at the pause, when the person names a
+  candidate, then the catalogue gains that groove, its uuid is a key in
   `heard-in.json`, and both changes appear in one working tree for a person to
   commit.
 - **AC5d** (R8c) — Given a target run twice, when the two scratch renders are
@@ -263,3 +311,23 @@ re-derived or re-read from disk, because the run is still holding the decision;
 and nothing is lost by walking away, because the same target re-renders
 identically.
 Applied to: R8, R8a, R8b, R8c, AC5a, AC5b, AC5d, Behaviour details, Assumptions
+
+### Cycle 3 — 2026-09-06
+
+**Revision to Q2 (Cycle 1).** Q2 was answered *"A) Stop, and say what it was
+unsure about"*, and R5 was written to stop. Fred revised it: the skill **asks**.
+Stopping ends the run; asking keeps it, and a tune with two common arrangements
+is a question a person answers in a sentence.
+Applied to: R5, R5a, AC3, Behaviour details
+
+**Added: uncertainty about the target is settled by ear, not by asking.** Where
+more than one reachable four-chord target could stand in for changes the skill
+already knows, it renders several and carries them all to the audition rather
+than choosing one or asking about it. This is what the pause was already for.
+Applied to: R6a, R6b, R8, R8a, AC3a, AC5, AC5e, AC5f, Behaviour details
+
+**Added: the audition and the committed file are different takes.** `renderVoices`
+seeds its round-robin from the groove id, so a scratch render is not the audio the
+mint writes. The audition decides which changes; the committed file takes the
+sign-off.
+Applied to: R8b1, AC5g, Behaviour details
