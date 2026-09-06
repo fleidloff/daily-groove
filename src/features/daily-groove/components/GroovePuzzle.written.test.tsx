@@ -68,17 +68,21 @@ describe('GroovePuzzle — written pitch', () => {
     teardownPuzzleAudio()
   })
 
-  it('sits in the header beside share and the streak, reading Transpose, before, during and after the puzzle (R1, AC1, AC3)', async () => {
+  it('sits above the groove box beside share, reading Transpose, before, during and after the puzzle (R1, AC1, AC3; quick 9)', async () => {
     const user = userEvent.setup()
     await renderPuzzle()
     const box = transposeBox()
     expect(box).toHaveValue('C')
-    expect(box.closest('header')).not.toBeNull()
+    expect(box.closest('header')).toBeNull()
     const controls = box.closest('.justify-end') as HTMLElement
     expect(controls).not.toBeNull()
     expect(controls).toContainElement(
       screen.getByRole('button', { name: header.share }),
     )
+    expect(
+      controls.compareDocumentPosition(grooveCard()) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy()
     expect(within(grooveCard()).queryByRole('combobox')).toBeNull()
 
     await guess(user, 'G', wrongFlavour())

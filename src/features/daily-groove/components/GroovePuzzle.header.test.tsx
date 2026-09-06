@@ -34,7 +34,7 @@ vi.mock('../lib/persistence/storage', async (importOriginal) => ({
 
 import { GroovePuzzle } from './GroovePuzzle'
 import { isoDate } from '@/lib/date'
-import { branding, coaching, header, puzzle } from '@/lib/snippets'
+import { branding, coaching, header, intro, puzzle } from '@/lib/snippets'
 const { appName: APP_NAME } = branding
 
 describe('GroovePuzzle', () => {
@@ -276,5 +276,79 @@ describe('GroovePuzzle', () => {
       await renderPuzzle()
       expect(streakLine()).toBe(sharedHeader)
     })
+  })
+})
+
+describe('where the controls sit on the page (quick 9)', () => {
+  beforeEach(async () => {
+    resetMockStore(mockStore)
+    await seedFullSet()
+    installPuzzleAudio()
+  })
+
+  afterEach(() => {
+    teardownPuzzleAudio()
+  })
+
+  const before = (first: Element, second: Element) =>
+    Boolean(
+      first.compareDocumentPosition(second) & Node.DOCUMENT_POSITION_FOLLOWING,
+    )
+
+  const tagline = () => screen.getByText(branding.tagline)
+  const howToPlay = () =>
+    screen.getByRole('heading', { level: 2, name: intro.title })
+  const transpose = () =>
+    screen.getByRole('combobox', { name: header.transpose })
+  const shareControl = () => screen.getByRole('button', { name: header.share })
+  const grooveBox = () => screen.getByRole('heading', { name: GROOVE.name })
+
+  it('puts the how-to-play box between the subtitle and the controls', async () => {
+    await renderPuzzle()
+
+    expect(before(tagline(), howToPlay())).toBe(true)
+    expect(before(howToPlay(), transpose())).toBe(true)
+    expect(before(howToPlay(), shareControl())).toBe(true)
+  })
+
+  it('puts the controls immediately above the groove box', async () => {
+    await renderPuzzle()
+
+    expect(before(transpose(), shareControl())).toBe(true)
+
+    const row = shareControl().closest('.justify-end') as HTMLElement
+    expect(row.nextElementSibling).toContainElement(grooveBox())
+  })
+
+  it('keeps the same order on a shared groove, under the shared notice', async () => {
+    await renderPuzzle(<GroovePuzzle groove={GROOVE} mode="shared" />)
+
+    const notice = screen.getByText(puzzle.sharedNotice)
+
+    expect(before(tagline(), howToPlay())).toBe(true)
+    expect(before(howToPlay(), notice)).toBe(true)
+    expect(before(notice, transpose())).toBe(true)
+    expect(before(transpose(), shareControl())).toBe(true)
+    expect(before(shareControl(), grooveBox())).toBe(true)
+  })
+
+  it('achieves the order in the markup, not with CSS ordering', async () => {
+    const { container } = await renderPuzzle()
+
+    const row = shareControl().closest('.justify-end') as HTMLElement
+    const chain: Element[] = []
+    for (
+      let el: Element | null = row;
+      el !== null && el !== container;
+      el = el.parentElement
+    ) {
+      chain.push(el)
+    }
+
+    for (const el of chain) {
+      expect(el.className).not.toMatch(
+        /(?:^|\s)(?:[a-z]+:)?(?:order-\S+|absolute|fixed|sticky)(?:\s|$)/,
+      )
+    }
   })
 })

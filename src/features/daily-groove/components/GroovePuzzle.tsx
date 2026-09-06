@@ -43,6 +43,7 @@ import { useTransport } from '../hooks/useTransport'
 import { GrooveCard } from './puzzle/GrooveCard'
 import { PlayTodayLink } from './puzzle/PlayTodayLink'
 import { SharedGrooveNotice } from './puzzle/SharedGrooveNotice'
+import { GrooveControls } from './header/GrooveControls'
 import { GrooveHeader } from './header/GrooveHeader'
 import { ShareGroove } from './header/ShareGroove'
 import { TransposeSelect } from './header/TransposeSelect'
@@ -243,8 +244,6 @@ function GroovePuzzleView({
         <GrooveHeader
           streak={streak}
           onShowHelp={showHelp ? null : handleShowHelp}
-          share={<ShareGroove groove={groove} />}
-          transpose={<TransposeSelect instrumentKey={instrumentKey} onChange={setInstrumentKey} />}
         />
 
         {showHelp && <HowToPlay onClose={handleCloseHelp} />}
@@ -263,6 +262,16 @@ function GroovePuzzleView({
         )}
 
         {shared && <SharedGrooveNotice />}
+
+        <GrooveControls
+          share={<ShareGroove groove={groove} />}
+          transpose={
+            <TransposeSelect
+              instrumentKey={instrumentKey}
+              onChange={setInstrumentKey}
+            />
+          }
+        />
 
         <Row gap="lg" collapseBelow="md">
           <div className="min-w-0 w-full flex-1 md:w-auto grid">

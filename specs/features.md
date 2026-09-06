@@ -72,7 +72,7 @@ Status runs 📝 **Drafted** → ❓ **Questions open** → 🛠 **Ready to buil
 | [6](quick/6-six-mode-options.md) | Six mode options | ✅ Done | Offers six mode chips instead of four, laid out as two rows of three, with simple mode still major/minor. |
 | [7](quick/7-dev-groove-preview.md) | Dev groove preview | ✅ Done | Adds a dev-only page listing every groove by date, so upcoming ones can be played and their lick variations heard over them before they ship. |
 | [8](quick/8-comp-velocity-layer-jump.md) | Comp velocity layers | 🛠 Ready to build | Evens out the piano comp so a note crossing a sample-layer boundary stops jumping ~7.5 dB above the rest of the part. |
-| [9](quick/9-how-to-play-above-the-buttons.md) | How to play placement | 🛠 Ready to build | Puts the how-to-play box right under the subtitle and moves the transpose and share buttons down to sit directly above the groove box. |
+| [9](quick/9-how-to-play-above-the-buttons.md) | How to play placement | ✅ Done | Puts the how-to-play box right under the subtitle and moves the transpose and share buttons down to sit directly above the groove box. |
 
 ---
 

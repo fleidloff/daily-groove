@@ -61,3 +61,22 @@ Opened by Q1-B. `GrooveHeader` takes `share` and `transpose` as `ReactNode` slot
 * Assumption — the shared route keeps both controls. `ShareGroove` and `TransposeSelect` are rendered unconditionally today, and `GroovePuzzle.header.test.tsx:242` pins share on a shared groove.
 * `src/features/daily-groove/components/GroovePuzzle.intro.test.tsx:119` (*follows the masthead and precedes the groove card*) still passes — it compares heading positions only, and the how-to-play box moves up, not past the `h1`.
 * `src/features/daily-groove/components/GroovePuzzle.page.test.tsx:443` forbids `order-*`, `absolute`, `fixed` and `sticky` on the chain above the panels. The reorder has to be markup order, not CSS.
+
+## Built
+
+* `src/features/daily-groove/components/header/GrooveControls.tsx` — new. Takes `share` and `transpose` as `ReactNode` slots (Q3-A) and renders them, transpose first, in the `Row gap="sm" align="center" justify="end"` lifted out of `GrooveHeader` (Q2-A). Renders nothing when it has neither slot.
+* `src/features/daily-groove/components/header/GrooveHeader.tsx` — dropped both slots and the row that held them. The outer `Stack gap="sm"` collapsed into the inner `Stack gap="xs"`, leaving the title/streak line and the tagline.
+* `src/features/daily-groove/components/GroovePuzzle.tsx` — renders `<GrooveControls>` between `{shared && <SharedGrooveNotice />}` and the groove-box `<Row gap="lg" collapseBelow="md">`.
+* `src/features/daily-groove/structure.test.ts` — `GrooveControls` added to `REGIONS.header`, which the region guard checks in both directions.
+* tests:
+  * `components/header/GrooveControls.test.tsx` — new. Slot order, `justify-end`, either slot alone, the empty case, no second banner landmark, and the two source assertions carried over from the header (Q3-A).
+  * `components/header/GrooveHeader.test.tsx` — the *share slot (F12 E2)* and *transpose slot (F23 E1)* blocks and the `controlsRow` helper removed; props narrowed to `['streak', 'onShowHelp']`; the two *learns nothing about sharing / about pitch* source assertions kept on their own subject, plus one that the header now holds no controls row.
+  * `components/GroovePuzzle.header.test.tsx` — four order tests: subtitle → how-to-play → controls, the controls row adjacent to the groove box, the same order on a shared groove under the notice, and that the order is markup rather than `order-*` / `absolute` / `fixed` / `sticky`.
+  * `components/GroovePuzzle.written.test.tsx` — feature-23's *sits in the header beside share* assertion narrowed, not deleted: `closest('header')` now asserts the control **left** the header, and a `compareDocumentPosition` check pins the row above the groove card. Every other clause of that AC survives. The ticket's `## Notes` did not list this file, and the verifier is what found it.
+* checks: lint pass · type check pass · app tier pass (2875 tests) · tooling pass · build pass. Generator tier not run — `tiersFor` returns `['app','tooling']` for this scope and no bullet is graded on it.
+* verifier: **pass** — 4 done, 0 partly, 0 not done. All four citations resolve under `scripts/citations.ts`.
+  * D1 — how-to-play between the subtitle and the controls: `GroovePuzzle.header.test.tsx` *puts the how-to-play box between the subtitle and the controls*.
+  * D2 — controls immediately above the groove box: same file, *puts the controls immediately above the groove box*, asserting `row.nextElementSibling` contains the groove-box heading.
+  * D3 — the shared notice above the controls: same file, *keeps the same order on a shared groove, under the shared notice*.
+  * D4 — both routes covered: the two order tests, one per mode. The routes mount nothing but the composer.
+* known gaps, none leaving a bullet uncovered: nothing asserts the routes mount the composer (read from source); the audio-error alert's position is an untested assumption and the only conditional sibling near the adjacency check; adjacency is pinned on the daily route only.

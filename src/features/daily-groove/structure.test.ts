@@ -271,6 +271,7 @@ describe('feature components sit in screen regions', () => {
   const REGIONS: Record<string, string[]> = {
     dev: ['GroovePreview'],
     header: [
+      'GrooveControls',
       'GrooveHeader',
       'HelpToggle',
       'ShareGroove',
