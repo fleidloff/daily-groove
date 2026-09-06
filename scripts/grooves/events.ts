@@ -1,4 +1,12 @@
-import type { FeelTemplate, GrooveSpec, MusicMeta, NoteEvent, VoiceName } from './types.ts'
+import type {
+  FeelTemplate,
+  GrooveSpec,
+  MusicMeta,
+  NoteEvent,
+  Subdivision,
+  VoiceName,
+} from './types.ts'
+import { assertFigures, assertPatterns } from './patterns.ts'
 import { intBetween, pick, rngFor } from './rng.ts'
 import { applyDrift, applySwing, fitToLoop, humanize } from './humanize.ts'
 import { ROOTS } from '../../src/lib/theory/roots.ts'
@@ -8,7 +16,7 @@ import { scaleName } from '../../src/lib/theory/scales.ts'
 
 const BEATS_PER_BAR = 4
 
-const BARS_PER_PASS = 4
+export const BARS_PER_PASS = 4
 
 // FROZEN. The committed answers derive from this exact string and draw
 // order, so a change re-keys the whole catalogue.
@@ -23,6 +31,10 @@ export const GHOST_LABEL = 'ghosts'
 export const BONGO_LABEL = 'bongo'
 
 export const RIDE_LABEL = 'ride'
+
+// The kit figure is a per-template snare line, so it takes its own stream:
+// nothing may be inserted into an existing one.
+export const KIT_LABEL = 'kit'
 
 const BASS_BASE_MIDI = 24
 
@@ -101,7 +113,7 @@ function clampVelocity(velocity: number): number {
   return Math.min(1, Math.max(MIN_VELOCITY, velocity))
 }
 
-const PATTERN_RESOLUTION = 16
+export const PATTERN_RESOLUTION = 16
 
 const KICK_PATTERNS: number[][] = [
   [0, 6, 10],
@@ -127,7 +139,7 @@ export const HAT_PUNCTUATION_PATTERNS: number[][] = [
 
 // On a riding feel the ride is the pulse, so every figure keeps every quarter
 // and outnumbers the busiest foot hat.
-export const RIDE_PATTERNS: Partial<Record<FeelTemplate['subdivision'], number[][]>> = {
+export const RIDE_PATTERNS: Partial<Record<Subdivision, number[][]>> = {
   8: [
     [0, 2, 4, 6, 8, 10, 12, 14],
     [0, 4, 6, 8, 12, 14],
@@ -211,6 +223,11 @@ export const DEFAULT_PLACEMENT: Placement = {
 export const PLACEMENTS: Record<string, Partial<Placement>> = {
   'half-time': { snare: [8] },
   'bright-straight': { rim: [14], rimBars: [3] },
+  // No snare key: patterns.kit owns this feel's snare line, and declaring both throws.
+  // The cross-stick clicks on the "e" of 4 — the one sixteenth every kit figure and
+  // every tom accent leaves empty — and it clicks in all four bars, so a pass whose
+  // last bar is a fill still has it three times.
+  'second-line': { hatOpen: [14], rim: [13], rimBars: [0, 1, 2, 3] },
 }
 
 function placementFor(templateId: string): Placement {
@@ -230,6 +247,48 @@ export const FILLS: Record<string, { fill: FillPhrase; variation?: FillPhrase }>
   'half-time': { fill: { snare: [8, 12], tomHigh: [10], tomLow: [14] } },
   shuffle: {
     fill: { kick: [0], snare: [0, 4, 14], tomHigh: [6, 8], tomLow: [10, 12] },
+  },
+  // A bossa has no drum fill: the hat and the clave never stop, and the turnaround is
+  // a snare push rather than a roll. Both phrases are declared because the feel carries
+  // no toms, which would make the default `withoutToms` variation identical to its fill.
+  'bossa-nova': {
+    fill: { kick: [0, 8], snare: [4, 10, 12, 14], hatClosed: [0, 2, 4, 6, 8, 10, 12, 14] },
+    variation: { kick: [0, 8], snare: [4, 12, 14], hatClosed: [0, 2, 4, 6, 8, 10, 12, 14] },
+  },
+  // The fill is the style, not a punctuation on it: a bar-long snare figure with the
+  // toms answering it into beat 4, and no crash to arrive at, because the kit has
+  // none. The kick keeps step 0 — the downbeat after this bar is position zero of the
+  // file — and adds beat 4 under the low tom. The hat holds quarters so the roll has a
+  // floor; the open hat and the rim stand down, which is what makes the bar read as an
+  // event.
+  //
+  // The variation is the same groove with its tom answer taken away and its snare
+  // thinned to the four struck steps. It is declared rather than left to
+  // withoutToms(fill) because this feel's ordinary bars already carry toms, so the
+  // thinning has to be visible against them rather than against the fill.
+  // The fill's low tom keeps the big four and pushes past it into the downbeat: in an
+  // ordinary bar the low tom *is* beat 4, so a fill that lands there and stops repeats
+  // the groove instead of answering it. The variation keeps the turnaround click — a
+  // thinning takes the answer out, not the timekeeping — and the fill still drops it,
+  // because the roll wants that sixteenth. Both are what make the middle bar read as
+  // less than the drawn figure and the last bar as more; measured over 400 seeds the
+  // middle bar is nearer an ordinary bar than the fill is at every one of the 48
+  // combinations the three pools can draw.
+  'second-line': {
+    fill: {
+      kick: [0, 12],
+      snare: [0, 1, 2, 4, 5, 6, 8, 14],
+      tomHigh: [10, 11],
+      tomLow: [12, 14],
+      hatClosed: [0, 4, 8, 12],
+    },
+    variation: {
+      kick: [0, 6, 12],
+      snare: [0, 6, 10, 14],
+      hatClosed: [0, 4, 8, 12],
+      hatOpen: [14],
+      rim: [13],
+    },
   },
 }
 
@@ -271,7 +330,7 @@ function scaleStep(step: number, subdivision: number): number {
   return Math.min(subdivision - 1, Math.round((step * subdivision) / PATTERN_RESOLUTION))
 }
 
-function gridSteps(steps: number[], subdivision: number): number[] {
+export function gridSteps(steps: number[], subdivision: number): number[] {
   const seen = new Set<number>()
   const out: number[] = []
   for (const source of [...steps].sort((a, b) => a - b)) {
@@ -378,6 +437,9 @@ export function buildEvents(
   spec: GrooveSpec,
   template: FeelTemplate,
 ): { events: NoteEvent[]; music: MusicMeta; harmony: Harmony } {
+  if (template.patterns) assertPatterns(template, PLACEMENTS)
+  if (template.figures) assertFigures(template)
+
   const musicRng = rngFor(`${spec.template}:${spec.seed}:${MUSIC_LABEL}`)
   const rhythmRng = rngFor(`${spec.template}:${spec.seed}:${RHYTHM_LABEL}`)
 
@@ -392,12 +454,16 @@ export function buildEvents(
   const plays = (voice: VoiceName) => template.voices.includes(voice)
   const rides = plays('ride')
 
-  const kickSteps = grid(pick(rhythmRng, KICK_PATTERNS))
-  const hatSteps = grid(pick(rhythmRng, rides ? HAT_PUNCTUATION_PATTERNS : HAT_PATTERNS))
-  const bassSteps = grid(pick(rhythmRng, BASS_PATTERNS))
-  const compSteps = grid(pick(rhythmRng, COMP_PATTERNS))
+  const pools = template.patterns
 
-  const ridePool = RIDE_PATTERNS[template.subdivision]
+  const kickSteps = grid(pick(rhythmRng, pools?.kick ?? KICK_PATTERNS))
+  const hatSteps = grid(
+    pick(rhythmRng, pools?.hatClosed ?? (rides ? HAT_PUNCTUATION_PATTERNS : HAT_PATTERNS)),
+  )
+  const bassSteps = grid(pick(rhythmRng, pools?.bass ?? BASS_PATTERNS))
+  const compSteps = grid(pick(rhythmRng, pools?.comp ?? COMP_PATTERNS))
+
+  const ridePool = (pools?.ride ?? RIDE_PATTERNS)[template.subdivision]
   if (rides && !ridePool) {
     throw new Error(
       `${template.id}: no ride pattern pool for subdivision ${template.subdivision}`,
@@ -419,7 +485,7 @@ export function buildEvents(
 
   const playsBongo = template.voices.includes('bongoHigh')
   const bongoFigure = playsBongo
-    ? pick(rngFor(`${spec.template}:${spec.seed}:${BONGO_LABEL}`), BONGO_PATTERNS)
+    ? pick(rngFor(`${spec.template}:${spec.seed}:${BONGO_LABEL}`), pools?.bongos ?? BONGO_PATTERNS)
     : { high: [], low: [] }
   const bongoHighSteps = grid(bongoFigure.high)
   const bongoLowSteps = grid(bongoFigure.low)
@@ -429,13 +495,20 @@ export function buildEvents(
   bongoLine.forEach((step, index) => {
     bongoAccents.set(step, BONGO_ACCENTS[index % BONGO_ACCENTS.length])
   })
-  const snareSteps = grid(placement.snare)
-  const hatOpenSteps = grid(placement.hatOpen)
-  const rimSteps = grid(placement.rim)
+  const kitFigure = pools?.kit
+    ? pick(rngFor(`${spec.template}:${spec.seed}:${KIT_LABEL}`), pools.kit)
+    : null
+  const snareSteps = grid(kitFigure ? kitFigure.snare : placement.snare)
+  const kitTomHighSteps = grid(kitFigure?.tomHigh ?? [])
+  const kitTomLowSteps = grid(kitFigure?.tomLow ?? [])
+
+  const figureVoices = new Set(template.figures?.map((figure) => figure.voice) ?? [])
+  const hatOpenSteps = figureVoices.has('hatOpen') ? [] : grid(placement.hatOpen)
+  const rimSteps = figureVoices.has('rim') ? [] : grid(placement.rim)
 
   const ghostRng = rngFor(`${spec.template}:${spec.seed}:${GHOST_LABEL}`)
   const ghostsForBar = () =>
-    ghostSteps(pick(ghostRng, SNARE_GHOST_PATTERNS), template.subdivision).filter(
+    ghostSteps(pick(ghostRng, pools?.snareGhosts ?? SNARE_GHOST_PATTERNS), template.subdivision).filter(
       (step) => !snareSteps.includes(step),
     )
   const ghostVelocity =
@@ -679,6 +752,12 @@ export function buildEvents(
           for (const step of snareSteps) add('snare', bar, step, 2)
           for (const step of ghosts) add('snare', bar, step, 1, undefined, ghostVelocity)
         }
+        if (plays('tomHigh')) {
+          for (const step of kitTomHighSteps) add('tomHigh', bar, step, FILL_DURATIONS.tomHigh)
+        }
+        if (plays('tomLow')) {
+          for (const step of kitTomLowSteps) add('tomLow', bar, step, FILL_DURATIONS.tomLow)
+        }
         if (plays('hatClosed')) {
           const closed = plays('hatOpen')
             ? hatSteps.filter((s) => !hatOpenSteps.includes(s))
@@ -703,6 +782,21 @@ export function buildEvents(
             const base = velocityFor('bongoLow', sixteenth)
             add('bongoLow', bar, step, 1, undefined, clampVelocity(base * (bongoAccents.get(step) ?? 1)))
           }
+        }
+      }
+
+      for (const figure of template.figures ?? []) {
+        if (!plays(figure.voice)) continue
+        for (const step of grid(figure.bars[barInPass % figure.bars.length])) {
+          const sixteenth = (step * PATTERN_RESOLUTION) / template.subdivision
+          add(
+            figure.voice,
+            bar,
+            step,
+            FILL_DURATIONS[figure.voice],
+            undefined,
+            velocityFor(figure.voice, sixteenth),
+          )
         }
       }
 

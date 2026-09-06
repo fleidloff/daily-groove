@@ -2,8 +2,9 @@ import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, statSy
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { main } from './add-cli.ts'
+import { main, parseArgs } from './add-cli.ts'
 import { readCatalogue, writeCatalogue } from './catalogue.ts'
+import { allTemplates } from './templates/index.ts'
 import { placeholderPack } from './testing/placeholderPack.ts'
 import type { GateFailure, GrooveSpec } from './types.ts'
 
@@ -99,6 +100,43 @@ describe('grooves:add CLI', () => {
     expect(readdirSync(f.outDir).sort()).toEqual(['groove-01.mp3', 'groove-02.mp3'])
   })
 
+  it('mints only the template the flag names (feature-25 epic-1)', async () => {
+    const f = fixture()
+    const log: string[] = []
+
+    const code = await main(['1', '--template', 'open-ballad'], {
+      startSeed: 7300,
+      gate: PASS,
+      log: (l) => log.push(l),
+      ...f,
+    })
+
+    expect(code).toBe(0)
+    const minted = readCatalogue(f.cataloguePath).slice(2)
+    expect(minted).toHaveLength(1)
+    expect(minted.map((s) => s.template)).toEqual(['open-ballad'])
+  }, RENDER_TIMEOUT_MS)
+
+  it('rejects an unknown template id before rendering anything (feature-25 epic-1)', async () => {
+    const f = fixture()
+    const before = readFileSync(f.cataloguePath, 'utf8')
+    const filesBefore = readdirSync(f.outDir).sort()
+    const log: string[] = []
+
+    const code = await main(['1', '--template', 'bossa-nvoa'], {
+      templates: allTemplates(),
+      log: (l) => log.push(l),
+      ...f,
+    })
+
+    expect(code).toBe(1)
+    const said = log.join('\n')
+    expect(said).toContain('bossa-nvoa')
+    for (const template of allTemplates()) expect(said).toContain(template.id)
+    expect(readFileSync(f.cataloguePath, 'utf8')).toBe(before)
+    expect(readdirSync(f.outDir).sort()).toEqual(filesBefore)
+  })
+
   it('left every committed artifact untouched', () => {
     expect(readFileSync(REAL_LOCK, 'utf8'), 'a test rewrote the committed lock').toBe(COMMITTED.lock)
     expect(readFileSync(REAL_CATALOGUE, 'utf8'), 'a test rewrote the catalogue').toBe(
@@ -108,5 +146,30 @@ describe('grooves:add CLI', () => {
       audioFingerprint(join(process.cwd(), 'public', 'grooves')),
       'a test wrote into public/grooves',
     ).toBe(COMMITTED.audio)
+  })
+})
+
+describe('parseArgs', () => {
+  it('reads a count and the template the flag names', () => {
+    expect(parseArgs(['6', '--template', 'bossa-nova'])).toEqual({ n: 6, templateId: 'bossa-nova' })
+    expect(parseArgs(['6', '--template=bossa-nova'])).toEqual({ n: 6, templateId: 'bossa-nova' })
+  })
+
+  it('leaves templateId absent when no flag is given, so the options object is today\'s', () => {
+    expect(parseArgs(['6'])).toEqual({ n: 6 })
+    expect('templateId' in parseArgs(['6'])).toBe(false)
+  })
+
+  it('throws naming the token for a valueless flag or an unknown one', () => {
+    expect(() => parseArgs(['6', '--template'])).toThrow(/--template/)
+    expect(() => parseArgs(['6', '--template', '--wat'])).toThrow(/--template/)
+    expect(() => parseArgs(['6', '--wat'])).toThrow(/--wat/)
+  })
+
+  it('rejects a missing or non-numeric count', () => {
+    expect(() => parseArgs([])).toThrow(/npm run grooves:add <n>/)
+    expect(() => parseArgs(['banana'])).toThrow(/npm run grooves:add <n>/)
+    expect(() => parseArgs(['0'])).toThrow(/npm run grooves:add <n>/)
+    expect(() => parseArgs(['2.5'])).toThrow(/npm run grooves:add <n>/)
   })
 })

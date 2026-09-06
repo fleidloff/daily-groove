@@ -7,13 +7,6 @@ import type { GrooveSpec, MusicMeta, NoteEvent } from './types.ts'
 
 export const FIXTURE_PATH = fileURLToPath(new URL('./events.fixture.json', import.meta.url))
 
-export const FIXTURE_FEELS = [
-  'straight-funk',
-  'bright-straight',
-  'half-time',
-  'open-ballad',
-] as const
-
 export type GrooveDigest = { music: MusicMeta; events: string[] }
 
 export type EventsFixture = Record<string, GrooveDigest>
@@ -28,8 +21,11 @@ export function fixtureKey(spec: Pick<GrooveSpec, 'template' | 'seed'>): string 
 }
 
 export function fixtureSpecs(catalogue: readonly GrooveSpec[] = readCatalogue()): GrooveSpec[] {
-  const feels: readonly string[] = FIXTURE_FEELS
-  return catalogue.filter((spec) => feels.includes(spec.template))
+  return [...catalogue]
+}
+
+export function fixtureFeels(catalogue: readonly GrooveSpec[] = readCatalogue()): string[] {
+  return [...new Set(catalogue.map((spec) => spec.template))].sort()
 }
 
 export function serialiseEvent(event: NoteEvent): string {

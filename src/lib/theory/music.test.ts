@@ -314,8 +314,14 @@ describe('the rotation is the generated catalogue (Epic 4)', () => {
   })
 
   it('hands the whole catalogue to the day’s pick and to the pool (R7, AC8)', () => {
-    const picks = hits(/selectGrooveForDate\([^\n]*\bGROOVES\b\s*\)/)
+    const picks = hits(/selectGrooveForDate\([^\n]*\bGROOVES\b[^\n]*\)/)
     expect(picks.length).toBeGreaterThan(0)
+
+    // dev/GroovePreview.tsx satisfies the count on its own, so pin the resolver
+    // the day's groove actually comes from rather than a dev-only page.
+    expect(
+      picks.some((hit) => hit.startsWith('src/features/daily-groove/lib/puzzle/dailyGroove.ts:')),
+    ).toBe(true)
 
     const pools = hits(/flavourPool\(\s*GROOVES\s*\)/)
     expect(pools.length).toBeGreaterThan(0)

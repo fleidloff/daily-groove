@@ -3,7 +3,9 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import { readLock, sha256File } from '../lock.ts'
-import { VELOCITIES } from '../events.ts'
+import { VELOCITIES, buildEvents } from '../events.ts'
+import { readCatalogue } from '../catalogue.ts'
+import { templateById } from '../templates/index.ts'
 import { shuffle } from '../templates/shuffle.ts'
 import { VOICE_NAMES } from '../types.ts'
 import type { PackDeclaration, VelocityLayer, VoiceName } from '../types.ts'
@@ -264,8 +266,21 @@ describe('the pack is stocked for Epic 2', () => {
     bass: [42, 45, 49],
   }
 
-  it('velocity-layers the pitched voices too', () => {
+  // quick-8: the comp is not short of recordings — VSCO 2 CE ships three dynamics and
+  // this pack declined two of them. Its layers were 10–14 dB apart while the bands
+  // imply 3–9, so both boundaries stepped audibly and a chord voice drifting over one
+  // on humanize jitter changed timbre mid-part. dyn2 alone is the flattest of the
+  // three across the four notes the catalogue actually plays (2.4 dB of spread against
+  // dyn1's 6.4 and dyn3's 5.1), and mf is the touch a backing comp under a soloist
+  // wants. The reason belongs in the assertion rather than in a silent exemption:
+  // see the README's "The comp declines the velocity layers the library has".
+  const SINGLE_LAYER_BY_DESIGN: Partial<Record<VoiceName, string>> = {
+    comp: 'one dyn2 layer across the whole range — quick-8, to close both layer steps',
+  }
+
+  it('velocity-layers the pitched voices too, or names why it does not', () => {
     for (const voice of PITCHED_VOICES) {
+      if (SINGLE_LAYER_BY_DESIGN[voice]) continue
       const exempt = SINGLE_VELOCITY_IN_SOURCE[voice] ?? []
       for (const note of decl.voices[voice]?.notes ?? []) {
         if (exempt.includes(note.midi)) continue
@@ -279,6 +294,7 @@ describe('the pack is stocked for Epic 2', () => {
 
   it('round-robins the notes it cannot velocity-layer, so a repeat never replays one file', () => {
     for (const voice of PITCHED_VOICES) {
+      if (SINGLE_LAYER_BY_DESIGN[voice]) continue
       for (const midi of SINGLE_VELOCITY_IN_SOURCE[voice] ?? []) {
         const note = decl.voices[voice]?.notes?.find((n) => n.midi === midi)
         expect(note, `${voice} MIDI ${midi} is exempted but not declared`).toBeDefined()
@@ -290,8 +306,9 @@ describe('the pack is stocked for Epic 2', () => {
     }
   })
 
-  it('velocity-layers most of every pitched voice, so the exemption stays an exception', () => {
+  it('velocity-layers most of every pitched voice that declares layers at all', () => {
     for (const voice of PITCHED_VOICES) {
+      if (SINGLE_LAYER_BY_DESIGN[voice]) continue
       const notes = decl.voices[voice]?.notes ?? []
       const layered = notes.filter((n) => n.layers.length >= 2).length
       expect(
@@ -299,6 +316,99 @@ describe('the pack is stocked for Epic 2', () => {
         `${voice} carries velocity layers on only ${layered} of its ${notes.length} notes`,
       ).toBeGreaterThan(notes.length)
     }
+  })
+
+  it('holds every single-layer pitched voice to exactly one layer, so the reason still fits', () => {
+    for (const voice of Object.keys(SINGLE_LAYER_BY_DESIGN) as VoiceName[]) {
+      const notes = decl.voices[voice]?.notes ?? []
+      expect(notes.length, `${voice} is named single-layer but declares no notes`).toBeGreaterThan(0)
+      for (const note of notes) {
+        expect(
+          note.layers.length,
+          `${voice} MIDI ${note.midi} has grown a second layer — ` +
+            `${SINGLE_LAYER_BY_DESIGN[voice]} no longer describes the pack`,
+        ).toBe(1)
+      }
+    }
+  })
+
+  // What the removed assertion was a proxy for. Three velocity layers were never a
+  // machine-gun guard — 83% of comp notes already replayed one dyn2 file. This is the
+  // guard that was actually doing the work, so it is pinned where the proxy was:
+  // COMP_SPREAD_RANGE rolls each voicing over 5-15 ms, so almost every comp event
+  // owns its own onset, successive chords are different pitches, and humanize gives
+  // every event its own velocity. The same recording is never struck twice running at
+  // the same pitch and the same gain.
+  describe('what actually keeps the comp off the machine-gun artefact', () => {
+    const grooves = readCatalogue().map((spec) => {
+      const { events } = buildEvents(spec, templateById(spec.template))
+      return {
+        id: spec.id,
+        comp: events
+          .filter((event) => event.voice === 'comp')
+          .sort((a, b) => a.timeSec - b.timeSec),
+      }
+    })
+
+    it('renders comp events the catalogue can be measured on', () => {
+      expect(grooves.length, 'the catalogue is empty').toBeGreaterThan(0)
+      expect(
+        grooves.reduce((total, groove) => total + groove.comp.length, 0),
+        'no groove plays a comp',
+      ).toBeGreaterThan(0)
+    })
+
+    it('never strikes one pitch twice running at the same velocity', () => {
+      for (const groove of grooves) {
+        const last = new Map<number, number>()
+        for (const event of groove.comp) {
+          const previous = last.get(event.midi!)
+          if (previous !== undefined) {
+            expect(
+              Math.abs(event.velocity - previous) > 1e-9,
+              `${groove.id} replays MIDI ${event.midi} at velocity ${event.velocity} twice running`,
+            ).toBe(true)
+          }
+          last.set(event.midi!, event.velocity)
+        }
+      }
+    })
+
+    it('gives all but a handful of comp events an onset of their own', () => {
+      let events = 0
+      let onsets = 0
+      for (const groove of grooves) {
+        events += groove.comp.length
+        onsets += new Set(groove.comp.map((event) => event.timeSec.toFixed(4))).size
+      }
+      expect(onsets / events, 'the comp lands as blocks, not as a rolled voicing').toBeGreaterThan(
+        0.98,
+      )
+    })
+
+    it('repeats a whole voicing on consecutive onsets only rarely', () => {
+      let consecutive = 0
+      let repeated = 0
+      for (const groove of grooves) {
+        const byOnset = new Map<string, number[]>()
+        for (const event of groove.comp) {
+          const key = event.timeSec.toFixed(4)
+          byOnset.set(key, [...(byOnset.get(key) ?? []), event.midi!])
+        }
+        const keys = [...byOnset.keys()].sort((a, b) => Number(a) - Number(b))
+        for (let i = 1; i < keys.length; i += 1) {
+          consecutive += 1
+          const before = [...byOnset.get(keys[i - 1])!].sort().join(',')
+          const after = [...byOnset.get(keys[i])!].sort().join(',')
+          if (before === after) repeated += 1
+        }
+      }
+      expect(consecutive, 'nothing consecutive to measure').toBeGreaterThan(0)
+      expect(
+        repeated / consecutive,
+        `${repeated} of ${consecutive} consecutive comp onsets repeat their pitches`,
+      ).toBeLessThan(0.02)
+    })
   })
 })
 

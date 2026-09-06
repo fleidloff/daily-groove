@@ -9,7 +9,7 @@ import { buildEvents } from './events.ts'
 import { mixTracks, PEAK_CEILING, SEAM_THRESHOLD, truePeak } from './mix.ts'
 import { nameFor } from './name.ts'
 import { loadPack } from './pack.ts'
-import { templateById } from './templates/index.ts'
+import { TEMPLATES, templateById } from './templates/index.ts'
 import { renderVoices } from './voices.ts'
 import { OVERHANG_BARS, SAMPLE_RATE } from './cli.ts'
 import {
@@ -502,5 +502,123 @@ describe('the audition rig', () => {
     expect(sha256File(DEFAULT_MANIFEST_PATH)).toBe(manifestBefore)
     expect(statSync(DEFAULT_MANIFEST_PATH).mtimeMs).toBe(manifestMtimeBefore)
     expect(readLock(DEFAULT_LOCK_PATH)).toEqual(lockBefore)
+  }, RENDER_TIMEOUT_MS)
+})
+
+describe('an off-catalogue render — R11', () => {
+  const optionsFor = (argv: string[]) => optionsFrom(parseArgs(argv))
+
+  const committed = () => ({
+    manifest: sha256File(DEFAULT_MANIFEST_PATH),
+    manifestMtime: statSync(DEFAULT_MANIFEST_PATH).mtimeMs,
+    lock: sha256File(DEFAULT_LOCK_PATH),
+    lockMtime: statSync(DEFAULT_LOCK_PATH).mtimeMs,
+  })
+
+  it('reads --template and every --seed, in the order the flags appear', () => {
+    const args = parseArgs(['--template', 'shuffle', '--seed', '7', '--seed', '9', '--out', '/tmp/audition-y'])
+
+    expect(args).toEqual({
+      template: 'shuffle',
+      seeds: [7, 9],
+      outDir: '/tmp/audition-y',
+      only: [],
+      manifestOnly: false,
+    })
+  })
+
+  it('synthesises one uuid-less spec per seed, and asks nothing of heard-in.json', () => {
+    const dir = '/tmp/audition-y'
+    const options = optionsFor(['--template', 'shuffle', '--seed', '7', '--seed', '9', '--out', dir])
+
+    expect(options.catalogue).toEqual([
+      { id: 'audition-shuffle-7', uuid: '', template: 'shuffle', seed: 7 },
+      { id: 'audition-shuffle-9', uuid: '', template: 'shuffle', seed: 9 },
+    ])
+    expect(options.heardIn).toEqual({})
+    expect(options.outDir).toBe(dir)
+    expect(options.manifestPath).toBe(join(dir, 'grooves.generated.ts'))
+    expect(options.lockPath).toBe(join(dir, 'grooves.lock.json'))
+    expect(options.manifestPath).not.toBe(DEFAULT_MANIFEST_PATH)
+    expect(options.lockPath).not.toBe(DEFAULT_LOCK_PATH)
+  })
+
+  it('names no catalogue entry: the ids it invents are not groove-NN', () => {
+    const options = optionsFor(['--template', 'shuffle', '--seed', '7', '--out', '/tmp/audition-y'])
+    const ids = new Set(readCatalogue().map((s) => s.id))
+    for (const spec of options.catalogue!) {
+      expect(ids.has(spec.id), `${spec.id} collides with a catalogue entry`).toBe(false)
+      expect(spec.id).not.toMatch(/^groove-\d{2}$/)
+    }
+  })
+
+  it('refuses --template without --out, rather than overwriting the real manifest', () => {
+    const before = committed()
+    expect(() => optionsFor(['--template', 'shuffle', '--seed', '7'])).toThrow(/--out/)
+    expect(committed()).toEqual(before)
+  })
+
+  it('refuses --template together with --only', () => {
+    const before = committed()
+    expect(() =>
+      optionsFor(['--template', 'shuffle', '--seed', '7', '--only', 'groove-01', '--out', '/tmp/audition-y']),
+    ).toThrow(/--only/)
+    expect(committed()).toEqual(before)
+  })
+
+  it('refuses a template the registry does not hold, and lists the ones it does', () => {
+    const before = committed()
+    let message = ''
+    try {
+      optionsFor(['--template', 'no-such-feel', '--seed', '7', '--out', '/tmp/audition-y'])
+    } catch (error) {
+      message = error instanceof Error ? error.message : String(error)
+    }
+    expect(message).toContain('no-such-feel')
+    for (const id of Object.keys(TEMPLATES)) expect(message).toContain(id)
+    expect(committed()).toEqual(before)
+  })
+
+  it('refuses a seed that is not a non-negative integer', () => {
+    const before = committed()
+    for (const seed of ['abc', '-1', '1.5']) {
+      expect(() =>
+        optionsFor(['--template', 'shuffle', '--seed', seed, '--out', '/tmp/audition-y']),
+      ).toThrow(new RegExp(`--seed[^]*${seed.replace('.', '\\.')}`))
+    }
+    expect(committed()).toEqual(before)
+  })
+
+  it('refuses --template with no --seed, and --seed with no --template', () => {
+    const before = committed()
+    expect(() => optionsFor(['--template', 'shuffle', '--out', '/tmp/audition-y'])).toThrow(/--seed/)
+    expect(() => optionsFor(['--seed', '7', '--out', '/tmp/audition-y'])).toThrow(/--template/)
+    expect(committed()).toEqual(before)
+  })
+
+  it('leaves the no-flag invocation exactly as it was', () => {
+    const options = optionsFrom(parseArgs([]))
+    expect(Object.keys(options)).toEqual(['encode'])
+    expect(parseArgs([])).toEqual({ only: [], seeds: [], manifestOnly: false })
+  })
+
+  it('renders an unminted groove into a scratch tree and touches nothing in the repo', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'audition-template-'))
+    const before = committed()
+    const realMp3Before = sha256File(REAL_MP3)
+
+    const { entries } = await generate({
+      ...optionsFrom(parseArgs(['--template', 'shuffle', '--seed', '7', '--out', dir])),
+      pack: placeholderPack(),
+    })
+
+    expect(entries.map((e) => e.id)).toEqual(['audition-shuffle-7'])
+    expect(existsSync(join(dir, 'audition-shuffle-7.mp3'))).toBe(true)
+    expect(existsSync(join(dir, 'grooves.generated.ts'))).toBe(true)
+    expect(existsSync(join(dir, 'grooves.lock.json'))).toBe(true)
+
+    expect(committed()).toEqual(before)
+    expect(sha256File(REAL_MP3)).toBe(realMp3Before)
+    expect(existsSync(join(DEFAULT_OUT_DIR, 'audition-shuffle-7.mp3'))).toBe(false)
   }, RENDER_TIMEOUT_MS)
 })

@@ -16,7 +16,7 @@ import { simpleLickMode } from '@/lib/theory/simpleModes'
 import { barChords } from '@/lib/theory/changes'
 import { writtenChord } from '@/lib/theory/written'
 import { metaLine } from '../lib/presentation'
-import { selectGrooveForDate } from '../lib/puzzle/selectGroove'
+import { dailyGroove } from '../lib/puzzle/dailyGroove'
 import { GROOVES, HEARD_IN } from '../data/grooves.generated'
 import { NOTES, PITCHES } from '../data/notes.generated'
 import {
@@ -82,7 +82,7 @@ function PuzzleLoading() {
 export function GroovePuzzle({ groove, mode = 'daily' }: GroovePuzzleProps) {
   const resolved = useSyncExternalStore<Groove | undefined>(
     subscribeNoop,
-    () => groove ?? selectGrooveForDate(new Date(), GROOVES),
+    () => groove ?? dailyGroove(new Date()),
     () => groove,
   )
 

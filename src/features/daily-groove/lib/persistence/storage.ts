@@ -63,6 +63,10 @@ function writeEnvelope(envelope: Envelope): void {
   }
 }
 
+export function pinnedGrooveId(date: string): string | undefined {
+  return readEnvelope().byDate[date]?.grooveId
+}
+
 export function createLocalStore(): ResultStore {
   return {
     async get(date: string): Promise<DailyResult | null> {

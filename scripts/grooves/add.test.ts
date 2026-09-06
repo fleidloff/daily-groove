@@ -7,11 +7,12 @@ import { addGrooves, renderCandidate } from './add.ts'
 import { readCatalogue, writeCatalogue } from './catalogue.ts'
 import { buildEvents } from './events.ts'
 import { gateCandidate } from './gate.ts'
+import { readHeardIn, type HeardInTable } from './heardIn.ts'
 import { readLock } from './lock.ts'
 import { nameFor } from './name.ts'
-import { allTemplates } from './templates/index.ts'
+import { allTemplates, templateById } from './templates/index.ts'
 import { placeholderPack } from './testing/placeholderPack.ts'
-import type { GateFailure, GrooveSpec } from './types.ts'
+import type { FeelTemplate, GateFailure, GrooveSpec } from './types.ts'
 import { isCanonicalUuid } from './uuid.ts'
 
 const ROOT = join(process.cwd(), 'scripts', 'grooves')
@@ -109,6 +110,48 @@ function mp3s(dir: string): string[] {
 function audioBytes(f: Fixture): Record<string, string> {
   return Object.fromEntries(mp3s(f.outDir).map((n) => [n, readFileSync(join(f.outDir, n), 'utf8')]))
 }
+
+function heardInKeys(manifest: string): string[] {
+  const at = manifest.indexOf('export const HEARD_IN')
+  if (at < 0) return []
+  return [...manifest.slice(at).matchAll(/^  '([^']+)': \{ track:/gm)].map((m) => m[1])
+}
+
+function countingUuids(): () => string {
+  let n = 0
+  return () => `00000000-0000-4000-8000-${String((n += 1)).padStart(12, '0')}`
+}
+
+function answersIn(
+  specs: readonly GrooveSpec[],
+  templates: readonly FeelTemplate[],
+): { answers: string[]; pairs: string[] } {
+  const answers: string[] = []
+  const pairs: string[] = []
+  for (const spec of specs) {
+    const template = templates.find((t) => t.id === spec.template)!
+    const { music } = buildEvents(spec, template)
+    answers.push(`${music.root}|${music.flavour}`)
+    pairs.push(`${music.scale}|${music.progression}`)
+  }
+  return { answers, pairs }
+}
+
+// Two templates with the same flavour list, so one template's answers are
+// reachable by the other — which is what the epic's overlapping lists create
+// and what the six committed, pairwise-disjoint templates cannot express.
+const TWIN_A: FeelTemplate = { ...templateById('straight-funk'), id: 'twin-a' }
+const TWIN_B: FeelTemplate = { ...TWIN_A, id: 'twin-b' }
+const TWINS = [TWIN_A, TWIN_B]
+
+// Seeds whose answers are pairwise distinct, so any duplicate the assertion
+// finds was introduced by the mint rather than already present.
+const TWIN_HELD: GrooveSpec[] = [1, 3, 4, 5, 6, 7, 8, 9, 11, 13, 15, 17].map((seed, i) => ({
+  id: `groove-${String(i + 1).padStart(2, '0')}`,
+  uuid: `00000000-0000-4000-8000-${String(i + 1).padStart(12, '0')}`,
+  template: 'twin-a',
+  seed,
+}))
 
 const MINT_TIMEOUT_MS = 30_000
 
@@ -386,4 +429,131 @@ describe('addGrooves', () => {
     )
     expect(audioFingerprint(REAL_AUDIO), 'a test wrote into public/grooves').toBe(COMMITTED.audio)
   })
+})
+
+describe('addGrooves — minting for one style (feature-25 epic-1)', () => {
+  it('rejects an unknown template id before the pack is touched or anything rendered', async () => {
+    const f = fixture()
+    const explodes = {
+      ...placeholderPack(),
+      get: () => {
+        throw new Error('the pack was touched')
+      },
+    }
+    const catalogueBefore = readFileSync(f.cataloguePath, 'utf8')
+
+    let message = ''
+    await expect(
+      addGrooves(1, {
+        startSeed: 100,
+        gate: PASS,
+        ...f,
+        pack: explodes,
+        templateId: 'nope',
+      }).catch((error: unknown) => {
+        message = error instanceof Error ? error.message : String(error)
+        throw error
+      }),
+    ).rejects.toThrow(/unknown template "nope"/)
+
+    for (const template of allTemplates()) expect(message).toContain(template.id)
+    expect(message).not.toContain('the pack was touched')
+    expect(readFileSync(f.cataloguePath, 'utf8')).toBe(catalogueBefore)
+    expect(existsSync(f.manifestPath), 'a rejected run wrote a manifest').toBe(false)
+    expect(existsSync(f.lockPath), 'a rejected run wrote a lock').toBe(false)
+  })
+
+  it('mints the named template even when every other one is scarcer', async () => {
+    const f = fixture(TWO)
+
+    const minted = await addGrooves(2, {
+      startSeed: 9000,
+      gate: PASS,
+      ...f,
+      templateId: 'straight-funk',
+    })
+
+    expect(minted.map((s) => s.template)).toEqual(['straight-funk', 'straight-funk'])
+  }, MINT_TIMEOUT_MS)
+
+  it('mints the named template when it is neither the scarcest nor the commonest', async () => {
+    const f = fixture(TWO)
+
+    const minted = await addGrooves(2, {
+      startSeed: 9200,
+      gate: PASS,
+      ...f,
+      templateId: 'bright-straight',
+    })
+
+    expect(minted.map((s) => s.template)).toEqual(['bright-straight', 'bright-straight'])
+  }, MINT_TIMEOUT_MS)
+
+  it('mints by scarcity, spec for spec, when no template is named', async () => {
+    const a = fixture()
+    const b = fixture()
+
+    const first = await addGrooves(4, {
+      startSeed: 2000,
+      gate: PASS,
+      mintUuid: countingUuids(),
+      ...a,
+    })
+    const second = await addGrooves(4, {
+      startSeed: 2000,
+      gate: PASS,
+      mintUuid: countingUuids(),
+      templateId: undefined,
+      ...b,
+    })
+
+    expect(second).toEqual(first)
+    expect(new Set(first.map((s) => s.template)).size).toBeGreaterThan(1)
+  }, MINT_TIMEOUT_MS * 2)
+
+  it('still sees every other template\'s answers while minting for one', async () => {
+    const f = fixture(TWIN_HELD)
+
+    await addGrooves(2, {
+      startSeed: 104,
+      gate: PASS,
+      ...f,
+      templates: TWINS,
+      templateId: 'twin-b',
+    })
+
+    const all = readCatalogue(f.cataloguePath)
+    expect(all).toHaveLength(TWIN_HELD.length + 2)
+    expect(all.slice(-2).map((s) => s.template)).toEqual(['twin-b', 'twin-b'])
+
+    const { answers, pairs } = answersIn(all, TWINS)
+    expect(new Set(answers).size, `duplicate answer in ${answers.join(', ')}`).toBe(answers.length)
+    expect(new Set(pairs).size, `duplicate scale and progression in ${pairs.join(', ')}`).toBe(
+      pairs.length,
+    )
+  }, MINT_TIMEOUT_MS)
+
+  it('writes the heard-in table it was given into the manifest it regenerates', async () => {
+    const f = fixture()
+    const heardIn: HeardInTable = {
+      'C ionian': { track: 'Let It Be', artist: 'The Beatles' },
+      'E dorian': { track: 'Riders on the Storm', artist: 'The Doors' },
+    }
+
+    await addGrooves(1, { startSeed: 7700, gate: PASS, ...f, heardIn })
+
+    const manifest = readFileSync(f.manifestPath, 'utf8')
+    expect(heardInKeys(manifest)).toEqual(['C ionian', 'E dorian'])
+    expect(manifest).toContain("track: 'Riders on the Storm'")
+  }, MINT_TIMEOUT_MS)
+
+  it('falls back to the committed table rather than emptying it', async () => {
+    const f = fixture()
+
+    await addGrooves(1, { startSeed: 7800, gate: PASS, ...f })
+
+    const keys = heardInKeys(readFileSync(f.manifestPath, 'utf8'))
+    expect(keys.length).toBeGreaterThan(0)
+    expect(keys).toEqual(Object.keys(readHeardIn()).sort())
+  }, MINT_TIMEOUT_MS)
 })

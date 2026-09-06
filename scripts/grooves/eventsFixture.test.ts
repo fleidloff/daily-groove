@@ -1,9 +1,9 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import {
-  FIXTURE_FEELS,
   FIXTURE_PATH,
   buildFixture,
+  fixtureFeels,
   fixtureKey,
   fixtureSpecs,
   readFixture,
@@ -11,14 +11,10 @@ import {
 } from './eventsFixture.ts'
 import { buildEvents } from './events.ts'
 import { readCatalogue } from './catalogue.ts'
-import { allTemplates, templateById } from './templates/index.ts'
+import { templateById } from './templates/index.ts'
 import type { GrooveSpec } from './types.ts'
 
 const DIGEST = /^([a-zA-Z]+)@(-?\d+\.\d{9}):(-?\d+\.\d{9}):(-?\d+\.\d{9})(?::(-?\d+))?$/
-
-// Named literally, not derived from `voices.includes('ride')`: swung-sixteenth is
-// mid-flight in this epic and a derived list would be red until it lands.
-const RIDING_FEELS = ['shuffle', 'swung-sixteenth']
 
 function specFor(template: string, seed: number): GrooveSpec {
   const spec = readCatalogue().find((s) => s.template === template && s.seed === seed)
@@ -75,32 +71,24 @@ describe('the byte-identity fixture', () => {
     expect(buildFixture()).toEqual(readFixture())
   })
 
-  it('covers every catalogue seed of the four feels that do not ride', () => {
-    const keys = fixtureSpecs().map(fixtureKey)
-    expect(Object.keys(readFixture())).toHaveLength(19)
-    expect(Object.keys(readFixture()).sort()).toEqual([...keys].sort())
+  it('names every feel the committed catalogue uses', () => {
+    const named = [...new Set(readCatalogue().map((spec) => spec.template))].sort()
+    expect(fixtureFeels()).toEqual(named)
+    expect(fixtureFeels()).toContain('shuffle')
+    expect(new Set(fixtureFeels()).size).toBe(fixtureFeels().length)
   })
 
-  it('names the four feels that do not ride', () => {
-    expect([...FIXTURE_FEELS].sort()).toEqual(
-      ['bright-straight', 'half-time', 'open-ballad', 'straight-funk'],
-    )
+  it('covers every committed groove, riding feels included', () => {
+    expect(fixtureSpecs()).toHaveLength(readCatalogue().length)
+    expect(Object.keys(readFixture())).toHaveLength(readCatalogue().length)
   })
 
-  it('partitions the feels — every template either rides or is in the fixture', () => {
-    expect([...FIXTURE_FEELS, ...RIDING_FEELS].sort()).toEqual(
-      allTemplates()
-        .map((t) => t.id)
-        .sort(),
-    )
-  })
-
-  it('holds every catalogue seed each of those feels is used at', () => {
-    const fixture = readFixture()
-    for (const spec of readCatalogue()) {
-      const covered = (FIXTURE_FEELS as readonly string[]).includes(spec.template)
-      expect(Object.hasOwn(fixture, fixtureKey(spec)), fixtureKey(spec)).toBe(covered)
-    }
+  it('holds exactly the catalogue keys — nothing dropped, nothing stale', () => {
+    const committed = readCatalogue().map(fixtureKey).sort()
+    const pinned = Object.keys(readFixture()).sort()
+    expect(pinned).toEqual(committed)
+    for (const key of committed) expect(pinned, key).toContain(key)
+    for (const key of pinned) expect(committed, key).toContain(key)
   })
 
   it('has no empty entry', () => {

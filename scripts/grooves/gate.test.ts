@@ -584,9 +584,10 @@ type SignOff = {
   /** sha256 of the encoded file, or null where the groove is deliberately not encoder-pinned. */
   mp3: string | null
   /**
-   * The file that was played to a person. Session scratch — these are not in the
-   * repo and cannot be opened. Kept as the record of which audition round gave the
-   * approval, never quoted back as something to listen to.
+   * The file that was played to a person. The entries pinned before 2026-09-06 name
+   * session scratch that is not in the repo and cannot be opened; the current five
+   * name the committed mp3 under public/grooves/ that was actually auditioned. Kept
+   * as the record of which audition round gave the approval.
    */
   file: string
   /** What that person said about it, in their own words. */
@@ -619,122 +620,299 @@ type SignOff = {
 // its ride figure with a pinned one, so nothing that could move them moves without a
 // failure here. The coverage test below fails if a groove ever ships a figure no
 // entry covers.
+//
+// All five entries below were re-pinned on 2026-09-06 by quick-8's listening pass,
+// which voided every one of them at once: the comp dropped its dyn1 and dyn3 velocity
+// layers for a single dyn2 layer across its whole range, and gain.comp was re-measured
+// in all seven registered templates. That pass played these five renders, the six
+// bossa-nova grooves (groove-53 … groove-58, unpinned) and one reference note. The six
+// unpinned same-figure grooves — 19, 34, 42, 44, 50, 52 — were not replayed, so their
+// feature-24 approval still covers their ride figure and no longer covers their comp.
+// The pins here are what a sign-off actually rests on.
+//
+// The last three entries are the first for feels that play no ride, and they are here
+// because the ride rule above does not reach them. Feature-25's Wave 5 listening pass
+// approved eighteen renders in a single sentence — six bossa-nova, six second-line and
+// six boom-bap — and the coverage test below skips all eighteen, because it walks
+// riding templates only. So until these three were added, a move in
+// templates/bossa-nova.ts, templates/second-line.ts or templates/boom-bap.ts voided a
+// human approval and every test in this repo stayed green. That is the one property
+// this table exists to hold, and it was false for three whole feels.
+//
+// The compression is the ride rule's, applied to the cause that actually moves a
+// non-riding feel: one pin per feel, not one per approved groove. A feel's six grooves
+// render from one template file over one shared pack, so the fifteen unpinned renders
+// cannot move without the pinned one moving too. They are approved and recorded in
+// specs/features/feature-25/.implement/wave-5-signoff.md.
 const SIGN_OFFS: SignOff[] = [
   {
-    // Re-pinned 2026-09-05 for epic 2's feathered shuffle: Fred played this render
+    // Re-pinned 2026-09-06 for quick-8's single-layer comp: Fred played this render
     // and approved it in the words below. A listening pass, not a measurement. The
-    // epic-1 pin it replaces was bc7c5fee…1cb3 / e50363bf…5e09, voided by the
-    // feathered kick.
+    // epic-2 pin it replaces was 68002353…aaaf / 9aa83533…4333, voided by the comp
+    // pack change and by the shuffle template's re-measured gain.comp (-4 → -5.9).
+    // The render below encodes byte for byte to the file that was played,
+    // public/grooves/groove-07.mp3.
     id: 'groove-07',
-    pcm: '68002353111ca91bc829e77127990cff88ef1300e801be319c3b1ccbae57aaaf',
-    mp3: '9aa8353349c5cdac68050614f86b938e525769775854ab83c5648114a43f4333',
-    file: 'epic2-listen/groove-07.mp3',
-    approval: 'it all sounds good',
+    pcm: 'e7664e75e00f337c02050dcc82490b042da124f092bf10b1357b7ee51eeff76e',
+    mp3: '9c1a3bbd5c3d10175411259f9826089a4c4c4fd38c24a19bb3549ec5ba5d9d57',
+    file: 'public/grooves/groove-07.mp3',
+    approval: 'sounds much better, sign off',
     scope:
-      'Those words were one sentence over all three of epic 2’s renders, not a verdict ' +
-      'given on this groove alone. The same message went on to except groove-40 and ' +
-      'nothing else — “in groove 40, the ride is too loud. It get’s a bit too much” — so ' +
-      'groove-07 is covered without qualification, but by a sentence about three files. ' +
-      'Recorded in specs/features/feature-24/.implement/epic-2-signoff.md.',
+      'Those words were one sentence over the whole of quick-8’s listening set, not a ' +
+      'verdict given on this groove alone. The set was these five pinned renders, the ' +
+      'six bossa-nova grooves groove-53 … groove-58 (unpinned, 55 and 56 first at ' +
+      'fourteen dyn3 crossings each) and one reference note, public/notes/note-a.mp3. ' +
+      'The message in full was “sounds much better, sign off - continue with the ' +
+      'mints”; the second half is an instruction to carry on, not a musical verdict. ' +
+      'Recorded in specs/features/feature-25/.implement/quick-8-signoff.md.',
     upstream:
-      'samples/pack.json, the ride or hat pattern pools, RIDE_SUSTAIN_SIXTEENTHS, ' +
-      'RIDE_ACCENTS, the shuffle template’s gain, pan or humanize block',
+      'samples/pack.json — the comp’s single dyn2 velocity layer as much as the ride’s ' +
+      'alternates — the ride or hat pattern pools, RIDE_SUSTAIN_SIXTEENTHS, ' +
+      'RIDE_ACCENTS, the shuffle template’s gain.comp, its other gains, pan or ' +
+      'humanize block',
   },
   {
-    // Signed off 2026-09-05 by feature-24 epic 3's migration listening pass, in the
-    // words below. Pinned because it carries the shuffle's all-eighths ride figure,
-    // which nothing had ever pinned: the densest cymbal in the catalogue at 2.75
-    // strokes/s, and narrower in dynamic range over the loop (9.0 dB) than the epic-2
-    // render that was rejected for being "a bit too much". The pre-listening report
-    // named it the single most likely failure of the pass; it came back good.
-    // groove-19, groove-44 and groove-52 draw the same figure and are approved
-    // without a hash. mp3 is null for the reason given on groove-40; the approved
-    // file hashes to
-    // 2c38d2d91dc3b20477b796a147f29ac567c7a7bc0e9e48bc46411ee0fb203889 (1 014 430 bytes).
+    // Re-pinned 2026-09-06 by quick-8's listening pass, in the words below. It keeps
+    // its place for the reason it was first pinned: it carries the shuffle's
+    // all-eighths ride figure, the densest cymbal in the catalogue at 2.75 strokes/s,
+    // which nothing else pins. groove-19, groove-44 and groove-52 draw the same
+    // figure — see the note above on what their older approval still covers. The
+    // epic-3 pin it replaces was 1eb966c4…0dc0. mp3 stays null for the reason given
+    // on groove-40; the file that was played, public/grooves/groove-08.mp3, hashes to
+    // 0359db2c7f1230c9d60e619f167f4f9172a62a5a84396089e45d3f07900c853b (1 014 430
+    // bytes), and this render reproduced it byte for byte on 2026-09-06.
     id: 'groove-08',
-    pcm: '1eb966c479b70fa48d679c3160cdb36f85a9f9269ba2ee03ff8293b0fad10dc0',
+    pcm: 'f0c8d5d93a078309d6d07d3fb30218684f522c868483207aefc728345ca7439a',
     mp3: null,
-    file: 'epic3-migration/02-groove-08-shuffle-91bpm-Fsharpm7-UNHEARD-densest-ride-in-catalogue.mp3',
-    approval: 'listened to all of them. they are all good',
+    file: 'public/grooves/groove-08.mp3',
+    approval: 'sounds much better, sign off',
     scope:
-      'Those words were one sentence over all thirteen files of epic 3’s migration ' +
-      'listening pass — the eleven changed grooves and two unchanged controls — not a ' +
-      'verdict given on this groove alone.',
+      'Those words were one sentence over the whole of quick-8’s listening set, not a ' +
+      'verdict given on this groove alone. The set was these five pinned renders, the ' +
+      'six bossa-nova grooves groove-53 … groove-58 (unpinned) and one reference ' +
+      'note. The message in full was “sounds much better, sign off - continue with ' +
+      'the mints”. Recorded in ' +
+      'specs/features/feature-25/.implement/quick-8-signoff.md.',
     upstream:
-      'samples/pack.json, the ride or hat pattern pools, RIDE_SUSTAIN_SIXTEENTHS, ' +
-      'RIDE_ACCENTS, the shuffle template’s gain, pan or humanize block',
+      'samples/pack.json — the comp’s single dyn2 velocity layer as much as the ride’s ' +
+      'alternates — the ride or hat pattern pools, RIDE_SUSTAIN_SIXTEENTHS, ' +
+      'RIDE_ACCENTS, the shuffle template’s gain.comp, its other gains, pan or ' +
+      'humanize block',
   },
   {
-    // Signed off 2026-09-05 by epic 3's migration pass, in the words below, and
-    // separately accepted in epic 2's round 1 as that round's sixteenth render — the
-    // only entry here carrying two independent approvals, which is why it rather than
-    // groove-50 anchors this figure. Never pinned before. groove-50 draws the same
-    // figure and is approved without a hash. mp3 is null for the reason given on
-    // groove-40; the approved file hashes to
-    // 82ee344e403152f87d547dda32900a386ff1a36c506d964fee26c0e00dab77ab (855 187 bytes).
+    // Re-pinned 2026-09-06 by quick-8's listening pass, in the words below. It keeps
+    // its place as the anchor for its ride figure: before this pass it was the only
+    // entry carrying two independent approvals, epic 2's round 1 and epic 3's
+    // migration pass, which is why it rather than groove-50 anchors the figure.
+    // groove-50 draws the same figure — see the note above. The epic-3 pin it
+    // replaces was 0f89ea15…5d8c. mp3 stays null for the reason given on groove-40;
+    // the file that was played, public/grooves/groove-28.mp3, hashes to
+    // 68699d3ae0bd0a978689ab2c965cb0ad7669c3f95b2a2cd8723ba067ae0c3c1b (855 187
+    // bytes), and this render reproduced it byte for byte on 2026-09-06.
     id: 'groove-28',
-    pcm: '0f89ea15b064026809d24d80f4c963e447912cd675d600cde9304d8d856a5d8c',
+    pcm: 'fb658dcc49da7340c5e132b22d663f676b864102a6dab90c6168b3c68c3136e5',
     mp3: null,
-    file: 'epic3-migration/11-ANCHOR-groove-28-swung16-108bpm-Amaj7-APPROVED-round1.mp3',
-    approval: 'listened to all of them. they are all good',
+    file: 'public/grooves/groove-28.mp3',
+    approval: 'sounds much better, sign off',
     scope:
-      'Those words were one sentence over all thirteen files of epic 3’s migration ' +
-      'listening pass — the eleven changed grooves and two unchanged controls — not a ' +
-      'verdict given on this groove alone.',
+      'Those words were one sentence over the whole of quick-8’s listening set, not a ' +
+      'verdict given on this groove alone. The set was these five pinned renders, the ' +
+      'six bossa-nova grooves groove-53 … groove-58 (unpinned) and one reference ' +
+      'note. The message in full was “sounds much better, sign off - continue with ' +
+      'the mints”. Recorded in ' +
+      'specs/features/feature-25/.implement/quick-8-signoff.md.',
     upstream:
-      'samples/pack.json, RIDE_PATTERNS[16] or the hat punctuation pool, ' +
-      'FEATHER_VELOCITY, the swung-sixteenth template’s gain, pan or humanize block',
+      'samples/pack.json — the comp’s single dyn2 velocity layer as much as the ride’s ' +
+      'alternates — RIDE_PATTERNS[16] or the hat punctuation pool, FEATHER_VELOCITY, ' +
+      'the swung-sixteenth template’s gain.comp, its other gains, pan or humanize block',
   },
   {
-    // Signed off 2026-09-05: Fred heard six renders of groove-40 and chose cell 5,
-    // 5-groove-40-6hit-PROPOSAL.mp3 — the 6-hit RIDE_PATTERNS[16] member that now
-    // ships — in the words below. A listening pass, not a measurement. The 8-hit
-    // member it replaced was heard first and rejected: "in groove 40, the ride is
-    // too loud. It get's a bit too much".
+    // Re-pinned 2026-09-06 by quick-8's listening pass, in the words below. This is
+    // the groove that got that ticket filed: three comp events sat above the old 0.8
+    // layer boundary, at 0.02 s, 30.56 s and 32.73 s, the worst of them a 8.9 dB step
+    // on MIDI 69. They are gone — the comp declares one layer now. The ride is
+    // untouched: still the 6-hit RIDE_PATTERNS[16] member Fred chose in epic 2 over
+    // the 8-hit one he had rejected as "a bit too much". The epic-2 pin it replaces
+    // was 00d66faa…a4f7.
     //
-    // mp3 is null on purpose, and this is the reason. The encoded hash is the only
-    // assertion in this repo that re-runs the encoder, so it fails on a different
-    // ffmpeg or LAME build from byte-identical audio. groove-07 already pins that,
-    // with the same encoder and the same invocation, so a second encoded pin fails
-    // in exactly the circumstances the first one does and detects nothing it
-    // misses — it would double a known false-failure mode for no coverage. The pcm
-    // hash is encoder-independent and is the one that carries the music. For the
-    // record: the approved file hashes to
-    // 5445c891a2fe810af53ed22675dbe7c805a99b1f9418714bac958c20ea259728, and a fresh
-    // render of this tree reproduced it byte for byte on 2026-09-05.
+    // mp3 is still null on purpose, and the reason has not changed. The encoded hash
+    // is the only assertion in this repo that re-runs the encoder, so it fails on a
+    // different ffmpeg or LAME build from byte-identical audio. groove-07 already
+    // pins that, with the same encoder and the same invocation, so a second encoded
+    // pin fails in exactly the circumstances the first one does and detects nothing
+    // it misses — it would double a known false-failure mode for no coverage. The
+    // pcm hash is encoder-independent and is the one that carries the music. For the
+    // record: the file that was played, public/grooves/groove-40.mp3, hashes to
+    // 5d16d492901913cc685bb3d4cf716c3074156666864817a94eecb74f32ec823f (839 514
+    // bytes), and a fresh render of this tree reproduced it byte for byte on
+    // 2026-09-06.
     id: 'groove-40',
-    pcm: '00d66faaa4d08d241fb1e6646c37c1c7c896fe64b59f738da6dd959ad2a5a4f7',
+    pcm: '126621dd15f9c10e81fb08a3930bf09e767892e765d1bf4eb181c29376882584',
     mp3: null,
-    file: 'epic2-listen-2/5-groove-40-6hit-PROPOSAL.mp3',
-    approval: '5 sounds best, go with the proposal',
+    file: 'public/grooves/groove-40.mp3',
+    approval: 'sounds much better, sign off',
+    scope:
+      'Those words were one sentence over the whole of quick-8’s listening set, not a ' +
+      'verdict given on this groove alone. The set was these five pinned renders, the ' +
+      'six bossa-nova grooves groove-53 … groove-58 (unpinned) and one reference ' +
+      'note. The message in full was “sounds much better, sign off - continue with ' +
+      'the mints”. Recorded in ' +
+      'specs/features/feature-25/.implement/quick-8-signoff.md.',
     upstream:
-      'samples/pack.json, RIDE_PATTERNS[16] or the hat punctuation pool, ' +
-      'FEATHER_VELOCITY, the swung-sixteenth template’s gain, pan or humanize block',
+      'samples/pack.json — the comp’s single dyn2 velocity layer as much as the ride’s ' +
+      'alternates — RIDE_PATTERNS[16] or the hat punctuation pool, FEATHER_VELOCITY, ' +
+      'the swung-sixteenth template’s gain.comp, its other gains, pan or humanize block',
   },
   {
-    // Signed off 2026-09-05 by epic 3's migration pass, in the words below. This entry
-    // also closes a gap in the record: groove-34 and groove-48 were played during
-    // epic 2 and answered "both sound good", and that verdict was never written into
-    // the repo — .verify/epic-2.md recorded this figure as never heard by anyone.
-    // Epic 3's pass played both renders again and covers them explicitly, so the
-    // record is the sentence below rather than an unrecorded chat message. Pinned
-    // rather than groove-34 because it is the fastest sixteenth in the catalogue
-    // (114 bpm) and the busier of the two, 2.61 ride strokes/s against 2.48.
-    // groove-34 draws the same figure and is approved without a hash. mp3 is null for
-    // the reason given on groove-40; the approved file hashes to
-    // 5d4df888c35c9b0f185403f29be3290bf989c413c85f7b52bdd1675905dd61bd (810 048 bytes).
+    // Re-pinned 2026-09-06 by quick-8's listening pass, in the words below. It keeps
+    // its place as the fastest sixteenth in the catalogue (114 bpm) and the busier of
+    // the two grooves drawing its ride figure, 2.61 ride strokes/s against
+    // groove-34's 2.48. groove-34 draws the same figure — see the note above. The
+    // epic-3 pin it replaces was 3ba2a4fa…a5cb. mp3 stays null for the reason given
+    // on groove-40; the file that was played, public/grooves/groove-48.mp3, hashes to
+    // 67a8b136c0a207893cbfc36bd34b8bb2c8ad53e7fb30a3dee8af353486cf7dce (810 048
+    // bytes), and this render reproduced it byte for byte on 2026-09-06.
     id: 'groove-48',
-    pcm: '3ba2a4fae00d66e1e1662d77d6b6f11caeaec64ecfcc69fa97b3ec087630a5cb',
+    pcm: '20607f33d732b3ff0ef29f563d1de0c26fd9e6f4314af2ebcea0adec5a5007fb',
     mp3: null,
-    file: 'epic3-migration/04-groove-48-swung16-114bpm-Emaj7-UNRECORDED-fastest-sixteenth.mp3',
-    approval: 'listened to all of them. they are all good',
+    file: 'public/grooves/groove-48.mp3',
+    approval: 'sounds much better, sign off',
     scope:
-      'Those words were one sentence over all thirteen files of epic 3’s migration ' +
-      'listening pass — the eleven changed grooves and two unchanged controls — not a ' +
-      'verdict given on this groove alone.',
+      'Those words were one sentence over the whole of quick-8’s listening set, not a ' +
+      'verdict given on this groove alone. The set was these five pinned renders, the ' +
+      'six bossa-nova grooves groove-53 … groove-58 (unpinned) and one reference ' +
+      'note. The message in full was “sounds much better, sign off - continue with ' +
+      'the mints”. Recorded in ' +
+      'specs/features/feature-25/.implement/quick-8-signoff.md.',
     upstream:
-      'samples/pack.json, RIDE_PATTERNS[16] or the hat punctuation pool, ' +
-      'FEATHER_VELOCITY, the swung-sixteenth template’s gain, pan or humanize block',
+      'samples/pack.json — the comp’s single dyn2 velocity layer as much as the ride’s ' +
+      'alternates — RIDE_PATTERNS[16] or the hat punctuation pool, FEATHER_VELOCITY, ' +
+      'the swung-sixteenth template’s gain.comp, its other gains, pan or humanize block',
+  },
+  {
+    // Pinned 2026-09-06 by feature-25's Wave 5 listening pass, in the words below — the
+    // first entry in this table for a feel that plays no ride, and one of three added
+    // together. groove-58 anchors bossa-nova's six because it is the extreme of the set
+    // on both things the epic's brief said to listen for: the fastest at 134 bpm, the
+    // top of the declared 122–138 range, and the quietest comp against its kick,
+    // −5.81 dB against a −3.62 … −5.11 spread over the other five, so the
+    // clave-against-comp lock shows here first if it shows at all. groove-53 …
+    // groove-57 are approved and unpinned; they share this feel and this template file,
+    // so nothing that could move them moves without a failure here.
+    //
+    // These six were in quick-8's earlier listening set too, unpinned, and this is the
+    // first pin either pass has given them. bossa-nova's gain block was measured during
+    // the harmony re-gain and deliberately left alone, so this render is what quick-8
+    // heard as well.
+    //
+    // mp3 stays null for the reason given on groove-40; the file that was played,
+    // public/grooves/groove-58.mp3, hashes to
+    // ffd5d3e38cc35c8bdcc61f27066d7655893d32e6f4950b0f8534f64f47bf392c (689 675 bytes),
+    // and this render reproduced it byte for byte on 2026-09-06.
+    id: 'groove-58',
+    pcm: '352006cc2bb590ff799fe094e267b39955a5d881c9da58158a0cc490230717a4',
+    mp3: null,
+    file: 'public/grooves/groove-58.mp3',
+    approval:
+      'listened to all the new grooves and approve them. They add nice new colours to ' +
+      'the app',
+    scope:
+      'Those words were one sentence over the whole of feature-25’s Wave 5 listening ' +
+      'pass — eighteen renders across three styles — not a verdict given on this ' +
+      'groove alone, on this style alone, or per groove. The set was groove-53 … ' +
+      'groove-58 (bossa-nova), groove-65 … groove-70 (second-line) and groove-71 … ' +
+      'groove-76 (boom-bap). The second-line and boom-bap files were the re-gained ' +
+      'renders, not the ones those epics minted: an earlier verdict of his — “the ' +
+      'comp (piano) is too quiet. Remember: this app is about finding the harmony” — ' +
+      'rejected the mix those twelve first shipped with, and this approval covers ' +
+      'only what replaced it. Recorded in ' +
+      'specs/features/feature-25/.implement/wave-5-signoff.md.',
+    upstream:
+      'samples/pack.json — the comp’s single dyn2 velocity layer as much as the rim, ' +
+      'kick and snare alternates — the bossa clave in bossa-nova’s figures block, its ' +
+      'patterns pools for kick, hatClosed, bass, comp and snareGhosts, ' +
+      'FILLS[bossa-nova], DEFAULT_PLACEMENT, or the template’s gain, pan or humanize ' +
+      'block',
+  },
+  {
+    // Pinned 2026-09-06 by feature-25's Wave 5 listening pass, in the words below.
+    // groove-65 anchors second-line's six because it is the densest reading of the one
+    // thing that feel's brief asks an ear to settle — does the snare read as a figure
+    // or as clutter. It draws kit figure 3, the busiest of the four, at 26.750 events a
+    // bar, the most of the six, and sits at the top of the tempo range at 96 bpm.
+    // groove-66 … groove-70 are approved and unpinned; they share this feel and this
+    // template file, so nothing that could move them moves without a failure here.
+    //
+    // mp3 stays null for the reason given on groove-40; the file that was played,
+    // public/grooves/groove-65.mp3, hashes to
+    // b244df824ace91c401cb46bf44fdcf4150c4a91084ab1884df8fa71738a225d7 (961 767 bytes),
+    // and this render reproduced it byte for byte on 2026-09-06.
+    id: 'groove-65',
+    pcm: '13d8b7d98fdcfa71c9e1e0365218ac47d7682d628a4a6985272791ebf3cfcf93',
+    mp3: null,
+    file: 'public/grooves/groove-65.mp3',
+    approval:
+      'listened to all the new grooves and approve them. They add nice new colours to ' +
+      'the app',
+    scope:
+      'Those words were one sentence over the whole of feature-25’s Wave 5 listening ' +
+      'pass — eighteen renders across three styles — not a verdict given on this ' +
+      'groove alone, on this style alone, or per groove. The set was groove-53 … ' +
+      'groove-58 (bossa-nova), groove-65 … groove-70 (second-line) and groove-71 … ' +
+      'groove-76 (boom-bap). The second-line and boom-bap files were the re-gained ' +
+      'renders, not the ones those epics minted: an earlier verdict of his — “the ' +
+      'comp (piano) is too quiet. Remember: this app is about finding the harmony” — ' +
+      'rejected the mix those twelve first shipped with, and this approval covers ' +
+      'only what replaced it. Recorded in ' +
+      'specs/features/feature-25/.implement/wave-5-signoff.md.',
+    upstream:
+      'samples/pack.json — the comp’s single dyn2 velocity layer as much as the snare ' +
+      'and tom alternates — second-line’s patterns.kit, patterns.kick, patterns.bass ' +
+      'or patterns.comp, FILLS[second-line], PLACEMENTS[second-line], or the ' +
+      'template’s swing, gain, pan or humanize block',
+  },
+  {
+    // Pinned 2026-09-06 by feature-25's Wave 5 listening pass, in the words below.
+    // groove-71 anchors boom-bap's six because it is the sharpest test of the change
+    // that produced this render: the harmony re-gain lifted the comp 12.2 dB against
+    // the kit after the player said it was too quiet, and B phrygian lives or dies on a
+    // ♭2 that only the comp states. It is also the first of the six that earlier comp
+    // verdict was given on — “groove 71-76”. groove-72 … groove-76 are approved and
+    // unpinned; they share this feel and this template file, so nothing that could move
+    // them moves without a failure here.
+    //
+    // This entry guards the mix the player accepted, and it is the only one in the
+    // table whose predecessor was explicitly rejected. Nothing pins the pre-re-gain
+    // render and nothing should: it was heard and turned down.
+    //
+    // mp3 stays null for the reason given on groove-40; the file that was played,
+    // public/grooves/groove-71.mp3, hashes to
+    // f6cb5ea6c397d8e29cedb1158a902ebd05fb6e79a1fb1016b761585f099357b9 (502 221 bytes),
+    // and this render reproduced it byte for byte on 2026-09-06.
+    id: 'groove-71',
+    pcm: 'fe7d8556b9415bd9a4066cbc84a7a218edec23ac8aee5f994e3826f33499ef51',
+    mp3: null,
+    file: 'public/grooves/groove-71.mp3',
+    approval:
+      'listened to all the new grooves and approve them. They add nice new colours to ' +
+      'the app',
+    scope:
+      'Those words were one sentence over the whole of feature-25’s Wave 5 listening ' +
+      'pass — eighteen renders across three styles — not a verdict given on this ' +
+      'groove alone, on this style alone, or per groove. The set was groove-53 … ' +
+      'groove-58 (bossa-nova), groove-65 … groove-70 (second-line) and groove-71 … ' +
+      'groove-76 (boom-bap). The second-line and boom-bap files were the re-gained ' +
+      'renders, not the ones those epics minted: an earlier verdict of his — “the ' +
+      'comp (piano) is too quiet. Remember: this app is about finding the harmony” — ' +
+      'rejected the mix those twelve first shipped with, and this approval covers ' +
+      'only what replaced it. Recorded in ' +
+      'specs/features/feature-25/.implement/wave-5-signoff.md.',
+    upstream:
+      'samples/pack.json — the comp’s single dyn2 velocity layer as much as the kick ' +
+      'and snare alternates — boom-bap’s patterns.kick, patterns.comp or ' +
+      'patterns.snareGhosts, its swing (0.34) or tempoRange (86–92, the one field here ' +
+      'that also moves the puzzle’s answer), DEFAULT_FILL, DEFAULT_PLACEMENT, or the ' +
+      'template’s gain, pan or humanize block',
   },
 ]
 
@@ -745,8 +923,9 @@ function voidSignOff(entry: SignOff): string {
     ...(entry.scope === undefined ? [] : [entry.scope]),
     `Something upstream of it moved — ${entry.upstream}.`,
     'The change may well be an improvement, but the sign-off it invalidates is a human’s ear',
-    'and nothing in this repo can re-give it. The approved file was session scratch and is',
-    `gone; the render is reproducible from this tree instead — npm run grooves -- --only ${entry.id}`,
+    'and nothing in this repo can re-give it. Whatever sits at public/grooves/ may already have',
+    'been overwritten by a re-render, so do not trust it as the approved audio; the render is',
+    `reproducible from this tree instead — npm run grooves -- --only ${entry.id}`,
     '— so render it, play it, get it approved, and only then re-pin this hash. Do not re-pin',
     'it to make the suite green.',
   ].join('\n')
@@ -799,7 +978,16 @@ describe('the renders a person signed off — R24, AC16', () => {
     expect(
       SIGN_OFFS.map((entry) => entry.id),
       'a sign-off was dropped from the table — removing one is the same as re-pinning it blind',
-    ).toEqual(['groove-07', 'groove-08', 'groove-28', 'groove-40', 'groove-48'])
+    ).toEqual([
+      'groove-07',
+      'groove-08',
+      'groove-28',
+      'groove-40',
+      'groove-48',
+      'groove-58',
+      'groove-65',
+      'groove-71',
+    ])
     for (const entry of SIGN_OFFS) {
       expect(entry.approval.length, `${entry.id} records no words it was approved in`).toBeGreaterThan(0)
       expect(entry.file.length, `${entry.id} names no file that was played`).toBeGreaterThan(0)

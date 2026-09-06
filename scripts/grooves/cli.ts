@@ -14,7 +14,7 @@ import { mixTracks } from './mix.ts'
 import { namesFor } from './name.ts'
 import { loadPack } from './pack.ts'
 import { probeHeadDelaySeconds } from './probe.ts'
-import { templateById } from './templates/index.ts'
+import { TEMPLATES, templateById } from './templates/index.ts'
 import type { GrooveSpec, MusicMeta, Pcm, SamplePack } from './types.ts'
 import { renderVoices } from './voices.ts'
 
@@ -148,13 +148,15 @@ export async function generate(options: GenerateOptions = {}): Promise<GenerateR
 
 export type CliArgs = {
   only: string[]
+  seeds: number[]
+  template?: string
   outDir?: string
   packDir?: string
   manifestOnly: boolean
 }
 
 export function parseArgs(argv: readonly string[]): CliArgs {
-  const args: CliArgs = { only: [], manifestOnly: false }
+  const args: CliArgs = { only: [], seeds: [], manifestOnly: false }
 
   const valueFor = (flag: string, i: number): string => {
     const value = argv[i + 1]
@@ -182,8 +184,40 @@ export function parseArgs(argv: readonly string[]): CliArgs {
         args.packDir = valueFor(token, i)
         i++
         break
+      case '--template':
+        args.template = valueFor(token, i)
+        i++
+        break
+      case '--seed': {
+        const raw = valueFor(token, i)
+        const seed = Number(raw)
+        if (!Number.isInteger(seed) || seed < 0) {
+          throw new Error(`--seed "${raw}" is not a non-negative integer`)
+        }
+        args.seeds.push(seed)
+        i++
+        break
+      }
       default:
         throw new Error(`unknown argument: ${token}`)
+    }
+  }
+
+  if (args.template === undefined && args.seeds.length > 0) {
+    throw new Error('--seed names a groove for --template to render; --template is missing')
+  }
+
+  if (args.template !== undefined) {
+    if (args.seeds.length === 0) {
+      throw new Error(`--template ${args.template} renders nothing without at least one --seed`)
+    }
+    if (args.only.length > 0) {
+      throw new Error(
+        '--template renders a groove the catalogue does not hold; --only names one it does — pick one',
+      )
+    }
+    if (args.outDir === undefined) {
+      throw new Error('--template needs --out: an off-catalogue render never writes into the repo')
     }
   }
 
@@ -200,6 +234,22 @@ export function optionsFrom(args: CliArgs): GenerateOptions {
   }
 
   if (args.packDir !== undefined) options.packDir = args.packDir
+
+  if (args.template !== undefined) {
+    const template = args.template
+    if (TEMPLATES[template] === undefined) {
+      throw new Error(
+        `--template: unknown template "${template}" — known ids: ${Object.keys(TEMPLATES).join(', ')}`,
+      )
+    }
+    options.catalogue = args.seeds.map((seed) => ({
+      id: `audition-${template}-${seed}`,
+      uuid: '',
+      template,
+      seed,
+    }))
+    options.heardIn = {}
+  }
 
   if (args.only.length > 0) {
     const wanted = new Set(args.only)

@@ -246,31 +246,38 @@ describe('the reference notes are answers, not performances', () => {
 
   const midiOfHz = (hz: number) => 12 * Math.log2(hz / 440) + 69
 
+  // quick-8 re-measured every row. NOTE_VELOCITY is 0.85, which used to land in the
+  // comp's dyn3 layer; with dyn2 the only layer left, every reference note is built
+  // from the mf recording instead. The peaks barely move because mixTracks normalises
+  // onto the ceiling. The pitches all fall, by 2 to 6 cents and in the same direction
+  // at every note — a harder strike sharpens a real piano, so the softer layer reads
+  // slightly flatter. Every note still sounds within half a semitone of what it claims,
+  // which is the assertion below that actually guards the answer.
   const MEASURED: Record<string, { hz: number; peak: number }> = {
-    C4: { hz: 262.25, peak: 0.891 },
-    'C♯4': { hz: 277.88, peak: 0.8909 },
-    D4: { hz: 294.39, peak: 0.8909 },
-    'E♭4': { hz: 311.85, peak: 0.891 },
-    E4: { hz: 330.34, peak: 0.891 },
-    F4: { hz: 350.0, peak: 0.8908 },
-    'F♯4': { hz: 370.79, peak: 0.8908 },
-    G4: { hz: 392.74, peak: 0.8909 },
-    'A♭4': { hz: 416.6, peak: 0.8904 },
-    A4: { hz: 441.32, peak: 0.8904 },
-    'B♭4': { hz: 467.43, peak: 0.8909 },
-    B4: { hz: 495.27, peak: 0.8902 },
-    C5: { hz: 525.06, peak: 0.891 },
-    'C♯5': { hz: 556.56, peak: 0.8909 },
-    D5: { hz: 589.51, peak: 0.891 },
-    'E♭5': { hz: 624.51, peak: 0.891 },
-    E5: { hz: 661.57, peak: 0.891 },
-    F5: { hz: 700.87, peak: 0.8904 },
-    'F♯5': { hz: 742.7, peak: 0.8905 },
-    G5: { hz: 786.78, peak: 0.8905 },
-    'A♭5': { hz: 836.36, peak: 0.8908 },
-    A5: { hz: 886.07, peak: 0.8908 },
-    'B♭5': { hz: 937.4, peak: 0.891 },
-    B5: { hz: 994.01, peak: 0.8907 },
+  C4: { hz: 261.93, peak: 0.8910 },
+  'C♯4': { hz: 277.46, peak: 0.8910 },
+  D4: { hz: 293.93, peak: 0.8909 },
+  'E♭4': { hz: 311.45, peak: 0.8909 },
+  E4: { hz: 329.88, peak: 0.8910 },
+  F4: { hz: 349.54, peak: 0.8908 },
+  'F♯4': { hz: 370.36, peak: 0.8910 },
+  G4: { hz: 392.33, peak: 0.8909 },
+  'A♭4': { hz: 415.58, peak: 0.8910 },
+  A4: { hz: 440.40, peak: 0.8910 },
+  'B♭4': { hz: 466.48, peak: 0.8909 },
+  B4: { hz: 494.24, peak: 0.8908 },
+  C5: { hz: 524.58, peak: 0.8908 },
+  'C♯5': { hz: 555.81, peak: 0.8909 },
+  D5: { hz: 588.80, peak: 0.8909 },
+  'E♭5': { hz: 623.79, peak: 0.8910 },
+  E5: { hz: 660.99, peak: 0.8910 },
+  F5: { hz: 700.30, peak: 0.8910 },
+  'F♯5': { hz: 741.81, peak: 0.8908 },
+  G5: { hz: 785.85, peak: 0.8907 },
+  'A♭5': { hz: 833.65, peak: 0.8910 },
+  A5: { hz: 883.12, peak: 0.8906 },
+  'B♭5': { hz: 935.39, peak: 0.8906 },
+  B5: { hz: 991.52, peak: 0.8909 },
   }
 
   const HALF_A_SEMITONE = 0.5

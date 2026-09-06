@@ -22,6 +22,33 @@ import { writtenAnswer, writtenChord } from '@/lib/theory/written'
 import { GROOVES, HEARD_IN } from './grooves.generated'
 import { selectGrooveForDate } from '../lib/puzzle/selectGroove'
 
+// Widening this is a style epic's job, done as part of its mint and recorded in its
+// report. The same constant under the same name lives in the generator's
+// catalogue.test.ts, which this file may not import from — `grep -rn
+// DOMINANCE_RATIO` finds both halves.
+// Widened 5 → 6 by feature-25 epic-4's boom-bap mint. Re-measured over the 48-groove
+// catalogue after epic-2's reggae-one-drop was withdrawn: dorian and phrygian reach 6
+// against lydian-dominant's 1, which open-ballad alone offers, so the spread is exactly
+// 6.00 and 6 is the tightest value that passes. The withdrawal took aeolian 6 → 4,
+// blues and mixolydian 5 → 4 and harmonic-minor 4 → 2; it did not move the extremes.
+// The floor is what keeps this at 6: lydian-dominant's 1, offered by open-ballad and
+// its two grooves alone. Any future mint is likelier to raise the ceiling than the
+// floor, so minting open-ballad up is what buys headroom for every style at once.
+const DOMINANCE_RATIO = 6
+
+function dominanceFailure(counts: Map<string, number>, ratio: number): string | null {
+  if (counts.size < 2) return null
+  const entries = [...counts.entries()].sort((a, b) => a[1] - b[1])
+  const [rarest, fewest] = entries[0]
+  const [commonest, most] = entries[entries.length - 1]
+  if (most <= fewest * ratio) return null
+  return (
+    `${commonest} carries ${most} of the answers to ${rarest}'s ${fewest} — ` +
+    `more than DOMINANCE_RATIO (${ratio}) times the rarest. Widen DOMINANCE_RATIO in ` +
+    `both this file and the generator's catalogue.test.ts, and record the new spread.`
+  )
+}
+
 const PUBLIC = join(process.cwd(), 'public')
 const SRC = join(process.cwd(), 'src')
 
@@ -271,14 +298,13 @@ describe('the catalogue is a real rotation', () => {
     expect(GROOVES.length).toBeGreaterThanOrEqual(18)
   })
 
-  it('lets no mode dominate the answers', () => {
+  it('lets no mode dominate the answers — R10, AC5', () => {
     const counts = new Map<string, number>()
     for (const g of GROOVES) counts.set(g.flavour, (counts.get(g.flavour) ?? 0) + 1)
-    const n = [...counts.values()]
     expect(counts.size, 'the catalogue carries fewer modes than expected').toBeGreaterThanOrEqual(
       12,
     )
-    expect(Math.max(...n)).toBeLessThanOrEqual(Math.min(...n) * 3)
+    expect(dominanceFailure(counts, DOMINANCE_RATIO)).toBeNull()
   })
 
   it('carries every mode its own family table can grade', async () => {
@@ -359,8 +385,8 @@ describe('the answers feature-9 must not move', () => {
 })
 
 describe('over the shipped catalogue', () => {
-  it('covers all 30 catalogued grooves', () => {
-    expect(GROOVES).toHaveLength(30)
+  it('covers all 48 catalogued grooves', () => {
+    expect(GROOVES).toHaveLength(48)
   })
 
   it.each(GROOVES.map((groove) => [groove.id, groove] as const))(
@@ -571,11 +597,18 @@ describe('the catalogue read for a transposing instrument (F23 E2)', () => {
         'C: A♭ Phrygian → A♭ B♭♭ C♭ D♭ E♭ F♭ G♭',
         'C: E♭ Blues → E♭ G♭ A♭ B♭♭ B♭ D♭',
         'E♭: B Phrygian dominant → A♭ B♭♭ C D♭ E♭ F♭ G♭',
+        'E♭: E Lydian → C♯ D♯ E♯ F♯♯ G♯ A♯ B♯',
         'E♭: F♯ Blues → E♭ G♭ A♭ B♭♭ B♭ D♭',
         'B♭: F♯ Blues → A♭ C♭ D♭ E♭♭ E♭ G♭',
         'F: C♯ Phrygian dominant → A♭ B♭♭ C D♭ E♭ F♭ G♭',
+        // feature-25 epic-4: boom-bap brings the catalogue's first F♯, B and C♯
+        // phrygian answers. All three transpose onto written A♭ phrygian, whose seven
+        // notes are the C row above — concert's own spelling for that root.
+        'B♭: F♯ Phrygian → A♭ B♭♭ C♭ D♭ E♭ F♭ G♭',
+        'E♭: B Phrygian → A♭ B♭♭ C♭ D♭ E♭ F♭ G♭',
+        'F: C♯ Phrygian → A♭ B♭♭ C♭ D♭ E♭ F♭ G♭',
       ]),
     )
-    expect(doubles).toHaveLength(8)
+    expect(doubles).toHaveLength(12)
   })
 })

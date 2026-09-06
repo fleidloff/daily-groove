@@ -138,9 +138,22 @@ re-measured rather than believed.
 - **puzzle → theory** — `lib/puzzle/selectGroove.ts` and `narrowing.ts` reach
   `@/lib/theory/options`, `scoring.ts` reaches `families`,
   `hooks/usePuzzleSession.ts` reaches `music`, and
-  `lib/persistence/preferences.ts` and `hooks/useInstrumentKey.ts` reach `transpose`.
+  `lib/persistence/preferences.ts`, `hooks/useInstrumentKey.ts` and
+  `state/PuzzleSessionContext.tsx` reach `transpose`.
   **puzzle → catalogue** —
-  `lib/puzzle/grooveByUuid.ts` and `isTodaysGroove.ts` read `GROOVES`.
+  `lib/puzzle/grooveByUuid.ts` and `dailyGroove.ts` read `GROOVES`.
+  Since feature-25 epic 6 the day's groove has exactly one resolver:
+  `lib/puzzle/dailyGroove.ts` composes `selectGroove.ts` with
+  `pinnedGrooveId` from `lib/persistence/storage.ts`, so a day that was already
+  played resolves to the groove it was played on rather than to what the rota
+  gives today. `isTodaysGroove.ts` reads no manifest of its own any more — it
+  asks `dailyGroove`, which is why the arrow it used to draw is now drawn one
+  file further in. The composition is intra-module: `dailyGroove.ts` imports
+  `../../types`, `@/lib/date`, the manifest, `../persistence/storage` and
+  `./selectGroove`, and nothing else in the app puts the pin and the rota
+  together. One other file resolves a date, and does so through the *unpinned*
+  `selectGrooveForDate` on purpose: `components/dev/GroovePreview.tsx`, which
+  previews the rota rather than what a player with saved results would see.
 - **coaching → theory** — `lib/presentation/index.ts` reaches `roots`,
   `families`, `music` and `transpose`; `date.ts` reaches `transpose`;
   `nearMiss.ts` reaches `families`, `difference` and

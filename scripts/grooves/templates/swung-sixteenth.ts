@@ -21,7 +21,7 @@ export const swungSixteenth: FeelTemplate = {
     hatClosed: -12,
     ride: -0.4,
     bass: -1,
-    comp: -2,
+    comp: -3.9,
   },
   pan: {
     tomHigh: 0.18,

@@ -150,7 +150,7 @@ Its imports into `lib/presentation/` went 2 → 3 → 4 → 6 over the four rele
 since feature-12 and never once down.
 
 The exception stops there, in both directions. Its four other concern
-imports — `@/lib/theory/*`, `../lib/audio/*`, `../lib/puzzle/selectGroove` and
+imports — `@/lib/theory/*`, `../lib/audio/*`, `../lib/puzzle/dailyGroove` and
 `../lib/persistence/storage` — are ordinary intra-slice imports and no rule
 touches them, because those folders have no door (see *A concern folder earns a
 door* below). And no other file in the slice is bound. The population a
@@ -210,7 +210,7 @@ being the single inbound reference the route uses today.
 
 | Folder | Holds today | Motivated by |
 | :-- | :-- | :-- |
-| `puzzle/` | `selectGroove`, `scoring`, `narrowing`, `grooveByUuid`, `isTodaysGroove` | `lib/puzzle/scoring.ts` — the rules of the game: which groove today plays, whether a guess is right |
+| `puzzle/` | `selectGroove`, `dailyGroove`, `scoring`, `narrowing`, `grooveByUuid`, `isTodaysGroove` | `lib/puzzle/scoring.ts` — the rules of the game: which groove today plays, whether a guess is right |
 | `persistence/` | `storage`, `streak`, `lapsed`, `preferences` | `lib/persistence/storage.ts` — the one seam onto stored results; nothing else touches `localStorage` |
 | `presentation/` | `feedback`, `coaching`, `verdict`, `moves` and their siblings | `lib/presentation/feedback.ts` — turning state into what the UI says, without rendering anything |
 | `audio/` | `audio`, `transport`, `loop`, `lick`, `reference` and their siblings | `lib/audio/transport.ts` — the browser audio element and who is currently sounding |

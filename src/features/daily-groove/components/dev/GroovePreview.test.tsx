@@ -177,6 +177,51 @@ describe('GroovePreview', () => {
     })
   })
 
+  describe('the style each groove was rendered from', () => {
+    // The feel lives in the generator's catalogue, never in the manifest, so
+    // the dev route hands it down as a map the shipped app has no source for.
+    const styles = Object.fromEntries(
+      GROOVES.map((groove, index) => [groove.uuid, `feel-${index % 3}`]),
+    )
+
+    const styleOf = (iso: string) => {
+      const row = rowFor(iso).closest('li') as HTMLElement
+      return row.querySelector('p')?.textContent?.trim() ?? null
+    }
+
+    it('shows the style beside every row when the map is given', async () => {
+      render(<GroovePreview today={TODAY} styles={styles} />)
+      await settle()
+
+      const listed = rows().map(rowIso)
+      expect(listed.length).toBeGreaterThan(0)
+
+      for (const iso of listed) {
+        expect(styleOf(iso), iso).toBe(styles[grooveOn(iso).uuid])
+      }
+    })
+
+    it('says so for a groove the map does not name', async () => {
+      const partial = Object.fromEntries(
+        Object.entries(styles).filter(([uuid]) => uuid !== FIRST.uuid),
+      )
+
+      render(<GroovePreview today={TODAY} styles={partial} />)
+      await settle()
+
+      expect(styleOf(FIRST_ISO)).toBe('unknown style')
+      expect(styleOf(OTHER_ISO)).toBe(styles[OTHER.uuid])
+    })
+
+    it('shows no style at all when no map is given', async () => {
+      await renderPreview()
+
+      for (const iso of rows().map(rowIso)) {
+        expect(styleOf(iso), iso).toBeNull()
+      }
+    })
+  })
+
   describe('picking a groove and playing it (D3)', () => {
     it('sounds the groove of the row that was picked', async () => {
       const user = userEvent.setup()

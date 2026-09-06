@@ -655,7 +655,14 @@ describe('a closed hat chokes an open one', () => {
   })
 })
 
-describe('the comp’s three layers against its curve', () => {
+// quick-8: the comp declared three velocity layers and crossed both of their
+// boundaries mid-part. dyn1→dyn2 is a recorded step of up to +4.5 dB against the
+// 8.87 dB the fallback nominals pay back, dyn2→dyn3 up to +10.8 dB against 3.16 dB,
+// so a chord voice drifting across 0.45 or 0.8 on humanize jitter changed timbre
+// where nothing musical changed — and shifted its place inside its own chord by up
+// to 4.2 dB, against the 1.1 dB COMP_VOICE_DROP sets on purpose. One layer removes
+// both boundaries: the curve is carried on the gain alone.
+describe('the comp’s single velocity layer against its curve', () => {
   const samplesDir = fileURLToPath(new URL('./samples', import.meta.url))
 
   const stubDecoder = async (): Promise<Pcm> => ({
@@ -664,16 +671,13 @@ describe('the comp’s three layers against its curve', () => {
     right: new Float32Array(64).fill(0.5),
   })
 
-  function compBands(declaration: PackDeclaration): number[] {
+  const NOMINAL = 0.5
+
+  function compNotes(declaration: PackDeclaration) {
     const notes = declaration.voices.comp?.notes ?? []
     expect(notes.length, 'the comp declares no sampled notes').toBeGreaterThan(0)
-    const bands = notes.map((note) => note.layers.map((layer) => layer.maxVelocity).join(','))
-    expect(new Set(bands).size, 'the comp’s notes declare different bands').toBe(1)
-    return notes[0].layers.map((layer) => layer.maxVelocity)
+    return notes
   }
-
-  const nominalsOf = (bands: number[]) =>
-    bands.map((ceiling, i) => ((i > 0 ? bands[i - 1] : 0) + ceiling) / 2)
 
   function catalogueComp() {
     return readCatalogue().map((spec) => {
@@ -690,23 +694,35 @@ describe('the comp’s three layers against its curve', () => {
     })
   }
 
-  it('spreads the curve across more than one velocity layer', async () => {
+  it('declares one velocity layer per sampled note, reaching the top of the range', async () => {
     const real = await loadPack(samplesDir, stubDecoder)
-    const bands = compBands(real.describe())
-    const nominals = nominalsOf(bands)
-    const layerOf = new Map(nominals.map((nominal, i) => [nominal, i]))
 
-    const served: number[] = []
+    for (const note of compNotes(real.describe())) {
+      expect(note.layers.length, `comp MIDI ${note.midi} declares more than one layer`).toBe(1)
+      expect(note.layers[0].maxVelocity, `comp MIDI ${note.midi} tops out below 1`).toBe(1)
+      expect(
+        note.layers[0].nominalVelocity,
+        `comp MIDI ${note.midi} does not declare the band midpoint as its nominal`,
+      ).toBe(NOMINAL)
+    }
+  })
+
+  it('serves every comp event in the catalogue from that one layer', async () => {
+    const real = await loadPack(samplesDir, stubDecoder)
+
+    const served = new Set<number>()
     const watched: SamplePack = {
       ...real,
       get(voice: VoiceName, opts) {
         const sample = real.get(voice, opts)
-        if (voice === 'comp' && sample) served.push(layerOf.get(sample.nominalVelocity) ?? -1)
+        if (voice === 'comp' && sample) served.add(sample.nominalVelocity ?? -1)
         return sample
       },
     }
 
+    let hits = 0
     for (const groove of catalogueComp()) {
+      hits += groove.comp.length
       renderVoices(groove.events, watched, SAMPLE_RATE, {
         id: groove.id,
         bars: groove.music.loopBars,
@@ -715,19 +731,10 @@ describe('the comp’s three layers against its curve', () => {
       })
     }
 
-    expect(served.length, 'the catalogue rendered no comp events').toBeGreaterThan(0)
-    const counts = bands.map((_, layer) => served.filter((chosen) => chosen === layer).length)
-    const shares = counts.map((count) => count / served.length)
-
-    console.log(
-      `comp layer distribution over ${served.length} hits: ` +
-        counts
-          .map((count, i) => `≤${bands[i]} ${count} (${(100 * shares[i]).toFixed(1)}%)`)
-          .join('  '),
-    )
-
-    expect(counts.filter((count) => count > 0).length, 'the curve sits inside one layer').toBeGreaterThan(1)
-    expect(Math.max(...shares), 'one layer takes almost every comp hit').toBeLessThanOrEqual(0.9)
+    expect(hits, 'the catalogue rendered no comp events').toBeGreaterThan(0)
+    expect([...served], 'a comp event reached a nominal other than the single layer’s').toEqual([
+      NOMINAL,
+    ])
   })
 
   function measuredClamp(): number {
@@ -748,9 +755,7 @@ describe('the comp’s three layers against its curve', () => {
     return peak(track.pcm.left)
   }
 
-  it('carries the shades between layers on the gain, and stays under the clamp', async () => {
-    const bands = compBands((await loadPack(samplesDir, stubDecoder)).describe())
-    const nominals = nominalsOf(bands)
+  it('carries the whole curve on the gain, and stays under the clamp', () => {
     const clamp = measuredClamp()
     expect(clamp, 'the renderer applies no ceiling at all').toBeGreaterThan(1)
 
@@ -759,9 +764,7 @@ describe('the comp’s three layers against its curve', () => {
 
     for (const groove of catalogueComp()) {
       for (const event of groove.comp) {
-        const layer = bands.findIndex((ceiling) => event.velocity <= ceiling)
-        const nominal = nominals[layer < 0 ? nominals.length - 1 : layer]
-        const gain = event.velocity / nominal
+        const gain = event.velocity / NOMINAL
         gains.add(Number(gain.toFixed(9)))
         if (gain > highest.gain) {
           highest = { gain, velocity: event.velocity, where: groove.id }
@@ -771,58 +774,48 @@ describe('the comp’s three layers against its curve', () => {
 
     expect(
       highest.gain,
-      `${highest.where} asks its layer for ${highest.gain.toFixed(4)}× at velocity ` +
+      `${highest.where} asks the comp layer for ${highest.gain.toFixed(4)}× at velocity ` +
         `${highest.velocity.toFixed(4)}`,
     ).toBeLessThan(clamp)
 
-    expect(gains.size, 'the comp plays at three levels, one per layer').toBeGreaterThan(3)
+    expect(gains.size, 'the comp plays at one level, so the curve is gone').toBeGreaterThan(3)
   })
 
-  it('puts no step at a layer boundary, however wide the curve reaches', async () => {
+  // The two velocities on either side of each retired boundary. Under three layers
+  // 0.44 → 0.46 swapped the recording and moved the note by several dB for 0.02 of
+  // velocity; with one layer the only thing left between them is the velocity ratio
+  // itself, which is 0.39 dB at 0.45 and 0.22 dB at 0.8.
+  const RETIRED_BOUNDARIES: [number, number][] = [
+    [0.44, 0.46],
+    [0.79, 0.81],
+  ]
+
+  const NO_AUDIBLE_STEP_DB = 0.5
+
+  it('puts no step where the retired layer boundaries used to be', async () => {
     const real = await loadPack(samplesDir, stubDecoder)
-    const bands = compBands(real.describe())
-    const nominals = nominalsOf(bands)
 
-    const served: number[] = []
-    const recorded: SamplePack = {
-      id: 'recorded-comp',
-      describe: () => ({ id: 'recorded-comp', sampleRate: SAMPLE_RATE, voices: {} }),
-      get(_voice, opts) {
-        const found = bands.findIndex((ceiling) => opts.velocity <= ceiling)
-        const at = found < 0 ? bands.length - 1 : found
-        served.push(at)
-        return {
-          pcm: {
-            sampleRate: SAMPLE_RATE,
-            left: new Float32Array(64).fill(nominals[at]),
-            right: new Float32Array(64).fill(nominals[at]),
-          },
-          nominalVelocity: nominals[at],
-        }
-      },
-    }
-
-    const levelAt = (velocity: number) =>
+    const levelAt = (velocity: number, midi: number) =>
       peak(
         renderVoices(
-          [{ voice: 'comp', timeSec: 0, durationSec: 0.001, velocity, midi: 60 }],
-          recorded,
+          [{ voice: 'comp', timeSec: 0, durationSec: 0.001, velocity, midi }],
+          real,
           SAMPLE_RATE,
         )[0].pcm.left,
       )
 
-    const HAIR = 1e-6
+    for (const note of compNotes(real.describe())) {
+      for (const [under, over] of RETIRED_BOUNDARIES) {
+        const quiet = levelAt(under, note.midi)
+        const loud = levelAt(over, note.midi)
 
-    for (const boundary of bands.slice(0, -1)) {
-      served.length = 0
-      const under = levelAt(boundary)
-      const over = levelAt(boundary + HAIR)
-
-      expect(new Set(served).size, `velocity ${boundary} never changes layer`).toBe(2)
-      expect(
-        Math.abs(over / under - 1),
-        `a step at the ${boundary} boundary: ${under.toFixed(6)} then ${over.toFixed(6)}`,
-      ).toBeLessThan(0.01)
+        expect(quiet, `comp MIDI ${note.midi} renders silence at ${under}`).toBeGreaterThan(0)
+        expect(
+          Math.abs(20 * Math.log10(loud / quiet)),
+          `comp MIDI ${note.midi} steps between ${under} and ${over}: ` +
+            `${quiet.toFixed(6)} then ${loud.toFixed(6)}`,
+        ).toBeLessThan(NO_AUDIBLE_STEP_DB)
+      }
     }
   })
 
@@ -830,13 +823,14 @@ describe('the comp’s three layers against its curve', () => {
     const declaration = (await loadPack(samplesDir, stubDecoder)).describe()
     const notes = declaration.voices.comp?.notes ?? []
 
-    expect(notes.length, 'the comp’s sampled notes changed under this epic').toBe(11)
+    expect(notes.length, 'the comp’s sampled notes changed under this ticket').toBe(11)
     for (const note of notes) {
-      expect(note.layers.map((layer) => layer.maxVelocity), `comp MIDI ${note.midi}`).toEqual([
-        0.45, 0.8, 1,
-      ])
+      expect(note.layers.map((layer) => layer.maxVelocity), `comp MIDI ${note.midi}`).toEqual([1])
       for (const layer of note.layers) {
         expect(layer.files.length, `comp MIDI ${note.midi}`).toBe(1)
+        expect(layer.files[0], `comp MIDI ${note.midi} no longer plays the mf recording`).toMatch(
+          /^comp\/Player_dyn2_rr1_\d{3}\.flac$/,
+        )
       }
     }
   })

@@ -268,10 +268,10 @@ the better place for it.
 | `tomLow` | MuldjordKit floor tom (`Tom4`) | 3 × 2 |
 | `bongoHigh` | VCSL Bongos, high (`BongoH_Hit1`) | 3 × 2 |
 | `bongoLow` | VCSL Bongos, low (`BongoL_Hit1`) | 3 × 2 |
-| `claves` | VCSL Claves, legacy set — one pair, sounding ~2.34 kHz | 1 × 2 |
+| `claves` | VCSL Claves, legacy set — one pair, resampled down a fifth, sounding ~1.56 kHz | 1 × 2 |
 | `cowbell` | VCSL Cowbells — `Cowbell1` and `Cowbell2`, open strokes | 1 × 2 |
 | `bass` | Solo Contrabass, pizzicato (VSCO 2 CE) | 8 notes; 5 × 2 layers × 2, 3 × 1 layer × 2 |
-| `comp` | Upright Piano (VSCO 2 CE) | 11 notes × 3 |
+| `comp` | Upright Piano (VSCO 2 CE) | 11 notes × 1 |
 
 ## Two toms, and three layers that mean something
 
@@ -308,6 +308,83 @@ agrees with it note for note across the register the pack uses.
 Measured against equal temperament the piano is stretched, as a real piano is: −11 cents
 at MIDI 45, within ±5 of nominal through the middle, +13 at MIDI 85. That is Railsback
 stretch, not a tuning error. `pack.test.ts` allows half a semitone.
+
+## ⚠ The comp declines the velocity layers the library has
+
+`rim`, `hatOpen`, `claves` and `cowbell` each carry a paragraph saying the recording
+offered nothing more. **The comp's paragraph says the opposite, and for the same reason
+the ride's does.** VSCO 2 CE's `Keys/Upright Piano` ships `dyn1`, `dyn2` and `dyn3` for
+every note, this pack declared all three, and quick-8 dropped two of them. Each of the
+eleven notes now declares one layer — `maxVelocity: 1`, `nominalVelocity: 0.5` over
+`Player_dyn2_rr1_0NN.flac` — and the whole dynamic curve is carried on `gainFor`.
+
+**The reason is that the recorded dynamics are far wider than the bands they were put
+in.** Peak dBFS per file, `ffmpeg volumedetect`, for the four notes the catalogue
+actually sounds — the declared register is 55–76 and nothing outside 60–75 is ever
+played, so seven of the eleven sampled notes never mattered to this table:
+
+| note | dyn1 | dyn2 | dyn3 | net step at 0.45 | net step at 0.8 |
+| :-- | --: | --: | --: | --: | --: |
+| 61 | −37.6 | −24.2 | −13.6 | **+4.5** | +7.4 |
+| 65 | −31.2 | −21.8 | −10.1 | +0.5 | +8.5 |
+| 69 | −36.1 | −22.5 | −8.5 | **+4.7** | **+10.8** |
+| 73 | −31.4 | −22.1 | −12.5 | +0.4 | +6.4 |
+
+Net step is the recorded difference minus what the nominals paid back — 8.87 dB at 0.45
+(0.225 → 0.625) and 3.16 dB at 0.8 (0.625 → 0.9). Neither `comp` nor `bass` declared a
+`nominalVelocity` at all, so both fell through `nominalOf` to the band midpoint. The
+recorded dynamics are 10–14 dB apart and the bands imply 3–9, so no calibration of
+`nominalVelocity` could close either boundary: continuity at 0.8 needs a nominal above 1,
+or 2.8× against `MAX_LAYER_GAIN = 2`; the 0.45 boundary wants 3.6×.
+
+**And the crossings were jitter, not expression.** `gaussianUnit` is bounded ±1, so
+humanize adds exactly ±`humanize.velocity` — 0.04 on `bossa-nova` to 0.13 on `shuffle`.
+A chord voice sitting at 0.44–0.48 before humanize lands on either side of 0.45 from one
+pass to the next, on the same chord: the timbre flickered where nothing musical changed.
+Only one product of `VELOCITIES.comp` × `COMP_ACCENTS` × `(1 − 0.12 × voicesBelow)`
+clears 0.8 on its own — 0.72 × 1.12 = **0.8064**, top voice, strong beat, accented.
+Everything else above the line got there by jitter.
+
+**The chord-balance argument is what settled it, and it is the one the ride never had,
+because a ride plays one note at a time.** At MIDI 65 as reference, dyn2's inter-note
+profile is 61 −2.4, 69 −0.7, 73 −0.3; dyn1's is 61 −6.4, 69 −4.9, 73 −0.2. So one note
+of a chord crossing 0.45 shifted its position *inside* that chord by up to 4.2 dB —
+against the 1.1 dB per voice that `COMP_VOICE_DROP = 0.12` sets deliberately, so the top
+voice is the melody a listener follows. dyn3 did the same at the top, up to 4.4 dB.
+
+**dyn2 is the layer that survives** because it is the flattest of the three across those
+four notes — 2.4 dB of spread against dyn1's 6.4 and dyn3's 5.1 — and because mf is the
+touch a backing comp under a soloist wants.
+
+**It stops being safe if the comp's dynamic range ever widens.** `gainFor` is
+`velocity / 0.5`, which reaches **1.72** at the measured catalogue maximum of 0.862 and
+**1.87** at the theoretical worst (`VELOCITIES.comp.strong` 0.72 × the 1.12 accent, plus
+shuffle's 0.13 of jitter) against `MAX_LAYER_GAIN` 2. So **`VELOCITIES.comp.strong`
+cannot rise above 0.77** without the comp hitting the ceiling — the same hard edge the
+ride records, and one layer is what puts it there.
+
+**The single layer is round-robin alternates the comp does not have.** The pack holds
+only `rr1`, and every comp note now replays one file. `pack.test.ts` names `comp` in
+`SINGLE_LAYER_BY_DESIGN` rather than exempting it silently, and pins what actually keeps
+it off the machine-gun artefact instead: `COMP_SPREAD_RANGE` rolls each voicing over
+5–15 ms so almost every comp event owns its own onset, successive chords are different
+pitches, and humanize gives every event its own velocity — the same recording is never
+struck twice running at the same pitch and the same gain. Three velocity layers were
+never that guard: 83% of comp notes already replayed one `dyn2` file. Sourcing real
+alternates is its own ticket, beside the bass one.
+
+**Two knock-on effects worth knowing before you read the tables below.**
+
+- **The reference notes changed recording.** `NOTE_SECONDS`-long reference pitches are
+  rendered from the `comp` voice at `NOTE_VELOCITY = 0.85`, which used to land in dyn3.
+  They are mf now. `mixTracks` normalises onto the peak ceiling so the level barely
+  moves; the timbre does, and A♭4's measured fundamental with it — 416.60 → 415.58 Hz,
+  4 cents, toward nominal 415.30 rather than away from it. Run `npm run notes` after any
+  change to the comp pack, or `grooves:verify` fails as `pack-stale`.
+- ***The bands as committed* below lists no `comp` or `bass` row, and never did.** That
+  table is built from `decl.voices[voice].layers`, and both pitched voices declare their
+  layers per note under `notes` instead. Their levelling lives in this section and in the
+  bass's own, not in that table.
 
 ## ⚠ The cross-stick has one velocity layer
 
@@ -348,6 +425,23 @@ the three are committed. `claves_mf_2` is left out because it measures 8.2 dB be
 `claves_mf` inside that one dynamic group, and an alternate that far down inverts the
 voice's own dynamics: `VELOCITIES.claves` spans only 2.9 dB from weak to strong, so a weak
 hit landing on the loud take would out-shout a strong hit landing on the quiet one.
+**Both committed takes are pitched a fifth below the source, and that is a listening
+decision, not a repair.** VCSL's legacy claves are a small, bright pair: `claves_mf`'s
+strongest partial sat at 2337 Hz and `claves_mf_3`'s at 5640 Hz. Heard in a repeating
+clave figure they read as sticks rather than as claves, so both files are resampled by 2^(-7/12) = 0.66742
+— a plain playback-rate change, so the body resonance moves with the pitch and the result
+is a bigger pair of sticks rather than a filtered small one — and re-capped at 0.4 s with
+a fresh 80 ms fade. The partials land at 1556 Hz and 3766 Hz, which is where a large
+hardwood pair sits. Nothing is normalised: the two alternates were 2.53 dB apart before
+and are 2.50 dB apart after, so the round-robin variation the renderer plays is intact.
+Peaks moved up 0.47 dB and 0.50 dB, which is interpolation across a resampled transient
+and not a gain change. `provenance.json` records the derivation on both rows.
+
+No registered template plays `claves`, so this re-renders nothing. The style the
+resample was auditioned under, `son-montuno`, was built and then declined by the player
+in feature-25; **the pitched-down pair was signed off on its own terms in the same
+listening pass** and stays. See `specs/new-styles.md`.
+
 `claves_mp`, `claves_pp1` and `claves_ff` are single takes at their own dynamics with no
 partner inside 3 dB, so they would each have made a one-file layer.
 
@@ -377,8 +471,8 @@ is about what happens across a repeating loop, and a sample played once cannot s
   a weak hit can land up to 0.9 dB above a strong one — at the level JND for a transient,
   and below any accent `events.ts` writes;
 - the two claves takes differ in brightness as well as level: `claves_mf_3` has its
-  strongest partial at 5.6 kHz where `claves_mf` has it at 2.3 kHz, which is where on the
-  stick the player hit;
+  strongest partial at 3.77 kHz where `claves_mf` has it at 1.56 kHz — 5.6 kHz and
+  2.3 kHz before the fifth came off — which is where on the stick the player hit;
 - the legacy claves are a drier, brighter capture than the `_Mid` files the bongos come
   from, so a style that plays claves and bongos together should be listened to for a room
   mismatch.

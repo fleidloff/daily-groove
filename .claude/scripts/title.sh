@@ -6,7 +6,6 @@ set -u
 BUSY="◐"
 IDLE="✳"
 DONE="✔"
-ASKED="?"
 
 mode="text"
 case "${1-}" in
@@ -31,8 +30,6 @@ while [ "${pid:-0}" -gt 1 ]; do
 done
 [ -n "$dev" ] || exit 0
 
-root=$(cd "$(dirname "$0")/../.." 2>/dev/null && pwd)
-
 state="$HOME/.claude/title-state"
 mkdir -p "$state" 2>/dev/null
 file="$state/$name"
@@ -46,45 +43,9 @@ agent_count() {
   echo $#
 }
 
-# The tab says whose move it is. A turn that ends with a question still
-# unticked in the spec the session is on is the user's move, and ✔ hides that.
-spec_files() {
-  case "$1" in
-    Q[0-9]*) printf '%s\n' "$root/specs/quick/${1#Q}"-*.md ;;
-    F*)      printf '%s\n' "$root/specs/features/feature-${1#F}"/*.md \
-                            "$root/specs/features/feature-${1#F}"/*/*.md ;;
-  esac
-}
-
-open_questions() {
-  [ -n "$root" ] || return 1
-  tag=${text%%)*}
-  [ "$tag" != "$text" ] || return 1
-
-  files=""
-  for f in $(spec_files "$tag"); do
-    [ -f "$f" ] && files="$files $f"
-  done
-  [ -n "$files" ] || return 1
-
-  # A question is open until one of its options is ticked. Answered ones keep
-  # their unticked options, so a bare `- [ ]` proves nothing on its own.
-  awk '
-    FNR == 1 { if (insec && pending && !ticked) open = 1; insec = 0; pending = 0; ticked = 0 }
-    /^## / {
-      if (insec && pending && !ticked) open = 1
-      insec = ($0 ~ /^## Open questions/)
-      pending = 0; ticked = 0; next
-    }
-    insec && /^### / { if (pending && !ticked) open = 1; pending = 1; ticked = 0; next }
-    insec && /^[[:space:]]*- \[[xX]\]/ { ticked = 1 }
-    END { if (insec && pending && !ticked) open = 1; if (open) print "open" }
-  ' $files 2>/dev/null | grep -q open
-}
-
 end_glyph() {
   case "$1" in
-    done) if open_questions; then printf '%s' "$ASKED"; else printf '%s' "$DONE"; fi ;;
+    done) printf '%s' "$DONE" ;;
     *)    printf '%s' "$IDLE" ;;
   esac
 }
@@ -123,7 +84,7 @@ else
         printf '%s' "$mode" > "$stopped" 2>/dev/null
         glyph="$BUSY"
       elif [ "$mode" = "idle" ] && [ -e "$finished" ]; then
-        glyph=$(end_glyph done)
+        glyph="$DONE"
       else
         rm -f "$stopped" 2>/dev/null
         [ "$mode" = "done" ] && : > "$finished" 2>/dev/null

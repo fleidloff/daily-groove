@@ -5,6 +5,9 @@ import { brightStraight } from './bright-straight.ts'
 import { halfTime } from './half-time.ts'
 import { openBallad } from './open-ballad.ts'
 import { swungSixteenth } from './swung-sixteenth.ts'
+import { bossaNova } from './bossa-nova.ts'
+import { secondLine } from './second-line.ts'
+import { boomBap } from './boom-bap.ts'
 
 export const TEMPLATES: Record<string, FeelTemplate> = {
   [straightFunk.id]: straightFunk,
@@ -13,6 +16,9 @@ export const TEMPLATES: Record<string, FeelTemplate> = {
   [halfTime.id]: halfTime,
   [openBallad.id]: openBallad,
   [swungSixteenth.id]: swungSixteenth,
+  [bossaNova.id]: bossaNova,
+  [secondLine.id]: secondLine,
+  [boomBap.id]: boomBap,
 }
 
 export function templateById(id: string): FeelTemplate {
@@ -27,4 +33,14 @@ export function allTemplates(): FeelTemplate[] {
   return Object.values(TEMPLATES)
 }
 
-export { straightFunk, shuffle, brightStraight, halfTime, openBallad, swungSixteenth }
+export {
+  straightFunk,
+  shuffle,
+  brightStraight,
+  halfTime,
+  openBallad,
+  swungSixteenth,
+  bossaNova,
+  secondLine,
+  boomBap,
+}

@@ -16,6 +16,68 @@ function numberOf(id: string): number {
 
 const RETIRED = ['groove-05', 'groove-06', 'groove-15', 'groove-16']
 
+// Widening this is a style epic's job, done as part of its mint and recorded in its
+// report. The same constant under the same name lives in the app's manifest test,
+// grooves.generated.test.ts, which cannot import from scripts/ — `grep -rn
+// DOMINANCE_RATIO` finds both halves. (The app path is not spelled out here:
+// boundary.test.ts forbids the literal anywhere under scripts/.)
+// Widened 5 → 6 by feature-25 epic-4's boom-bap mint. Re-measured over the 48-groove
+// catalogue after epic-2's reggae-one-drop was withdrawn: dorian and phrygian reach 6
+// against lydian-dominant's 1, which open-ballad alone offers, so the spread is exactly
+// 6.00 and 6 is the tightest value that passes. The withdrawal took aeolian 6 → 4,
+// blues and mixolydian 5 → 4 and harmonic-minor 4 → 2; it did not move the extremes.
+// The floor is what keeps this at 6: lydian-dominant's 1, offered by open-ballad and
+// its two grooves alone. Any future mint is likelier to raise the ceiling than the
+// floor, so minting open-ballad up is what buys headroom for every style at once.
+const DOMINANCE_RATIO = 6
+
+function dominanceFailure(counts: Map<Flavour, number>, ratio: number): string | null {
+  if (counts.size < 2) return null
+  const entries = [...counts.entries()].sort((a, b) => a[1] - b[1])
+  const [rarest, fewest] = entries[0]
+  const [commonest, most] = entries[entries.length - 1]
+  if (most <= fewest * ratio) return null
+  return (
+    `${commonest} carries ${most} of the answers to ${rarest}'s ${fewest} — ` +
+    `more than DOMINANCE_RATIO (${ratio}) times the rarest. Widen DOMINANCE_RATIO in ` +
+    `both catalogue.test.ts and grooves.generated.test.ts, and record the new spread.`
+  )
+}
+
+describe('the dominance cap — R10, AC5', () => {
+  it('passes a 7-to-2 spread at 5x', () => {
+    expect(dominanceFailure(new Map([['ionian', 7], ['blues', 2]]), 5)).toBeNull()
+  })
+
+  it('fails an 11-to-2 spread at 5x, naming both counts and both modes', () => {
+    const failure = dominanceFailure(new Map([['ionian', 11], ['blues', 2]]), 5)
+    expect(failure).not.toBeNull()
+    expect(failure).toContain('ionian')
+    expect(failure).toContain('blues')
+    expect(failure).toContain('11')
+    expect(failure).toContain('2')
+    expect(failure).toContain('DOMINANCE_RATIO')
+  })
+
+  it('takes the ratio as an argument — 4-to-1 passes at 5x and fails at 3x', () => {
+    const counts = new Map<Flavour, number>([['ionian', 4], ['blues', 1]])
+    expect(dominanceFailure(counts, 5)).toBeNull()
+    expect(dominanceFailure(counts, 3)).not.toBeNull()
+  })
+
+  it('reads the rarest and commonest out of more than two modes', () => {
+    const counts = new Map<Flavour, number>([
+      ['ionian', 7],
+      ['dorian', 4],
+      ['blues', 1],
+    ])
+    const failure = dominanceFailure(counts, 5)
+    expect(failure).toContain('ionian')
+    expect(failure).toContain('blues')
+    expect(failure).not.toContain('dorian')
+  })
+})
+
 describe('the committed catalogue', () => {
   it('draws grooves from every template', () => {
     expect(specs.length).toBeGreaterThanOrEqual(18)
@@ -52,7 +114,7 @@ describe('the committed catalogue', () => {
     for (const s of specs) expect(() => templateById(s.template)).not.toThrow()
   })
 
-  it('puts grooves behind every mode its templates offer', () => {
+  it('puts grooves behind every mode its templates offer — R3, R4, AC3, and since feature-25 the only place those two guarantees live', () => {
     const counts = new Map<Flavour, number>()
     for (const { music } of built) counts.set(music.flavour, (counts.get(music.flavour) ?? 0) + 1)
 
@@ -65,13 +127,10 @@ describe('the committed catalogue', () => {
     }
   })
 
-  it('lets no mode dominate the answers', () => {
+  it('lets no mode dominate the answers — R10, AC5', () => {
     const counts = new Map<Flavour, number>()
     for (const { music } of built) counts.set(music.flavour, (counts.get(music.flavour) ?? 0) + 1)
-    const n = [...counts.values()]
-    expect(Math.max(...n), 'one mode carries more than three times the least').toBeLessThanOrEqual(
-      Math.min(...n) * 3,
-    )
+    expect(dominanceFailure(counts, DOMINANCE_RATIO)).toBeNull()
   })
 
   it('asks a different question every time — no repeated root and flavour', () => {

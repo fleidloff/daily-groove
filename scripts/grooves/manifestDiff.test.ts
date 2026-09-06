@@ -132,9 +132,9 @@ describe('readManifestEntries', () => {
 
     const scanned = [...readFileSync(COMMITTED_MANIFEST, 'utf8').matchAll(/^ {4}id: '([^']+)',$/gm)]
 
-    expect(entries.length).toBe(30)
+    expect(scanned.length, 'the committed manifest scanned as empty').toBeGreaterThan(0)
     expect(entries.map((entry) => entry.id)).toEqual(scanned.map((match) => match[1]))
-    expect(new Set(entries.map((entry) => entry.id)).size).toBe(30)
+    expect(new Set(entries.map((entry) => entry.id)).size).toBe(entries.length)
     expect(entries[0].fields).toMatchObject({
       id: "'groove-01'",
       scale: "'C mixolydian'",

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import type { Groove } from '../../types'
 import { isoDate } from '@/lib/date'
-import { selectGrooveForDate, dayIndexOf } from './selectGroove'
+import { selectGrooveForDate, dayIndexOf, orderFor, ROTA_EPOCH } from './selectGroove'
 
 const grooves: Groove[] = [
   { id: 'a', uuid: '4eaa88e8-267d-49d0-a2d9-b6d2db848d3e', audioSrc: '/grooves/a.mp3', name: 'Test Groove', bpm: 90, root: 'C', flavour: 'Minor', bars: 4, scale: 'C minor', chord: 'Cm', progression: 'Cm–F–G', headDelaySeconds: 0.025057 },
@@ -62,23 +62,30 @@ const sweep = (set: Groove[]): string => {
   return out
 }
 
+// These two strings move only in a commit that also moves ROTA_EPOCH. If they
+// fail and the epoch did not move, something else reshuffled the rota, and the
+// fix is to find it, not to regenerate this.
 const SWEEP_OVER_THREE = [
-  'acbacbcabcbacababcacbabcabcabcbcacabcbacababcacbacbcbacbabcabcabacacbabca',
-  'cbabcbacbacbacacbcabcabcbacababcabcacbcbacabacbcababcbacbcacabcbabcabacbc',
-  'abacabcabcbacacbacbcabcbacabacbcbacabcbabacacbcabcabacbcbacabcabacbabcacb',
-  'abcabcacbabcbcabacbcabcabacbacbcabacacbcabcbacabcbacbabacbacacbcbacbabacb',
-  'cabcabcacbabacacbabcacbcbacbabcabacbcacbabacacbcbacabcababcabcbcacababcba',
+  'bacbcabcacbacbabacacbabcbcabacacbabcbcacabcabcababcacbcbabcacabacbacbcbab',
+  'cabcabcabacabcacbcabcbacbabacacbacbabcbacacbcbacabcbacabcabacbcbacbabacab',
+  'cabcabcbcacababcacbcbabcacbacabcabacbacbcbabacacbcabcababcacbabcacbabcbca',
+  'cabcbacabacbcbabcabcabacbcabcabacacbcbacababcabcbcacababcacbcbacbacabcbac',
+  'abcbacabacbcbabacbcabacacbabcbcacbacbacabcabcbabcabacbcabacacbabcacbabcac',
 ].join('')
 
 const SWEEP_OVER_SIXTEEN = [
-  '560cef7a42b5e81a9d624f07c3a749125ed6cf38b04af3c67b05d982e1ab816f73095edc2',
-  '4d57304196ef8b2ac97d815bfa06c423e84bda1f7c562093eabd4e728695f30c1f3b258d9',
-  '170c6ae494260eb5cd817af314a39ed856b07f2cac831eb295d67f04ced68107a3295fb43',
-  '71658a9fd4ce0b2951decb346027a8f52bc84af79e061d34b25c39aef6701d8a894bfd26e',
-  '05317c0c13a975bdf284e67394bec1df85a0262fc1a46db9e58370a4e9185c73f2bd60f60',
+  '3f145872d01ce9832d764a0b5f4e6a79bd30128f5c543d8c9061afbe72b074f835e2a61dc',
+  '973dfbe2910a46c5831b762d4f08ac9e5efa815429b7d6c3078039d4e1b5a6fc23458b17d',
+  '0692eacf03c1d86a72f9eb45c90a34562fbd781e48fe7236c50d9b1aca81ef9327bd45603',
+  'c59e70ad42186fb36087e9dca25b41f79fc05418e2ba3d6401c968f25dbe7a3dc840f913e',
+  'b2a7652abd6197f5e834c017453db2a0e6c98f568e10cf2d3479bac34b180a25d7fe96964',
 ].join('')
 
-describe('selectGrooveForDate determinism', () => {
+describe('selectGrooveForDate determinism (under ROTA_EPOCH)', () => {
+  it('pins the epoch the sweeps were captured under', () => {
+    expect(ROTA_EPOCH).toBe(2)
+  })
+
   it('assigns the same groove to every date of a year-long sweep (3 grooves)', () => {
     expect(sweep(['a', 'b', 'c'].map(sweepGroove))).toBe(SWEEP_OVER_THREE)
   })
@@ -178,6 +185,23 @@ describe('selectGrooveForDate rotation', () => {
     expect(boundaries).toEqual([])
   })
 
+  it('plays all sixty grooves exactly once across a lap at the shipped size (AC4)', () => {
+    const grooves = makeGrooves(60)
+    const start = lapStart(60, 20_000)
+    const ids = idsOver(grooves, start, 60)
+    expect(new Set(ids).size).toBe(60)
+    expect([...ids].sort()).toEqual(grooves.map((g) => g.id).sort())
+  })
+
+  it('returns the same groove object a hundred times over for one date (AC5)', () => {
+    const grooves = makeGrooves(60)
+    const day = dayAt(20_007)
+    const first = selectGrooveForDate(day, grooves)
+    for (let i = 0; i < 100; i += 1) {
+      expect(selectGrooveForDate(dayAt(20_007), grooves)).toBe(first)
+    }
+  })
+
   it('never repeats on two consecutive days at all (AC4)', () => {
     const grooves = makeGrooves(16)
     const repeats: string[] = []
@@ -241,5 +265,88 @@ describe('selectGrooveForDate with a grown rotation (AC6)', () => {
       (date) => selectGrooveForDate(date, sixteen).id !== selectGrooveForDate(date, eighteen).id,
     )
     expect(differs).toBe(true)
+  })
+})
+
+describe('the rota epoch', () => {
+  it('ships as 2', () => {
+    expect(ROTA_EPOCH).toBe(2)
+  })
+
+  it('reshuffles every lap when it is bumped (AC1)', () => {
+    const grooves = makeGrooves(60)
+    const unmoved: string[] = []
+    for (let lap = 0; lap <= 5; lap += 1) {
+      const before = orderFor(lap, grooves, 1).map((g) => g.id)
+      const after = orderFor(lap, grooves, 2).map((g) => g.id)
+      if (before.join(',') === after.join(',')) unmoved.push(`lap ${lap}`)
+    }
+    expect(unmoved).toEqual([])
+  })
+
+  it('defaults to the shipped epoch', () => {
+    const grooves = makeGrooves(60)
+    expect(orderFor(3, grooves).map((g) => g.id)).toEqual(
+      orderFor(3, grooves, ROTA_EPOCH).map((g) => g.id),
+    )
+  })
+
+  it('carries into the lap-boundary guard, under any epoch (AC6)', () => {
+    const grooves = makeGrooves(60)
+    const collisions: string[] = []
+    for (const epoch of [1, 2, 3]) {
+      for (let lap = 1; lap <= 200; lap += 1) {
+        const opening = orderFor(lap, grooves, epoch)[0].id
+        const closing = orderFor(lap - 1, grooves, epoch)[59].id
+        if (opening === closing) collisions.push(`epoch ${epoch}, lap ${lap}: ${opening} twice`)
+      }
+    }
+    expect(collisions).toEqual([])
+  })
+
+  it('keeps the seam guarded across a long sweep at the shipped size (AC6)', () => {
+    const grooves = makeGrooves(60)
+    const boundaries: string[] = []
+    for (let offset = 1; offset < SEAM_SPAN; offset += 1) {
+      if (indexAt(offset) % 60 !== 0) continue
+      const closing = selectGrooveForDate(dayAt(offset - 1), grooves).id
+      const opening = selectGrooveForDate(dayAt(offset), grooves).id
+      if (closing === opening) boundaries.push(`day ${indexAt(offset)}: ${opening} twice`)
+    }
+    expect(boundaries).toEqual([])
+  })
+})
+
+describe('selectGrooveForDate with a pinned groove', () => {
+  const grooves = makeGrooves(60)
+  const day = dayAt(20_011)
+  const mix = selectGrooveForDate(day, grooves)
+  const other = grooves.find((g) => g.id !== mix.id) as Groove
+
+  it('serves the pinned groove over the one the mix gives (AC7)', () => {
+    expect(selectGrooveForDate(day, grooves, other.id)).toBe(other)
+  })
+
+  it('takes the mix when no id is pinned (AC8)', () => {
+    expect(selectGrooveForDate(day, grooves, undefined)).toBe(mix)
+  })
+
+  it('takes the mix when the pinned id names no groove in the catalogue (AC9)', () => {
+    expect(() => selectGrooveForDate(day, grooves, 'groove-does-not-exist')).not.toThrow()
+    expect(selectGrooveForDate(day, grooves, 'groove-does-not-exist')).toBe(mix)
+  })
+
+  it('takes the mix when the pinned id is the empty string', () => {
+    expect(selectGrooveForDate(day, grooves, '')).toBe(mix)
+  })
+
+  it('is no special case when the pin agrees with the mix', () => {
+    expect(selectGrooveForDate(day, grooves, mix.id)).toBe(mix)
+  })
+
+  it('still throws on an empty catalogue, pin or no pin (AC7)', () => {
+    expect(() => selectGrooveForDate(day, [], 'g00')).toThrow(
+      'selectGrooveForDate: grooves must not be empty',
+    )
   })
 })

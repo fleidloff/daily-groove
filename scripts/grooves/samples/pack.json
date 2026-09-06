@@ -495,21 +495,10 @@
           "measuredHz": 109.27,
           "layers": [
             {
-              "maxVelocity": 0.45,
-              "files": [
-                "comp/Player_dyn1_rr1_012.flac"
-              ]
-            },
-            {
-              "maxVelocity": 0.8,
+              "maxVelocity": 1,
+              "nominalVelocity": 0.5,
               "files": [
                 "comp/Player_dyn2_rr1_012.flac"
-              ]
-            },
-            {
-              "maxVelocity": 1,
-              "files": [
-                "comp/Player_dyn3_rr1_012.flac"
               ]
             }
           ]
@@ -519,21 +508,10 @@
           "measuredHz": 138.45,
           "layers": [
             {
-              "maxVelocity": 0.45,
-              "files": [
-                "comp/Player_dyn1_rr1_014.flac"
-              ]
-            },
-            {
-              "maxVelocity": 0.8,
+              "maxVelocity": 1,
+              "nominalVelocity": 0.5,
               "files": [
                 "comp/Player_dyn2_rr1_014.flac"
-              ]
-            },
-            {
-              "maxVelocity": 1,
-              "files": [
-                "comp/Player_dyn3_rr1_014.flac"
               ]
             }
           ]
@@ -543,21 +521,10 @@
           "measuredHz": 174.4,
           "layers": [
             {
-              "maxVelocity": 0.45,
-              "files": [
-                "comp/Player_dyn1_rr1_016.flac"
-              ]
-            },
-            {
-              "maxVelocity": 0.8,
+              "maxVelocity": 1,
+              "nominalVelocity": 0.5,
               "files": [
                 "comp/Player_dyn2_rr1_016.flac"
-              ]
-            },
-            {
-              "maxVelocity": 1,
-              "files": [
-                "comp/Player_dyn3_rr1_016.flac"
               ]
             }
           ]
@@ -567,21 +534,10 @@
           "measuredHz": 219.94,
           "layers": [
             {
-              "maxVelocity": 0.45,
-              "files": [
-                "comp/Player_dyn1_rr1_018.flac"
-              ]
-            },
-            {
-              "maxVelocity": 0.8,
+              "maxVelocity": 1,
+              "nominalVelocity": 0.5,
               "files": [
                 "comp/Player_dyn2_rr1_018.flac"
-              ]
-            },
-            {
-              "maxVelocity": 1,
-              "files": [
-                "comp/Player_dyn3_rr1_018.flac"
               ]
             }
           ]
@@ -591,21 +547,10 @@
           "measuredHz": 277.48,
           "layers": [
             {
-              "maxVelocity": 0.45,
-              "files": [
-                "comp/Player_dyn1_rr1_020.flac"
-              ]
-            },
-            {
-              "maxVelocity": 0.8,
+              "maxVelocity": 1,
+              "nominalVelocity": 0.5,
               "files": [
                 "comp/Player_dyn2_rr1_020.flac"
-              ]
-            },
-            {
-              "maxVelocity": 1,
-              "files": [
-                "comp/Player_dyn3_rr1_020.flac"
               ]
             }
           ]
@@ -615,21 +560,10 @@
           "measuredHz": 349.31,
           "layers": [
             {
-              "maxVelocity": 0.45,
-              "files": [
-                "comp/Player_dyn1_rr1_022.flac"
-              ]
-            },
-            {
-              "maxVelocity": 0.8,
+              "maxVelocity": 1,
+              "nominalVelocity": 0.5,
               "files": [
                 "comp/Player_dyn2_rr1_022.flac"
-              ]
-            },
-            {
-              "maxVelocity": 1,
-              "files": [
-                "comp/Player_dyn3_rr1_022.flac"
               ]
             }
           ]
@@ -639,21 +573,10 @@
           "measuredHz": 440.72,
           "layers": [
             {
-              "maxVelocity": 0.45,
-              "files": [
-                "comp/Player_dyn1_rr1_024.flac"
-              ]
-            },
-            {
-              "maxVelocity": 0.8,
+              "maxVelocity": 1,
+              "nominalVelocity": 0.5,
               "files": [
                 "comp/Player_dyn2_rr1_024.flac"
-              ]
-            },
-            {
-              "maxVelocity": 1,
-              "files": [
-                "comp/Player_dyn3_rr1_024.flac"
               ]
             }
           ]
@@ -663,21 +586,10 @@
           "measuredHz": 555.77,
           "layers": [
             {
-              "maxVelocity": 0.45,
-              "files": [
-                "comp/Player_dyn1_rr1_026.flac"
-              ]
-            },
-            {
-              "maxVelocity": 0.8,
+              "maxVelocity": 1,
+              "nominalVelocity": 0.5,
               "files": [
                 "comp/Player_dyn2_rr1_026.flac"
-              ]
-            },
-            {
-              "maxVelocity": 1,
-              "files": [
-                "comp/Player_dyn3_rr1_026.flac"
               ]
             }
           ]
@@ -687,21 +599,10 @@
           "measuredHz": 699.08,
           "layers": [
             {
-              "maxVelocity": 0.45,
-              "files": [
-                "comp/Player_dyn1_rr1_028.flac"
-              ]
-            },
-            {
-              "maxVelocity": 0.8,
+              "maxVelocity": 1,
+              "nominalVelocity": 0.5,
               "files": [
                 "comp/Player_dyn2_rr1_028.flac"
-              ]
-            },
-            {
-              "maxVelocity": 1,
-              "files": [
-                "comp/Player_dyn3_rr1_028.flac"
               ]
             }
           ]
@@ -711,21 +612,10 @@
           "measuredHz": 882.73,
           "layers": [
             {
-              "maxVelocity": 0.45,
-              "files": [
-                "comp/Player_dyn1_rr1_030.flac"
-              ]
-            },
-            {
-              "maxVelocity": 0.8,
+              "maxVelocity": 1,
+              "nominalVelocity": 0.5,
               "files": [
                 "comp/Player_dyn2_rr1_030.flac"
-              ]
-            },
-            {
-              "maxVelocity": 1,
-              "files": [
-                "comp/Player_dyn3_rr1_030.flac"
               ]
             }
           ]
@@ -735,21 +625,10 @@
           "measuredHz": 1117.2,
           "layers": [
             {
-              "maxVelocity": 0.45,
-              "files": [
-                "comp/Player_dyn1_rr1_032.flac"
-              ]
-            },
-            {
-              "maxVelocity": 0.8,
+              "maxVelocity": 1,
+              "nominalVelocity": 0.5,
               "files": [
                 "comp/Player_dyn2_rr1_032.flac"
-              ]
-            },
-            {
-              "maxVelocity": 1,
-              "files": [
-                "comp/Player_dyn3_rr1_032.flac"
               ]
             }
           ]

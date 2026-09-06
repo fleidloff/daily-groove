@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import type { Flavour, VoiceName } from '../types.ts'
+import type { FeelTemplate, Flavour, VoiceName } from '../types.ts'
 import { FLAVOURS } from '../../../src/lib/theory/names.ts'
 import { INTERVALS } from '../../../src/lib/theory/scales.ts'
 import { TEMPLATES, allTemplates, templateById } from './index.ts'
+import { FLAVOURS_MAX, FLAVOURS_MIN, flavourFailures } from './rules.ts'
 
 function halfStepMs(subdivision: number, topBpm: number): number {
   return (((60 / topBpm) * 4) / subdivision) * 500
@@ -22,6 +23,14 @@ describe('templateById', () => {
     expect(lo).toBeLessThanOrEqual(hi)
   })
 
+  it('returns the second-line template — feature-25 epic-3 R1, AC1', () => {
+    const template = templateById('second-line')
+    expect(template.id).toBe('second-line')
+    expect(template.subdivision).toBe(16)
+    expect(template.tempoRange).toEqual([88, 96])
+    expect(template.swing).toBe(0.22)
+  })
+
   it('throws on an unknown id rather than returning undefined', () => {
     expect(() => templateById('no-such-template')).toThrow(/no-such-template/)
   })
@@ -37,29 +46,28 @@ describe('the registry', () => {
   })
 })
 
-const TEMPLATE_COUNT = 6
 
-describe('the template set — R1, AC1', () => {
-  it('holds six templates with unique ids', () => {
+describe('the template set — feature-25 R9', () => {
+  it('holds every template under a unique id', () => {
     const templates = allTemplates()
-    expect(templates).toHaveLength(TEMPLATE_COUNT)
+    expect(templates.length, 'the registry is empty or truncated').toBeGreaterThanOrEqual(6)
     const ids = templates.map((t) => t.id)
-    expect(new Set(ids).size).toBe(TEMPLATE_COUNT)
+    expect(new Set(ids).size).toBe(templates.length)
   })
 
   it('does not give every template the same subdivision, swing or tempo range', () => {
     const templates = allTemplates()
     expect(new Set(templates.map((t) => t.subdivision)).size).toBeGreaterThan(1)
-    expect(new Set(templates.map((t) => t.swing)).size).toBe(TEMPLATE_COUNT)
-    expect(new Set(templates.map((t) => t.tempoRange.join('-'))).size).toBe(TEMPLATE_COUNT)
+    expect(new Set(templates.map((t) => t.swing)).size).toBe(templates.length)
+    expect(new Set(templates.map((t) => t.tempoRange.join('-'))).size).toBe(templates.length)
   })
 
   it('gives each template its own mix and its own feel', () => {
     const templates = allTemplates()
     const mixes = templates.map((t) => JSON.stringify([t.gain, t.pan]))
-    expect(new Set(mixes).size).toBe(TEMPLATE_COUNT)
+    expect(new Set(mixes).size).toBe(templates.length)
     const humanizes = templates.map((t) => JSON.stringify(t.humanize))
-    expect(new Set(humanizes).size).toBe(TEMPLATE_COUNT)
+    expect(new Set(humanizes).size).toBe(templates.length)
   })
 
   it('does not give every template the same kit', () => {
@@ -67,24 +75,41 @@ describe('the template set — R1, AC1', () => {
     expect(new Set(voiceSets).size).toBeGreaterThan(1)
   })
 
-  it('gives every template a closed hat, and an open one unless it rides', () => {
+  it('gives every template a closed hat', () => {
     for (const template of allTemplates()) {
       expect(template.voices, `${template.id} plays no closed hat`).toContain('hatClosed')
-      if (template.voices.includes('ride')) {
-        expect(
-          template.voices,
-          `${template.id} rides and still carries an open hat`,
-        ).not.toContain('hatOpen')
-        expect(template.gain.hatOpen, `${template.id} rides and still gains an open hat`)
-          .toBeUndefined()
-        expect(template.pan.hatOpen, `${template.id} rides and still pans an open hat`)
-          .toBeUndefined()
-        expect(
-          template.humanize.lean.hatOpen,
-          `${template.id} rides and still leans an open hat`,
-        ).toBeUndefined()
-        continue
-      }
+    }
+  })
+
+  it('never lets a feel ride and carry an open hat as well', () => {
+    for (const template of allTemplates()) {
+      if (!template.voices.includes('ride')) continue
+      expect(
+        template.voices,
+        `${template.id} rides and still carries an open hat`,
+      ).not.toContain('hatOpen')
+      expect(template.gain.hatOpen, `${template.id} rides and still gains an open hat`)
+        .toBeUndefined()
+      expect(template.pan.hatOpen, `${template.id} rides and still pans an open hat`)
+        .toBeUndefined()
+      expect(
+        template.humanize.lean.hatOpen,
+        `${template.id} rides and still leans an open hat`,
+      ).toBeUndefined()
+    }
+  })
+
+  // feature-25: bossa-nova is the third case. It neither rides nor opens its hat —
+  // a bossa keeps time on a tight closed hat and answers it with the clave on the
+  // rim. Naming the one exception keeps the guard's teeth: a later feel that quietly
+  // drops its open hat fails here until someone decides that it should.
+  it('names the one feel that plays neither a ride nor an open hat', () => {
+    const neither = allTemplates()
+      .filter((t) => !t.voices.includes('ride') && !t.voices.includes('hatOpen'))
+      .map((t) => t.id)
+    expect(neither).toEqual(['bossa-nova'])
+    for (const template of allTemplates()) {
+      if (template.voices.includes('ride') || neither.includes(template.id)) continue
       expect(template.voices, `${template.id} plays no open hat`).toContain('hatOpen')
       expect(typeof template.gain.hatOpen, `${template.id}.gain.hatOpen`).toBe('number')
       expect(typeof template.pan.hatOpen, `${template.id}.pan.hatOpen`).toBe('number')
@@ -139,31 +164,38 @@ describe('the two feels that ride — feature-24 epic-2, R1, R11, AC1, AC2, AC8,
   })
 })
 
-describe('flavour coverage — R2, R5, AC15', () => {
-  it('gives every template exactly two flavours', () => {
+// feature-25 retired `keeps the pairs pairwise disjoint`. Two templates sharing a
+// flavour is the point of the feature, not an oversight; `flavourFailures` is
+// deliberately silent about overlap and the assertion below proves it stays silent.
+describe('flavour coverage — feature-25 R1, R2, R7, AC1, AC2', () => {
+  it('gives every template two, three or four distinct flavours', () => {
+    expect(flavourFailures(allTemplates())).toEqual([])
     for (const template of allTemplates()) {
-      expect(template.flavours, template.id).toHaveLength(2)
-      expect(new Set(template.flavours).size, template.id).toBe(2)
+      expect(template.flavours.length, template.id).toBeGreaterThanOrEqual(FLAVOURS_MIN)
+      expect(template.flavours.length, template.id).toBeLessThanOrEqual(FLAVOURS_MAX)
+      expect(new Set(template.flavours).size, `${template.id} repeats a flavour`).toBe(
+        template.flavours.length,
+      )
     }
   })
 
-  it('keeps the pairs pairwise disjoint', () => {
-    const templates = allTemplates()
-    for (let i = 0; i < templates.length; i++) {
-      for (let j = i + 1; j < templates.length; j++) {
-        const shared = templates[i].flavours.filter((f) =>
-          templates[j].flavours.includes(f),
-        )
-        expect(shared, `${templates[i].id} vs ${templates[j].id}`).toEqual([])
-      }
+  it('forbids no overlap — a seventh feel may share a mode with a sixth', () => {
+    const sharesIonian: FeelTemplate = {
+      ...templateById('bright-straight'),
+      id: 'synthetic-overlap',
+      flavours: ['ionian', 'dorian', 'mixolydian'] as Flavour[],
     }
+    expect(flavourFailures([...allTemplates(), sharesIonian])).toEqual([])
   })
 
-  it('covers exactly the twelve flavours the game offers', () => {
-    const union = allTemplates().flatMap((t) => t.flavours)
-    expect(union).toHaveLength(2 * TEMPLATE_COUNT)
-    expect(union).toHaveLength(FLAVOURS.length)
-    expect([...new Set(union)].sort()).toEqual([...(FLAVOURS as Flavour[])].sort())
+  it('offers exactly the flavours the game names, and no others', () => {
+    const offered = new Set(allTemplates().flatMap((t) => t.flavours))
+    expect([...offered].sort()).toEqual([...(FLAVOURS as Flavour[])].sort())
+    for (const flavour of offered) {
+      expect(FLAVOURS as string[], `${flavour} is offered but not in FLAVOURS`).toContain(
+        flavour,
+      )
+    }
   })
 
   it('renders twelve of the thirteen scales the shared table carries', () => {
@@ -176,18 +208,39 @@ describe('flavour coverage — R2, R5, AC15', () => {
     )
   })
 
-  it('splits the twelve evenly between the two families', () => {
-    const union = allTemplates().flatMap((t) => t.flavours)
+  // music.md constraint 2, over the set of distinct offered flavours rather than
+  // over the multiset the disjoint pairs used to make of it.
+  it('splits the distinct offered flavours evenly between the two families', () => {
+    const offered = [...new Set(allTemplates().flatMap((t) => t.flavours))]
     const byThird = { major: [] as Flavour[], minor: [] as Flavour[] }
-    for (const flavour of union) {
+    for (const flavour of offered) {
       const intervals = INTERVALS[flavour]
       const major = intervals.includes(4)
       const minor = intervals.includes(3)
       expect(major !== minor, `${flavour} has no single third to grade it by`).toBe(true)
       byThird[major ? 'major' : 'minor'].push(flavour)
     }
-    expect(byThird.major.sort(), 'major-third modes').toHaveLength(TEMPLATE_COUNT)
-    expect(byThird.minor.sort(), 'minor-third modes').toHaveLength(TEMPLATE_COUNT)
+    expect(byThird.major.sort(), 'major-third modes').toHaveLength(FLAVOURS.length / 2)
+    expect(byThird.minor.sort(), 'minor-third modes').toHaveLength(FLAVOURS.length / 2)
+  })
+
+  it('names the twelve in a frozen order, with locrian absent — R6', () => {
+    expect(FLAVOURS).toEqual([
+      'ionian',
+      'aeolian',
+      'dorian',
+      'mixolydian',
+      'lydian',
+      'phrygian',
+      'harmonic-minor',
+      'blues',
+      'melodic-minor',
+      'lydian-dominant',
+      'phrygian-dominant',
+      'harmonic-major',
+    ])
+    expect(FLAVOURS).toHaveLength(12)
+    expect(FLAVOURS as string[]).not.toContain('locrian')
   })
 
   it('pairs each flavour with a feel that suits it', () => {
@@ -212,6 +265,39 @@ describe('flavour coverage — R2, R5, AC15', () => {
       'harmonic-major',
       'phrygian-dominant',
     ])
+    expect([...templateById('bossa-nova').flavours].sort()).toEqual([
+      'dorian',
+      'ionian',
+      'lydian',
+      'melodic-minor',
+    ])
+    expect([...templateById('second-line').flavours].sort()).toEqual([
+      'blues',
+      'harmonic-major',
+      'ionian',
+      'mixolydian',
+    ])
+    expect([...templateById('boom-bap').flavours].sort()).toEqual([
+      'aeolian',
+      'dorian',
+      'phrygian',
+    ])
+  })
+
+  // R5: the six lists are frozen in content and order. An append to one of them
+  // re-renders that feel's grooves and reassigns their committed answers, so it
+  // fails here rather than in a re-render.
+  it('leaves the six original lists at two entries each — R5, AC4', () => {
+    for (const id of [
+      'straight-funk',
+      'shuffle',
+      'bright-straight',
+      'half-time',
+      'open-ballad',
+      'swung-sixteenth',
+    ]) {
+      expect(templateById(id).flavours, id).toHaveLength(2)
+    }
   })
 })
 
@@ -306,5 +392,76 @@ describe('the pass count — R2, R2a, AC2', () => {
     expect(templateById('half-time').passes).toBeLessThan(
       templateById('straight-funk').passes,
     )
+  })
+})
+
+describe('the seventh feel — feature-25 R19, R20, AC13', () => {
+  // Was `registers bossa-nova last`. What that assertion protected was never bossa's
+  // position: catalogue.test.ts's `leaves every first-generation survivor exactly as
+  // selectSeeds produced it` calls allTemplates().slice(0, 4) and compares the result
+  // against grooves 01–16, so what may not move is the *first four* entries and their
+  // order. Reading it as "bossa is last" made every later registration a red test for
+  // no reason — feature-25 registers three more feels after it. The slice assertion
+  // below is the same guard stated as what it guards.
+  it('holds the four first-generation feels at the head of the registry — R19', () => {
+    expect(templateById('bossa-nova').subdivision).toBe(8)
+    expect(allTemplates().slice(0, 4).map((t) => t.id)).toEqual([
+      'straight-funk',
+      'shuffle',
+      'bright-straight',
+      'half-time',
+    ])
+  })
+
+  it('takes the near-zero end of the swing register, at 120–140 — R19, AC13', () => {
+    const feel = templateById('bossa-nova')
+    expect(feel.swing).toBeGreaterThan(0)
+    expect(feel.swing).toBeLessThan(0.02)
+    expect(feel.tempoRange[0]).toBeGreaterThanOrEqual(120)
+    expect(feel.tempoRange[1]).toBeLessThanOrEqual(140)
+    const others = allTemplates().filter((t) => t.id !== 'bossa-nova')
+    expect(others.map((t) => t.swing), 'another feel already swings this much').not.toContain(
+      feel.swing,
+    )
+    expect(
+      others.map((t) => t.tempoRange.join('-')),
+      'another feel already holds this tempo range',
+    ).not.toContain(feel.tempoRange.join('-'))
+  })
+
+  it('carries four modes, every one of them already in FLAVOURS — R20', () => {
+    const feel = templateById('bossa-nova')
+    expect(feel.flavours).toHaveLength(4)
+    for (const flavour of feel.flavours) {
+      expect(FLAVOURS as string[], `${flavour} is not a flavour the game names`).toContain(
+        flavour,
+      )
+    }
+    expect(flavourFailures(allTemplates())).toEqual([])
+  })
+
+  it('declares its own kick, hat, bass, comp and ghost pools, and a two-bar clave — R21', () => {
+    const feel = templateById('bossa-nova')
+    expect(Object.keys(feel.patterns ?? {}).sort()).toEqual([
+      'bass',
+      'comp',
+      'hatClosed',
+      'kick',
+      'snareGhosts',
+    ])
+    expect(feel.figures).toHaveLength(1)
+    expect(feel.figures![0].voice).toBe('rim')
+    expect(feel.figures![0].bars).toHaveLength(2)
+    expect(feel.figures![0].bars[0]).not.toEqual(feel.figures![0].bars[1])
+  })
+
+  it('plays none of the four sourced-but-unplayed voices — R22, AC15', () => {
+    const feel = templateById('bossa-nova')
+    for (const voice of ['ride', 'rideBell', 'claves', 'cowbell'] as VoiceName[]) {
+      expect(feel.voices, `${feel.id} names ${voice}`).not.toContain(voice)
+    }
+    for (const voice of ['kick', 'snare', 'hatClosed', 'rim', 'bass', 'comp'] as VoiceName[]) {
+      expect(feel.voices, `${feel.id} does not name ${voice}`).toContain(voice)
+    }
   })
 })

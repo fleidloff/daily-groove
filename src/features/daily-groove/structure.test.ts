@@ -318,6 +318,7 @@ describe('feature components sit in screen regions', () => {
       'GroovePuzzle.copy.test.tsx',
       'GroovePuzzle.firstVisit.test.tsx',
       'GroovePuzzle.written.test.tsx',
+      'GroovePuzzle.pinned.test.tsx',
     ]
     const absent = composedTests.filter((name) => !existsSync(join(COMPONENTS, name)))
     expect(absent).toEqual([])

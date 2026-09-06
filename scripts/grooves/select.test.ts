@@ -2,10 +2,62 @@ import { describe, expect, it } from 'vitest'
 import { buildEvents } from './events.ts'
 import { selectSeeds } from './select.ts'
 import { allTemplates, templateById } from './templates/index.ts'
-import type { Flavour, GrooveSpec } from './types.ts'
+import type { FeelTemplate, Flavour, GrooveSpec } from './types.ts'
 import { isValidHarmony } from './theory/validity.ts'
 
 const musicOf = (spec: GrooveSpec) => buildEvents(spec, templateById(spec.template)).music
+
+// selectSeeds is handed the list it should select over, so a synthetic seventh feel
+// is not in the registry and cannot be looked up by id.
+function flavoursByTemplate(
+  specs: readonly GrooveSpec[],
+  templates: readonly FeelTemplate[],
+): Map<string, Flavour[]> {
+  const drawn = new Map<string, Flavour[]>()
+  for (const spec of specs) {
+    const template = templates.find((t) => t.id === spec.template)
+    if (!template) throw new Error(`no template for ${spec.id}: ${spec.template}`)
+    const { flavour } = buildEvents(spec, template).music
+    drawn.set(spec.template, [...(drawn.get(spec.template) ?? []), flavour])
+  }
+  return drawn
+}
+
+function expectEvenSpread(
+  templates: readonly FeelTemplate[],
+  perTemplate: number,
+  specs: readonly GrooveSpec[],
+): void {
+  const drawn = flavoursByTemplate(specs, templates)
+  const reached = new Set<Flavour>()
+
+  for (const template of templates) {
+    const mine = drawn.get(template.id) ?? []
+    expect(mine, template.id).toHaveLength(perTemplate)
+    const k = template.flavours.length
+    const floor = Math.floor(perTemplate / k)
+    const ceil = Math.ceil(perTemplate / k)
+    for (const flavour of template.flavours) {
+      const n = mine.filter((f) => f === flavour).length
+      expect(n, `${template.id} draws ${flavour} ${n} times, not ${floor}-${ceil}`)
+        .toBeGreaterThanOrEqual(floor)
+      expect(n, `${template.id} draws ${flavour} ${n} times, not ${floor}-${ceil}`)
+        .toBeLessThanOrEqual(ceil)
+      reached.add(flavour)
+    }
+    for (const flavour of mine) {
+      expect(template.flavours, `${template.id} drew ${flavour}, which it does not offer`)
+        .toContain(flavour)
+    }
+  }
+
+  const offered = new Set(templates.flatMap((t) => t.flavours))
+  for (const flavour of offered) {
+    expect(reached, `${flavour} is offered but no selected spec answers to it`).toContain(
+      flavour,
+    )
+  }
+}
 
 describe('selectSeeds', () => {
   it('accepts the asked-for number per template', () => {
@@ -16,16 +68,42 @@ describe('selectSeeds', () => {
     }
   })
 
-  it('covers every flavour the game offers, evenly', () => {
-    const specs = selectSeeds(allTemplates(), { perTemplate: 4 })
-    const counts = new Map<Flavour, number>()
-    for (const spec of specs) {
-      const f = musicOf(spec).flavour
-      counts.set(f, (counts.get(f) ?? 0) + 1)
+  // feature-25 R7, R9: the spread is even inside a template's own quota, not across
+  // the catalogue. Six pairs made those the same number; two-to-four with overlap
+  // does not.
+  it('reaches every flavour it offers, and splits each template’s quota as evenly as its list allows', () => {
+    const templates = allTemplates()
+    const specs = selectSeeds(templates, { perTemplate: 4 })
+    expectEvenSpread(templates, 4, specs)
+  })
+
+  it('splits a four-flavour template’s quota one apiece, sharing a mode with a sixth', () => {
+    const fourMode: FeelTemplate = {
+      ...templateById('bright-straight'),
+      id: 'synth-four',
+      flavours: ['ionian', 'lydian', 'dorian', 'melodic-minor'] as Flavour[],
     }
-    const offered = allTemplates().flatMap((t) => t.flavours)
-    expect(new Set(counts.keys())).toEqual(new Set(offered))
-    for (const [flavour, n] of counts) expect(n, flavour).toBe(2)
+    const templates = [...allTemplates(), fourMode]
+    const specs = selectSeeds(templates, { perTemplate: 4 })
+    expectEvenSpread(templates, 4, specs)
+
+    const mine = flavoursByTemplate(specs, templates).get('synth-four') ?? []
+    expect([...mine].sort()).toEqual(['dorian', 'ionian', 'lydian', 'melodic-minor'])
+  })
+
+  it('splits a three-flavour template’s four into 2-1-1', () => {
+    const threeMode: FeelTemplate = {
+      ...templateById('bright-straight'),
+      id: 'synth-three',
+      flavours: ['ionian', 'lydian', 'dorian'] as Flavour[],
+    }
+    const templates = [...allTemplates(), threeMode]
+    const specs = selectSeeds(templates, { perTemplate: 4 })
+    expectEvenSpread(templates, 4, specs)
+
+    const mine = flavoursByTemplate(specs, templates).get('synth-three') ?? []
+    const counts = threeMode.flavours.map((f) => mine.filter((x) => x === f).length).sort()
+    expect(counts).toEqual([1, 1, 2])
   })
 
   it('never repeats an answer — root and flavour are unique across the catalogue', () => {

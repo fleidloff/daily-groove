@@ -211,33 +211,9 @@
       "modifications": "capped at 2 s, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a bass note lands with the kick it is written beside; not normalised: the v1/v3 level difference is the dynamic information the renderer reads)"
     },
     {
-      "file": "comp/Player_dyn1_rr1_012.flac",
-      "source": "VSCO 2 Community Edition (VSCO-2-CE), Upright Piano",
-      "sourceFile": "Keys/Upright Piano/Player_dyn1_rr1_012.wav",
-      "url": "https://github.com/sgossner/VSCO-2-CE",
-      "licence": "CC0",
-      "modifications": "capped at 2.5 s, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a comp chord lands with the kick it is written beside; not normalised: the dyn1/dyn2/dyn3 level difference is the dynamic information the renderer reads)"
-    },
-    {
       "file": "comp/Player_dyn2_rr1_012.flac",
       "source": "VSCO 2 Community Edition (VSCO-2-CE), Upright Piano",
       "sourceFile": "Keys/Upright Piano/Player_dyn2_rr1_012.wav",
-      "url": "https://github.com/sgossner/VSCO-2-CE",
-      "licence": "CC0",
-      "modifications": "capped at 2.5 s, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a comp chord lands with the kick it is written beside; not normalised: the dyn1/dyn2/dyn3 level difference is the dynamic information the renderer reads)"
-    },
-    {
-      "file": "comp/Player_dyn3_rr1_012.flac",
-      "source": "VSCO 2 Community Edition (VSCO-2-CE), Upright Piano",
-      "sourceFile": "Keys/Upright Piano/Player_dyn3_rr1_012.wav",
-      "url": "https://github.com/sgossner/VSCO-2-CE",
-      "licence": "CC0",
-      "modifications": "capped at 2.5 s, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a comp chord lands with the kick it is written beside; not normalised: the dyn1/dyn2/dyn3 level difference is the dynamic information the renderer reads)"
-    },
-    {
-      "file": "comp/Player_dyn1_rr1_014.flac",
-      "source": "VSCO 2 Community Edition (VSCO-2-CE), Upright Piano",
-      "sourceFile": "Keys/Upright Piano/Player_dyn1_rr1_014.wav",
       "url": "https://github.com/sgossner/VSCO-2-CE",
       "licence": "CC0",
       "modifications": "capped at 2.5 s, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a comp chord lands with the kick it is written beside; not normalised: the dyn1/dyn2/dyn3 level difference is the dynamic information the renderer reads)"
@@ -251,41 +227,9 @@
       "modifications": "capped at 2.5 s, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a comp chord lands with the kick it is written beside; not normalised: the dyn1/dyn2/dyn3 level difference is the dynamic information the renderer reads)"
     },
     {
-      "file": "comp/Player_dyn3_rr1_014.flac",
-      "source": "VSCO 2 Community Edition (VSCO-2-CE), Upright Piano",
-      "sourceFile": "Keys/Upright Piano/Player_dyn3_rr1_014.wav",
-      "url": "https://github.com/sgossner/VSCO-2-CE",
-      "licence": "CC0",
-      "modifications": "capped at 2.5 s, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a comp chord lands with the kick it is written beside; not normalised: the dyn1/dyn2/dyn3 level difference is the dynamic information the renderer reads)"
-    },
-    {
-      "file": "comp/Player_dyn1_rr1_016.flac",
-      "source": "VSCO 2 Community Edition (VSCO-2-CE), Upright Piano",
-      "sourceFile": "Keys/Upright Piano/Player_dyn1_rr1_016.wav",
-      "url": "https://github.com/sgossner/VSCO-2-CE",
-      "licence": "CC0",
-      "modifications": "capped at 2.5 s, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a comp chord lands with the kick it is written beside; not normalised: the dyn1/dyn2/dyn3 level difference is the dynamic information the renderer reads)"
-    },
-    {
       "file": "comp/Player_dyn2_rr1_016.flac",
       "source": "VSCO 2 Community Edition (VSCO-2-CE), Upright Piano",
       "sourceFile": "Keys/Upright Piano/Player_dyn2_rr1_016.wav",
-      "url": "https://github.com/sgossner/VSCO-2-CE",
-      "licence": "CC0",
-      "modifications": "capped at 2.5 s, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a comp chord lands with the kick it is written beside; not normalised: the dyn1/dyn2/dyn3 level difference is the dynamic information the renderer reads)"
-    },
-    {
-      "file": "comp/Player_dyn3_rr1_016.flac",
-      "source": "VSCO 2 Community Edition (VSCO-2-CE), Upright Piano",
-      "sourceFile": "Keys/Upright Piano/Player_dyn3_rr1_016.wav",
-      "url": "https://github.com/sgossner/VSCO-2-CE",
-      "licence": "CC0",
-      "modifications": "capped at 2.5 s, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a comp chord lands with the kick it is written beside; not normalised: the dyn1/dyn2/dyn3 level difference is the dynamic information the renderer reads)"
-    },
-    {
-      "file": "comp/Player_dyn1_rr1_018.flac",
-      "source": "VSCO 2 Community Edition (VSCO-2-CE), Upright Piano",
-      "sourceFile": "Keys/Upright Piano/Player_dyn1_rr1_018.wav",
       "url": "https://github.com/sgossner/VSCO-2-CE",
       "licence": "CC0",
       "modifications": "capped at 2.5 s, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a comp chord lands with the kick it is written beside; not normalised: the dyn1/dyn2/dyn3 level difference is the dynamic information the renderer reads)"
@@ -299,41 +243,9 @@
       "modifications": "capped at 2.5 s, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a comp chord lands with the kick it is written beside; not normalised: the dyn1/dyn2/dyn3 level difference is the dynamic information the renderer reads)"
     },
     {
-      "file": "comp/Player_dyn3_rr1_018.flac",
-      "source": "VSCO 2 Community Edition (VSCO-2-CE), Upright Piano",
-      "sourceFile": "Keys/Upright Piano/Player_dyn3_rr1_018.wav",
-      "url": "https://github.com/sgossner/VSCO-2-CE",
-      "licence": "CC0",
-      "modifications": "capped at 2.5 s, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a comp chord lands with the kick it is written beside; not normalised: the dyn1/dyn2/dyn3 level difference is the dynamic information the renderer reads)"
-    },
-    {
-      "file": "comp/Player_dyn1_rr1_020.flac",
-      "source": "VSCO 2 Community Edition (VSCO-2-CE), Upright Piano",
-      "sourceFile": "Keys/Upright Piano/Player_dyn1_rr1_020.wav",
-      "url": "https://github.com/sgossner/VSCO-2-CE",
-      "licence": "CC0",
-      "modifications": "capped at 2.5 s, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a comp chord lands with the kick it is written beside; not normalised: the dyn1/dyn2/dyn3 level difference is the dynamic information the renderer reads)"
-    },
-    {
       "file": "comp/Player_dyn2_rr1_020.flac",
       "source": "VSCO 2 Community Edition (VSCO-2-CE), Upright Piano",
       "sourceFile": "Keys/Upright Piano/Player_dyn2_rr1_020.wav",
-      "url": "https://github.com/sgossner/VSCO-2-CE",
-      "licence": "CC0",
-      "modifications": "capped at 2.5 s, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a comp chord lands with the kick it is written beside; not normalised: the dyn1/dyn2/dyn3 level difference is the dynamic information the renderer reads)"
-    },
-    {
-      "file": "comp/Player_dyn3_rr1_020.flac",
-      "source": "VSCO 2 Community Edition (VSCO-2-CE), Upright Piano",
-      "sourceFile": "Keys/Upright Piano/Player_dyn3_rr1_020.wav",
-      "url": "https://github.com/sgossner/VSCO-2-CE",
-      "licence": "CC0",
-      "modifications": "capped at 2.5 s, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a comp chord lands with the kick it is written beside; not normalised: the dyn1/dyn2/dyn3 level difference is the dynamic information the renderer reads)"
-    },
-    {
-      "file": "comp/Player_dyn1_rr1_022.flac",
-      "source": "VSCO 2 Community Edition (VSCO-2-CE), Upright Piano",
-      "sourceFile": "Keys/Upright Piano/Player_dyn1_rr1_022.wav",
       "url": "https://github.com/sgossner/VSCO-2-CE",
       "licence": "CC0",
       "modifications": "capped at 2.5 s, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a comp chord lands with the kick it is written beside; not normalised: the dyn1/dyn2/dyn3 level difference is the dynamic information the renderer reads)"
@@ -347,41 +259,9 @@
       "modifications": "capped at 2.5 s, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a comp chord lands with the kick it is written beside; not normalised: the dyn1/dyn2/dyn3 level difference is the dynamic information the renderer reads)"
     },
     {
-      "file": "comp/Player_dyn3_rr1_022.flac",
-      "source": "VSCO 2 Community Edition (VSCO-2-CE), Upright Piano",
-      "sourceFile": "Keys/Upright Piano/Player_dyn3_rr1_022.wav",
-      "url": "https://github.com/sgossner/VSCO-2-CE",
-      "licence": "CC0",
-      "modifications": "capped at 2.5 s, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a comp chord lands with the kick it is written beside; not normalised: the dyn1/dyn2/dyn3 level difference is the dynamic information the renderer reads)"
-    },
-    {
-      "file": "comp/Player_dyn1_rr1_024.flac",
-      "source": "VSCO 2 Community Edition (VSCO-2-CE), Upright Piano",
-      "sourceFile": "Keys/Upright Piano/Player_dyn1_rr1_024.wav",
-      "url": "https://github.com/sgossner/VSCO-2-CE",
-      "licence": "CC0",
-      "modifications": "capped at 2.5 s, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a comp chord lands with the kick it is written beside; not normalised: the dyn1/dyn2/dyn3 level difference is the dynamic information the renderer reads)"
-    },
-    {
       "file": "comp/Player_dyn2_rr1_024.flac",
       "source": "VSCO 2 Community Edition (VSCO-2-CE), Upright Piano",
       "sourceFile": "Keys/Upright Piano/Player_dyn2_rr1_024.wav",
-      "url": "https://github.com/sgossner/VSCO-2-CE",
-      "licence": "CC0",
-      "modifications": "capped at 2.5 s, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a comp chord lands with the kick it is written beside; not normalised: the dyn1/dyn2/dyn3 level difference is the dynamic information the renderer reads)"
-    },
-    {
-      "file": "comp/Player_dyn3_rr1_024.flac",
-      "source": "VSCO 2 Community Edition (VSCO-2-CE), Upright Piano",
-      "sourceFile": "Keys/Upright Piano/Player_dyn3_rr1_024.wav",
-      "url": "https://github.com/sgossner/VSCO-2-CE",
-      "licence": "CC0",
-      "modifications": "capped at 2.5 s, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a comp chord lands with the kick it is written beside; not normalised: the dyn1/dyn2/dyn3 level difference is the dynamic information the renderer reads)"
-    },
-    {
-      "file": "comp/Player_dyn1_rr1_026.flac",
-      "source": "VSCO 2 Community Edition (VSCO-2-CE), Upright Piano",
-      "sourceFile": "Keys/Upright Piano/Player_dyn1_rr1_026.wav",
       "url": "https://github.com/sgossner/VSCO-2-CE",
       "licence": "CC0",
       "modifications": "capped at 2.5 s, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a comp chord lands with the kick it is written beside; not normalised: the dyn1/dyn2/dyn3 level difference is the dynamic information the renderer reads)"
@@ -395,41 +275,9 @@
       "modifications": "capped at 2.5 s, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a comp chord lands with the kick it is written beside; not normalised: the dyn1/dyn2/dyn3 level difference is the dynamic information the renderer reads)"
     },
     {
-      "file": "comp/Player_dyn3_rr1_026.flac",
-      "source": "VSCO 2 Community Edition (VSCO-2-CE), Upright Piano",
-      "sourceFile": "Keys/Upright Piano/Player_dyn3_rr1_026.wav",
-      "url": "https://github.com/sgossner/VSCO-2-CE",
-      "licence": "CC0",
-      "modifications": "capped at 2.5 s, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a comp chord lands with the kick it is written beside; not normalised: the dyn1/dyn2/dyn3 level difference is the dynamic information the renderer reads)"
-    },
-    {
-      "file": "comp/Player_dyn1_rr1_028.flac",
-      "source": "VSCO 2 Community Edition (VSCO-2-CE), Upright Piano",
-      "sourceFile": "Keys/Upright Piano/Player_dyn1_rr1_028.wav",
-      "url": "https://github.com/sgossner/VSCO-2-CE",
-      "licence": "CC0",
-      "modifications": "capped at 2.5 s, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a comp chord lands with the kick it is written beside; not normalised: the dyn1/dyn2/dyn3 level difference is the dynamic information the renderer reads)"
-    },
-    {
       "file": "comp/Player_dyn2_rr1_028.flac",
       "source": "VSCO 2 Community Edition (VSCO-2-CE), Upright Piano",
       "sourceFile": "Keys/Upright Piano/Player_dyn2_rr1_028.wav",
-      "url": "https://github.com/sgossner/VSCO-2-CE",
-      "licence": "CC0",
-      "modifications": "capped at 2.5 s, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a comp chord lands with the kick it is written beside; not normalised: the dyn1/dyn2/dyn3 level difference is the dynamic information the renderer reads)"
-    },
-    {
-      "file": "comp/Player_dyn3_rr1_028.flac",
-      "source": "VSCO 2 Community Edition (VSCO-2-CE), Upright Piano",
-      "sourceFile": "Keys/Upright Piano/Player_dyn3_rr1_028.wav",
-      "url": "https://github.com/sgossner/VSCO-2-CE",
-      "licence": "CC0",
-      "modifications": "capped at 2.5 s, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a comp chord lands with the kick it is written beside; not normalised: the dyn1/dyn2/dyn3 level difference is the dynamic information the renderer reads)"
-    },
-    {
-      "file": "comp/Player_dyn1_rr1_030.flac",
-      "source": "VSCO 2 Community Edition (VSCO-2-CE), Upright Piano",
-      "sourceFile": "Keys/Upright Piano/Player_dyn1_rr1_030.wav",
       "url": "https://github.com/sgossner/VSCO-2-CE",
       "licence": "CC0",
       "modifications": "capped at 2.5 s, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a comp chord lands with the kick it is written beside; not normalised: the dyn1/dyn2/dyn3 level difference is the dynamic information the renderer reads)"
@@ -443,33 +291,9 @@
       "modifications": "capped at 2.5 s, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a comp chord lands with the kick it is written beside; not normalised: the dyn1/dyn2/dyn3 level difference is the dynamic information the renderer reads)"
     },
     {
-      "file": "comp/Player_dyn3_rr1_030.flac",
-      "source": "VSCO 2 Community Edition (VSCO-2-CE), Upright Piano",
-      "sourceFile": "Keys/Upright Piano/Player_dyn3_rr1_030.wav",
-      "url": "https://github.com/sgossner/VSCO-2-CE",
-      "licence": "CC0",
-      "modifications": "capped at 2.5 s, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a comp chord lands with the kick it is written beside; not normalised: the dyn1/dyn2/dyn3 level difference is the dynamic information the renderer reads)"
-    },
-    {
-      "file": "comp/Player_dyn1_rr1_032.flac",
-      "source": "VSCO 2 Community Edition (VSCO-2-CE), Upright Piano",
-      "sourceFile": "Keys/Upright Piano/Player_dyn1_rr1_032.wav",
-      "url": "https://github.com/sgossner/VSCO-2-CE",
-      "licence": "CC0",
-      "modifications": "capped at 2.5 s, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a comp chord lands with the kick it is written beside; not normalised: the dyn1/dyn2/dyn3 level difference is the dynamic information the renderer reads)"
-    },
-    {
       "file": "comp/Player_dyn2_rr1_032.flac",
       "source": "VSCO 2 Community Edition (VSCO-2-CE), Upright Piano",
       "sourceFile": "Keys/Upright Piano/Player_dyn2_rr1_032.wav",
-      "url": "https://github.com/sgossner/VSCO-2-CE",
-      "licence": "CC0",
-      "modifications": "capped at 2.5 s, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a comp chord lands with the kick it is written beside; not normalised: the dyn1/dyn2/dyn3 level difference is the dynamic information the renderer reads)"
-    },
-    {
-      "file": "comp/Player_dyn3_rr1_032.flac",
-      "source": "VSCO 2 Community Edition (VSCO-2-CE), Upright Piano",
-      "sourceFile": "Keys/Upright Piano/Player_dyn3_rr1_032.wav",
       "url": "https://github.com/sgossner/VSCO-2-CE",
       "licence": "CC0",
       "modifications": "capped at 2.5 s, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a comp chord lands with the kick it is written beside; not normalised: the dyn1/dyn2/dyn3 level difference is the dynamic information the renderer reads)"
@@ -1239,7 +1063,7 @@
       "sourceFile": "Idiophones/Struck Idiophones/Claves/Legacy/claves_mf.wav",
       "url": "https://github.com/sgossner/VCSL",
       "licence": "CC0",
-      "modifications": "capped at 0.4 s, faded out over the last 80 ms, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept; not normalised: the take-to-take level difference is the round-robin variation the renderer plays)"
+      "modifications": "capped at 0.4 s, faded out over the last 80 ms, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept; not normalised: the take-to-take level difference is the round-robin variation the renderer plays) then resampled down a perfect fifth (playback ratio 2^(-7/12) = 0.66742, so the strongest partial moves from 2337 Hz to 1556 Hz) and re-capped at 0.4 s with a fresh 80 ms fade-out — a bigger pair of sticks, and the take-to-take level difference is preserved: the two alternates were 2.53 dB apart before and are 2.50 dB apart after"
     },
     {
       "file": "claves/claves_mf_3.flac",
@@ -1247,7 +1071,7 @@
       "sourceFile": "Idiophones/Struck Idiophones/Claves/Legacy/claves_mf_3.wav",
       "url": "https://github.com/sgossner/VCSL",
       "licence": "CC0",
-      "modifications": "capped at 0.4 s, faded out over the last 80 ms, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept; not normalised: the take-to-take level difference is the round-robin variation the renderer plays)"
+      "modifications": "capped at 0.4 s, faded out over the last 80 ms, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept; not normalised: the take-to-take level difference is the round-robin variation the renderer plays) then resampled down a perfect fifth (playback ratio 2^(-7/12) = 0.66742, so the strongest partial moves from 5640 Hz to 3766 Hz) and re-capped at 0.4 s with a fresh 80 ms fade-out — a bigger pair of sticks, and the take-to-take level difference is preserved: the two alternates were 2.53 dB apart before and are 2.50 dB apart after"
     },
     {
       "file": "cowbell/Cowbell1_Hit_v4_rr1_Mid.flac",

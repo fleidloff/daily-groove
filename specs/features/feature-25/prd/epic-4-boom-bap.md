@@ -48,9 +48,13 @@ neighbours, and say out loud whether it earned its place.
 - **R2** — Its flavours are two to four of the twelve already offered.
   `new-styles.md` proposes dorian, aeolian and phrygian; the `musician` settles
   the list, which is frozen the moment its first groove is minted.
-- **R3** — The kick and snare are the loudest voices in the mix, set by the
-  template's `gain`, and land hard: their velocity floor is above the ghost
-  notes' by a margin the `musician` states.
+- **R3** — The kick and snare lead the **kit** — above every other drum the
+  template declares — and land hard: their velocity floor is above the ghost
+  notes' by a margin the `musician` states. They do **not** lead the mix. The
+  comp and the bass sit above them, and no lower against the kick than any other
+  registered feel puts them, because those two voices carry the answer the
+  player is asked to hear. *Amended after a hearing — see
+  [Amendments](#amendments).*
 - **R4** — Ghost notes sound underneath the snare, quiet enough to be texture
   rather than a second backbeat.
 - **R5** — The comp is sparse: fewer events per bar than `straight-funk`,
@@ -92,8 +96,12 @@ neighbours, and say out loud whether it earned its place.
 - **AC2** (R2) — Given the template, when the flavour suite runs, then it holds
   two to four distinct flavours, every one of them in `FLAVOURS`.
 - **AC3** (R3, R4) — Given every rendered groove, when its events are inspected,
-  then every ghost event's velocity is below every backbeat snare event's, and
-  the kick and snare gains are the highest the template declares.
+  then every ghost event's velocity is below every backbeat snare event's, by
+  the margin the `musician` states. And given the template's `gain`, the kick
+  and snare sit above every other **drum** it declares, while its comp and bass
+  sit no lower against its kick than any other registered feel's do, and measure
+  on `straight-funk`'s balance over the six committed grooves. *Amended after a
+  hearing — see [Amendments](#amendments).*
 - **AC4** (R5) — Given every rendered groove, when its comp events per bar are
   counted, then the count is below the lowest of the three named templates'.
 - **AC5** (R6) — Given the catalogue after this epic, when `npm run test:gen`
@@ -154,6 +162,67 @@ catalogue as it finds it, so a stopped boom-bap costs it nothing.
 - **"Reads as its own feel" is judged on the groove, not on the label.** The
   comparison is done by listening without knowing which template is playing where
   that is practical.
+
+## Amendments
+
+Changes made to the requirements after they were written, and why. R3 and AC3
+above are amended text; this is what they said before and what overturned them.
+
+### R3 and AC3 — the drum-forward mix, reversed by a hearing · 2026-09-06
+
+**What they said.** R3: *"The kick and snare are the loudest voices in the mix,
+set by the template's `gain`, and land hard."* AC3's second clause: *"the kick
+and snare gains are the highest the template declares."* That inversion — drums
+over the bass, alone in the registry — was the style's declared identity, taken
+from the genre reference: a struck sampled break with the rest of the band
+behind it.
+
+**It was built that way, and the player heard it.** The six grooves were minted
+under the inversion, which put the comp about 15 dB and the bass about 16 dB
+under the kick — roughly 12 dB below the quietest of the six feels that predate
+this feature. The verdict on `groove-71` … `groove-76`:
+
+> "groove 71-76: the comp (piano) is too quiet. Remember: this app is about
+> finding the harmony"
+
+**Why the code is right and the criterion was wrong.** The second sentence is a
+product principle, not a note about one feel. This app is a puzzle in which the
+player identifies the mode by ear; the comp states the chord and the bass states
+the root, so they are the two voices carrying the answer the player is asked
+for. A mix that buries them is not affordable however good the genre reference
+is — and the inversion cannot be kept in any partial form, because it *is* the
+buried harmony described from the other side. The drum-forward mix was tried,
+shipped as far as a hearing, and rejected by the player. That is a decision made
+on the thing itself, which is worth more than the criterion it overturns.
+
+**What shipped instead.** `scripts/grooves/templates/boom-bap.ts` declares
+`kick −11, snare −10, hatClosed −18, hatOpen −24, bass −3.1, comp −4.7`. The
+bass now sits 6.9 dB above the snare and the comp 5.3 dB above it. Every kit
+voice moved by one uniform 7 dB offset, so the kit's own internal balance is
+exactly the one the feel was minted with — its closed hat still measures 18.7 dB
+under its own kick, where `straight-funk`'s sits 12.1 dB under its own. What
+moved is the kit against the band:
+measured post-gain track RMS relative to the kick, over the six committed
+grooves, is now comp −2.6 dB and bass −5.1 dB, which are `straight-funk`'s own
+figures. No answer moved — `gain` is read in exactly one place in the generator,
+`mix.ts`, so a re-gain cannot touch a seed, a root, a mode, a chord or a name.
+
+**What survives of R3.** The kick and snare still lead the *kit*: they sit above
+`hatClosed` and `hatOpen`, which is the whole of boom-bap's remaining kit since
+it plays no toms and no rim. And the ghost half of R3 and AC3 is untouched — the
+`musician`'s stated margin is 0.2 of velocity, asserted at
+`scripts/grooves/templates/boom-bap.test.ts › sounds every ghost under every
+backbeat, with 0.2 of velocity to spare` and again over the six committed
+grooves.
+
+**Where the working is.** `specs/features/feature-25/.implement/harmony-regain.md`
+— the measurements, the seed sweep through the gate, the proof that no answer
+moved, and what the change costs the feel's character.
+
+**What this does not settle.** R8's distinctness verdict and R10's per-groove
+sign-off are still outstanding, and the comp-too-quiet hearing is not either of
+them. Whether it consumes one of R9b's two verdicts is an open question for the
+feature-wide listening pass; nothing in the tree records an answer.
 
 ## Question log
 

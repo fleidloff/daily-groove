@@ -22,7 +22,7 @@ export const straightFunk: FeelTemplate = {
     hatOpen: -16,
     rim: -11,
     bass: -1,
-    comp: -3,
+    comp: -4.9,
   },
   pan: {
     tomHigh: 0.22,

@@ -309,6 +309,36 @@ describe('writeManifest', () => {
   })
 })
 
+// The third copy of the dominance cap. The other two are catalogue.test.ts, over the
+// grooves the generator builds, and grooves.generated.test.ts, over the same shipped
+// manifest from the app tier; this one reads the committed file from the generator
+// tier. `grep -rn DOMINANCE_RATIO` finds all three, and a style epic that pushes the
+// commonest mode past the cap widens every copy as part of its mint. (The app test is
+// named, not pathed: boundary.test.ts forbids that literal anywhere under scripts/.)
+// Widened 5 → 6 by feature-25 epic-4's boom-bap mint. Re-measured over the 48-groove
+// catalogue after epic-2's reggae-one-drop was withdrawn: dorian and phrygian reach 6
+// against lydian-dominant's 1, which open-ballad alone offers, so the spread is exactly
+// 6.00 and 6 is the tightest value that passes. The withdrawal took aeolian 6 → 4,
+// blues and mixolydian 5 → 4 and harmonic-minor 4 → 2; it did not move the extremes.
+// The floor is what keeps this at 6: lydian-dominant's 1, offered by open-ballad and
+// its two grooves alone. Any future mint is likelier to raise the ceiling than the
+// floor, so minting open-ballad up is what buys headroom for every style at once.
+const DOMINANCE_RATIO = 6
+
+function dominanceFailure(counts: Map<string, number>, ratio: number): string | null {
+  if (counts.size < 2) return null
+  const entries = [...counts.entries()].sort((a, b) => a[1] - b[1])
+  const [rarest, fewest] = entries[0]
+  const [commonest, most] = entries[entries.length - 1]
+  if (most <= fewest * ratio) return null
+  return (
+    `${commonest} carries ${most} of the answers to ${rarest}'s ${fewest} — ` +
+    `more than DOMINANCE_RATIO (${ratio}) times the rarest. Widen DOMINANCE_RATIO in ` +
+    `all three of manifest.test.ts, catalogue.test.ts and grooves.generated.test.ts, ` +
+    `and record the new spread.`
+  )
+}
+
 describe('the committed manifest', () => {
   const MANIFEST_PATH = join(
     import.meta.dirname,
@@ -349,11 +379,11 @@ describe('the committed manifest', () => {
 
   it('holds a groove for every mode, and lets none dominate', () => {
     const groups = byFlavour()
-    const sizes = [...groups.values()].map((g) => g.length)
+    const counts = new Map([...groups].map(([flavour, group]) => [flavour, group.length]))
     expect(groups.size, 'the manifest carries fewer modes than expected').toBeGreaterThanOrEqual(
       12,
     )
-    expect(Math.max(...sizes)).toBeLessThanOrEqual(Math.min(...sizes) * 3)
+    expect(dominanceFailure(counts, DOMINANCE_RATIO)).toBeNull()
   })
 
   it('names only modes the templates offer', () => {

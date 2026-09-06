@@ -1,10 +1,26 @@
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
+import type { DailyResult } from '../../types'
+import { isoDate } from '@/lib/date'
 import { isTodaysGroove } from './isTodaysGroove'
 import { selectGrooveForDate } from './selectGroove'
+import { createLocalStore } from '../persistence/storage'
 import { GROOVES } from '../../data/grooves.generated'
 
 describe('isTodaysGroove', () => {
   const DAY = new Date(2026, 8, 1)
+
+  beforeEach(() => {
+    localStorage.clear()
+  })
+
+  async function save(result: Partial<DailyResult> & { date: string }): Promise<void> {
+    await createLocalStore().save({
+      answer: { root: 'C', flavour: 'Dorian' },
+      attempts: [],
+      solved: true,
+      ...result,
+    })
+  }
 
   it("says yes to the groove the day's own pick returns", () => {
     const todays = selectGrooveForDate(DAY, GROOVES)
@@ -39,5 +55,16 @@ describe('isTodaysGroove', () => {
     expect(
       isTodaysGroove({ ...todays, uuid: '00000000-0000-4000-8000-000000000000' }, DAY),
     ).toBe(false)
+  })
+
+  it('answers under the pin: the played groove is today’s, the mix is not (AC12)', async () => {
+    const mix = selectGrooveForDate(DAY, GROOVES)
+    const pinned = GROOVES.find((g) => g.uuid !== mix.uuid)
+    expect(pinned).toBeDefined()
+
+    await save({ date: isoDate(DAY), grooveId: pinned!.id })
+
+    expect(isTodaysGroove(pinned!, DAY)).toBe(true)
+    expect(isTodaysGroove(mix, DAY)).toBe(false)
   })
 })

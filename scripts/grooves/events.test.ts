@@ -3,26 +3,36 @@ import type { FeelTemplate, GrooveSpec, MusicMeta, NoteEvent, VoiceName } from '
 import type { Harmony } from './theory/harmony.ts'
 import {
   BACKING_VOICES,
+  BARS_PER_PASS,
   BONGO_LABEL,
   COMP_REGISTER_CEILING,
   COMP_REGISTER_LOW,
   DEFAULT_FILL,
+  DEFAULT_PLACEMENT,
   FILLS,
+  FILL_DURATIONS,
   GHOST_LABEL,
   GHOST_VELOCITY_THRESHOLD,
   HAT_ACCENTS,
   HAT_PUNCTUATION_PATTERNS,
+  KIT_LABEL,
   MUSIC_LABEL,
+  PATTERN_RESOLUTION,
+  PLACEMENTS,
   RHYTHM_LABEL,
   RIDE_ACCENTS,
   RIDE_LABEL,
   RIDE_PATTERNS,
   RIDE_SUSTAIN_SIXTEENTHS,
+  VELOCITIES,
   buildEvents,
+  gridSteps,
   middlePassOf,
   playedVoicing,
   voiceLead,
 } from './events.ts'
+import { FIGURE_BARS_PER_PASS, PATTERN_GRID } from './patterns.ts'
+import { fixtureKey, readFixture, serialiseEvent, serialiseGroove } from './eventsFixture.ts'
 import { intBetween, pick, rngFor } from './rng.ts'
 import { readCatalogue } from './catalogue.ts'
 import { ROOTS } from '../../src/lib/theory/roots.ts'
@@ -37,6 +47,10 @@ const UUID = '2368f779-9931-44ec-9c62-3146bf20736f'
 const spec: GrooveSpec = { id: 'g1', uuid: UUID, template: 'straight-funk', seed: 1 }
 
 const PITCHED = new Set(['bass', 'comp'])
+
+// events.ts keeps this private. It is the step each comp voice below the top sits
+// under the one above it.
+const COMP_VOICE_DROP = 0.12
 
 function isApproachNote(
   event: NoteEvent,
@@ -684,6 +698,48 @@ describe('buildEvents — a groove is several passes of one figure — R3, R5, A
     return events.map((e) => Math.round(e.timeSec / step))
   }
 
+  // The figure a pass repeats is a rhythm and a harmony, and the two travel
+  // together: every voice, the bass and the comp included, repeats its pitch bar
+  // for bar as well as its position.
+  function expectFigureRepeats(feel: FeelTemplate) {
+    const isPitched = (key: string) => PITCHED.has(key.split('@')[0])
+    const keyOf = (event: NoteEvent, step: number) =>
+      `${event.voice}@${step}:${event.midi ?? '-'}`
+
+    for (let seed = 1; seed <= 6; seed++) {
+      const { events, music } = buildEvents({ id: 'g', uuid: UUID, template: feel.id, seed }, feel)
+      const steps = stepsOfLoop(events, music.bpm, feel.subdivision)
+      const phrased = phraseBars(feel)
+
+      const byBar = new Map<number, string[]>()
+      events.forEach((event, i) => {
+        if (isGhost(event)) return
+        const bar = Math.floor(steps[i] / feel.subdivision)
+        const list = byBar.get(bar) ?? []
+        list.push(keyOf(event, steps[i] % feel.subdivision))
+        byBar.set(bar, list)
+      })
+
+      expect([...byBar.keys()].sort((a, b) => a - b), `${feel.id}:${seed}`).toEqual(
+        Array.from({ length: music.loopBars }, (_, bar) => bar),
+      )
+
+      for (let bar = 4; bar < music.loopBars; bar++) {
+        const where = `${feel.id}:${seed} bar ${bar}`
+        const figure = [...(byBar.get(bar % 4) as string[])].sort()
+        const here = [...(byBar.get(bar) as string[])].sort()
+        if (!phrased.has(bar)) {
+          expect(here, where).toEqual(figure)
+          continue
+        }
+        expect(here, `${where} carries no phrase`).not.toEqual(figure)
+        expect(here.filter(isPitched), `${where} drops the harmony`).toEqual(
+          figure.filter(isPitched),
+        )
+      }
+    }
+  }
+
   for (const feel of allTemplates()) {
     describe(feel.id, () => {
       it('spans its template’s declared pass count times four bars — AC2', () => {
@@ -705,40 +761,7 @@ describe('buildEvents — a groove is several passes of one figure — R3, R5, A
       })
 
       it('plays the same figure in every bar but the ones a phrase replaces — AC3', () => {
-        const isPitched = (key: string) => PITCHED.has(key.split('@')[0])
-
-        for (let seed = 1; seed <= 6; seed++) {
-          const { events, music } = buildEvents({ id: 'g', uuid: UUID, template: feel.id, seed }, feel)
-          const steps = stepsOfLoop(events, music.bpm, feel.subdivision)
-          const phrased = phraseBars(feel)
-
-          const byBar = new Map<number, string[]>()
-          events.forEach((event, i) => {
-            if (isGhost(event)) return
-            const bar = Math.floor(steps[i] / feel.subdivision)
-            const list = byBar.get(bar) ?? []
-            list.push(`${event.voice}@${steps[i] % feel.subdivision}:${event.midi ?? '-'}`)
-            byBar.set(bar, list)
-          })
-
-          expect([...byBar.keys()].sort((a, b) => a - b), `${feel.id}:${seed}`).toEqual(
-            Array.from({ length: music.loopBars }, (_, bar) => bar),
-          )
-
-          for (let bar = 4; bar < music.loopBars; bar++) {
-            const where = `${feel.id}:${seed} bar ${bar}`
-            const figure = [...(byBar.get(bar % 4) as string[])].sort()
-            const here = [...(byBar.get(bar) as string[])].sort()
-            if (!phrased.has(bar)) {
-              expect(here, where).toEqual(figure)
-              continue
-            }
-            expect(here, `${where} carries no phrase`).not.toEqual(figure)
-            expect(here.filter(isPitched), `${where} drops the harmony`).toEqual(
-              figure.filter(isPitched),
-            )
-          }
-        }
+        expectFigureRepeats(feel)
       })
 
       it('fills between the backbeats differently from bar to bar', () => {
@@ -962,13 +985,14 @@ describe('buildEvents — ghosts and accents — R10, R11, R12', () => {
         struck.set(key, [...(struck.get(key) ?? []), event.velocity])
       }
       expect(struck.size, `${feel.id} never comps`).toBeGreaterThan(0)
+
       for (const [key, velocities] of struck) {
         const shape = [...velocities].sort((a, b) => a - b)
         expect(shape.length, `${feel.id} comp@${key}`).toBeGreaterThan(1)
         expect(new Set(shape).size, `${feel.id} comp@${key} is flat`).toBe(shape.length)
         const top = shape[shape.length - 1]
         const relative = shape.map((velocity) => velocity / top)
-        const expected = shape.map((_, i) => 1 - 0.12 * (shape.length - 1 - i))
+        const expected = shape.map((_, i) => 1 - COMP_VOICE_DROP * (shape.length - 1 - i))
         for (let i = 0; i < relative.length; i += 1) {
           expect(relative[i], `${feel.id} comp@${key} voice ${i + 1}`).toBeCloseTo(expected[i], 9)
         }
@@ -1120,7 +1144,8 @@ describe('buildEvents — hands and fingers — R3, R4, R5, R6, R7, R8, R8a', ()
   it('shapes a chord so the top voice sings and the inner voices sit under it — R5, AC6', () => {
     for (const feel of allTemplates()) {
       const { events } = played(still(feel))
-      for (const chord of compChords(events as never) as unknown as NoteEvent[][]) {
+      const chords = compChords(events as never)
+      for (const chord of chords as unknown as NoteEvent[][]) {
         const byPitch = [...chord].sort((a, b) => (a.midi as number) - (b.midi as number))
         const velocities = byPitch.map((e) => e.velocity)
         expect(new Set(velocities).size, `${feel.id} plays a chord flat`).toBeGreaterThan(1)
@@ -1328,6 +1353,26 @@ describe('buildEvents — the last pass ends with a fill — R5, R6, R7, R8, R9,
     return new Set(bar.map((key) => key.split('@')[0]))
   }
 
+  function tomStepsIn(bar: string[]): number[] {
+    return [
+      ...new Set(
+        bar
+          .filter((key) => TOMS.has(key.split('@')[0] as VoiceName))
+          .map((key) => Number(key.split('@')[1])),
+      ),
+    ].sort((a, b) => a - b)
+  }
+
+  // The tom line one kit figure declares, resolved onto the feel's own grid.
+  function kitTomSteps(feel: FeelTemplate, figure: { tomHigh?: number[]; tomLow?: number[] }) {
+    return [
+      ...new Set([
+        ...gridSteps(figure.tomHigh ?? [], feel.subdivision),
+        ...gridSteps(figure.tomLow ?? [], feel.subdivision),
+      ]),
+    ].sort((a, b) => a - b)
+  }
+
   const fourPass = allTemplates().filter((feel) => feel.passes === 4)
   const twoPass = allTemplates().filter((feel) => feel.passes === 2)
 
@@ -1370,18 +1415,69 @@ describe('buildEvents — the last pass ends with a fill — R5, R6, R7, R8, R9,
       }
     })
 
-    it('plays toms, which the figure never does — R10', () => {
-      for (const feel of allTemplates()) {
+    // feature-25: the first claim is scoped to the kits that carry toms. bossa-nova
+    // carries none — its turnaround is a push on the hands, not a tom roll — so a tom
+    // in its fill would be the error, not the guarantee.
+    //
+    // The second claim used to be registry-wide: a tom sounds in the fill bar and
+    // nowhere else. That was what "the toms are what marks a fill" looked like before a
+    // style existed whose ordinary figure carries them. It is now scoped to the
+    // templates it was written for — the ones that declare no tom line in patterns.kit
+    // — and the third claim covers the rest positively: a template that declares one
+    // plays exactly it in every ordinary bar and none at all in the variation. So a
+    // leaked tom still fails, and so does a dropped or moved one.
+    it('plays toms in the fill, and elsewhere only where a kit figure declares them — R10, R5', () => {
+      const withToms = allTemplates().filter((feel) =>
+        feel.voices.some((voice) => TOMS.has(voice)),
+      )
+      expect(
+        withToms.length,
+        'no template carries toms, so the fill claim checks nothing',
+      ).toBeGreaterThan(0)
+
+      for (const feel of withToms) {
         const bars = drumBars(feel)
         const last = bars.length - 1
         const toms = [...voicesIn(bars[last])].filter((voice) => TOMS.has(voice as VoiceName))
         expect(toms.sort(), `${feel.id} fill plays no tom`).toEqual(['tomHigh', 'tomLow'])
+      }
+
+      const declaresKitToms = (feel: FeelTemplate) =>
+        (feel.patterns?.kit ?? []).some(
+          (figure) => (figure.tomHigh ?? []).length + (figure.tomLow ?? []).length > 0,
+        )
+
+      for (const feel of allTemplates().filter((feel) => !declaresKitToms(feel))) {
+        const bars = drumBars(feel)
+        const last = bars.length - 1
         for (let bar = 0; bar < last; bar += 1) {
           for (const voice of voicesIn(bars[bar])) {
             expect(TOMS.has(voice as VoiceName), `${feel.id} bar ${bar} plays ${voice}`).toBe(
               false,
             )
           }
+        }
+      }
+
+      for (const feel of allTemplates().filter(declaresKitToms)) {
+        const bars = drumBars(feel)
+        const last = bars.length - 1
+        const middle = middlePassOf(feel.passes)
+        const variation = middle === null ? -1 : middle * BARS_PER_PASS + BARS_PER_PASS - 1
+        const declared = feel
+          .patterns!.kit!.map((figure) => kitTomSteps(feel, figure).join(','))
+          .filter((line) => line !== '')
+        const sounded = tomStepsIn(bars[0]).join(',')
+        expect(declared, `${feel.id} bar 0 sounds ${sounded}, which it never declared`).toContain(
+          sounded,
+        )
+
+        for (let bar = 0; bar < last; bar += 1) {
+          if (bar === variation) {
+            expect(tomStepsIn(bars[bar]), `${feel.id} variation bar ${bar}`).toEqual([])
+            continue
+          }
+          expect(tomStepsIn(bars[bar]).join(','), `${feel.id} bar ${bar}`).toBe(sounded)
         }
       }
     })
@@ -1860,6 +1956,24 @@ describe('buildEvents — the comp stops being perfect — R1, R2, R3, R4, R5, R
     'groove-50': 'C♯|phrygian-dominant|C♯ phrygian dominant|C♯7|C♯7–Amaj7♯5–A♭m7♭5–Dmaj7',
     'groove-51': 'C♯|lydian-dominant|C♯ lydian dominant|C♯7|C♯7–Fm7♭5–Bmaj7♯5',
     'groove-52': 'F|blues|F blues|F7|F7–C7–B♭7–C7',
+    'groove-53': 'E♭|melodic-minor|E♭ melodic minor|E♭mMaj7|E♭mMaj7–Cm7♭5–B♭7–Cm7♭5',
+    'groove-54': 'C|melodic-minor|C melodic minor|CmMaj7|CmMaj7–F7–Am7♭5–F7',
+    'groove-55': 'A♭|ionian|A♭ ionian|A♭maj7|A♭maj7–Gm7♭5–B♭m7–E♭7',
+    'groove-56': 'E|lydian|E lydian|Emaj7|Emaj7–C♯m7–E♭m7–Emaj7',
+    'groove-57': 'F|dorian|F dorian|Fm7|Fm7–Gm7–Dm7♭5–Fm7',
+    'groove-58': 'E|melodic-minor|E melodic minor|EmMaj7|EmMaj7–Gmaj7♯5–E♭m7♭5–EmMaj7',
+    'groove-65': 'A♭|harmonic-major|A♭ harmonic major|A♭maj7|A♭maj7–Cm7–B♭m7♭5–A♭maj7',
+    'groove-66': 'G|harmonic-major|G harmonic major|Gmaj7|Gmaj7–CmMaj7–Bm7–CmMaj7',
+    'groove-67': 'A♭|mixolydian|A♭ mixolydian|A♭7|A♭7–E♭m7–F♯maj7–E♭m7',
+    'groove-68': 'E|blues|E blues|E7|E7–A7–B7–A7',
+    'groove-69': 'G|ionian|G ionian|Gmaj7|Gmaj7–D7–Am7–Cmaj7',
+    'groove-70': 'B|harmonic-major|B harmonic major|Bmaj7|Bmaj7–EmMaj7–C♯m7♭5–Gdim7',
+    'groove-71': 'B|phrygian|B phrygian|Bm7|Bm7–F♯m7♭5–Gmaj7–Bm7',
+    'groove-72': 'C|dorian|C dorian|Cm7|Cm7–Gm7–Am7♭5–Gm7',
+    'groove-73': 'C♯|phrygian|C♯ phrygian|C♯m7|C♯m7–Amaj7–E7–Amaj7',
+    'groove-74': 'A♭|dorian|A♭ dorian|A♭m7|A♭m7–F♯maj7–B♭m7–A♭m7',
+    'groove-75': 'F|aeolian|F aeolian|Fm7|Fm7–E♭7–A♭maj7–Gm7♭5',
+    'groove-76': 'F♯|phrygian|F♯ phrygian|F♯m7|F♯m7–Gmaj7–Bm7–A7',
   }
 
   it('names the same music for every groove in the catalogue — R6, AC14', () => {
@@ -1879,6 +1993,18 @@ describe('buildEvents — the comp stops being perfect — R1, R2, R3, R4, R5, R
     }
   })
 
+  // The six feels that existed before feature-22 changed how the comp's velocity is
+  // drawn. A feel registered after that change has no pre-epic mean and is skipped
+  // below; the list is pinned by name so dropping one of the six still fails here.
+  const PRE_EPIC_FEELS = [
+    'bright-straight',
+    'half-time',
+    'open-ballad',
+    'shuffle',
+    'straight-funk',
+    'swung-sixteenth',
+  ]
+
   const PRE_EPIC_MEAN_VELOCITY: Record<string, number> = {
     'straight-funk': 0.498027,
     shuffle: 0.546318,
@@ -1891,9 +2017,14 @@ describe('buildEvents — the comp stops being perfect — R1, R2, R3, R4, R5, R
   const MEAN_TOLERANCE = 0.02
 
   it('varies the comp around its centre rather than raising it — R7, AC7', () => {
+    expect(
+      Object.keys(PRE_EPIC_MEAN_VELOCITY).sort(),
+      'a feel that predates feature-22 lost its committed mean',
+    ).toEqual([...PRE_EPIC_FEELS].sort())
+
     for (const feel of allTemplates()) {
       const before = PRE_EPIC_MEAN_VELOCITY[feel.id]
-      expect(before, `${feel.id} has no pre-epic mean committed`).toBeDefined()
+      if (before === undefined) continue
 
       const comp = buildEvents(
         { id: 'g', uuid: UUID, template: feel.id, seed: 1 },
@@ -1911,6 +2042,20 @@ describe('buildEvents — the comp stops being perfect — R1, R2, R3, R4, R5, R
 })
 
 describe('the bongo — feature-13', () => {
+  const BONGO_VOICES: VoiceName[] = ['bongoHigh', 'bongoLow']
+
+  // Which feels carry bongos is a reading of their declared `voices`, never a list of
+  // ids, so a second feel that takes them must cost no edit here. `bright-straight` is
+  // the only one today: feature-25's son-montuno would have been the second and was
+  // declined before it registered.
+  const carriesBongo = (feel: FeelTemplate) =>
+    BONGO_VOICES.some((voice) => feel.voices.includes(voice))
+
+  // `eventsFor` renders a *committed* spec, so it can only be asked about a template
+  // that has minted grooves. A feel registered ahead of its mint is not evidence of
+  // anything either way, and the floor below stops that filter emptying the case.
+  const minted = () => new Set(readCatalogue().map((groove) => groove.template))
+
   const BONGO_FEEL = 'bright-straight'
 
   function eventsFor(templateId: string) {
@@ -1919,7 +2064,8 @@ describe('the bongo — feature-13', () => {
     return { ...buildEvents(spec, template), template, spec }
   }
 
-  it('sounds on the one feel that carries it, on both drums', () => {
+  it('sounds on a feel that carries it, on both drums', () => {
+    expect(carriesBongo(templateById(BONGO_FEEL)), `${BONGO_FEEL} dropped its bongos`).toBe(true)
     const { events } = eventsFor(BONGO_FEEL)
     const high = events.filter((e) => e.voice === 'bongoHigh')
     const low = events.filter((e) => e.voice === 'bongoLow')
@@ -1931,8 +2077,16 @@ describe('the bongo — feature-13', () => {
   })
 
   it('costs the feels that do not carry it exactly nothing', () => {
-    for (const template of allTemplates()) {
-      if (template.id === BONGO_FEEL) continue
+    const committed = minted()
+    const silent = allTemplates().filter(
+      (feel) => !carriesBongo(feel) && committed.has(feel.id),
+    )
+    expect(
+      silent.length,
+      'no registered feel without bongos has a minted groove to render',
+    ).toBeGreaterThan(0)
+
+    for (const template of silent) {
       const { events } = eventsFor(template.id)
       expect(
         events.some((e) => e.voice === 'bongoHigh' || e.voice === 'bongoLow'),
@@ -2263,12 +2417,21 @@ describe('a cymbal keeps the time — feature-24 epic-1', () => {
       }
     })
 
+    // feature-25: the subject is feature-24's rule that taking the ride costs a feel
+    // nothing else — so it reads the feels that declare an open hat and do not ride.
+    // bossa-nova declares no open hat at all (its closed hat keeps time and the rim
+    // answers it), which is a kit decision rather than a ride trade, and
+    // templates/index.test.ts is where that exception is named and held to one feel.
     it('leaves every feel that does not ride playing its open hat on the and of four', () => {
-      const straight = allTemplates().filter((f) => !f.voices.includes('ride'))
-      expect(straight.length, 'every feel rides, so this case checks nothing').toBeGreaterThan(0)
+      const straight = allTemplates().filter(
+        (f) => !f.voices.includes('ride') && f.voices.includes('hatOpen'),
+      )
+      expect(
+        straight.length,
+        'every feel rides or drops its open hat, so this case checks nothing',
+      ).toBeGreaterThan(0)
       for (const { id } of straight) {
         const feel = templateById(id)
-        expect(feel.voices, id).toContain('hatOpen')
         const { bars } = barsOf(dryRide(feel), 1)
         const opens = stepsIn(bars[0], 'hatOpen')
         expect(opens, id).toEqual(gridded([14], feel.subdivision))
@@ -2321,6 +2484,565 @@ describe('a cymbal keeps the time — feature-24 epic-1', () => {
           expect(event.durationSec).toBeCloseTo(RIDE_SUSTAIN_SIXTEENTHS * sixteenthSec, 9)
         }
       }
+    })
+  })
+})
+
+describe('a template brings its own figures — feature-25 epic-1', () => {
+  const FUNK = templateById('straight-funk')
+  const BRIGHT = templateById('bright-straight')
+  const SHUFFLE = templateById('shuffle')
+
+  const dry = (feel: FeelTemplate): FeelTemplate => ({
+    ...feel,
+    humanize: { timingMs: 0, velocity: 0, lean: {}, driftDepth: 0 },
+  })
+
+  // buildEvents keys its streams off spec.template, so a synthetic id never moves a draw.
+  const specFor = (templateId: string, seed = 1): GrooveSpec => ({
+    id: 'g',
+    uuid: UUID,
+    template: templateId,
+    seed,
+  })
+
+  type Placed = { voice: VoiceName; step: number; velocity: number; durationSec: number }
+
+  function placed(feel: FeelTemplate, templateId: string, seed = 1) {
+    const built = buildEvents(specFor(templateId, seed), feel)
+    const stepSec = ((60 / built.music.bpm) * 4) / feel.subdivision
+    const bars: Placed[][] = Array.from({ length: built.music.loopBars }, () => [])
+    for (const event of built.events) {
+      const grid = Math.round(event.timeSec / stepSec)
+      bars[Math.floor(grid / feel.subdivision)].push({
+        voice: event.voice,
+        step: grid % feel.subdivision,
+        velocity: event.velocity,
+        durationSec: event.durationSec,
+      })
+    }
+    return { bars, music: built.music, events: built.events }
+  }
+
+  const serialised = (feel: FeelTemplate, templateId: string, seed = 1) =>
+    buildEvents(specFor(templateId, seed), feel).events.map(serialiseEvent)
+
+  const byVoice = (events: string[]) => {
+    const out = new Map<string, string[]>()
+    for (const line of events) {
+      const voice = line.slice(0, line.indexOf('@'))
+      out.set(voice, [...(out.get(voice) ?? []), line])
+    }
+    return out
+  }
+
+  function nothingElseMoved(
+    withBlock: FeelTemplate,
+    withoutBlock: FeelTemplate,
+    templateId: string,
+    voices: VoiceName[],
+    seed = 1,
+  ) {
+    const after = byVoice(serialised(withBlock, templateId, seed))
+    const before = byVoice(serialised(withoutBlock, templateId, seed))
+    for (const voice of voices) {
+      expect(before.get(voice), `${voice} sounds at all`).toBeDefined()
+      expect(after.get(voice), voice).toEqual(before.get(voice))
+    }
+  }
+
+  const stepsOf = (bar: Placed[], voice: VoiceName) =>
+    bar.filter((e) => e.voice === voice).map((e) => e.step).sort((a, b) => a - b)
+
+  // barInPass 3 is the fill in the last pass and the variation in middlePassOf(4).
+  const ordinaryBars = (feel: FeelTemplate) => {
+    const phrase = phraseBars(feel)
+    return Array.from({ length: 4 * feel.passes }, (_, bar) => bar).filter(
+      (bar) => !phrase.has(bar),
+    )
+  }
+
+  describe('one grid bound, asserted in both places — R16', () => {
+    it('agrees with patterns.ts on the sixteenth grid', () => {
+      expect(PATTERN_RESOLUTION).toBe(PATTERN_GRID)
+    })
+
+    it('agrees with patterns.ts on the bars in a pass', () => {
+      expect(BARS_PER_PASS).toBe(FIGURE_BARS_PER_PASS)
+    })
+  })
+
+  describe('a template’s own kick pool — R11, R13, AC6', () => {
+    const WITH: FeelTemplate = { ...dry(FUNK), id: 'own-kick', patterns: { kick: [[0, 6]] } }
+    const WITHOUT: FeelTemplate = { ...WITH, patterns: undefined }
+
+    it('draws the kick from the template’s own pool', () => {
+      const own = gridSteps([0, 6], 16)
+      const { bars } = placed(WITH, 'straight-funk')
+      for (const bar of bars) {
+        for (const step of stepsOf(bar, 'kick')) expect(own).toContain(step)
+      }
+      const shared = placed(WITHOUT, 'straight-funk')
+      expect(shared.bars.some((bar) => stepsOf(bar, 'kick').includes(10))).toBe(true)
+      expect(bars.some((bar) => stepsOf(bar, 'kick').includes(10))).toBe(false)
+    })
+
+    it('leaves every other voice exactly where it was', () => {
+      nothingElseMoved(WITH, WITHOUT, 'straight-funk', [
+        'bass',
+        'comp',
+        'hatClosed',
+        'hatOpen',
+        'snare',
+      ])
+    })
+  })
+
+  describe('all eight pools route, an unnamed voice falls back — R12, R13, AC6', () => {
+    it('routes hatClosed on a feel that does not ride', () => {
+      const WITH: FeelTemplate = {
+        ...dry(FUNK),
+        id: 'own-hat',
+        patterns: { hatClosed: [[0, 4, 8, 12]] },
+      }
+      const WITHOUT: FeelTemplate = { ...WITH, patterns: undefined }
+      const own = gridSteps([0, 4, 8, 12], 16)
+      const { bars } = placed(WITH, 'straight-funk')
+      for (const bar of bars) {
+        for (const step of stepsOf(bar, 'hatClosed')) expect(own).toContain(step)
+      }
+      // every member of HAT_PATTERNS holds step 2, and the declared figure does not
+      expect(bars.some((bar) => stepsOf(bar, 'hatClosed').includes(2))).toBe(false)
+      const shared = placed(WITHOUT, 'straight-funk')
+      expect(shared.bars.some((bar) => stepsOf(bar, 'hatClosed').includes(2))).toBe(true)
+
+      nothingElseMoved(WITH, WITHOUT, 'straight-funk', ['kick', 'bass', 'comp', 'snare'])
+
+      // The closed and open hat are one instrument played two ways, so HAT_ACCENTS
+      // cycles by index into the combined line. A declared hatClosed pool therefore
+      // re-accents the open hat: its times and durations hold, its velocity moves.
+      const openLine = (feel: FeelTemplate) =>
+        serialised(feel, 'straight-funk')
+          .filter((line) => line.startsWith('hatOpen@'))
+          .map((line) => line.split(':').slice(0, 2).join(':'))
+      const openVelocities = (feel: FeelTemplate) =>
+        serialised(feel, 'straight-funk')
+          .filter((line) => line.startsWith('hatOpen@'))
+          .map((line) => line.split(':')[2])
+      expect(openLine(WITH).length).toBeGreaterThan(0)
+      expect(openLine(WITH)).toEqual(openLine(WITHOUT))
+      expect(openVelocities(WITH)).not.toEqual(openVelocities(WITHOUT))
+    })
+
+    it('routes hatClosed on a feel that rides', () => {
+      const WITH: FeelTemplate = {
+        ...dry(SHUFFLE),
+        id: 'own-foot',
+        patterns: { hatClosed: [[0, 8]] },
+      }
+      const WITHOUT: FeelTemplate = { ...WITH, patterns: undefined }
+      const own = gridSteps([0, 8], 8)
+      expect(own).toEqual([0, 4])
+      const { bars } = placed(WITH, 'shuffle')
+      for (const bar of bars) {
+        for (const step of stepsOf(bar, 'hatClosed')) expect(own).toContain(step)
+      }
+      // every HAT_PUNCTUATION_PATTERNS member holds 4 and 12, which grid to 2 and 6
+      for (const bar of bars) {
+        expect(stepsOf(bar, 'hatClosed')).not.toContain(2)
+        expect(stepsOf(bar, 'hatClosed')).not.toContain(6)
+      }
+
+      nothingElseMoved(WITH, WITHOUT, 'shuffle', ['kick', 'snare', 'ride', 'bass', 'comp'])
+    })
+
+    it('routes bass', () => {
+      const WITH: FeelTemplate = {
+        ...dry(FUNK),
+        id: 'own-bass',
+        patterns: { bass: [[0, 4, 8, 12]] },
+      }
+      const WITHOUT: FeelTemplate = { ...WITH, patterns: undefined }
+      const own = new Set([...gridSteps([0, 4, 8, 12], 16), 15])
+      const { bars } = placed(WITH, 'straight-funk')
+      for (const bar of bars) {
+        for (const step of stepsOf(bar, 'bass')) expect([...own]).toContain(step)
+      }
+      const shared = placed(WITHOUT, 'straight-funk')
+      expect(
+        shared.bars.some((bar) => stepsOf(bar, 'bass').some((step) => !own.has(step))),
+      ).toBe(true)
+
+      nothingElseMoved(WITH, WITHOUT, 'straight-funk', [
+        'kick',
+        'snare',
+        'hatClosed',
+        'hatOpen',
+        'comp',
+      ])
+    })
+
+    it('routes comp', () => {
+      const WITH: FeelTemplate = { ...dry(FUNK), id: 'own-comp', patterns: { comp: [[0, 8]] } }
+      const WITHOUT: FeelTemplate = { ...WITH, patterns: undefined }
+      const own = gridSteps([0, 8], 16)
+      const { bars } = placed(WITH, 'straight-funk')
+      for (const bar of bars) {
+        for (const step of stepsOf(bar, 'comp')) expect(own).toContain(step)
+      }
+      const shared = placed(WITHOUT, 'straight-funk')
+      expect(
+        shared.bars.some((bar) =>
+          stepsOf(bar, 'comp').some((step) => step === 10 || step === 11),
+        ),
+      ).toBe(true)
+
+      nothingElseMoved(WITH, WITHOUT, 'straight-funk', [
+        'kick',
+        'snare',
+        'hatClosed',
+        'hatOpen',
+        'bass',
+      ])
+    })
+
+    it('routes snareGhosts', () => {
+      const WITH: FeelTemplate = {
+        ...dry(FUNK),
+        id: 'own-ghosts',
+        patterns: { snareGhosts: [[3, 7, 11, 15]] },
+      }
+      const WITHOUT: FeelTemplate = { ...WITH, patterns: undefined }
+      const { bars } = placed(WITH, 'straight-funk')
+      for (const bar of ordinaryBars(WITH)) {
+        const ghosts = bars[bar]
+          .filter((e) => e.voice === 'snare' && e.velocity < GHOST_VELOCITY_THRESHOLD)
+          .map((e) => e.step)
+          .sort((a, b) => a - b)
+        expect(ghosts, `bar ${bar}`).toEqual([3, 7, 11, 15])
+      }
+      // no member of SNARE_GHOST_PATTERNS has four steps
+      const shared = placed(WITHOUT, 'straight-funk')
+      for (const bar of ordinaryBars(WITH)) {
+        const ghosts = shared.bars[bar].filter(
+          (e) => e.voice === 'snare' && e.velocity < GHOST_VELOCITY_THRESHOLD,
+        )
+        expect(ghosts.length, `bar ${bar}`).toBeLessThan(4)
+      }
+
+      nothingElseMoved(WITH, WITHOUT, 'straight-funk', [
+        'kick',
+        'hatClosed',
+        'hatOpen',
+        'bass',
+        'comp',
+      ])
+      const backbeat = (feel: FeelTemplate) =>
+        serialised(feel, 'straight-funk').filter(
+          (line) =>
+            line.startsWith('snare@') &&
+            Number(line.split(':')[2]) >= GHOST_VELOCITY_THRESHOLD,
+        )
+      expect(backbeat(WITH)).toEqual(backbeat(WITHOUT))
+    })
+
+    it('routes bongos', () => {
+      const WITH: FeelTemplate = {
+        ...dry(BRIGHT),
+        id: 'own-bongos',
+        patterns: { bongos: [{ high: [0], low: [8] }] },
+      }
+      const WITHOUT: FeelTemplate = { ...WITH, patterns: undefined }
+      const { bars } = placed(WITH, 'bright-straight')
+      for (const bar of ordinaryBars(WITH)) {
+        expect(stepsOf(bars[bar], 'bongoHigh'), `bar ${bar}`).toEqual([0])
+        expect(stepsOf(bars[bar], 'bongoLow'), `bar ${bar}`).toEqual([4])
+      }
+      const shared = placed(WITHOUT, 'bright-straight')
+      expect(stepsOf(shared.bars[0], 'bongoHigh')).not.toEqual([0])
+
+      nothingElseMoved(WITH, WITHOUT, 'bright-straight', [
+        'kick',
+        'snare',
+        'hatClosed',
+        'hatOpen',
+        'rim',
+        'bass',
+        'comp',
+      ])
+    })
+
+    it('routes ride', () => {
+      const WITH: FeelTemplate = {
+        ...dry(SHUFFLE),
+        id: 'own-ride',
+        patterns: { ride: { 8: [[0, 4, 8, 12]] } },
+      }
+      const WITHOUT: FeelTemplate = { ...WITH, patterns: undefined }
+      const own = gridSteps([0, 4, 8, 12], 8)
+      expect(own).toEqual([0, 2, 4, 6])
+      const { bars } = placed(WITH, 'shuffle')
+      for (const bar of bars) expect(stepsOf(bar, 'ride')).not.toContain(3)
+      // every RIDE_PATTERNS[8] member grids onto step 3
+      const shared = placed(WITHOUT, 'shuffle')
+      expect(shared.bars.some((bar) => stepsOf(bar, 'ride').includes(3))).toBe(true)
+
+      nothingElseMoved(WITH, WITHOUT, 'shuffle', ['kick', 'snare', 'hatClosed', 'bass', 'comp'])
+    })
+  })
+
+  describe('the block adds no draw, and the thirty do not move — R14, R15, AC8', () => {
+    it('still builds every committed groove exactly as the pin recorded it', () => {
+      const catalogue = readCatalogue()
+      expect(catalogue.length).toBeGreaterThan(0)
+      const fixture = readFixture()
+      for (const groove of catalogue) {
+        expect(serialiseGroove(groove), fixtureKey(groove)).toEqual(fixture[fixtureKey(groove)])
+      }
+    })
+
+    it('leaves the answer alone when a rhythm pool changes', () => {
+      const WITH: FeelTemplate = { ...FUNK, id: 'own-kick', patterns: { kick: [[0, 6]] } }
+      for (let seed = 1; seed <= 10; seed++) {
+        const own = buildEvents(specFor('straight-funk', seed), WITH).music
+        const shared = buildEvents(specFor('straight-funk', seed), FUNK).music
+        expect(own, `seed ${seed}`).toEqual(shared)
+      }
+    })
+  })
+
+  describe('an illegal block fails at build time — R16, AC9', () => {
+    it('rejects an empty pool', () => {
+      const bad: FeelTemplate = { ...FUNK, id: 'bad', patterns: { comp: [] } }
+      expect(() => buildEvents(specFor('straight-funk'), bad)).toThrow(/bad/)
+      expect(() => buildEvents(specFor('straight-funk'), bad)).toThrow(/comp/)
+    })
+
+    it('rejects a step off the sixteenth grid', () => {
+      const bad: FeelTemplate = { ...FUNK, id: 'bad', patterns: { kick: [[16]] } }
+      expect(() => buildEvents(specFor('straight-funk'), bad)).toThrow(/bad/)
+      expect(() => buildEvents(specFor('straight-funk'), bad)).toThrow(/kick/)
+      expect(() => buildEvents(specFor('straight-funk'), bad)).toThrow(/16/)
+    })
+
+    it('accepts a legal pool', () => {
+      const ok: FeelTemplate = { ...FUNK, id: 'ok', patterns: { kick: [[0, 6]] } }
+      expect(() => buildEvents(specFor('straight-funk'), ok)).not.toThrow()
+    })
+
+    it('rejects an illegal fixed figure through the same door', () => {
+      const bad: FeelTemplate = {
+        ...FUNK,
+        id: 'bad',
+        figures: [{ voice: 'snare', bars: [[0]] }],
+      }
+      expect(() => buildEvents(specFor('straight-funk'), bad)).toThrow(/bad/)
+      expect(() => buildEvents(specFor('straight-funk'), bad)).toThrow(/snare/)
+    })
+  })
+
+  describe('a declared ride pool replaces the whole subdivision map — R12', () => {
+    it('sounds the declared figure and nothing else', () => {
+      const feel: FeelTemplate = {
+        ...dry(SHUFFLE),
+        id: 'own-ride',
+        patterns: { ride: { 8: [[0, 4, 8, 12]] } },
+      }
+      const own = gridSteps([0, 4, 8, 12], 8)
+      const { bars } = placed(feel, 'shuffle')
+      for (const bar of ordinaryBars(feel)) {
+        expect(stepsOf(bars[bar], 'ride'), `bar ${bar}`).toEqual(own)
+      }
+    })
+
+    it('does not fall back to the shared table for a subdivision it omits', () => {
+      const feel: FeelTemplate = {
+        ...dry(SHUFFLE),
+        id: 'own-ride',
+        patterns: { ride: { 16: [[0, 4, 8, 12]] } },
+      }
+      expect(() => buildEvents(specFor('shuffle'), feel)).toThrow(
+        /own-ride: no ride pattern pool for subdivision 8/,
+      )
+    })
+
+    it('leaves a template with no ride block on the shared table', () => {
+      const { bars } = placed(dry(SHUFFLE), 'shuffle')
+      const options = (RIDE_PATTERNS[8] ?? []).map((figure) => gridSteps(figure, 8).join(','))
+      expect(options).toHaveLength(3)
+      expect(options).toContain(stepsOf(bars[0], 'ride').join(','))
+      expect(serialised({ ...dry(SHUFFLE), patterns: undefined }, 'shuffle')).toEqual(
+        serialised(dry(SHUFFLE), 'shuffle'),
+      )
+    })
+  })
+
+  describe('a drawn kit figure replaces the backbeat — R11, R12, R13, AC6', () => {
+    const KIT: FeelTemplate = {
+      ...dry(FUNK),
+      id: 'own-kit',
+      patterns: { kit: [{ snare: [2, 7, 10], tomLow: [14] }] },
+    }
+    const WITHOUT: FeelTemplate = { ...KIT, patterns: undefined }
+
+    // Once patterns.kit is declared the velocity threshold stops telling a snare
+    // from a ghost, because a drawn snare on an odd sixteenth sits in the weak
+    // band. Duration does: a placed snare is two sixteenths, a ghost is one.
+    const isKitGhost = (event: Placed, sixteenthSec: number) =>
+      event.voice === 'snare' && Math.abs(event.durationSec - sixteenthSec) < 1e-9
+
+    const kitBuild = (feel: FeelTemplate) => {
+      const built = placed(feel, 'straight-funk')
+      return { ...built, sixteenthSec: ((60 / built.music.bpm) * 4) / PATTERN_RESOLUTION }
+    }
+
+    const drawnSnare = (bar: Placed[], sixteenthSec: number) =>
+      bar
+        .filter((e) => e.voice === 'snare' && !isKitGhost(e, sixteenthSec))
+        .map((e) => e.step)
+        .sort((a, b) => a - b)
+
+    it('puts the snare on the drawn line, not on the backbeat', () => {
+      const own = gridSteps([2, 7, 10], 16)
+      const { bars, sixteenthSec } = kitBuild(KIT)
+      for (const bar of ordinaryBars(KIT)) {
+        const line = drawnSnare(bars[bar], sixteenthSec)
+        expect(line, `bar ${bar}`).toEqual(own)
+        for (const step of gridSteps(DEFAULT_PLACEMENT.snare, 16)) {
+          expect(line, `bar ${bar}`).not.toContain(step)
+        }
+      }
+    })
+
+    it('lets a kit snare sit on an odd sixteenth, below the ghost threshold', () => {
+      const { bars, sixteenthSec } = kitBuild(KIT)
+      const hit = bars[0].find((e) => e.voice === 'snare' && e.step === 7)
+      expect(hit).toBeDefined()
+      expect(hit?.durationSec).toBeCloseTo(2 * sixteenthSec, 9)
+      expect(hit?.velocity).toBe(VELOCITIES.snare.weak)
+      expect(VELOCITIES.snare.weak).toBeLessThan(GHOST_VELOCITY_THRESHOLD)
+    })
+
+    it('sounds the kit’s tom line in every ordinary bar', () => {
+      const { bars } = kitBuild(KIT)
+      for (const bar of ordinaryBars(KIT)) {
+        expect(stepsOf(bars[bar], 'tomLow'), `bar ${bar}`).toEqual([14])
+      }
+    })
+
+    it('keeps the ghosts off the drawn snare line', () => {
+      const { bars, sixteenthSec } = kitBuild(KIT)
+      for (const bar of ordinaryBars(KIT)) {
+        const ghosts = bars[bar].filter((e) => isKitGhost(e, sixteenthSec)).map((e) => e.step)
+        for (const step of [2, 7, 10]) expect(ghosts, `bar ${bar}`).not.toContain(step)
+      }
+    })
+
+    it('leaves the fill and the variation to FILLS', () => {
+      const own = byVoice(serialised(KIT, 'straight-funk'))
+      const shared = byVoice(serialised(WITHOUT, 'straight-funk'))
+      const phrase = [...phraseBars(KIT)]
+      const stepSec = ((60 / kitBuild(KIT).music.bpm) * 4) / 16
+      const inPhrase = (lines: string[] | undefined) =>
+        (lines ?? []).filter((line) => {
+          const timeSec = Number(line.split('@')[1].split(':')[0])
+          return phrase.includes(Math.floor(Math.round(timeSec / stepSec) / 16))
+        })
+      for (const voice of ['snare', 'tomHigh', 'tomLow', 'kick']) {
+        expect(inPhrase(own.get(voice)), voice).toEqual(inPhrase(shared.get(voice)))
+      }
+    })
+
+    it('takes its own stream', () => {
+      const labels = new Set([
+        MUSIC_LABEL,
+        RHYTHM_LABEL,
+        GHOST_LABEL,
+        BONGO_LABEL,
+        RIDE_LABEL,
+        KIT_LABEL,
+      ])
+      expect(labels.size).toBe(6)
+    })
+
+    it('takes no draw from the rhythm stream when no kit is declared', () => {
+      expect(serialised(WITHOUT, 'straight-funk')).toEqual(serialised(dry(FUNK), 'straight-funk'))
+    })
+  })
+
+  describe('a fixed figure plays every bar and takes over its placement — R11, R21', () => {
+    // The real id on purpose: bright-straight has its own PLACEMENTS entry, and
+    // suppressing that declared rim is the mechanism R21 rests on.
+    const CLAVE: FeelTemplate = {
+      ...dry(BRIGHT),
+      figures: [{ voice: 'rim', bars: [[0, 6, 12], [2, 8]] }],
+    }
+
+    const COWBELL: FeelTemplate = {
+      ...dry(BRIGHT),
+      figures: [{ voice: 'cowbell', bars: [[0]] }],
+    }
+
+    it('alternates its bars across the four-bar cycle', () => {
+      const even = gridSteps([0, 6, 12], 8)
+      const odd = gridSteps([2, 8], 8)
+      const { bars } = placed(CLAVE, 'bright-straight')
+      bars.forEach((bar, index) => {
+        expect(stepsOf(bar, 'rim'), `bar ${index}`).toEqual(index % 2 === 0 ? even : odd)
+      })
+    })
+
+    it('does not stop for the fill or the variation', () => {
+      const { bars } = placed(CLAVE, 'bright-straight')
+      expect(bars).toHaveLength(16)
+      for (const bar of bars) expect(stepsOf(bar, 'rim').length).toBeGreaterThan(0)
+    })
+
+    it('silences the template’s own placement rim', () => {
+      const placementStep = gridSteps(PLACEMENTS['bright-straight'].rim ?? [], 8)
+      expect(placementStep).toEqual([7])
+      const { bars } = placed(CLAVE, 'bright-straight')
+      for (const bar of bars) expect(stepsOf(bar, 'rim')).not.toContain(7)
+
+      // A placement rim is an ordinary-bar decoration a fill silences — bright-straight
+      // sounds it in bars 3 and 11 only. A fixed figure is not: it plays all sixteen.
+      const plain = placed(dry(BRIGHT), 'bright-straight')
+      expect(plain.bars.filter((bar) => stepsOf(bar, 'rim').includes(7)).length).toBe(2)
+    })
+
+    it('emits nothing for a voice the template does not play', () => {
+      const { bars } = placed(COWBELL, 'bright-straight')
+      for (const bar of bars) expect(stepsOf(bar, 'cowbell')).toEqual([])
+      expect(serialised(COWBELL, 'bright-straight')).toEqual(
+        serialised(dry(BRIGHT), 'bright-straight'),
+      )
+    })
+
+    it('gives every hit the placement duration and the plain velocity band', () => {
+      const { bars, music } = placed(CLAVE, 'bright-straight')
+      const sixteenthSec = ((60 / music.bpm) * 4) / PATTERN_RESOLUTION
+      const band = (sixteenth: number) => {
+        const shape = VELOCITIES.rim
+        if (sixteenth % 4 === 0) return shape.strong
+        if (sixteenth % 2 === 0) return shape.medium
+        return shape.weak
+      }
+      let seen = 0
+      for (const bar of bars) {
+        for (const event of bar) {
+          if (event.voice !== 'rim') continue
+          seen += 1
+          expect(event.durationSec).toBeCloseTo(FILL_DURATIONS.rim * sixteenthSec, 9)
+          expect(event.velocity).toBe(band((event.step * PATTERN_RESOLUTION) / 8))
+        }
+      }
+      expect(seen).toBeGreaterThan(0)
+    })
+
+    it('takes no draw', () => {
+      expect(serialised({ ...CLAVE, figures: undefined }, 'bright-straight')).toEqual(
+        serialised(dry(BRIGHT), 'bright-straight'),
+      )
     })
   })
 })

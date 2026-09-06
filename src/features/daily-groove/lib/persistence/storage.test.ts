@@ -3,6 +3,7 @@ import type { Attempt, DailyResult } from '../../types'
 import {
   createLocalStore,
   createReadOnlyStore,
+  pinnedGrooveId,
   type ResultStore,
 } from './storage'
 
@@ -216,6 +217,82 @@ describe('createLocalStore', () => {
       const store = createLocalStore()
       await expect(store.save(resultA)).resolves.toBeUndefined()
     })
+  })
+})
+
+describe('pinnedGrooveId — the groove a stored day was played on (E6 R8, R9, R10, R13)', () => {
+  const realLocalStorage = globalThis.localStorage
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+    Object.defineProperty(globalThis, 'localStorage', {
+      configurable: true,
+      value: realLocalStorage,
+    })
+  })
+
+  it('answers the stored groove id synchronously, not as a promise (E6 AC7)', async () => {
+    await createLocalStore().save({ ...resultA, grooveId: 'groove-07' })
+
+    const pinned: string | undefined = pinnedGrooveId(resultA.date)
+
+    expect(pinned).toBe('groove-07')
+    expect(pinned).not.toBeInstanceOf(Promise)
+  })
+
+  it('is undefined for a date that was never saved (E6 AC8)', async () => {
+    await createLocalStore().save({ ...resultA, grooveId: 'groove-07' })
+
+    expect(pinnedGrooveId('2000-01-01')).toBeUndefined()
+  })
+
+  it('is undefined for a result saved before groove ids existed (E6 AC8)', async () => {
+    await createLocalStore().save(resultA)
+
+    expect(pinnedGrooveId(resultA.date)).toBeUndefined()
+  })
+
+  it('is undefined, and does not throw, when getItem throws (E6 AC8)', () => {
+    vi.spyOn(globalThis.localStorage, 'getItem').mockImplementation(() => {
+      throw new Error('SecurityError')
+    })
+
+    expect(() => pinnedGrooveId(resultA.date)).not.toThrow()
+    expect(pinnedGrooveId(resultA.date)).toBeUndefined()
+  })
+
+  it('is undefined when the envelope is unreadable (E6 AC8)', () => {
+    localStorage.setItem(STORAGE_KEY, 'not-json{')
+
+    expect(pinnedGrooveId(resultA.date)).toBeUndefined()
+  })
+
+  it('is undefined when the envelope is the wrong version (E6 AC8)', () => {
+    localStorage.setItem(STORAGE_KEY, '{"version":1,"byDate":{}}')
+
+    expect(pinnedGrooveId(resultA.date)).toBeUndefined()
+  })
+
+  it('is undefined when there is no localStorage at all (E6 AC8)', () => {
+    Object.defineProperty(globalThis, 'localStorage', {
+      configurable: true,
+      value: undefined,
+    })
+
+    expect(() => pinnedGrooveId(resultA.date)).not.toThrow()
+    expect(pinnedGrooveId(resultA.date)).toBeUndefined()
+  })
+
+  it('is undefined when reaching localStorage itself throws, as in a private window (E6 AC8)', () => {
+    Object.defineProperty(globalThis, 'localStorage', {
+      configurable: true,
+      get() {
+        throw new Error('SecurityError')
+      },
+    })
+
+    expect(() => pinnedGrooveId(resultA.date)).not.toThrow()
+    expect(pinnedGrooveId(resultA.date)).toBeUndefined()
   })
 })
 

@@ -178,5 +178,113 @@
     "uuid": "663a6eda-b223-4a70-9842-647cc36255ab",
     "template": "shuffle",
     "seed": 1472960470
+  },
+  {
+    "id": "groove-53",
+    "uuid": "5ce24a2f-d6bb-4f66-bbac-1700e00de2d6",
+    "template": "bossa-nova",
+    "seed": 1971424975
+  },
+  {
+    "id": "groove-54",
+    "uuid": "b9d62620-775e-4a99-b776-c4db5ec44c7c",
+    "template": "bossa-nova",
+    "seed": 1971424977
+  },
+  {
+    "id": "groove-55",
+    "uuid": "f7b5667f-3458-4681-bcc2-20ee933f48c8",
+    "template": "bossa-nova",
+    "seed": 1971424978
+  },
+  {
+    "id": "groove-56",
+    "uuid": "0e632f6a-6ee8-4007-aa21-211a1f1b389f",
+    "template": "bossa-nova",
+    "seed": 1971424983
+  },
+  {
+    "id": "groove-57",
+    "uuid": "10bb886f-71d6-4cea-8b1d-66dbaeb28169",
+    "template": "bossa-nova",
+    "seed": 1971424988
+  },
+  {
+    "id": "groove-58",
+    "uuid": "b596c20a-6b80-4a23-8974-ebf48d1f8679",
+    "template": "bossa-nova",
+    "seed": 1971425005
+  },
+  {
+    "id": "groove-65",
+    "uuid": "ecea73f6-b8a0-4863-8fa6-cab2ffb54814",
+    "template": "second-line",
+    "seed": 1982667679
+  },
+  {
+    "id": "groove-66",
+    "uuid": "69f64f22-bc34-45b1-8937-eac99dcb4164",
+    "template": "second-line",
+    "seed": 1982667683
+  },
+  {
+    "id": "groove-67",
+    "uuid": "00c6a264-d6fd-4ec3-a38e-a137a44d5ec9",
+    "template": "second-line",
+    "seed": 1982667689
+  },
+  {
+    "id": "groove-68",
+    "uuid": "e7ac5bbf-d545-4f35-a511-3a0e09c7eb32",
+    "template": "second-line",
+    "seed": 1982667695
+  },
+  {
+    "id": "groove-69",
+    "uuid": "d0149515-7ba4-42f8-a760-8f9a7b83b38c",
+    "template": "second-line",
+    "seed": 1982667696
+  },
+  {
+    "id": "groove-70",
+    "uuid": "5fc9b9c6-9a3c-4f6f-9fdb-06809b3cc51c",
+    "template": "second-line",
+    "seed": 1982667697
+  },
+  {
+    "id": "groove-71",
+    "uuid": "f3ee8631-e9e7-4379-aef3-7ce0ae4c0b81",
+    "template": "boom-bap",
+    "seed": 1981233047
+  },
+  {
+    "id": "groove-72",
+    "uuid": "cc666694-9d7c-4b3c-856f-b8361aecf0ae",
+    "template": "boom-bap",
+    "seed": 1981233050
+  },
+  {
+    "id": "groove-73",
+    "uuid": "b648ad0c-a2fa-457e-9cbd-0504a72cb1bb",
+    "template": "boom-bap",
+    "seed": 1981233052
+  },
+  {
+    "id": "groove-74",
+    "uuid": "b79625d9-501e-4477-b42f-81e5506d0b28",
+    "template": "boom-bap",
+    "seed": 1981233055
+  },
+  {
+    "id": "groove-75",
+    "uuid": "cd1d5f2e-8788-44b7-bd47-883cda16ad22",
+    "template": "boom-bap",
+    "seed": 1981233063
+  },
+  {
+    "id": "groove-76",
+    "uuid": "2e0d7708-a0d6-4dbc-9277-9a79fd261df9",
+    "template": "boom-bap",
+    "seed": 1981233067
   }
 ]

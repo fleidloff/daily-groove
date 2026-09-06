@@ -13,6 +13,7 @@ import {
 import { encodeMp3 } from './encode.ts'
 import { buildEvents } from './events.ts'
 import { gateCandidate } from './gate.ts'
+import { readHeardIn, type HeardInTable } from './heardIn.ts'
 import { buildLock, mergeLock, readLock, writeLock } from './lock.ts'
 import { writeManifest } from './manifest.ts'
 import { mixTracks } from './mix.ts'
@@ -54,6 +55,8 @@ export type AddOptions = {
   packDir?: string
   pack?: SamplePack
   templates?: readonly FeelTemplate[]
+  templateId?: string
+  heardIn?: HeardInTable
   gate?: GateFn
   mintUuid?: () => string
   log?: (message: string) => void
@@ -89,6 +92,9 @@ export async function addGrooves(n: number, opts: AddOptions = {}): Promise<Groo
 
   if (templates.length === 0) throw new Error('addGrooves: no templates to mint from')
 
+  const wanted = opts.templateId === undefined ? null : templateFor(templates, opts.templateId)
+  const heardIn = opts.heardIn ?? readHeardIn()
+
   const existing = readCatalogue(cataloguePath)
   const pack = opts.pack ?? (await loadPack(opts.packDir ?? DEFAULT_PACK_DIR))
 
@@ -111,7 +117,7 @@ export async function addGrooves(n: number, opts: AddOptions = {}): Promise<Groo
     }
     attempts += 1
 
-    const template = byScarcity[minted.length % byScarcity.length]
+    const template = wanted ?? byScarcity[minted.length % byScarcity.length]
 
     const [candidate] = selectSeeds(rotate(templates, template), {
       perTemplate: 1,
@@ -139,6 +145,7 @@ export async function addGrooves(n: number, opts: AddOptions = {}): Promise<Groo
     outDir,
     manifestPath,
     lockPath,
+    heardIn,
   })
 
   return minted.map((m) => m.spec)
@@ -173,7 +180,13 @@ async function writeBatch(
   minted: readonly Minted[],
   existing: readonly GrooveSpec[],
   templates: readonly FeelTemplate[],
-  paths: { cataloguePath: string; outDir: string; manifestPath: string; lockPath: string },
+  paths: {
+    cataloguePath: string
+    outDir: string
+    manifestPath: string
+    lockPath: string
+    heardIn: HeardInTable
+  },
 ): Promise<void> {
   mkdirSync(paths.outDir, { recursive: true })
   for (const { spec, pcm } of minted) {
@@ -197,7 +210,7 @@ async function writeBatch(
       names.get(spec.id) as string,
     )
   })
-  writeManifest(entries, paths.manifestPath, buildPools(entries))
+  writeManifest(entries, paths.manifestPath, buildPools(entries), paths.heardIn)
 
   writeLock(
     mergeLock(
@@ -217,6 +230,10 @@ async function writeBatch(
 
 function templateFor(templates: readonly FeelTemplate[], id: string): FeelTemplate {
   const template = templates.find((t) => t.id === id)
-  if (!template) throw new Error(`addGrooves: unknown template "${id}"`)
+  if (!template) {
+    throw new Error(
+      `addGrooves: unknown template "${id}" — known: ${templates.map((t) => t.id).join(', ')}`,
+    )
+  }
   return template
 }

@@ -24,7 +24,7 @@ export const brightStraight: FeelTemplate = {
     hatOpen: -17,
     rim: -8,
     bass: -3,
-    comp: -5,
+    comp: -6.5,
   },
   pan: {
     bongoHigh: 0.3,

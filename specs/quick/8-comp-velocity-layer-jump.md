@@ -16,9 +16,113 @@
 * The full catalogue re-renders and the quality gate plus `grooves:verify` still pass.
 * `src/lib/hash.ts` and the `events` draw order are untouched: the groove of the day and every past answer are unchanged.
 
-## Parked — 2026-09-06
+## Un-parked and built — 2026-09-06, inside feature-25
 
-**The symptom is gone, so this is not being built.** Fred re-listened to
+**The masking went away, exactly as the park note predicted it would.** feature-25
+shipped `bossa-nova`, which plays no ride, and Fred heard the pop in its grooves. The
+park note named the trigger in as many words: *"it comes back the moment the masking
+does: a new feel that plays no ride, a quieter mix, or the bass re-gain moving the
+balance."* The first of those three happened. Built on Fred's explicit instruction, as
+part of feature-25 rather than as a quick ticket of its own.
+
+**bossa-nova is now the worst feel in the catalogue for this defect, by a wide margin.**
+Re-measured over the 36 committed grooves with `buildEvents` — every count in the
+analysis below predates `bossa-nova` and is superseded by these:
+
+| | ticket, 30 grooves | built, 36 grooves |
+| :-- | --: | --: |
+| comp events | 3048 | **3912** |
+| above 0.8 (the dyn3 pop) | 20 (0.66%) | **76 (1.94%)** |
+| at or below 0.45 (the dyn1 step) | 494 (16.2%) | **535 (13.7%)** |
+| feels to re-gain | 6 | **7** |
+
+Per feel, dyn1 / dyn3: bossa-nova **4.7% / 6.5%** (56 of 864, about nine a groove),
+bright-straight 12.2% / 1.0%, shuffle 13.1% / 1.0%, swung-sixteenth 18.2% / 0.6%,
+open-ballad 8.3% / 3.1%, half-time 20.2% / 0%, straight-funk 21.6% / 0%. `groove-55`
+and `groove-56` cross fourteen times each, against the three on `groove-40` that got
+this ticket filed.
+
+**Built as Q1-A and Q2-A specify.** What was done, and where it differs from the plan
+above, is in `specs/features/feature-25/.implement/quick-8-comp-layers.md`. The two
+differences worth knowing here:
+
+* **Two files the ticket did not name had to change.** `scripts/grooves/pack.test.ts`
+  (not the one under `samples/`) asserted three rising dynamics per comp note, and
+  `scripts/grooves/notes.test.ts` pins the measured pitch and peak of all 24 reference
+  notes — which are rendered **from the comp voice** at `NOTE_VELOCITY = 0.85`, a
+  velocity that used to land in dyn3. `npm run notes` is part of this change, and
+  `grooves:verify` says so itself when it fails as `pack-stale`.
+* **`gain.comp` moved per feel and not flat**, as the ticket insisted: −1.07 dB on
+  `bossa-nova` against −1.93 on `straight-funk`, because bossa's dyn3 hits were the
+  loudest events in its comp track and they are the ones that came *down*.
+
+**The listening pass is done.** It could not be done by the build, and it was not; it
+was given by Fred on 2026-09-06 and is recorded below.
+
+### Signed off by ear — 2026-09-06
+
+**Fred listened and approved it.** His message, in full:
+
+> sounds much better, sign off - continue with the mints
+
+**What that sentence covers, stated exactly.** It was given once, over the whole
+listening set he was handed — not as five separate per-groove verdicts. The set was the
+five pinned renders `groove-07`, `groove-08`, `groove-28`, `groove-40` and `groove-48`;
+the six `bossa-nova` grooves `groove-53` … `groove-58`, unpinned, ordered by dyn3
+crossing count with 55 and 56 first at fourteen each; and one reference note,
+`public/notes/note-a.mp3`. The brief he was working from is *The listening set* in
+`specs/features/feature-25/.implement/quick-8-comp-layers.md`. The second half of the
+sentence is an instruction to carry on with feature-25's minting, not a musical verdict.
+Nothing beyond that was said, and nothing beyond that is recorded.
+
+**The five `SIGN_OFFS` are re-pinned.** `scripts/grooves/gate.test.ts` carries new `pcm`
+hashes for all five and a new `mp3` hash for `groove-07`; the other four stay
+encoder-unpinned for the reason `groove-40`'s comment gives. Each entry's `scope` states
+the qualification above, and each `upstream` now names the comp's single dyn2 layer in
+`samples/pack.json` and the template `gain.comp` beside the ride causes it carried from
+feature-24. The table's header comment also records what the pass did **not** cover: the
+six unpinned same-figure grooves — 19, 34, 42, 44, 50, 52 — were not replayed, so their
+feature-24 approval still covers their ride figure and no longer covers their comp.
+
+**How each hash was tied to what was actually heard.** A fresh render of each of the five
+from this tree encodes byte for byte to the committed `public/grooves/<id>.mp3` — the
+exact file that was played, on the same encoder the table pins (ffmpeg 6.0 /
+libmp3lame 3.100, `-b:a 192k`). No hash was pinned that does not correspond to a file in
+the listening set.
+
+| id | old pcm | new pcm | mp3 |
+| :-- | :-- | :-- | :-- |
+| `groove-07` | `68002353…aaaf` | `e7664e75…f76e` | `9aa83533…4333` → `9c1a3bbd…9d57` |
+| `groove-08` | `1eb966c4…0dc0` | `f0c8d5d9…439a` | null (file `0359db2c…853b`, 1 014 430 bytes) |
+| `groove-28` | `0f89ea15…5d8c` | `fb658dcc…36e5` | null (file `68699d3a…3c1b`, 855 187 bytes) |
+| `groove-40` | `00d66faa…a4f7` | `126621dd…2584` | null (file `5d16d492…823f`, 839 514 bytes) |
+| `groove-48` | `3ba2a4fa…a5cb` | `20607f33…07fb` | null (file `67a8b136…7dce`, 810 048 bytes) |
+
+**Tests.** `npx vitest run --project generator scripts/grooves/gate.test.ts` — 63 passed,
+0 failed. `scripts/grooves/notes.test.ts` — 17 passed, 0 failed.
+
+**The `## Done when` bullets.**
+
+* *`groove-40`'s comp peaks sit within a few dB of the other bars, and nothing pops by
+  ear* — **done.** Its three crossings are gone by construction, and the ear confirmed it.
+* *A generator test pins the layer transition* — **done**, in the stronger shape the
+  notes predicted: `voices.test.ts` holds every one of the 11 committed comp pitches to
+  within 0.5 dB across 0.44/0.46 and 0.79/0.81 (measured 0.39 dB and 0.22 dB, against
+  8.49 dB before the change).
+* *The full catalogue re-renders and the gate plus `grooves:verify` still pass* —
+  **done**, with `npm run notes` as part of it.
+* *`src/lib/hash.ts` and the `events` draw order untouched* — **done**;
+  `events.fixture.json` is unchanged and `eventsFixture.test.ts` is green.
+
+**Full record:** `specs/features/feature-25/.implement/quick-8-signoff.md`.
+
+## Parked — 2026-09-06 · superseded the same day
+
+**This section no longer holds.** It is kept as the record of why the ticket sat
+parked for part of a day, and of the trigger it named for un-parking, which then
+happened. What was actually built and signed off is *Un-parked and built* above.
+
+**The symptom was gone at the time, so this was not being built.** Fred re-listened to
 `groove-40` after feature-24's ride landed (670652b) and the comp no longer pops.
 The ticket's first `## Done when` bullet is "nothing pops by ear", and it is
 already satisfied.
@@ -48,7 +152,9 @@ expensive half is paid once whether one voice is fixed or two. Comp on its own
 now means paying it twice. The two together fail the quick door's size test, so
 that goes to `/create-feature`.
 
-Everything below stands as analysed; only the decision to build changed.
+Everything below stood as analysed; only the decision to build changed — and then that
+changed too, when `bossa-nova` shipped and unmasked the step exactly as this section
+predicted it would.
 
 ## Open questions
 

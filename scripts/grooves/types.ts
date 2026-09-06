@@ -28,10 +28,34 @@ export type Pcm = {
   right: Float32Array
 }
 
+export type Subdivision = 4 | 8 | 16
+
+export type BongoFigure = { high: number[]; low: number[] }
+
+// The snare line a style plays instead of a backbeat, and the tom accents that
+// travel with it.
+export type KitFigure = { snare: number[]; tomHigh?: number[]; tomLow?: number[] }
+
+export type PatternPools = {
+  kick?: number[][]
+  hatClosed?: number[][]
+  ride?: Partial<Record<Subdivision, number[][]>>
+  bass?: number[][]
+  comp?: number[][]
+  bongos?: BongoFigure[]
+  snareGhosts?: number[][]
+  kit?: KitFigure[]
+}
+
+export type FixedFigure = {
+  voice: VoiceName
+  bars: number[][]
+}
+
 export type FeelTemplate = {
   id: string
   tempoRange: [number, number]
-  subdivision: 4 | 8 | 16
+  subdivision: Subdivision
   swing: number
   flavours: Flavour[]
   voices: VoiceName[]
@@ -45,6 +69,8 @@ export type FeelTemplate = {
   pan: Partial<Record<VoiceName, number>>
   passes: number
   density: { minPerBar: number; maxPerBar: number }
+  patterns?: PatternPools
+  figures?: FixedFigure[]
 }
 
 export type GrooveSpec = {

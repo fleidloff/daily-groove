@@ -1,7 +1,6 @@
 import type { Groove } from '../../types'
-import { GROOVES } from '../../data/grooves.generated'
-import { selectGrooveForDate } from './selectGroove'
+import { dailyGroove } from './dailyGroove'
 
 export function isTodaysGroove(groove: Groove, now: Date): boolean {
-  return selectGrooveForDate(now, GROOVES)?.uuid === groove.uuid
+  return dailyGroove(now).uuid === groove.uuid
 }

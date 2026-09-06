@@ -21,7 +21,7 @@ export const halfTime: FeelTemplate = {
     hatClosed: -13,
     hatOpen: -19,
     bass: 0,
-    comp: -3,
+    comp: -4.9,
   },
   pan: {
     tomHigh: 0.2,

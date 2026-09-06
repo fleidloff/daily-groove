@@ -466,22 +466,20 @@ describe('the committed pack’s comp', () => {
     }
   }, 120_000)
 
-  it('leaves each note’s velocity layers un-normalised, so dyn3 is louder than dyn1', () => {
+  // quick-8 dropped dyn1 and dyn3, so there is no longer a rising ladder inside one
+  // note to check normalisation against. What is left to check is the same property
+  // across the register: an un-normalised mf recording of a real piano is not the same
+  // level at every pitch. dyn2's measured spread over the four notes the catalogue
+  // plays is 2.4 dB; flattening it to nothing would mean somebody normalised the pack.
+  it('ships one un-normalised mf layer per note, so the register is not flat', () => {
     const notes = notesOf('comp')
     expect(notes.length, 'comp declares no notes').toBeGreaterThan(0)
     for (const note of notes) {
-      expect(
-        note.layers.length,
-        `comp MIDI ${note.midi} does not carry three dynamics`,
-      ).toBeGreaterThanOrEqual(3)
-      const levels = note.layers.map(levelOf)
-      for (let i = 1; i < levels.length; i += 1) {
-        expect(
-          levels[i],
-          `comp MIDI ${note.midi}: layer ${i} is not louder than layer ${i - 1} — was it normalised?`,
-        ).toBeGreaterThan(levels[i - 1])
-      }
+      expect(note.layers.length, `comp MIDI ${note.midi} no longer carries one dynamic`).toBe(1)
     }
+    const levels = notes.map((note) => levelOf(note.layers[0]))
+    const spreadDb = 20 * Math.log10(Math.max(...levels) / Math.min(...levels))
+    expect(spreadDb, 'every comp note peaks alike — was the pack normalised?').toBeGreaterThan(1)
   }, 120_000)
 
   it('covers the comp register with no gap wider than four semitones', () => {

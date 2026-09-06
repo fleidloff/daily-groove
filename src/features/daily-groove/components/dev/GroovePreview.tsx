@@ -128,7 +128,15 @@ function GroovePlayer({ groove }: { groove: Groove }) {
   )
 }
 
-export function GroovePreview({ today }: { today?: Date }) {
+const UNKNOWN_STYLE = 'unknown style'
+
+export function GroovePreview({
+  today,
+  styles,
+}: {
+  today?: Date
+  styles?: Record<string, string>
+}) {
   const [start] = useState(() => today ?? new Date())
   const days = useMemo(() => scheduleFrom(start), [start])
   const [picked, setPicked] = useState<string | null>(null)
@@ -147,12 +155,19 @@ export function GroovePreview({ today }: { today?: Date }) {
         {days.map((day) => (
           <li key={day.iso}>
             <Stack gap="sm">
-              <Chip
-                label={rowLabel(day)}
-                selected={picked === day.iso}
-                disabled={false}
-                onSelect={() => setPicked(day.iso)}
-              />
+              <Row gap="sm" align="center">
+                <Chip
+                  label={rowLabel(day)}
+                  selected={picked === day.iso}
+                  disabled={false}
+                  onSelect={() => setPicked(day.iso)}
+                />
+                {styles && (
+                  <Text tone="muted" size="sm">
+                    {styles[day.groove.uuid] ?? UNKNOWN_STYLE}
+                  </Text>
+                )}
+              </Row>
               {picked === day.iso && (
                 <GroovePlayer key={day.iso} groove={day.groove} />
               )}
