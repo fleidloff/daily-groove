@@ -10,7 +10,7 @@ export const intro = {
     { words: 'Come back every day for a new challenge ', mark: '⏭' },
   ],
   twoWays:
-    'Two ways to play: Simple mode is six roots, Major or Minor. The switch on the card opens up the full set.',
+    'Two ways to play: Simple mode is six roots, Major or Minor. The switch on the card enables guessing modes instead.',
   transpose:
     "Play a sax or a trumpet? Pick your key beside Transpose in the top row and the roots, chords and notes read in your instrument's pitch.",
 } satisfies IntroSnippets

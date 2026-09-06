@@ -16,6 +16,7 @@ import { gateCandidate } from './gate.ts'
 import { buildLock, mergeLock, readLock, writeLock } from './lock.ts'
 import { writeManifest } from './manifest.ts'
 import { mixTracks } from './mix.ts'
+import { namesFor } from './name.ts'
 import { loadPack } from './pack.ts'
 import { probeHeadDelaySeconds } from './probe.ts'
 import { buildPools } from './pools.ts'
@@ -186,9 +187,15 @@ async function writeBatch(
     catalogue.map((spec) => probeHeadDelaySeconds(join(paths.outDir, `${spec.id}.mp3`))),
   )
 
+  const names = namesFor(catalogue.map((spec) => spec.id))
   const entries = catalogue.map((spec, i) => {
     const template = templateFor(templates, spec.template)
-    return toGroove(spec, buildEvents(spec, template).music, delays[i])
+    return toGroove(
+      spec,
+      buildEvents(spec, template).music,
+      delays[i],
+      names.get(spec.id) as string,
+    )
   })
   writeManifest(entries, paths.manifestPath, buildPools(entries))
 

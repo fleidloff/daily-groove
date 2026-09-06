@@ -212,6 +212,32 @@ shared pools, no new case in `events.test.ts`, no change to `src/` except the
 regenerated manifest and — only if this epic's own mint is what breaches the cap
 — the dominance guard's second copy, and no rota change.
 
+**This epic ships its grooves unheard, on purpose.** Nothing between Track C's
+mint and this epic closing waits for a person. The gate still runs and still
+blocks — seven checks on every groove, and a rejection is a musical problem in
+the template — but a gate pass has never been a sign-off, and this epic no
+longer pretends otherwise by collecting one at the end. Step I2 writes a *brief*
+instead: the six mp3 paths and what a listener should listen for in them, handed
+forward to the feature's single listening pass — `../roadmap.md`,
+**Wave 5 — the feature-wide listening pass** — which plays all thirty new grooves
+grouped by style, the five styles back to back, and records the per-groove
+verdict there.
+
+The risk this accepts is named rather than hedged: a finding that arrives at
+Wave 5 costs a post-mint change, and a post-mint change to this template
+re-renders its six mp3s, the lock and the manifest — though no committed answer,
+because every stream this epic draws on is its own. That is the price, and it is
+one re-render of six files.
+
+It was paid deliberately. The alternative — signing off six second-line grooves
+in isolation, days before reggae or Afro-Cuban exists — judges them against
+nothing. Whether this snare reads as a figure rather than as clutter is a
+comparative question, and so is whether the fill belongs to the idiom; a listener
+who has heard only second line has no other new style to hear it against. Five
+styles judged in one sitting is worth the re-render, and the mints do not change
+at all: Track C still mints strictly serially, still rebases first, still gates
+every groove.
+
 **Wave 2, honestly.** Three epics add a template at once. The PRD names four
 shared files; there are three more groups:
 
@@ -380,6 +406,11 @@ there too, per `scripts/tiers.ts` — so every track runs `npm run test:gen`.
 Track C additionally runs `npm test`, because minting rewrites the app's
 manifest.
 
+**Every `npm test` in this spec means green except
+`src/features/daily-groove/data/pastPuzzles.test.ts`.** That file is red before
+this epic opens a file — Epic 1's mint did it — and it stays red until the
+feature is finished. Not this epic's to repair; see *Assumptions*.
+
 ## Tracks
 
 ### Track A — the declarations, and everything asserted about them
@@ -459,22 +490,30 @@ track.
   `scripts/grooves/catalogue.test.ts` and
   `src/features/daily-groove/data/grooves.generated.test.ts`, one line each,
   widened together
-- **Role** — `musician`. Minting is where the gate's verdict and the listening
-  verdict arrive, and a rejection is a musical problem in the template, not a
-  budget to raise.
+- **Role** — `musician`. Minting is where the gate's verdict arrives, and a
+  rejection is a musical problem in the template, not a budget to raise. The
+  listening verdict does not arrive here at all — it arrives at the feature-wide
+  listening pass, after Epic 6, and Step I2 writes the brief that carries this
+  style into it.
 - **Depends on** — Track A landed, and — across epics — every earlier wave-2
   mint landed and rebased onto.
 - **Parallel with** — Track B.
 - **Done when** — `npm run test:gen`, `npm test`, `npm run grooves:verify` and
-  `npm run build` are green, the catalogue holds six `second-line` entries, and
+  `npm run build` are green — `npm test` **except `pastPuzzles.test.ts`**, which
+  arrives red from Epic 1 and which this track's mint moves further from its
+  baseline without repairing — the catalogue holds six `second-line` entries, and
   `git status` after `npm run grooves` shows no existing mp3 modified.
 
 ## Execution waves
 
 - **Wave 1:** Track A. Alone — every other track needs the template to exist.
 - **Wave 2 (parallel):** Track B, Track C.
-- **Wave 3:** Integration — the catalogue through the gate, the listening
-  sign-off, the full pre-push set.
+- **Wave 3:** Integration — the catalogue through the gate, the listening brief
+  written, the full pre-push set — green but for `pastPuzzles.test.ts`, per
+  Step I3. **No wave of this epic waits for a person.**
+  The sign-off R10 asks for happens once for the whole feature, after Epic 6, at
+  `../roadmap.md`'s **Wave 5 — the feature-wide listening pass**; this epic
+  hands it a brief and closes.
 
 There is no track that can run beside Track A. That is a real dependency and not
 a comfort: the doc row states values Track A settles, and the mint renders a
@@ -957,7 +996,11 @@ Covers: R8, R9, AC8, AC9
      `GroovePuzzle.tsx` imports. If D6 landed, the mint is enough; if it did not,
      run `npm run grooves -- --manifest-only`, which re-emits the manifest with
      the table and rewrites the lock to match while encoding no audio. Either way
-     `npm test` is the check — see Step I3.
+     `npm test` is the check — see Step I3. One failure in that run is not a
+     finding: **the mint turns `pastPuzzles.test.ts` red again**, as it is
+     already red from Epic 1, and six more grooves move its lap arithmetic and
+     reassign every recorded day once more. Do not open it and do not regenerate
+     its fixture; record the new catalogue length in the report and move on.
   4. Read every rejection the mint logs. A `density` failure is Step A11's
      measurement being wrong, and it is fixed by re-measuring, not by widening. A
      `loudness` failure is a gain problem in Step A5 and is fixed in the template
@@ -1016,7 +1059,8 @@ Covers: R8, AC8, AC12
     ratio, and 5× since Epic 1 — holds with blues and mixolydian each carrying
     three or four more answers than before. Read the same case's second copy in
     `src/features/daily-groove/data/grooves.generated.test.ts` under `npm test`;
-    the two must agree
+    the two must agree. `pastPuzzles.test.ts` fails in that same run, and that
+    failure is expected rather than a finding
   - `events.test.ts` — the rewritten tom case for every registered template, its
     fill claim and its declared-line claim both exercised, and the 120-seed
     density case for eight or more feels
@@ -1028,37 +1072,78 @@ Covers: R8, AC8, AC12
     true
 - **Green when** — the tier is green with no carried-forward red.
 
-#### Step I2 — the listening pass, per groove, recorded
+#### Step I2 — the listening brief, written and handed forward
 
-Covers: R10, AC10
+Covers: R10, AC10 — jointly with the feature-wide listening pass
 
-- **Test** — none a machine can run. Hand over the six file paths under
-  `public/grooves/` and what to listen for, and do not report that it sounds
-  good:
-  - **does the snare read as a figure, or as clutter?** This is the sentence AC10
-    asks for and the one the epic turns on. A second line's snare states the
-    rhythm; if it sounds like a drummer filling in, the figure is wrong and Step
-    A1's pool is where it is fixed
-  - **is the fill part of the groove, or an interruption?** The second question
-    AC10 names
-  - the toms are heard as part of the figure, not as decoration at the back of the
-    mix — and they do not machine-gun: two alternates per tom layer over a
-    sixteen-bar loop is the risk
-  - the variation bar reads as a thinning rather than as the toms dropping out by
-    accident. This is the one thing the tom decision costs, and it is the one to
-    listen for specifically
-  - the kick reads as a clave-ish figure and the bass is on it, not near it
-  - the keys stay out of the way — one stab a bar should feel like a horn section
-    resting, not like a missing part
-  - nothing rings across the loop seam
-- **Green when** — a person has played all six in full and their verdict is
-  recorded per groove, in their own words, in the epic's report. A gate pass is
-  not a sign-off and does not substitute for one.
+The sign-off R10 asks for is not collected in this epic. It happens once for the
+whole feature, after Epic 6, at `../roadmap.md`'s **Wave 5 — the feature-wide
+listening pass**: all thirty new grooves played grouped by style, the five styles
+back to back, a per-groove verdict recorded in the listener's own words, and a
+list of proposed changes each naming a template field and a re-render cost.
+**This step's product is the brief that pass reads for second line**, and the
+epic ships without waiting for it.
+
+- **Test** — none a machine can run, and none this step blocks on. What blocks is
+  the gate: Step C1 still runs all seven checks on all six grooves, and a
+  rejection still stops the epic. What no longer stops it is a person's ear.
+- **Do** — write three things into the epic's report, and nothing else:
+  1. **Where the audio is.** The six `public/grooves/groove-NN.mp3` paths this
+     epic minted, each with its catalogue id, seed, root and flavour, so the
+     feature-wide pass can play them as one block without re-deriving which six
+     are second line's.
+  2. **What a listener should listen for in these six.** The two this style turns
+     on come first, and they are the two the machine came closest to proving and
+     could not:
+     - **does the snare read as a figure, or as clutter?** A second line's snare
+       states the rhythm. Step A2 proves the events are not a backbeat and are
+       syncopated; whether that lands as a figure or as a drummer filling in is
+       the sentence AC10 asks for, and if it is clutter, Step A1's pool is where
+       it is fixed
+     - **does the bass follow the kick audibly** — is it *on* the kick figure, or
+       merely near it? Step A7 proves every bass step sits on a kick step; only a
+       listener can say whether the two read as one line
+     - is the fill part of the groove, or an interruption?
+     - the toms are heard as part of the figure, not as decoration at the back of
+       the mix — and they do not machine-gun: two alternates per tom layer over a
+       sixteen-bar loop is the risk
+     - the variation bar reads as a thinning rather than as the toms dropping out
+       by accident. This is the one thing the tom decision costs, and it is the
+       one to listen for specifically
+     - the kick reads as a clave-ish figure
+     - the keys stay out of the way — one stab a bar should feel like a horn
+       section resting, not like a missing part
+     - nothing rings across the loop seam
+  3. **What a finding would cost.** Against each line above, the template field
+     that would move — `patterns.kit` for the snare figure and the toms,
+     `patterns.kick` and `patterns.bass` for the kick-and-bass reading,
+     `FILLS['second-line']` for the fill and the variation, `gain` for the tom
+     and rim balance — and the price, which is the same in every case: a
+     re-render of this template's six mp3s, the lock and the manifest, and no
+     committed answer moved. Wave 5's output is a list of proposed changes each
+     naming a field and a cost; this is the half of that list this epic can write
+     before anyone has listened.
+- **Green when** — the report carries those three items. Checkable by reading the
+  report, which is what keeps this step's done-condition a fact rather than an
+  opinion.
+- **What this step does not do** — collect a verdict, play the files, or hold the
+  epic open. **A gate pass is still not a sign-off.** The sign-off has moved to
+  the end of the feature; it has not been dropped, and nothing here weakens it.
+
+*The two contingencies that do still stop this epic are machine findings, not
+listening verdicts.* Step A11's tight-floor assertion failing at a margin of 1,
+and Step C1's six grooves not being reachable inside the attempt budget, both
+**stop and report** — one produces a measurement, the other a rejection count per
+check, and neither needs a person to have heard anything. They are unchanged by
+the sign-off moving, and they still block.
 
 #### Step I3 — the full set
 
 - `npm run test:gen`, `npm test`, `npm run lint`, `npm run build` — all four
-  green.
+  green, **except `src/features/daily-groove/data/pastPuzzles.test.ts` under
+  `npm test`**. That is the one red this epic may leave standing, and it is
+  expected: it was red on arrival and this epic's mint makes it redder. Any other
+  failure is carried-forward red and stops the epic.
 - **`npm test` matters here in a way it does not in a template-only epic.**
   Minting rewrites `src/features/daily-groove/data/grooves.generated.ts`, and
   `grooves.generated.test.ts` checks the shipped manifest against
@@ -1080,7 +1165,7 @@ Covers: R10, AC10
 | R7 | A9 |
 | R8 | C1, I1 |
 | R9 | A11, C1 |
-| R10 | I2 |
+| R10 | I2 (the brief) + the feature-wide listening pass — see the note below |
 | R11 | B1, B2, B3 |
 | AC1 | A10 |
 | AC2 | A10 |
@@ -1091,9 +1176,20 @@ Covers: R10, AC10
 | AC7 | A9 |
 | AC8 | C1, I1 |
 | AC9 | A11, C1 |
-| AC10 | I2 |
+| AC10 | I2 (the brief) + the feature-wide listening pass — see the note below |
 | AC11 | B1, B2 |
 | AC12 | A2, A3, C2, I1 |
+
+**R10 and AC10, read honestly.** They are covered, and they are not discharged
+inside this epic. Step I2 writes the brief — the six mp3 paths, what to listen
+for, and what a finding would cost — and **the sign-off is discharged at the
+feature-wide listening pass**, `../roadmap.md`'s
+**Wave 5 — the feature-wide listening pass**, which runs after Epic 6 and records
+the per-groove verdict in the listener's own words for all five styles at once. A
+`/verify-epic` run against Epic 3 alone should therefore read these two rows as
+*done here, verdict pending at Wave 5* — the epic owes a brief, not a verdict —
+and should mark them unmet only if the report carries no brief. Every other row
+in this table is discharged by a test in this epic.
 
 ## Assumptions
 
@@ -1116,15 +1212,16 @@ Covers: R10, AC10
 - **`FILLS` carries one fill and one variation per template, so "a fill
   vocabulary" means both phrases declared in the idiom.** A drawn pool of fills
   is a mechanism nobody has built and this epic does not build it — and after
-  Epic 1's C8 it could not be added inside `patterns` anyway. If the listening
-  pass says one fill over a sixteen-bar loop is the thing that reads as an
-  interruption, that is the finding to record, and a fill pool drawn on its own
+  Epic 1's C8 it could not be added inside `patterns` anyway. If the feature-wide
+  listening pass says one fill over a sixteen-bar loop is the thing that reads as
+  an interruption, that is a Wave 5 finding against `FILLS['second-line']`, and a fill pool drawn on its own
   stream is a later epic's work.
 - **The variation bar loses the toms, and that is a musical decision as well as a
   test constraint.** *"takes the toms out of the variation"* forces it, and the
   reading that makes it right is that thinning this style means the snare figure
-  without its answers. Step I2 listens for it specifically, because it is the one
-  place the tom design gives something up.
+  without its answers. Step I2's brief names it specifically, because it is the
+  one place the tom design gives something up and the one thing a listener at
+  Wave 5 would otherwise take for an accident.
 - **`second-line.test.ts` is a new file rather than more cases in
   `events.test.ts`.** That file is 2281 lines, Epic 1 adds cases to it and Epics
   2 and 4 have their own reasons to touch it; a topic-named sibling follows the
@@ -1139,6 +1236,19 @@ Covers: R10, AC10
   answers blues three times and mixolydian three, out of twelve roots each, so
   eighteen `root|flavour` pairs are free before a third flavour is even
   considered.
+- **`src/features/daily-groove/data/pastPuzzles.test.ts` is red on arrival, and
+  this epic neither repairs nor regenerates it.** It pins `3 × GROOVES.length`
+  days to the grooves they resolved to at thirty; Epic 1's mint broke both its
+  lap arithmetic and its day resolution, because `selectGrooveForDate` indexes a
+  seeded shuffle of the *whole* catalogue, and Step C1's six break it again.
+  Growth is the sanctioned cause and the test says so itself, citing feature-7
+  R6. Regenerating the fixture from this tree is what it forbids in as many
+  words — that "makes it agree with whatever broke it" — so this epic leaves it
+  red and reports the new catalogue length. It is re-baselined **once**, after
+  Wave 5 has settled, from a `git archive` of the last commit before Epic 1's
+  mint, with `provenance.catalogueLength` set to the final number.
+  `../roadmap.md` § *One test is red for the whole feature, on purpose* is the
+  authority.
 - **`docs/music.md` will have moved under this epic's feet.** feature-24 Epic 2
   rewrites the Pulse column and the voice count; Epic 1's Track H renames the
   heading, replaces the flavour sentence, adds the registry-derived row
@@ -1266,3 +1376,87 @@ edits; a later style epic widens both copies together if its own mint demands it
 Changed: *Architecture* gains the paragraph on the cap the mint has to clear;
 Track C's `Owns` and the wave-2 shared-file table name the two copies as a mint
 contingency; Step I1 states the ratio and requires the two copies to agree.
+
+### Cycle 3 — 2026-09-06 — the listening moves to the end of the feature
+
+**D6. Every human listening sign-off leaves the epics and becomes one
+feature-wide pass, and this epic mints, ships and closes without waiting for a
+person.** Five epics each ending in a listening sign-off means five sittings, each
+judging one new style against nothing but the styles that already shipped — and
+the questions AC10 actually asks are comparative. Whether second line's snare
+reads as a figure rather than as clutter, and whether its fill belongs to the
+idiom, are answered better beside reggae's one-drop and Afro-Cuban's clave than
+before either exists. The other half of the price was schedule: a per-epic
+sign-off puts a person on the critical path five separate times, and an
+implementation that stops for one cannot run end to end. So the sign-off moves to
+`../roadmap.md`'s **Wave 5 — the feature-wide listening pass**, which runs after
+Epic 6, plays all thirty new grooves grouped by style with the five styles back
+to back, records a per-groove verdict in the listener's own words, and outputs a
+list of proposed changes each naming the template field to move and its
+re-render cost. That pass is what discharges R10 and AC10 for every epic,
+including this one.
+
+What did **not** change is worth stating, because it is what makes the move
+affordable. The gate is untouched: seven checks, every groove, and a rejection
+is still a musical problem in the template rather than a budget to raise — the
+principle *a gate pass is not a sign-off* survives verbatim, it simply no longer
+has a per-epic person standing behind it. The mints are untouched: still strictly
+serial, still rebase-then-mint, still one template at a time, because
+`selectSeeds` reads the catalogue on disk. And the two contingencies that stop
+this epic are untouched, because neither was ever a listening verdict: a density
+band that cannot hold a tight floor at a margin of 1 (Step A11) and six grooves
+not reachable inside the attempt budget (Step C1) are machine findings, produced
+by a script, and they still **stop and report**. Step I2 now says so explicitly,
+so the distinction between what blocks and what no longer blocks is on the page
+rather than in the reader's head.
+
+Changed: *Architecture* gains **This epic ships its grooves unheard, on purpose.**
+— the trade, the accepted risk and why it was taken; Track C's `Role`, which no
+longer says the listening verdict arrives at the mint; *Execution waves*' Wave 3
+line, which now says the epic waits for nobody and points at Wave 5; Step I2,
+rewritten from a verdict collected here into a brief handed forward — where the
+six mp3s are, what to listen for in these six with the snare-as-figure and
+bass-follows-kick questions named first, and what each possible finding would
+cost — plus its closing note distinguishing the two machine contingencies from
+the sign-off that no longer stops anything; the coverage table's R10 and AC10
+rows and the note under it, so a `/verify-epic` run on Epic 3 alone reads
+*done here, verdict pending at Wave 5* rather than *unmet*; two Assumptions that
+referred to Step I2 as a listening session.
+
+Cost of reversal: cheap, and it stays cheap. Putting the sign-off back inside
+this epic is an edit to Step I2 and three cross-references — no test moves, no
+declaration moves, nothing re-renders, because the brief this epic now writes is
+exactly the material a per-epic sitting would have needed anyway. What reversal
+would cost is the comparison: a listener with only second line in front of them
+cannot answer the question the sign-off exists to ask. The risk carried in the
+other direction is a Wave 5 finding against this template, priced above at a
+re-render of six mp3s, the lock and the manifest, with no committed answer
+moved — and it is a risk, not a certainty, whereas five isolated sittings judge
+five styles against nothing every time.
+
+### Cycle 4 — 2026-09-06 — the past-puzzles record is re-baselined once, at the end
+
+**Absorbed from the roadmap, not decided here.** `../roadmap.md` §
+*One test is red for the whole feature, on purpose* settles
+`src/features/daily-groove/data/pastPuzzles.test.ts` for all six epics: it is the
+repo's record of what players are holding, it passes at thirty grooves, and Epic
+1's mint turns it red. Every mint after that — this epic's six among them —
+reassigns every recorded day again, because `selectGrooveForDate` indexes a
+seeded shuffle of the whole catalogue and the lap arithmetic reads its length.
+
+No epic repairs it, and the obvious repair is the forbidden one: the test says in
+as many words that regenerating from the tree that broke it "makes it agree with
+whatever broke it", which is the single failure the record exists to catch. It is
+re-baselined once, after Wave 5 has settled, from a `git archive` of the last
+commit before Epic 1's mint — later than this epic, because Wave 5 can still pull
+a style's six grooves and change the length one more time.
+
+Changed: an *Assumptions* bullet naming the file and the procedure; a standing
+note in *Architecture*'s test-command paragraph; Track C's *Done when*; Step
+C1.3, which now says the mint makes it redder and that the new catalogue length
+goes in the report; Step I1's cross-reference to the app-tier run; and Step I3,
+which names it as the one red this epic may leave standing. No declaration, test
+or mp3 of this epic's moves.
+
+Cost of reversal: one re-baseline becomes five. Capturing the fixture here needs
+its own archived tree and is stale the moment Epic 4 mints.

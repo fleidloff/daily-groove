@@ -179,6 +179,38 @@ Three findings are inherited, and R12's report answers all three in words:
 - the legacy claves are a drier, brighter capture than the `_Mid` bongos, so a
   style playing both wants a room-mismatch check. **This epic is that style.**
 
+### This epic ships its grooves unheard, and that is the design
+
+Every per-groove listening sign-off in feature-25 has moved out of its epic and
+into the **feature-wide listening pass** — `roadmap.md` § *Wave 5 — the
+feature-wide listening pass* — which runs once, by hand, after Epic 6, plays all
+thirty new grooves grouped by style, and records a verdict per groove in the
+listener's own words. So this epic mints six grooves, gates them, documents them
+and hands them on **without anyone having heard one of them end to end**. Every
+track here runs to completion without waiting on a person, and the build of the
+whole feature runs end to end the same way.
+
+The trade was made deliberately, and it is a trade about comparison rather than
+about time. Whether the bongos read as the lead, whether the clave sits right
+against the tumbao, whether a montuno is worth playing a saxophone over — those
+are answered far better with the reggae, the second line, the boom bap and the
+bossa playing back to back in one sitting than against the memory of a style
+heard a week earlier. Five styles judged together is a different, better
+question than five styles judged one at a time.
+
+What it accepts is real and worth naming. Six mp3s, six catalogue entries, six
+uuids and a `grooves.lock.json` diff are committed on the gate's word alone, and
+the gate cannot hear. If the feature-wide pass rejects a groove, the fix is a
+value in `templates/son-montuno.ts` or the rotation in Track A's branch, and the
+six re-render — a change that is cheap in machine time and costs a `git revert`
+of committed audio in tree terms. The epic's job is to make that fix cheap to
+aim: Step G4 writes the brief that tells the listener what to listen for in
+these six, and Steps C5, D2 and G2 leave the measured numbers behind it.
+
+**One listening step does not defer, and it is the only one in the build.** Step
+D3 is a pass/fail on two *samples*, not a verdict on a groove — see the decision
+log's Cycle 4 for why it stayed.
+
 ## Contracts
 
 Frozen before any track starts. C1–C4 are inherited and quoted so a track need
@@ -412,8 +444,9 @@ Starting values, and Step C1 re-reads the registry before trusting them.
   `scripts/grooves/events.ts` (the comp block),
   `scripts/grooves/events.test.ts`
 - **Role** — `musician`. C5 settles the rotation; whether it reads as a montuno
-  rather than as a broken chord is heard in Step G4, and what comes back lands
-  in this branch.
+  rather than as a broken chord is heard at the feature-wide listening pass
+  (`roadmap.md` § *Wave 5 — the feature-wide listening pass*), after this epic
+  has closed, and what comes back lands in this branch then.
 - **Depends on** — Epic 1 merged, C5
 - **Parallel with** — Track B
 - **Done when** — `npm run test:gen` green with `ARPEGGIO_FIXTURE` in all three
@@ -455,8 +488,10 @@ Starting values, and Step C1 re-reads the registry before trusting them.
 ### Track D — The audition and the verdict
 
 - **Goal** — the claves and the cowbell heard under a rendered loop of this
-  template, with the two inherited measurements re-taken, and a verdict per
-  voice — before anything is minted.
+  template, with the two inherited measurements re-taken, and a **usable /
+  unusable** verdict per voice — before anything is minted. It judges the two
+  samples, not the six grooves; the grooves are judged at the feature-wide
+  listening pass.
 - **Owns** — nothing committed. It writes the epic's report and files under
   `os.tmpdir()` only.
 - **Role** — `musician`
@@ -505,10 +540,11 @@ Runs **only** if a voice fails twice.
   is safe because the waves are disjoint.
 - **Done when** — AC7, AC10a and AC10b hold and `npm run test:gen` is green.
 
-### Track G — Mint, gate and sign off
+### Track G — Mint, gate and hand forward
 
 - **Goal** — six `son-montuno` grooves in the catalogue, every one through all
-  seven gate checks, every one heard in full by a person.
+  seven gate checks, and a brief handed to the feature-wide listening pass
+  saying what to listen for in these six and where their mp3s are.
 - **Owns** — `scripts/grooves/catalogue.json`, `public/grooves/*.mp3`,
   `src/features/daily-groove/data/grooves.generated.ts`,
   `src/features/daily-groove/data/grooves.generated.test.ts`,
@@ -518,9 +554,13 @@ Runs **only** if a voice fails twice.
 - **Role** — `musician`
 - **Depends on** — D's verdict, and F if it ran
 - **Parallel with** — Track H
-- **Done when** — `npm run test:all` green (it owns files in both tiers),
-  `npm run grooves:verify` clean, and the report carries six verdicts in a
-  person's own words.
+- **Done when** — `npm run test:all` green (it owns files in both tiers)
+  **except `src/features/daily-groove/data/pastPuzzles.test.ts`**, which arrives
+  red from Epic 1's mint and which this track's own mint moves again without
+  repairing — see *Assumptions* —
+  `npm run grooves:verify` clean, and the report carries Step G4's brief: the
+  six uuids, their mp3 paths, and what the feature-wide pass should listen for
+  in this style. No track in this epic waits on a person after Step D3.
 
 ### Track H — The voice list
 
@@ -917,23 +957,45 @@ Covers: R12, AC8
   clave's five hits over two bars rotate.
 - **Refactor** — none.
 
-#### Step D3 — the verdict, in words, per voice
+#### Step D3 — the one listen: are these two samples usable at all?
 
-Covers: R12, R16, AC8
+Covers: R12, AC8
 
-- **Test first** — none. A person plays each render in full, on repeat, and the
-  report answers four questions per voice in their own words:
+**This is the single human step remaining anywhere in feature-25's build.**
+Everything else in this epic, and in the five others, runs to completion without
+stopping for a person; the per-groove verdicts are collected once, at the
+feature-wide listening pass, after Epic 6. This step is the exception, and it is
+kept as short as a step can be: **one sitting, one file, both voices at once,
+before the mint.**
+
+It is a check on two *assets*, not a verdict on a groove. The question is
+whether a bare wood transient is usable at all under this style — which is not a
+matter of taste, is not improved by hearing the other four styles beside it, and
+if it were deferred would be answered only after six grooves had been minted on
+the failed sample, re-rendering all six. The decision log's Cycle 4 records the
+call and its cost.
+
+- **Test first** — none. A person plays **one** of Step D1's three renders in
+  full — sixteen bars, both voices sounding throughout — and the report answers,
+  per voice, in their own words:
   1. does the round robin break up the repetition, or does a bare wood transient
      machine-gun across four bars?
-  2. do the two claves takes' 2.3 kHz / 5.6 kHz brightness difference read as
-     one player or two?
-  3. do the drier, brighter legacy claves sit in the same room as the `_Mid`
-     bongos, which this style plays alongside them?
-  4. is the cowbell's 0.9 dB overshoot audible on a timekeeping part, or below
+  2. is the cowbell's 0.9 dB overshoot audible on a timekeeping part, or below
      the transient JND as `samples/README.md` predicts?
+  The other two renders exist for a borderline call and are played only then.
+  R11 is why this is the rendered loop and not the raw files: a sample
+  auditioned solo is the mistake feature-13 made with its ride, and
+  machine-gunning is audible only in a loop.
 - **Implement** — nothing.
-- **Green when** — a verdict per voice, **holds** or **fails**, and the route it
-  selects: both hold → Wave 6; either fails → Wave 4.
+- **Green when** — a verdict per voice, **usable** or **unusable**, and the route
+  it selects: both usable → Wave 6; either unusable → Wave 4.
+- **The bar is unusable, not imperfect.** Two of the inherited findings —
+  `claves_mf_3` at 5.6 kHz against `claves_mf` at 2.3 kHz reading as one player
+  or two, and the drier legacy claves sitting in the same room as the `_Mid`
+  bongos — are questions of taste that the feature-wide pass answers better,
+  with four other styles to compare against. Note them and pass them into Step
+  G4's brief; they fail a voice here only if the sample is unusable under this
+  style, not if it is merely odd.
 - **Refactor** — none.
 
 #### Step D4 — the cheap fix before the expensive one
@@ -1129,6 +1191,11 @@ Covers: R9, AC11, AC12
   `public/grooves/`, and `npm run test:gen` green including all seven gate
   checks per groove via `catalogue-gate.test.ts`, which runs `gateCandidate`
   over every catalogue entry.
+- **The mint takes the catalogue to sixty, and `pastPuzzles.test.ts` fails on
+  the new length.** It has been red since Epic 1's mint; this one reassigns
+  every recorded day once more and moves the `3 × GROOVES.length` arithmetic
+  with it. Expected, and not this step's to fix or regenerate. Record the new
+  catalogue length in the epic's report and move on.
 - **Refactor** — none.
 
 #### Step G2 — the manifest grows by six, and nothing else moves
@@ -1153,7 +1220,9 @@ Covers: R15, AC10
 - **Implement** — the literal in *covers all N catalogued grooves*, and, only if
   the measured spread demands it, one new ratio in both copies of *lets no mode
   dominate the answers*.
-- **Green when** — `npm run test:all` green; `npm run grooves:verify` clean;
+- **Green when** — `npm run test:all` green but for `pastPuzzles.test.ts`, whose
+  failure Step G1's mint caused and which no epic in this feature repairs;
+  `npm run grooves:verify` clean;
   `git status` shows every mp3 outside the six unchanged;
   `node scripts/grooves/rerender-check.ts` reports every pre-existing groove
   matching; the `grooves.lock.json` diff is the six new grooves and nothing it
@@ -1174,18 +1243,43 @@ Covers: R15, AC10
   that moved means Step A1's branch leaked, and the fix is in Track A.
 - **Refactor** — none.
 
-#### Step G4 — a person plays all six in full
+#### Step G4 — the brief for the feature-wide listening pass
 
-Covers: R16, AC13
+Covers: R16, AC13 — **discharged at** `roadmap.md` § *Wave 5 — the feature-wide
+listening pass*
 
-- **Test first** — none, and that is the point: *nothing here can hear*. Per
-  groove, in the listener's own words: do the bongos read as the lead rather than
-  as decoration; does the clave sit right against the tumbao; is it worth
-  playing a saxophone over? A gate pass is not a sign-off.
-- **Implement** — nothing. Values the sign-off moves — gains, `lean`, `swing`,
-  the figures, the arpeggio rotation — go back to Track C's file or Track A's
-  branch, and the six grooves re-render.
-- **Green when** — six verdicts in the report, one per groove.
+The per-groove sign-off does not happen here. It happens once, for all thirty
+new grooves, after Epic 6, grouped by style so the five can be judged against
+each other. What this step produces is the brief that pass reads when it reaches
+son montuno's six: no verdict is collected, and no track waits on one.
+
+- **Test first** — none, and that is still the point: *nothing here can hear*.
+  The gate ran in Step G1 and it blocks — six grooves through all seven checks
+  or no mint — but **a gate pass is not a sign-off**, and this step does not
+  pretend otherwise. It writes down what a person cannot be told by a number.
+- **Implement** — the mint's own bookkeeping, and then, in the epic's report,
+  the brief. Four things, and no more:
+  1. **Where.** The six uuids, their `public/grooves/*.mp3` paths, their seeds,
+     and the root, flavour and tempo of each, so the pass can play them in one
+     run without opening the catalogue.
+  2. **What to listen for in *these* six**, which is this style's question and
+     nobody else's: does the arpeggiated comp read as a **montuno**, or as a
+     syncopated strum — the exact thing C5's rotation rule was chosen to avoid,
+     and the one thing in this epic no assertion can distinguish; and does the
+     **2-3 clave sit where a player expects** against the tumbao, with the 2-side
+     in bars 0 and 2 and the 3-side in bars 1 and 3.
+  3. **What is already known.** Step D3's two usable/unusable verdicts, the two
+     measurements from Step D2, the taste questions D3 deliberately passed
+     forward (the two claves takes' brightness difference, and the legacy claves
+     against the `_Mid` bongos), and any substitution Track F made, in words.
+  4. **What a rejection would move**, so a proposed change carries its cost: the
+     bongo and clave gains and `humanize.lean` in `templates/son-montuno.ts`;
+     the figures in its `patterns` block; `swing` and `tempoRange`; the rotation
+     in Track A's `events.ts` branch. Every one of those re-renders all six
+     grooves and moves `events.fixture.json`; a gain or a `lean` change re-renders
+     nothing outside this template.
+- **Green when** — the report carries the four items above, the pass can find
+  and play the six from it alone, and `git status` is clean apart from the mint.
 - **Refactor** — none.
 
 ### Track H — The voice list
@@ -1232,23 +1326,32 @@ Order matters here more than usual, because the whole plan is an ordering claim.
    groove rather than twenty-four of them.
 3. **Wave 3, the demo path.**
    `npm run grooves -- --template son-montuno --seed <a> --seed <b> --seed <c> --out "$SCRATCH"`,
-   then `git status` — clean. Play the three mp3s on repeat. Nothing is in
-   `catalogue.json`, no uuid is issued, no mp3 is committed. **This is the step
-   the epic exists to get right**, and Waves 4–6 are chosen by what it hears.
+   then `git status` — clean. Play **one** of the three mp3s in full, once, and
+   answer Step D3's two questions; the other two are for a borderline call.
+   Nothing is in `catalogue.json`, no uuid is issued, no mp3 is committed.
+   **This is the only point in the whole feature's build that waits on a
+   person**, and Waves 4–6 are chosen by what it hears.
 4. **Waves 4–5, only if needed.** `npm run grooves:verify` clean and
    `rerender-check.ts` all-matching after each, so a re-sourcing or a
    substitution cannot silently move a committed groove.
 5. **Wave 6.** `npm run grooves:add 6 --template son-montuno`, then
    `npm run test:all`, `npm run lint`, `npm run build` (which runs
-   `grooves:verify` on `prebuild`), and `rerender-check.ts`.
+   `grooves:verify` on `prebuild`), and `rerender-check.ts`. All green **except
+   `src/features/daily-groove/data/pastPuzzles.test.ts`** under `npm run
+   test:all` — the one red this epic may leave standing, red before it started
+   and redder after its mint. Every other failure stops the epic, and the
+   fixture is not to be regenerated to clear it.
 6. **The player's path.** Open the app, reach one of the six by uuid, and play
    it: the bongos lead, the clave carries, the bass anticipates, and the rim is
    silent — or, under R13a, the rim carries and the claves are silent. Never
    both.
-7. **The report.** Per-voice audition verdicts (D3), the two measurements (D2),
-   the substitution if any in words (F2), six per-groove sign-offs (G4), and
-   whether the 5× dominance ratio survived sixty grooves, with the measured
-   per-mode counts (G2).
+7. **The report.** Per-voice usable/unusable verdicts (D3), the two measurements
+   (D2), the substitution if any in words (F2), the brief for the feature-wide
+   listening pass (G4), whether the 5× dominance ratio survived sixty
+   grooves, with the measured per-mode counts (G2), and the catalogue length
+   `pastPuzzles.test.ts` is now failing against. No per-groove verdict — that
+   is collected at `roadmap.md` § *Wave 5 — the feature-wide listening pass*,
+   after Epic 6.
 
 ## Requirement coverage
 
@@ -1265,14 +1368,14 @@ Order matters here more than usual, because the whole plan is an ordering claim.
 | R9 | G1 |
 | R10 | C5 |
 | R11 | B1, B2, B3, D1 |
-| R12 | D2, D3 |
+| R12 | D2, D3 — **stays in this epic.** It is a usable/unusable check on two samples before the mint, not a per-groove verdict, so it does not defer |
 | R13 | D4, E1, E2, E5 |
 | R13a | F1 |
 | R13b | F3 |
 | R13c | F2 |
 | R14 | E1, E2, E3 |
 | R15 | A2, E4, G2, G3 |
-| R16 | D3, G4 |
+| R16 | G4 writes the brief; **the sign-off itself is discharged at** `roadmap.md` § *Wave 5 — the feature-wide listening pass*, after Epic 6. Not unmet in this epic — deliberately deferred, and covered by the two together |
 | R17 | C6, H1 |
 | AC1 | C1 |
 | AC2 | C1 |
@@ -1281,19 +1384,29 @@ Order matters here more than usual, because the whole plan is an ordering claim.
 | AC5 | A1, A3, C4 |
 | AC6 | C2, C4 |
 | AC7 | C3, F1 |
-| AC8 | B1, B2, B3, D1, D2, D3 |
+| AC8 | B1, B2, B3, D1, D2, D3 — before any groove is minted, as the criterion says, and the one human step the build keeps |
 | AC9 | E1, E2, E3 |
 | AC10 | A2, E4, G2, G3 |
 | AC10a | F1, F3 |
 | AC10b | F2 |
 | AC11 | G1 |
 | AC12 | C5, G1 |
-| AC13 | G4 |
+| AC13 | G4 writes the brief and the six mp3 paths; **the per-groove verdict in a person's own words is recorded at** `roadmap.md` § *Wave 5 — the feature-wide listening pass*. A `/verify-epic` run on Epic 5 alone should read this as **discharged at the feature-wide listening pass**, not as not done |
 | AC14 | C6, H1 |
 
 R5 gained a step without changing its meaning: A1 is the branch, A3 is the
 suite learning what the branch produces, and C4 is the template's own figure
 under C5's four-step constraint.
+
+**R16 and AC13 are covered, not skipped, and the two halves are named so a
+verifier can find them.** This epic's half is Step G4's brief — the six uuids and
+mp3 paths, the two style-specific questions, what is already known, and what a
+rejection would move. The other half is the verdict itself, recorded per groove
+in the listener's own words at `roadmap.md` § *Wave 5 — the feature-wide
+listening pass*, which runs once after Epic 6 and discharges the same
+requirement for all five styles at once. Epic 5 closing with no per-groove
+verdict in its report is the plan working, not a gap in it. R12 is the one
+listening requirement that does **not** work that way, and its row says so.
 
 R8, R13a and R13c are the three an earlier reconcile cycle moved, and all three
 now land on assertions rather than on a type: R8 on Step C3's four assertions, R13a
@@ -1340,7 +1453,26 @@ F2's two cases with Step C2's pack check deciding which is legal.
   `DEFAULT_FILL` applies and `resolvePhrase` filters out its tom hits because
   the template declares no toms — leaving a kick-and-snare fill. The clave and
   the timekeeper play through it, per C3, so the fill bar is not bare. If the
-  Step G4 sign-off says it collapses anyway, the entry is added then.
+  feature-wide listening pass says it collapses anyway, the entry is added
+  then — after this epic has closed, with the six grooves re-rendering.
+- **`src/features/daily-groove/data/pastPuzzles.test.ts` is red on arrival, red
+  on close, and this epic neither repairs nor regenerates it.** It is the repo's
+  record of what players are holding: `3 × GROOVES.length` days pinned to the
+  grooves they resolved to at thirty. `selectGrooveForDate` indexes a seeded
+  shuffle of the *whole* catalogue, so Epic 1's mint reassigned every recorded
+  day, each style epic since has done it again, and Step G1's six — the
+  feature's last mint — take it to sixty. Growth is the sanctioned cause and the
+  test says so itself, citing feature-7 R6; regenerating the fixture from this
+  tree is what it forbids in as many words, since that "makes it agree with
+  whatever broke it". **Being the last mint does not make this epic the one that
+  re-baselines it.** Epic 6's `ROTA_EPOCH` bump reassigns everything again, and
+  `roadmap.md` § *Wave 5 — the feature-wide listening pass* can still pull a
+  style's six grooves and change the length after that. The single re-baseline
+  therefore runs after that pass has settled — `git archive` the last commit
+  before Epic 1's mint into a scratch tree, resolve `3 × GROOVES.length` days
+  against *that* catalogue, set `provenance.catalogueLength` to the final
+  number — and `roadmap.md` § *One test is red for the whole feature, on
+  purpose* is the authority for it.
 - **The audition is one file per seed because `passes: 4` is sixteen bars.** If
   the `musician` sets `passes: 2`, the audition needs each file played twice
   through instead.
@@ -1504,3 +1636,124 @@ and nothing re-renders — the guard reads the manifest rather than producing it
 It is expensive only in the other direction: tightening it back below the spread
 a shipped catalogue already has fails the generator and the app tier at once,
 with no mint able to fix it.
+
+### Cycle 4 — 2026-09-06 — the listening moves to the end of the feature
+
+**D6. The per-groove listening sign-off leaves this epic and is discharged at
+the feature-wide listening pass.** Feature-25 no longer signs off style by style.
+`roadmap.md` § *Wave 5 — the feature-wide listening pass* runs once, by hand,
+after Epic 6, plays all thirty new grooves grouped by style with the five styles
+back to back, records a verdict per groove in the listener's own words, and
+hands back a list of proposed changes, each naming the template field to move
+and the re-render cost. That pass discharges every epic's R16, this one
+included.
+
+The reason is comparison, not speed — though the build gains both. Whether the
+bongos read as the lead, whether the clave sits right against the tumbao, whether
+a montuno is worth playing a saxophone over: those are answered better with the
+reggae, the second line, the boom bap and the bossa playing beside it in one
+sitting than against the memory of a style heard a week earlier. The second
+gain is that the six epics now run end to end without stopping for a person in
+between, which was not possible while every epic ended on a human verdict.
+
+Nothing about minting changes. The six grooves are still minted inside this
+epic, the gate still runs and still blocks, and the mints across the feature
+stay strictly serial. What moves is only the sign-off that follows them.
+
+Changed: Architecture § *This epic ships its grooves unheard, and that is the
+design* (new), Step D3 (rewritten — see D7), Step G4 (rewritten from *a person
+plays all six in full* into the brief the feature-wide pass reads: where the six
+are, what to listen for in this style, what is already known, and what a
+rejection would move), Track A's role note, Track D's goal, Track G's name, goal
+and done-condition, steps 3 and 7 of *Integration and verification*, the
+`FILLS` assumption, and the coverage rows for R12, R16, AC8 and AC13 plus the
+note under that table.
+
+Cost, and it is a real one: six mp3s, six catalogue entries, six uuids and a
+lock diff are committed on the gate's word alone, and the gate cannot hear. A
+rejection at the feature-wide pass moves a value in `templates/son-montuno.ts`
+or the rotation in Track A's branch and re-renders all six — cheap in machine
+time, a `git revert` of committed audio in tree terms. Step G4's brief exists to
+make that fix cheap to aim rather than cheap to avoid.
+
+Cost of reversal: low, and it stays low. Putting the sign-off back is deleting
+Step G4's brief and restoring a per-groove listen before the epic closes. What
+cannot be recovered is the comparison — six grooves heard alone are heard alone,
+and hearing them again later beside the other four styles is the feature-wide
+pass by another name.
+
+**D7. R12 does not defer. The sample-usability check stays inside this epic, and
+it is the single human step remaining anywhere in feature-25's build.** R12 asks
+whether a bare wood transient machine-guns across four bars. That is a pass/fail
+on an *asset*, not a verdict on a groove, and it fails the two tests that make
+deferral a good trade everywhere else:
+
+- **It is not a matter of taste.** Machine-gunning is the artefact feature-9
+  spent a whole feature undoing; it is heard, not preferred, and the answer does
+  not change with what plays beside it.
+- **Comparison does not improve it.** The other four styles do not play the
+  claves or the cowbell, so a montuno's clave has nothing in the sitting to be
+  judged against. The feature-wide pass would be answering it with strictly less
+  than Track D has.
+
+And the cost of getting it wrong is asymmetric. Deferring means minting six
+grooves on a sample that may then have to be re-sourced under R13 — which
+re-renders all six, moves `events.fixture.json`, and rewrites the provenance,
+the README and `packSha256`, all of it after the catalogue entries and uuids are
+committed. Auditioning first is the whole reason the PRD's state diagram puts
+`Audition` before `Mint`, and R11 says it in as many words: nothing enters
+`catalogue.json` until both voices have been heard. Deferring R12 would not
+defer a verdict, it would delete the ordering the epic was built around.
+
+So the check stays, and it is kept as short as a check can be: **one sitting,
+one of Step D1's three renders, played in full once, both voices sounding
+throughout, before the mint.** Two questions, not four — the round robin and the
+cowbell's 0.9 dB overshoot. The two inherited findings that are questions of
+taste rather than of usability (the two claves takes' 2.3 kHz / 5.6 kHz
+brightness difference, and the drier legacy claves against the `_Mid` bongos)
+are noted and passed into Step G4's brief instead of being answered here. The
+bar is **unusable**, not imperfect. It is a rendered loop rather than the raw
+files because R11 forbids the solo audition — the mistake feature-13 made with
+its ride — and because machine-gunning is only audible over four bars.
+
+Changed: Step D3 (rewritten and renamed, R16 dropped from its coverage), Track
+D's goal, step 3 of *Integration and verification*, and the coverage rows for
+R12 and AC8.
+
+Cost of the other reading, had R12 deferred with the rest: one fully automated
+build, paid for with a re-source that lands after the mint. That is six grooves
+re-rendered, committed audio replaced, and a second pass through Tracks E and G
+— to buy back a listen that takes one play of one sixteen-bar file.
+
+Cost of reversing D7: none in code. It is one listen, and dropping it costs
+exactly the re-source risk above.
+
+### Cycle 5 — 2026-09-06 — the past-puzzles record is re-baselined once, at the end
+
+**D8. `src/features/daily-groove/data/pastPuzzles.test.ts` is left red by this
+epic too, and re-baselined once after the feature-wide listening pass.** It is
+the repo's record of what players are already holding, and it survives no
+catalogue growth: `selectGrooveForDate` indexes a seeded shuffle of the whole
+catalogue, so every added groove reassigns every recorded day, and
+`DAYS.length === 3 * GROOVES.length` moves with the length. Epic 1's mint turned
+it red; Step G1 takes the catalogue to sixty and turns it redder.
+
+This epic holds the feature's last mint, which makes it the natural candidate for
+the repair — and it is the wrong one. Epic 6 bumps `ROTA_EPOCH` and reassigns
+everything again, and `roadmap.md` § *Wave 5 — the feature-wide listening pass*
+can still pull a style's six grooves, so a fixture captured at this epic's close
+would be wrong twice over before the feature ships. Regenerating it from this
+tree is forbidden outright by the test itself, because a record regenerated from
+the tree that moved it agrees with whatever moved it — the one failure it exists
+to catch. So the re-baseline happens once, after that pass has settled, from a
+`git archive` of the last commit before Epic 1's mint.
+
+Changed: an *Assumptions* bullet naming the file, the reason this epic is not the
+one to fix it, and the procedure; Track G's *Done when*; Steps G1 and G2; and
+items 5 and 7 of *Integration and verification*, where it is named as the one red
+this epic may leave standing and the new catalogue length is added to the report.
+No template, contract or rendered groove moves.
+
+Cost of reversal: one re-baseline becomes two at best. Capturing the fixture here
+costs its own archived tree and is invalidated by Epic 6's epoch bump the
+following wave.

@@ -60,7 +60,8 @@ inside it, `/implement-quick-feature` builds it once nothing is open. Anything
 that fails the size test in those skills goes to `/create-feature` instead.
 
 Status runs 📝 **Drafted** → ❓ **Questions open** → 🛠 **Ready to build** →
-✅ **Done**.
+✅ **Done**. ⏸ **Parked** is off that line: analyzed, still valid, deliberately
+not built — the ticket says why.
 
 | # | Change | Status | Summary |
 | :-- | :-- | :-- | :-- |
@@ -71,8 +72,9 @@ Status runs 📝 **Drafted** → ❓ **Questions open** → 🛠 **Ready to buil
 | [5](quick/5-lick-variations.md) | Lick variations | ✅ Done | Gives every mode three licks instead of one, one of them picked for the day, so tapping a mode stops being a phrase you can memorise. |
 | [6](quick/6-six-mode-options.md) | Six mode options | ✅ Done | Offers six mode chips instead of four, laid out as two rows of three, with simple mode still major/minor. |
 | [7](quick/7-dev-groove-preview.md) | Dev groove preview | ✅ Done | Adds a dev-only page listing every groove by date, so upcoming ones can be played and their lick variations heard over them before they ship. |
-| [8](quick/8-comp-velocity-layer-jump.md) | Comp velocity layers | 🛠 Ready to build | Evens out the piano comp so a note crossing a sample-layer boundary stops jumping ~7.5 dB above the rest of the part. |
+| [8](quick/8-comp-velocity-layer-jump.md) | Comp velocity layers | ⏸ Parked | Evens out the piano comp so a note crossing a sample-layer boundary stops jumping ~7.5 dB above the rest of the part. Parked: the ride added in feature-24 masks the pop, so the symptom is gone while the crossings are not — fold it into the bass levelling when that happens. |
 | [9](quick/9-how-to-play-above-the-buttons.md) | How to play placement | ✅ Done | Puts the how-to-play box right under the subtitle and moves the transpose and share buttons down to sit directly above the groove box. |
+| [10](quick/10-unique-groove-names.md) | Unique groove names | ✅ Done | Makes every groove's name unique, renaming the three that clash today and rejecting a duplicate at minting time. |
 
 ---
 

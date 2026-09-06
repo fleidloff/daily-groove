@@ -16,6 +16,40 @@
 * The full catalogue re-renders and the quality gate plus `grooves:verify` still pass.
 * `src/lib/hash.ts` and the `events` draw order are untouched: the groove of the day and every past answer are unchanged.
 
+## Parked — 2026-09-06
+
+**The symptom is gone, so this is not being built.** Fred re-listened to
+`groove-40` after feature-24's ride landed (670652b) and the comp no longer pops.
+The ticket's first `## Done when` bullet is "nothing pops by ear", and it is
+already satisfied.
+
+**Masked, not fixed.** The analysis below was measured *after* the ride shipped,
+against the committed catalogue: `buildEvents` still puts three comp notes above
+0.8 on `groove-40`, 20 across the catalogue, and 494 at or below 0.45. Nothing
+about comp velocity changed. What changed is that `swung-sixteenth` and `shuffle`
+now carry a sustained cymbal in the same band as the piano — and those are two of
+the three feels with any dyn3 crossings at all. So the step is covered, not
+removed, and it comes back the moment the masking does: a new feel that plays no
+ride, a quieter mix, or the bass re-gain moving the balance.
+
+**Why not build it anyway.** The fix costs a full catalogue re-render, all five
+`SIGN_OFFS` in `gate.test.ts` voided, `gain.comp` re-measured in six templates,
+and a listening pass over 30 grooves. `docs/music.md` gives that judgement to the
+ear — "nothing here can hear" — and the ear currently says there is nothing
+wrong. Paying a whole-catalogue re-approval against a defect nobody can hear
+inverts the rule.
+
+**Where it should go instead.** Fold it into the bass levelling, which the same
+measurements rate the more audible defect: 901 of 1510 bass events (59.7%) sit
+above a boundary 6.9–21.8 dB wide, and `VELOCITIES.bass.medium` is exactly 0.80,
+so the line is crossed by construction rather than by jitter. Both voices are the
+same shape of change — pack, provenance, template gain, re-render — and the
+expensive half is paid once whether one voice is fixed or two. Comp on its own
+now means paying it twice. The two together fail the quick door's size test, so
+that goes to `/create-feature`.
+
+Everything below stands as analysed; only the decision to build changed.
+
 ## Open questions
 
 **Nothing is open.** Both are answered; the ticks below are the record, and the

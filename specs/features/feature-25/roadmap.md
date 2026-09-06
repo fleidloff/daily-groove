@@ -11,10 +11,12 @@ Bossa Nova, so the mechanism is proved by something Sam can hear. Epics 2–5 ar
 one style each, in decreasing order of how different they sound from what is
 already there. Son montuno goes last because it is the only one waiting on
 another feature's voices. Each style mints six grooves, so the catalogue goes
-from thirty to sixty — two months before anything repeats. Epic 6 is the release:
-it reshuffles all sixty into one new mix, and makes mixing new grooves through
-the old ones the rule for every addition after this one rather than something
-this feature did once.
+from thirty to sixty — two months before anything repeats. Epic 6 reshuffles all
+sixty into one new mix, and makes mixing new grooves through the old ones the
+rule for every addition after this one rather than something this feature did
+once. Nobody listens to any of it until Epic 6 is done: every sign-off is held
+back to one feature-wide pass, so the five styles are judged against each
+other rather than each against a catalogue the other four have not joined yet.
 
 ## Epics
 
@@ -69,7 +71,8 @@ what a template is
   through the new `patterns` block
 - register it in `templates/index.ts`, mint **six** grooves, re-render the
   manifest and the lock
-- listening sign-off: it sounds like the style it claims to be
+- a listening brief: what to listen for in these six, handed to Wave 5. The
+  sign-off itself is not collected here
 
 **Out of scope**
 - the other four styles — epics 2–5
@@ -100,7 +103,8 @@ the app has never sounded like.
 - the one-drop: the rim on 3 through `PLACEMENTS`, and a kick figure that leaves
   beat one empty — which needs the `patterns` block, because every figure in
   `KICK_PATTERNS` hits step 0 — plus the skank comp figure
-- mint six grooves, re-render the manifest and the lock, sign off by ear
+- mint six grooves, re-render the manifest and the lock, and write the
+  listening brief Wave 5 reads
 
 **Out of scope**
 - new voices. Everything it needs is in today's eleven
@@ -120,7 +124,7 @@ clave-ish kick, toms and rim earning their place, keys sparse.
 - `templates/second-line.ts`: blues / mixolydian, bass following the kick
 - its snare and kick figures, and a fill vocabulary — this is the style where
   the fill is part of the idiom rather than a bar-four punctuation
-- mint six grooves, re-render, sign off by ear
+- mint six grooves, re-render, and write the listening brief Wave 5 reads
 
 **Out of scope**
 - new voices
@@ -138,7 +142,7 @@ hard kick and snare and ghost notes underneath.
 **Scope**
 - `templates/boom-bap.ts`: dorian / aeolian / phrygian, swung sixteenths, sparse
   comp
-- mint six grooves, re-render, sign off by ear
+- mint six grooves, re-render, and write the listening brief Wave 5 reads
 
 **Out of scope**
 - new voices
@@ -160,12 +164,13 @@ voices feature-24 bought get played for the first time.
 - `templates/son-montuno.ts`: mixolydian / dorian / phrygian-dominant
 - the 2-3 clave on the claves, the tumbao bass, the montuno comp figure, bongos
   as a lead voice, cowbell keeping time
-- **the claves' and cowbell's listening pass.** Feature-24 verified their round
-  robins by counting files in `pack.json` and rendered neither. This epic is the
-  first to hear them, and owns finding out whether a bare wood transient
-  machine-guns over a four-bar loop
+- **the claves' and cowbell's listening pass, before the mint.** Feature-24
+  verified their round robins by counting files in `pack.json` and rendered
+  neither. This epic is the first to hear them, and owns finding out whether a
+  bare wood transient machine-guns over a four-bar loop. One sitting, two
+  questions, and the only human step in the whole build — see Wave 5's exception
 - budget for re-sourcing one voice if it does
-- mint six grooves, re-render, sign off by ear
+- mint six grooves, re-render, and write the listening brief Wave 5 reads
 
 **Out of scope**
 - the ride bell, unless the cowbell turns out to be the wrong sound for the part
@@ -252,14 +257,25 @@ graph LR
   E3 --> E6
   E4 --> E6
   E5 --> E6
+  E6 --> L[Wave 5 — the feature-wide listening pass<br/>every sign-off, once, by hand]
+  E1 -.->|brief| L
+  E2 -.->|brief| L
+  E3 -.->|brief| L
+  E4 -.->|brief + the retune procedure| L
+  E5 -.->|brief| L
 ```
+
+The dotted lines are the briefs, not dependencies: each style epic writes down
+what to listen for in its six grooves and ships without waiting for an answer.
 
 ## Execution waves
 
 - **Wave 1:** Epic 1
 - **Wave 2 (parallel):** Epic 2, Epic 3, Epic 4
 - **Wave 3:** Epic 5 — needs feature-24's claves and cowbell in the pack
-- **Wave 4:** Epic 6 — the mix over all sixty grooves, which is also the release
+- **Wave 4:** Epic 6 — the mix over all sixty grooves, and the last epic
+- **Wave 5:** the feature-wide listening pass — by hand, and the only place a
+  person is asked for anything
 
 **What "parallel" means in wave 2, honestly.** Each epic's own
 `templates/<style>.ts` and its half of `events.ts` are disjoint and can be
@@ -269,6 +285,135 @@ appends to the catalogue and rewrites the lock and the manifest. So the three
 epics can be built in parallel and must be *minted* one after another, in
 whatever order they finish. The minting step is minutes; the template is the
 work.
+
+The mints serialise because two of them cannot write the same lock file, which
+is a queue a machine clears in minutes. That is the only thing left that runs
+one-at-a-time. Waiting on a person used to be the other, and it is not one any
+more.
+
+## Wave 5 — the feature-wide listening pass
+
+**Every listening sign-off in this feature happens here, once, and nowhere
+else.** Epics 1–5 each mint six grooves and ship them *unheard*. No epic waits
+for a person, no track branches on a verdict, and the build runs from Epic 1 to
+the end of Epic 6 without stopping. What each epic writes instead of a verdict
+is a **brief**: what a listener should listen for in its six grooves, and where
+the mp3s are.
+
+The reason is not impatience. Four of the five styles are asking a question that
+only a comparison can answer — does this read as its own feel, next to the other
+ten? Boom-bap says so outright: its R8 sits it "between three feels that already
+exist", and Epic 4 alone can never hear that. Judging each style the day it was
+built, against a catalogue the other four have not joined yet, is judging it
+against the wrong thing.
+
+### What it does
+
+1. **Plays all thirty new grooves, grouped by style, the five styles back to
+   back** — bossa nova, reggae one-drop, second line, boom-bap, son montuno.
+   Each style's six in a run, then the next style, so the ear carries one across
+   to the other.
+2. **Records a verdict per groove, in the listener's own words**, against that
+   style's brief. This is what discharges Epic 1's R24/AC17, Epic 2's R12/AC10,
+   Epic 3's R10/AC10, Epic 4's R10/AC9 and Epic 5's R16/AC13. A gate pass is not
+   a sign-off and never was; the gates all ran, inside the epics, and blocked
+   there on their own terms.
+3. **Answers the distinctness question for each style** — Epic 4's R8, and the
+   same question the other four are implicitly asking. This is the part that
+   could not be done before now.
+4. **Runs boom-bap's retune loop, if it comes to that.** Epic 4's R9, R9a and R9b
+   are preserved whole: a negative first verdict retunes `swing`, `tempoRange`
+   and `patterns.snareGhosts` and re-mints on the same seeds, a second hearing
+   is final, and there is no third. A negative second verdict pulls boom-bap's
+   six grooves. Epic 4's spec carries the procedure; this pass executes it.
+5. **Hands back a list of proposed changes**, each naming the template field to
+   move and what re-rendering it costs.
+6. **Re-baselines `pastPuzzles.test.ts` last**, once the catalogue's final length
+   is known — see below. Nothing before this point touches it.
+
+### One test is red for the whole feature, on purpose
+
+`src/features/daily-groove/data/pastPuzzles.test.ts` is the repo's record of
+what players are already holding: `3 × GROOVES.length` days, each pinned to the
+groove it resolved to when the fixture was captured. It passes today at thirty
+grooves. **It goes red at Epic 1's mint and stays red until this feature is
+finished**, and that is expected rather than a regression.
+
+Two of its checks cannot survive a growing catalogue, and both say so in their
+own failure messages. `selectGrooveForDate` indexes a seeded shuffle of the
+*whole* catalogue, so thirty-one grooves reassign every past day — the test calls
+that growth "sanctioned (feature-7 R6)" and branches its message on it. And
+`DAYS.length === 3 * GROOVES.length` is arithmetic that breaks at 36 and again at
+42, 48, 54 and 60. Epic 6's epoch bump reassigns everything a seventh time.
+
+**No epic repairs it, and nothing regenerates it from the tree that broke it.**
+The test forbids exactly that, in as many words: regenerating from today's tree
+"makes it agree with whatever broke it", which is the one failure the record
+exists to catch. An epic that finds it red leaves it red and says so.
+
+It is re-baselined **once**, as the last thing in the feature, after Wave 5 has
+settled — because Wave 5 can still change the catalogue's length by pulling a
+style's six grooves, and a fixture captured before that would be wrong within the
+hour. The procedure is the one the test prints: `git archive` the last commit
+before Epic 1's mint into a scratch tree, resolve `3 × GROOVES.length` days
+against *that* catalogue, and set `provenance.catalogueLength` to the final
+number.
+
+This is the one place the "the run does not stop for a person" rule has a cost
+worth naming: a red suite for the length of the feature hides any *other*
+regression in that file. Nothing else in it moves, which is what makes the trade
+affordable.
+
+### What it costs, said plainly
+
+Thirty grooves are committed — audio, lock and manifest — before anyone has
+heard one. So every change this pass proposes is a *post-mint* change, and the
+epics price that consistently: re-rendering a style's six mp3s, and re-running
+whatever sign-off the change touches. Deferring does not create that cost, it
+guarantees it, because a first hearing this late can no longer be free.
+
+Three things make it affordable.
+
+**The mechanism already exists and is the designed path.** `npm run grooves`
+walks the committed `catalogue.json` and re-renders every entry through the four
+stages. A groove is `{ id, uuid, template, seed }`; a retune edits the template
+and the id and the uuid never move. `scripts/grooves/README.md` says it outright —
+"changing the generator and re-rendering is how the whole catalogue is meant to
+change… the diff is reviewed by listening" — and `rerender-check.ts` polices it.
+So applying a Wave 5 finding is: edit one template file, run one command, commit
+the six mp3s that changed. Nothing is pulled and no uuid is burned.
+
+**A change is scoped to one style.** Each style's six grooves render from one
+template file, so a finding costs six files, not sixty.
+
+**Almost every knob is answer-safe.** `swing`, the figures, the pools, the mix
+and the pans move the audio and leave `bpm`, `root` and `flavour` exactly where
+they were, so the puzzle's answer is untouched. **`tempoRange` is the exception**
+— `bpm` is drawn from it and `bpm` is part of what the player is shown, so
+retuning a tempo rewrites those six answers. Harmless inside this feature, since
+nobody has played these grooves before the release; worth knowing because it is
+the one Wave 5 finding that is not free.
+
+### The one exception, named so it is not a surprise
+
+**Epic 5 keeps one listen, and it is the only human step anywhere in the build.**
+Before it mints, someone plays one rendered demo through once and answers two
+questions about the raw samples: do the claves and the cowbell sound at all, and
+does a bare wood transient machine-gun over a four-bar loop. That is a pass/fail
+on an *asset*, not a verdict on a groove — machine-gunning is heard, not
+preferred, so taste does not enter — and R11's `Audition → Mint` ordering is
+built on it. Deferring it to Wave 5 would mean minting six grooves on a sample
+R13 may then force a re-source of, re-rendering all six after their uuids and
+audio are committed, and Wave 5 would answer it with *less* information than
+Epic 5 has, because no other style plays either voice. Epic 5's Step D3 is the
+sitting and its Cycle 4 log carries the reasoning.
+
+Everything else that stops a build here is a machine finding, not a verdict: the
+quality gate, the seven thresholds, the uniqueness assertions, and Epic 3's two
+"stop and report" contingencies — a density band that will not fit, and six
+grooves not reachable inside the attempt budget. Those still stop their own epic
+where they are, and should.
+
 
 ## Assumptions
 

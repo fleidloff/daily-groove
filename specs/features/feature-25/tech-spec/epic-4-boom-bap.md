@@ -5,67 +5,121 @@ Roadmap: [../roadmap.md](../roadmap.md)
 
 ## Approach
 
-The epic is one template file and one judgement, and the judgement can send the
-template back once and then stop the epic dead — so the plan is built around
-reaching the hearing cheaply and being able to walk away from it having written
-nothing. Two tracks run in parallel first: the template itself, checked against
-a *candidate registry* (`[...allTemplates(), boomBap]`) so every whole-registry
-rule is satisfied before the template is registered at all, and a **rehearsal
-mint** — a small committed script that mints six grooves into a scratch tree
-under `os.tmpdir()`, from a pinned start seed, leaving `catalogue.json`, the
-manifest, the lock and `public/grooves/` untouched. The six scratch mp3s are
-what gets heard. Only a positive verdict commits: the registry line, the mint,
-the manifest refresh and the `docs/music.md` row all land after the verdict, in
-that order.
+The epic is one template file and six grooves, and the judgement that decides
+whether boom-bap earned its place no longer lives inside it. Every human
+listening sign-off in feature-25 has moved to the **feature-wide listening
+pass** — `## Wave 5 — the feature-wide listening pass` in
+[../roadmap.md](../roadmap.md) — which runs once, by hand, after Epic 6, and
+hears all thirty new grooves grouped by style, the five styles back to back. So
+this epic runs end to end without stopping for a person: it mints once with the
+`swing`, `tempoRange` and `patterns.snareGhosts` it declares, ships those six
+grooves, and closes.
 
-That inversion is the whole design. R9a's stopping outcome asks for a catalogue
-and a lock "unchanged by this epic" (AC8a); minting first and reverting later
-can *reach* that state, but only by regenerating derived files that two other
-wave-2 epics are appending to at the same time. Rehearsing first makes AC8a a
-tautology — there is nothing to revert, because nothing was written — and makes
-R9's retune loop a second rehearsal rather than a rollback.
+What is left here is machine work, and it is still built around rehearsing
+before committing. Two tracks run in parallel first: the template itself, checked
+against a *candidate registry* (`[...allTemplates(), boomBap]`) so every
+whole-registry rule is satisfied before the template is registered at all, and a
+**rehearsal mint** — a small committed script that mints six grooves into a
+scratch tree under `os.tmpdir()`, from a pinned start seed, leaving
+`catalogue.json`, the manifest, the lock and `public/grooves/` untouched. Then
+the epic ships, unconditionally: the registry line, the mint, the manifest
+refresh, the `docs/music.md` row and the listening brief, in that order.
+
+The two-hearing loop the PRD builds is preserved in full, and only its location
+moves. R9's retune, R9a's final second hearing and R9b's ban on a third are the
+procedure Track D and Track F set out below, executed at Wave 5 rather than
+here. If the feature-wide pass returns a negative first verdict for boom-bap, the
+retune, the re-render and the second hearing all happen there under exactly R9a's
+and R9b's rules; if the second verdict is negative, boom-bap's six grooves are
+pulled from the catalogue there, which is AC8a's outcome reached at a later
+moment.
+
+The rehearsal still earns its place, for a reason that has changed. It was the
+thing that made AC8a's "unchanged by this epic" a tautology; with the verdict
+deferred the epic commits either way, so that is not what it buys any more. What
+it buys now is **the seed list**. `rehearsal.json` pins the `startSeed` and the
+six `(template, seed)` pairs, and `commit` refuses to run if the catalogue moved
+underneath it — so a retune weeks later re-renders *the same six questions in a
+different feel*, and the second hearing is directly comparable to the first. That
+property is the Cycle 1 log's Q1 decision, and two hearings that may be days apart
+need it more than two hearings an hour apart ever did.
 
 ## Architecture
 
-### The branch, and what each outcome costs
+### The branch, and where each outcome is reached
 
 ```mermaid
 flowchart TD
   A[Track A — templates/boom-bap.ts<br/>candidate registry green] --> C
   B[Track B — rehearse.ts<br/>mint to a scratch tree] --> C
-  C[Track C — rehearsal mint of six<br/>gate + per-groove sign-off<br/>R8 distinctness hearing] -->|reads as its own feel| E[Track E — ship<br/>register, commit the mint,<br/>music.md row]
-  C -->|does not| D[Track D — retune swing, tempo,<br/>ghost balance + re-rehearse<br/>second hearing, final]
-  D -->|reads as its own feel| E
-  D -->|does not| F[Track F — stop<br/>unregistered template,<br/>new-styles.md records both]
+  C[Track C — rehearsal mint of six<br/>gate + rehearsal.json<br/>listening brief written, nothing heard] --> E[Track E — ship<br/>register, commit the mint,<br/>music.md row, brief on the record]
+  E --> W{{Wave 5 — the feature-wide listening pass<br/>thirty grooves, five styles back to back}}
+  W -->|reads as its own feel| G[the row stands,<br/>F2 closes the record]
+  W -->|does not| D[Track D at Wave 5 — retune swing, tempo,<br/>ghost balance, re-render the same six seeds,<br/>second hearing, final]
+  D -->|reads as its own feel| G
+  D -->|does not| F[Track F at Wave 5 — pull the six,<br/>unregister the template,<br/>new-styles.md records both]
 ```
 
-There is no wave after E/F, which is how R9b is enforced: the plan has nowhere
-to put a third hearing.
+The epic is the top half — A, B, C, E, and then it closes. Everything below the
+`Wave 5` node is procedure this spec writes down and does not execute. There is
+no branch out of D other than G and F, which is how R9b is enforced: the
+procedure has nowhere to put a third hearing, and Wave 5 is the last thing in the
+feature.
 
-**What the stopping outcome costs, as planned:** one file added
-(`templates/boom-bap.ts`), one test file added, one row edited in
-`specs/new-styles.md`. `git status` shows nothing else. `catalogue.json`,
-`grooves.lock.json`, `src/features/daily-groove/data/grooves.generated.ts` and
-`public/grooves/` were never opened for writing, so AC8a is provable by
-`git status --porcelain` and `npm run grooves:verify` rather than by inspection.
+### This epic ships its grooves unheard, by design
 
-**What it would have cost if the six were minted and committed before the
-hearing**, which is the ordering this spec rejects:
+Say it plainly: Track E commits six mp3s that no person has listened to. All
+seven gate checks have passed them and the rehearsal has proved they render, but
+the per-groove sign-off R10 asks for and the distinctness verdict R8 asks for both
+happen at Wave 5, after the grooves are already in the catalogue.
 
-- six rows deleted from `catalogue.json`, six mp3s deleted from
-  `public/grooves/`;
-- `npm run grooves` re-run to rewrite the manifest and the lock — a `git revert`
-  will not do it, because by then Epics 2 and 3 have appended their own grooves
-  to the same two derived files and a revert would take theirs out with ours;
-- six groove ids burned permanently. `catalogue.test.ts`'s `never re-issues an
-  id` and its `RETIRED` list mean the numbers cannot come back, so the stopping
-  outcome would leave a six-wide hole in the numbering and a shared-test edit to
-  record it;
-- `npm run grooves:verify` and `rerender-check.ts` re-run to prove the remaining
-  grooves are bit-identical, because the lock was rewritten wholesale;
-- and the one that is not mechanical: a reviewer can no longer tell by reading
-  the diff that nothing shipped. "Unchanged by this epic" becomes a claim about
-  two generated files instead of an empty `git status`.
+**Why the trade was made.** R8's question is not "is this groove good" — it is
+"does boom-bap read as its own feel", and that is a comparison. Asked at the end
+of this epic it can only be asked against two committed grooves picked by tempo,
+alone, on the day the template was written: the hardest version to answer honestly
+and the easiest to answer generously. At Wave 5 the five new styles play back to
+back and boom-bap is judged in the company it will actually keep — which is what
+R8 is really asking, and what this epic could never do alone.
+
+**What the trade costs, and it is a command rather than a rescue.** A negative
+first verdict is a *post-mint* retune, and the mechanism for it already exists:
+edit the three fields in `boom-bap.ts` and run `npm run grooves`, which walks the
+committed catalogue and puts every entry back through the four stages. The six
+boom-bap mp3s change bytes; the manifest and the lock follow. `catalogue.json` is
+that command's *input*, not its output — its entries are
+`{ id, uuid, template, seed }` — so no id, uuid or seed moves, which is the
+generator README's § *Ids never move*, and `rerender-check.ts` and
+`rerenderReport.ts` exist to police exactly this operation. The README says it
+outright: "changing the generator and re-rendering is how the whole catalogue is
+meant to change. Expect the committed mp3s to change bytes when you do — that is
+the point of the command, and the diff is reviewed by listening." So the price of
+a positive Wave 5 retune is one template file edited, one command, six changed
+mp3s plus two changed generated files, and the quality gate re-run over the whole
+catalogue. `rehearse.ts` has no part in it; that script is for *minting*, which
+is a different operation.
+
+**One of the three retunable fields is answer-bearing; the other two are not.**
+`bpm` is drawn from `tempoRange` at render time, so moving the tempo range
+changes what those six grooves *are*, not only how they sound — same id, same
+uuid, same seed, a different question. `swing` and `patterns.snareGhosts` move
+the rendered audio and leave `bpm`, `root` and `flavour` exactly where they were.
+Here it is harmless: nobody has played these six, they ship inside an unreleased
+feature, and `docs/music.md`'s row is written after the fact either way. It is
+worth writing down because the same retune on a groove already in players' hands
+would be a different act — the frozen list in `docs/music.md` exists precisely
+because re-rendering can re-answer a puzzle somebody has already solved.
+
+**What it costs on the path nobody wants** is larger, and this spec does not hide
+it. A negative *second* verdict means pulling six grooves out of a committed
+catalogue: six rows deleted from `catalogue.json`, six mp3s deleted from
+`public/grooves/`, the manifest and the lock rewritten over a catalogue Epics 2
+and 3 have also appended to — a `git revert` will not do it, because it would
+take their grooves out with ours — a `rerender-check.ts` run to prove the
+remaining grooves are bit-identical, and six groove ids burned permanently,
+because `catalogue.test.ts`'s `never re-issues an id` and its `RETIRED` list mean
+the numbers cannot come back. That is the exact cost the Cycle 1 log's Q1 decision
+was written to avoid, and deferring the verdict brings it back. It is paid only if
+a person says no twice, and Track F is where.
 
 ### Where boom-bap sits between its neighbours
 
@@ -145,19 +199,20 @@ not the reverse.
 | :-- | :-- | :-- |
 | `templates/boom-bap.ts`, `templates/boom-bap.test.ts` | nobody | Waves 1, 3 |
 | `scripts/grooves/rehearse.ts`, `rehearse.test.ts` | nobody | Wave 1 |
-| `templates/index.ts`, `templates/index.test.ts` | Epics 2, 3 | **ship branch only** |
-| `catalogue.json`, `grooves.lock.json`, `grooves.generated.ts`, `public/grooves/` | Epics 2, 3 | **ship branch only**, in one serial mint slot |
-| `docs/music.md` (one feel-table row) | Epics 1, 2, 3 | **ship branch only** |
-| `specs/new-styles.md` (the boom-bap row) | nobody | **stop branch only** |
+| `templates/index.ts`, `templates/index.test.ts` | Epics 2, 3 | Track E, unconditionally |
+| `catalogue.json`, `grooves.lock.json`, `grooves.generated.ts`, `public/grooves/` | Epics 2, 3 | Track E, in one serial mint slot |
+| `docs/music.md` (one feel-table row) | Epics 1, 2, 3 | Track E |
+| `specs/new-styles.md` (the boom-bap row) | nobody | Track E writes the brief; **Wave 5** closes it |
 | `events.ts` | Epics 2, 3 | never |
 | `types.ts` | Epic 1 | never |
 
-Everything shared with Epics 2 and 3 sits behind the verdict, so a stopped
-boom-bap cannot break their minting: it never entered the registry, never
-appended to the catalogue and never rewrote the lock. The last two rows are the
-ones the retune could have reached and does not: every parameter R9 names —
-swing, tempo range, ghost figure — is a field of `boomBap`, so the second hearing
-costs the same one file the first one did.
+Nothing sits behind a verdict any more, so boom-bap takes the shared minting slot
+in Wave 2 the way Epics 2 and 3 do, and serialising that slot is the only
+coordination the three of them need. The last two rows are the ones Wave 5's
+retune could reach and does not: every parameter R9 names — swing, tempo range,
+ghost figure — is a field of `boomBap`, so the second hearing costs one template
+file plus a re-render of six mp3s, and `types.ts` and `events.ts` stay shut either
+way.
 
 ## Contracts
 
@@ -317,7 +372,7 @@ re-rendering is already assumed by `rerender-check.ts` and by
 falls back to comparing `(template, seed)` and says so in the report rather than
 shipping unheard audio.
 
-### C5 — what the ship branch appends
+### C5 — what Track E appends, unconditionally
 
 - `templates/index.ts`: one import, one `[boomBap.id]: boomBap` entry, one name
   in the trailing re-export.
@@ -325,19 +380,31 @@ shipping unheard audio.
   suits it`, asserting `['aeolian', 'dorian', 'phrygian']` sorted.
 - `docs/music.md`: one row in the feel table, and the count in the sentence above
   it (Epic 1 rewrote that heading; this epic only increments what it says).
-- **`specs/new-styles.md` is not touched on this branch.** AC10 asks that
-  *exactly one* of the two documents records the outcome.
+- **`specs/new-styles.md` gains a pending entry, not an outcome.** AC10 asks that
+  *exactly one* of the two documents record boom-bap's **outcome**; at the end of
+  this epic that is `docs/music.md`, which says what shipped. The new-styles entry
+  carries the declared values, what a listener should listen for, the two
+  neighbours R8 compares against and the rehearsal seed list — a hand-off to Wave
+  5, worded as pending, with no verdict in it. Step F2 completes it at Wave 5.
 
-### C6 — what the stop branch leaves
+### C6 — what Wave 5's stop procedure leaves
 
-- `templates/boom-bap.ts` and `templates/boom-bap.test.ts` stay, **unregistered**.
-  `catalogue.test.ts`'s `draws grooves from every template` requires every
-  *registered* template to have at least one groove, so a registered template
-  with no grooves would fail the suite; a template file that no registry names
-  passes everything (AC5's second half).
+Reached only on a negative second verdict at Wave 5. It is a removal now rather
+than an abstention, because the six grooves are already committed when Wave 5
+begins:
+
+- `templates/boom-bap.ts` and `templates/boom-bap.test.ts` stay, **unregistered
+  again** — Step E1's line comes back out. `catalogue.test.ts`'s `draws grooves
+  from every template` requires every *registered* template to have at least one
+  groove, so unregistering and removing the six catalogue rows are one change and
+  not two (AC5's second half).
+- the six grooves leave `catalogue.json`, the six mp3s leave `public/grooves/`,
+  and `npm run grooves -- --manifest-only` rewrites the manifest and the lock. Six
+  ids are burned and are recorded in `catalogue.test.ts`'s `RETIRED` list.
+- `docs/music.md`'s boom-bap row is removed, so `specs/new-styles.md`'s row is
+  again the only record and AC10 holds — with the direction it holds in flipped.
 - `specs/new-styles.md`'s boom-bap row records both hearings, what the retune
   changed, and whether it moved the verdict at all (R11, AC10).
-- `docs/music.md` is not touched on this branch, for the same AC10 reason.
 
 ## Tracks
 
@@ -357,8 +424,9 @@ shipping unheard audio.
 
 ### Track B — The rehearsal rig
 
-- **Goal** — six grooves can be minted, gated and heard without a single write
-  inside the repo, and the same start seed gives the same six twice.
+- **Goal** — six grooves can be minted, gated and rendered to mp3 without a
+  single write inside the repo, and the same start seed gives the same six twice —
+  in this epic and again at Wave 5.
 - **Owns** — `scripts/grooves/rehearse.ts` (new),
   `scripts/grooves/rehearse.test.ts` (new)
 - **Role** — `musician` (it owns generator files; the musical content is nil, and
@@ -370,86 +438,117 @@ shipping unheard audio.
 - **Done when** — `npm run test:gen` is green and `rehearse.test.ts` proves the
   four committed artefacts are byte-identical across a rehearsal.
 
-### Track C — The first hearing
+### Track C — The rehearsal mint, and the listening brief
 
-- **Goal** — six boom-bap grooves rendered to a scratch tree, all seven gate
-  checks passing, a per-groove listening sign-off, and R8's distinctness verdict
-  in words, before anything is decided.
-- **Owns** — nothing under version control. Its product is the scratch tree
-  under `os.tmpdir()`, its `rehearsal.json`, and the epic's report.
+- **Goal** — six boom-bap grooves rendered to a scratch tree with all seven gate
+  checks passing, a `rehearsal.json` that pins the seed list, and a written brief
+  saying what a listener should listen for in these six when Wave 5 plays them.
+  **Nobody listens in this epic.**
+- **Owns** — nothing under version control. Its product is the scratch tree under
+  `os.tmpdir()`, its `rehearsal.json`, and the brief in the epic's report.
 - **Role** — `musician`
 - **Depends on** — A (a template to mint from), B (the rig)
 - **Parallel with** — none
 - **Done when** — six mp3s exist in the scratch tree, `git status --porcelain` is
-  empty, and two verdicts are recorded: R10's per groove, and R8's one for the
-  style.
+  empty, `rehearsal.json` records the start seed and the six `(template, seed)`
+  pairs, and the brief is written: the per-groove listening points, R8's
+  distinctness question with its two neighbours named, and where the mp3s are.
 
-### Track D — The retune and the second hearing
+**The machine half still blocks.** C1 and C4 are real gates — if the rehearsal
+cannot produce six gated grooves, or if `git status` is not empty afterwards, the
+epic stops here and the fix is in the template, not in a wider band bolted on
+after the fact. Only C2 and C3, the listening half, became briefs.
 
-Runs **only** if Track C's distinctness verdict is negative.
+### Track D — the retune procedure, executed at Wave 5
+
+**This is not a track of this epic.** It is the written procedure the
+feature-wide listening pass executes if — and only if — it returns a negative
+distinctness verdict for boom-bap. The epic does not wait for a verdict and does
+not run these steps; it ships (Track E) and closes. Steps D1–D4 are set down here,
+in the epic that knows the template, so whoever runs Wave 5 has the procedure
+rather than having to invent it.
+
+R9, R9a and R9b bind it exactly as the PRD wrote them: one retune, one final
+second hearing, never a third.
 
 - **Goal** — `swing`, `tempoRange` and `patterns.snareGhosts` moved, with a
-  written prediction of what each change should do *before* the render, and a
-  second hearing that is final.
-- **Owns** — `scripts/grooves/templates/boom-bap.ts`,
-  `scripts/grooves/templates/boom-bap.test.ts`, and a second scratch tree. All
-  three retuned parameters are fields of `boomBap`, so this track owns every file
-  it needs and shares none with Epics 1, 2 or 3 — `types.ts` and `events.ts`
-  stay shut.
+  written prediction of what each change should do *before* the render, the same
+  six seeds re-rendered from the retuned template, and a second hearing that is
+  final.
+- **Owns**, at Wave 5 — `scripts/grooves/templates/boom-bap.ts`,
+  `scripts/grooves/templates/boom-bap.test.ts`, a fresh scratch tree, and — only
+  if the second verdict is positive — the six committed grooves' rendered audio,
+  and the manifest and lock that `npm run grooves` rewrites with them. All three
+  retuned parameters are fields of `boomBap`, so `types.ts` and `events.ts` stay
+  shut, as they do in the epic.
 - **Role** — `musician`
-- **Depends on** — C's verdict
-- **Parallel with** — none
+- **Runs when** — Wave 5's first verdict for boom-bap is negative
 - **Done when** — AC8 holds — three parameters changed, the prediction recorded
   before the re-render, the six re-rendered from the retuned template and heard
-  again — and one of Track E or Track F follows.
+  again — and exactly one of two things follows: the retuned six replace the
+  shipped six and Step F2 closes the record positive, or Track F pulls them.
 
 ### Track E — Ship the six
 
-Runs if the verdict at **either** hearing is positive.
+Runs **unconditionally**. There is no verdict to wait for: the six grooves are
+registered, minted and committed, and pulling them is Wave 5's business if it
+comes to that.
 
 - **Goal** — boom-bap is a registered feel with six grooves in the catalogue,
-  nothing else re-rendered, and the feel table says so.
+  nothing else re-rendered, the feel table says so, and the listening brief is on
+  the record where Wave 5 will find it.
 - **Owns** — `scripts/grooves/templates/index.ts`,
   `scripts/grooves/templates/index.test.ts`, `scripts/grooves/catalogue.json`,
   `scripts/grooves/grooves.lock.json`,
   `src/features/daily-groove/data/grooves.generated.ts`, six new files under
-  `public/grooves/`, `docs/music.md`
+  `public/grooves/`, `docs/music.md`, `specs/new-styles.md`
 - **Role** — `musician`
-- **Depends on** — C's or D's positive verdict, and a free minting slot (Epics 2
-  and 3 mint from the same four files)
-- **Parallel with** — none (F is its alternative, not its sibling)
-- **Done when** — AC5, AC6, AC8b, AC10 and AC11 hold and `npm run grooves:verify`
-  is clean.
-
-### Track F — Stop and record
-
-Runs **only** if Track D's second verdict is negative.
-
-- **Goal** — the epic ends with a template on disk, two verdicts on the record,
-  and a repo whose generated artefacts this epic never touched.
-- **Owns** — `specs/new-styles.md`,
-  `scripts/grooves/templates/boom-bap.test.ts` (one assertion)
-- **Role** — `musician`
-- **Depends on** — D's negative verdict
+- **Depends on** — C (a rehearsal to commit and a brief to record), and a free
+  minting slot (Epics 2 and 3 mint from the same four files)
 - **Parallel with** — none
-- **Done when** — AC8a and AC10 hold, `npm run test:gen` is green with the
-  template unregistered, and `git status --porcelain` names only the two boom-bap
-  files and `specs/new-styles.md`.
+- **Done when** — AC1, AC5, AC6, AC10 and AC11 hold, `npm run grooves:verify` is
+  clean, the full set of *Integration and verification* is green **except
+  `src/features/daily-groove/data/pastPuzzles.test.ts`**, and the brief names the
+  six committed ids. AC8b's antecedent is a
+  positive verdict, so it is graded at Wave 5 and not here.
+
+### Track F — the record, and the stop procedure, executed at Wave 5
+
+Also not a track of this epic. **Step F2 runs at Wave 5 whichever way the verdict
+goes** — the pending entry Step E5 wrote is closed with the verdicts either way.
+Steps F1 and F3 run only on a negative second verdict, and they are a removal
+rather than an abstention, because the six grooves are in the catalogue before
+Wave 5 begins.
+
+- **Goal** — the feature ends with boom-bap's outcome on the record, and — on the
+  negative-then-negative path — a catalogue, a lock and a manifest that carry no
+  boom-bap groove and are internally consistent again.
+- **Owns**, at Wave 5 — `specs/new-styles.md`; and on the stop path
+  `scripts/grooves/templates/index.ts`, `templates/index.test.ts`,
+  `catalogue.json`, `grooves.lock.json`, `grooves.generated.ts`, the six files
+  under `public/grooves/`, `docs/music.md`
+- **Role** — `musician`
+- **Runs when** — F2 always, at Wave 5; F1 and F3 on a negative second verdict
+- **Done when** — AC8a and AC10 hold, `npm run test:gen` and
+  `npm run grooves:verify` are green, and — on the stop path — no `boom-bap`
+  groove is in the catalogue.
 
 ## Execution waves
 
 - **Wave 1 (parallel):** Track A, Track B
 - **Wave 2:** Track C — needs a template (A) and the rig (B)
-- **Wave 3:** Track D if C's verdict is negative; **otherwise Track E** and the
-  epic is over
-- **Wave 4:** reached only through D — Track E **or** Track F, never both,
-  chosen by D's verdict
+- **Wave 3:** Track E — unconditional. **The epic closes here.**
 
-There is no Wave 5, which is R9b.
+Wave 1's two tracks own disjoint paths. Wave 3 re-opens one file Wave 1 owned —
+`boom-bap.test.ts`, whose registration assertion Step E1 flips — which is safe
+because no two tracks in the same wave name the same path.
 
-Wave 1's two tracks own disjoint paths. Waves 3 and 4 re-open files Wave 1 owned
-(`boom-bap.ts`, its test), which is safe because no two tracks in the same wave
-name the same path.
+**After the feature, at Wave 5** — the feature-wide listening pass, not part of
+this epic's schedule and nothing in the feature waits on it: the per-groove
+sign-offs and the distinctness verdict; then Track D on a negative first verdict;
+then Step F2 always, and Steps F1 and F3 on a negative second verdict.
+
+There is no third hearing anywhere in that procedure, which is R9b.
 
 ## Implementation
 
@@ -706,7 +805,7 @@ Covers: R6
 - **Refactor** — none. This is what lets registration be the last, reversible
   step instead of the first.
 
-### Track C — The first hearing
+### Track C — The rehearsal mint, and the listening brief
 
 #### Step C1 — six candidates, rehearsed and gated
 
@@ -725,47 +824,64 @@ Covers: R6, AC5, AC6
   them, and `git status --porcelain` is empty.
 - **Refactor** — record the rejection reasons even on a clean run. A template
   that needed twenty attempts for six grooves is telling you something about the
-  band before anyone listens.
+  band before anyone listens — and at Wave 5 nobody will be able to tell you that
+  from the audio.
 
-#### Step C2 — a person signs off each of the six
+#### Step C2 — the brief: what to listen for in each of the six
 
-Covers: R10, AC9
+Covers: R10 (the brief half — the sign-off itself is Wave 5's, AC9)
 
-- **Test first** — none. This is a listening pass, and a gate pass is not a
-  sign-off.
-- **Implement** — play each of the six in full and record a verdict per groove in
-  the epic's report, in the listener's own words. The brief: the kick and snare
-  land hard; the ghosts are texture and not a second backbeat; the keys are
-  sparse rather than absent; and — because A3 put the drums above the bass — the
-  root and the chord are still audible enough to answer the puzzle from.
-- **Green when** — six verdicts are on the record, each naming what is there
-  rather than that it sounds good.
+- **Test first** — none, and nothing is heard here. The listening pass is the
+  feature's, not this epic's.
+- **Implement** — write, in the epic's report and in the `specs/new-styles.md`
+  entry Step E5 lands, what a listener at Wave 5 should be listening for in these
+  six, and where the six mp3s are: the scratch tree path and `rehearsal.json`'s
+  `startSeed` and seed list, so they can be re-rendered at any time, plus the six
+  committed ids and uuids once E2 has minted them, so they can be played straight
+  out of `public/grooves/`. The brief, for boom-bap specifically:
+  - do the kick and the snare **read as sampled rather than played** — struck
+    hard, landing in the same place every bar, sitting forward of everything
+    else? That is the style's whole claim, and it is the one thing no gate check
+    can measure;
+  - are the ghosts texture rather than a second backbeat (R4);
+  - are the keys sparse rather than absent — one stab a bar is the intent, not an
+    omission (R5);
+  - and, because A3 put the drums above the bass, is the root still audible enough
+    to answer the puzzle from.
+- **Green when** — the brief names all four listening points, the six mp3s are
+  locatable two ways (scratch tree plus seeds, and committed ids), and **no
+  verdict has been written**. A verdict here would be this epic answering the
+  question it moved.
 - **Refactor** — none.
 
-#### Step C3 — the distinctness hearing, against its two closest neighbours
+#### Step C3 — the brief: R8's distinctness question, and who it is asked against
 
-Covers: R8, AC7
+Covers: R8 (the brief half — the verdict is Wave 5's, AC7)
 
-- **Test first** — none. This is the decision the epic exists to reach, and it is
-  separate from C2: one asks whether the groove is good, the other whether the
-  feel is new.
-- **Implement** — build a playlist of eighteen: for each of the six boom-bap
-  mp3s, the straight-funk groove, then the half-time groove, then the boom-bap
-  one. Use `public/grooves/groove-02.mp3` (straight-funk, 96 bpm, E dorian) and
-  `public/grooves/groove-13.mp3` (half-time, 79 bpm, A♭ phrygian) — the two
-  committed grooves closest in tempo to 86–92 from either side, and both in modes
-  boom-bap's own list carries, so the comparison is of the feel and not of the
-  mode. Play them without the file names visible where that is practical. Then
-  state, in the listener's words: does boom-bap read as its own feel? Record the
-  verdict whichever way it goes, before any decision to ship.
-- **Green when** — the report carries one verdict for the style, with reasons in
-  the terms of the brief.
-- **Refactor** — none. A near miss is a negative verdict; the retune is one
-  rehearsal, and R9b's budget is what keeps that from becoming a habit.
+- **Test first** — none.
+- **Implement** — record the distinctness question and everything Wave 5 needs in
+  order to ask it, so nobody has to reconstruct it weeks later: *does boom-bap
+  read as its own feel, heard against its two closest neighbours?* Name them —
+  `public/grooves/groove-02.mp3` (straight-funk, 96 bpm, E dorian) and
+  `public/grooves/groove-13.mp3` (half-time, 79 bpm, A♭ phrygian), the two
+  committed grooves closest in tempo to 86–92 from either side, both in modes
+  boom-bap's own list carries, so what is judged is the feel and not the mode.
+  And name the playlist shape: eighteen files — for each of the six, the
+  straight-funk groove, then the half-time groove, then the boom-bap one — played
+  without the file names visible where that is practical.
+  Wave 5 already plays the five new styles back to back, which answers a broader
+  version of the same question; this pairing is the narrow one boom-bap needs on
+  top of it, because its two nearest neighbours are already in the catalogue
+  rather than in this feature.
+- **Green when** — the report and the new-styles entry carry the question, the two
+  named neighbours and the playlist shape, and no answer.
+- **Refactor** — none. A near miss is a negative verdict when Wave 5 gets there;
+  the retune is one re-render, and R9b's budget is what keeps that from becoming a
+  habit.
 
 #### Step C4 — nothing has moved
 
-Covers: AC8a, AC11
+Covers: R6, AC11 — and the no-write property Wave 5's stop procedure leans on
 
 - **Test first** — `git status --porcelain` and `npm run grooves:verify`.
 - **Implement** — nothing. Then `node scripts/grooves/rerender-check.ts` and
@@ -776,18 +892,23 @@ Covers: AC8a, AC11
   reports all of them matching.
 - **Refactor** — none.
 
-### Track D — The retune and the second hearing
+### Track D — the retune procedure, executed at Wave 5
 
-Runs only on a negative verdict at C3. Every step is a bounded change to the
-three parameters R9 names, so the diff reads as a retune and not a rewrite.
+**Not executed by this epic.** These four steps are the procedure the feature-wide
+listening pass runs on a negative first verdict for boom-bap, and the epic does
+not wait for one. Every step is a bounded change to the three parameters R9 names,
+so the diff reads as a retune and not a rewrite — and by Wave 5 the six grooves
+are already in the catalogue, which is what D3 and D4 have to deal with and the
+first hearing's version did not.
 
 #### Step D1 — the prediction, written before the render
 
 Covers: R9, AC8
 
 - **Test first** — none, and the ordering is the point: this table is written
-  while `boom-bap.ts` still holds the values that were heard.
-- **Implement** — a three-row table in the epic's report: parameter, old → new,
+  while `boom-bap.ts` still holds the values that were heard, which by now are
+  also the values that shipped.
+- **Implement** — a three-row table in Wave 5's record: parameter, old → new,
   what the change is expected to do to the sound, and which neighbour it pulls
   away from. All three rows are required, and the three parameters are named:
   `swing` (within C2's `[0.30, 0.40]`), `tempoRange` (within 85–95, both ends
@@ -824,40 +945,61 @@ Covers: R9, AC8
   figures is a different template wearing the same id, and its grooves would owe
   a first hearing, not a second.
 
-#### Step D3 — the six are re-rehearsed from the retuned template
+#### Step D3 — the same six seeds, re-rendered from the retuned template
 
 Covers: R9, AC5, AC8
 
 - **Test first** — not a unit test: run
   `node scripts/grooves/rehearse.ts --template boom-bap --count 6 --seed <the
-  first hearing's startSeed>` into a fresh scratch tree.
+  `startSeed` in Track C's `rehearsal.json`>` into a fresh scratch tree. That
+  file is the reason the second hearing is directly comparable to the first even
+  though the two are weeks apart: same start seed, same six seeds, same six
+  answers, one changed feel.
 - **Implement** — nothing new. Expect the same six seeds: `intBetween` draws the
   bpm as the *first* value off `MUSIC_LABEL`, so a changed tempo range shifts no
   later draw, and each groove keeps its root, flavour, scale and progression
-  across the retune. A seed that drops out did so at the gate — most likely
-  density or loudness — and the report names it and the check that rejected it.
-- **Green when** — six mp3s exist in the new scratch tree, `git status` is still
-  empty, and the seed list is recorded next to the first hearing's.
-- **Refactor** — none. That the answers survive a tempo retune is worth stating
-  in the report: the same six questions, asked in a different feel.
+  across the retune. Its **bpm does not** — `tempoRange` is the one answer-bearing
+  field of the three, and a tempo retune re-asks those six questions at a new
+  speed. A retune that moves only `swing` and `patterns.snareGhosts` leaves every
+  answer untouched and changes the audio alone. A seed that drops out did so at the gate — most likely
+  density or loudness — and the record names it and the check that rejected it.
+- **Green when** — six mp3s exist in the new scratch tree, `git status` names only
+  `boom-bap.ts` and its test, and the seed list is recorded next to the first
+  hearing's and shown to be the same list.
+- **Refactor** — none. That the answers survive a tempo retune is worth stating in
+  the record: the same six questions, asked in a different feel.
 
 #### Step D4 — the second hearing, and it is final
 
 Covers: R9a, R9b, AC7, AC9
 
 - **Test first** — none.
-- **Implement** — repeat C2 and C3 exactly: a per-groove sign-off, then the
-  eighteen-file playlist against `groove-02` and `groove-13`, then a stated
-  verdict. Record it beside the first, with one line on whether the retune moved
-  the verdict at all — which is what R11's stop-branch record asks for and the
-  hardest thing to reconstruct later.
-- **Green when** — two verdicts are on the record and exactly one of Track E and
-  Track F is chosen.
-- **Refactor** — none. There is no third hearing. If the second verdict is a
-  shrug rather than a yes, it is a no: the four other styles do not depend on
-  this one.
+- **Implement** — repeat C2's and C3's briefs as hearings, on the retuned audio: a
+  per-groove sign-off against the four listening points, then the eighteen-file
+  playlist against `groove-02` and `groove-13`, then a stated verdict. Record it
+  beside the first, with one line on whether the retune moved the verdict at all —
+  which is what R11's record asks for and the hardest thing to reconstruct later.
+- **Green when** — two verdicts are on the record and exactly one of two things
+  follows.
+  - **Positive** — the retuned template is what ships, and shipping it is one
+    command. D2 has already edited `boom-bap.ts`; run `npm run grooves`, which
+    re-renders the committed catalogue, so the six boom-bap mp3s change bytes and
+    the manifest and the lock follow. Ids, uuids, templates and seeds are
+    untouched — `catalogue.json` is that command's input, and the README's
+    § *Ids never move* is the guarantee. Then `npm run grooves:verify` and
+    `node scripts/grooves/rerender-check.ts`, whose report is the review of
+    exactly this operation, and Step F2 closes the record. State in that record
+    which of the three fields moved: a `tempoRange` change moved the six grooves'
+    bpm and so their questions, while `swing` and `patterns.snareGhosts` leave the
+    six answers as they shipped.
+  - **Negative** — Track F: the six are pulled, the template is unregistered, and
+    the record carries both verdicts.
+- **Refactor** — none. There is no third hearing. If the second verdict is a shrug
+  rather than a yes, it is a no: the four other styles do not depend on this one.
 
 ### Track E — Ship the six
+
+Runs unconditionally, in Wave 3. Nothing here is behind a verdict.
 
 #### Step E1 — boom-bap joins the registry
 
@@ -899,6 +1041,12 @@ Covers: R6, AC5, AC8b
 - **Green when** — `catalogue.json` holds exactly six `boom-bap` entries, the
   manifest carries `HEARD_IN` again, the lock has six new entries and no changed
   `sha256` for any existing groove, and `npm run test:gen` is green.
+- **The mint moves one app test further from its baseline, and that is
+  expected.** `src/features/daily-groove/data/pastPuzzles.test.ts` is already red
+  from Epic 1's mint; six more grooves break its `3 × GROOVES.length` arithmetic
+  and reassign every recorded day again. It is not this epic's to repair or
+  regenerate — see *Assumptions*. Record the new catalogue length in the epic's
+  report and move on.
 - **Refactor** — none. Fixing `addGrooves` to pass `heardIn` through belongs to
   whoever owns `add.ts` — Epic 1 — and this epic works with the sanctioned
   two-command sequence rather than editing a file two other epics are minting
@@ -906,7 +1054,7 @@ Covers: R6, AC5, AC8b
 
 #### Step E3 — nothing outside this template re-rendered
 
-Covers: R9b, AC8b, AC11
+Covers: AC11
 
 - **Test first** — `node scripts/grooves/rerender-check.ts`: it renders the whole
   catalogue into a temp dir and compares each groove's sha256 to the committed
@@ -915,7 +1063,8 @@ Covers: R9b, AC8b, AC11
   `npm run grooves` followed by `git status`, which must show no change to any
   mp3 other than the six new ones and no change to the manifest or the lock.
 - **Green when** — rerender-check reports every groove matching, `git status` is
-  clean, and the report states that two hearings at most were needed to get here.
+  clean, and the report states plainly that no hearing has happened yet and points
+  at Wave 5 for the two the PRD budgets.
 - **Refactor** — none. A single mismatch means something outside the template
   moved — check `events.ts` first, because this epic is not supposed to have
   touched it.
@@ -931,68 +1080,108 @@ Covers: R11, AC10
   call, since Epic 1 rewrites the section.
 - **Implement** — one row: `` `boom-bap` | 86–92 | 16 | 0.34 | dorian, aeolian,
   phrygian | 3 | 19–31 | hat ``, with the settled values, and increment the count
-  in the sentence above the table. Do **not** touch `specs/new-styles.md`: AC10
-  wants exactly one of the two documents to record the outcome, and on this
-  branch it is `music.md`.
-- **Green when** — the table lists boom-bap with the values the template
-  declares, and `grep -c 'boom-bap' specs/new-styles.md` still finds only the
-  candidate row it always had.
+  in the sentence above the table. This is the epic's **outcome** record — six
+  grooves shipped — and under AC10 it is the only one: Step E5's new-styles entry
+  states a plan and a brief, never a verdict.
+- **Green when** — the table lists boom-bap with the values the template declares,
+  and the sentence above it agrees with `allTemplates().length`.
 - **Refactor** — none.
 
-### Track F — Stop and record
+#### Step E5 — the brief and the seeds go on the record, unfinished on purpose
 
-#### Step F1 — the registry never learns about boom-bap
+Covers: R10, R11, AC10 — and it is what Wave 5 reads first
 
-Covers: R9a, AC5, AC8a
+- **Test first** — none; the deliverable is a document.
+- **Implement** — write `specs/new-styles.md`'s boom-bap row into a **pending
+  entry**: that six grooves shipped unheard by design and name the six committed
+  ids; the declared `swing`, `tempoRange` and `patterns.snareGhosts`, which are
+  the three fields a retune may move; C2's four listening points; C3's question,
+  its two named neighbours (`groove-02`, `groove-13`) and the playlist shape; and
+  the rehearsal seeds — `rehearsal.json`'s `startSeed` and the six
+  `(template, seed)` pairs, copied into the row so they survive the scratch tree
+  being deleted. Then a line saying the two verdicts are outstanding and that Step
+  F2 completes the row at Wave 5.
+- **Green when** — the row carries the values, the brief, the neighbours and the
+  seeds; contains **no verdict and no outcome**, so AC10's "exactly one records
+  the outcome" still resolves to `docs/music.md`; and the seed list in it matches
+  `rehearsal.json` exactly.
+- **Refactor** — none. `specs/new-styles.md` is the right home for the same reason
+  feature-24 put its rejections in `samples/README.md`: it is committed, it sits
+  beside the candidate list it corrects, and it is what the next person to reach
+  for boom-bap reads first.
 
-- **Test first** — `boom-bap.test.ts`: keep A1's assertion that
-  `TEMPLATES['boom-bap']` is `undefined`, and add that
-  `allTemplates().some((t) => t.id === 'boom-bap')` is `false`, with a comment
-  naming this epic's second verdict as the reason. Run `npm run test:gen`: green,
-  and specifically `catalogue.test.ts`'s `draws grooves from every template`
-  passes, because the assertion is over registered templates and boom-bap is not
-  one.
-- **Implement** — nothing. Step E1 is simply not performed.
-- **Green when** — the whole generator suite is green with a template file that
-  no registry names.
-- **Refactor** — none. That the file stays is R9a's instruction: the template and
-  both verdicts are what ships.
+### Track F — the record, and the stop procedure, executed at Wave 5
+
+**Not executed by this epic.** Step F2 runs at Wave 5 whichever way the verdict
+goes; Steps F1 and F3 run only on a negative second verdict.
+
+#### Step F1 — the registry gives boom-bap back
+
+Covers: R9a, AC5, AC8a — on a negative second verdict only
+
+- **Test first** — `boom-bap.test.ts`: flip Step E1's registration assertion back —
+  `TEMPLATES['boom-bap']` is `undefined` and
+  `allTemplates().some((t) => t.id === 'boom-bap')` is `false` — with a comment
+  naming Wave 5's second verdict as the reason. Run `npm run test:gen`: red on
+  `catalogue.test.ts`'s `draws grooves from every template` until the six
+  catalogue rows go too, which is the point — unregistering and removing the
+  grooves are one change.
+- **Implement** — remove the import, the `[boomBap.id]: boomBap` entry and the
+  re-export name from `templates/index.ts` and boom-bap's row from
+  `templates/index.test.ts`; remove the six `boom-bap` entries from
+  `catalogue.json` and the six mp3s from `public/grooves/`; add the six ids to
+  `catalogue.test.ts`'s `RETIRED` list, because they can never be re-issued; then
+  `npm run grooves -- --manifest-only` and `npm run grooves:verify`. Remove
+  `docs/music.md`'s boom-bap row and decrement the count above the table.
+  `templates/boom-bap.ts` and its test **stay**, unregistered: R9a's instruction
+  is that the template and both verdicts are what ships.
+- **Green when** — `npm run test:gen` is green with a template file that no
+  registry names, the catalogue holds no `boom-bap` groove, and
+  `npm run grooves:verify` is clean.
+- **Refactor** — none. This is the expensive road the *Architecture* section
+  prices, and it is reached only after two negative verdicts.
 
 #### Step F2 — both hearings go on the record
 
-Covers: R9a, R11, AC8a, AC10
+Covers: R9a, R11, AC8a, AC10 — **always, at Wave 5**
 
 - **Test first** — none; the deliverable is a document.
-- **Implement** — `specs/new-styles.md`'s boom-bap row records: that it was
-  tried twice; the first hearing's verdict in the listener's words; what the
-  retune changed, with D1's expectation beside what was actually heard; the second
-  verdict; and whether the retune moved the verdict at all. Name where the
-  template file sits, unregistered, so the next person to reach for boom-bap
-  starts from it rather than from the candidate row. Do **not** touch
-  `docs/music.md` — no feel shipped, and AC10 wants exactly one record.
-- **Green when** — the row carries both verdicts and the retune's before-and-
-  after, and `grep -c 'boom-bap' docs/music.md` finds nothing.
-- **Refactor** — none. `specs/new-styles.md` is the right home for the same
-  reason feature-24 put its rejections in `samples/README.md`: it is committed,
-  it sits beside the candidate list it corrects, and it is what the next attempt
-  reads first.
+- **Implement** — complete the pending entry Step E5 wrote in
+  `specs/new-styles.md`: the first hearing's verdict in the listener's own words;
+  if there was a retune, what it changed, with D1's written expectation beside
+  what was actually heard; the second verdict; and whether the retune moved the
+  verdict at all. Then close it in whichever direction the verdicts went.
+  - **Shipped** — the entry says so and points at `docs/music.md`'s row, which
+    stays the outcome record. The new-styles entry is now history, not a plan.
+  - **Stopped** — the entry becomes the outcome record: boom-bap was tried twice,
+    both verdicts, the retune's before-and-after, the six retired ids, and where
+    the unregistered template file sits, so the next person to reach for boom-bap
+    starts from it rather than from the candidate row. `docs/music.md` no longer
+    names boom-bap (F1), so AC10's "exactly one" holds in the other direction.
+- **Green when** — the row carries both verdicts and, if there was one, the
+  retune's before-and-after; and exactly one of `docs/music.md` and
+  `specs/new-styles.md` records the outcome, matching what actually shipped.
+- **Refactor** — none.
 
-#### Step F3 — the generated artefacts are byte-identical to what was committed
+#### Step F3 — the generated artefacts are consistent again
 
-Covers: AC8a, AC11
+Covers: AC8a, AC11 — on a negative second verdict only
 
-- **Test first** — `git status --porcelain`, which must name only
-  `scripts/grooves/templates/boom-bap.ts`,
-  `scripts/grooves/templates/boom-bap.test.ts`,
-  `scripts/grooves/rehearse.ts`, `scripts/grooves/rehearse.test.ts` and
-  `specs/new-styles.md`.
+- **Test first** — `git status --porcelain`, which after F1 must name the removal
+  of six mp3s and the edits to `catalogue.json`, `grooves.lock.json`,
+  `grooves.generated.ts`, `templates/index.ts`, `templates/index.test.ts`,
+  `catalogue.test.ts`, `docs/music.md` and `specs/new-styles.md` — and nothing
+  else.
 - **Implement** — nothing. Then `npm run grooves:verify` and
   `node scripts/grooves/rerender-check.ts`.
-- **Green when** — `catalogue.json`, `grooves.lock.json`,
-  `grooves.generated.ts` and every file under `public/grooves/` are untouched,
-  verify is clean, and rerender-check reports every groove matching.
-- **Refactor** — none. This is AC8a, and with this ordering it is a `git status`
-  rather than a repair.
+- **Green when** — no `boom-bap` groove remains, verify is clean, and
+  rerender-check reports every *remaining* groove matching the lock — which is the
+  form AC11 takes on this path, since the lock was rewritten wholesale rather than
+  left untouched.
+- **Refactor** — none, and the honest note: with the verdict deferred, AC8a's
+  "unchanged by this epic" is reached by removal rather than by abstention. The
+  Cycle 1 ordering made it an empty `git status`; Cycle 3 traded that away
+  knowingly, and the *Architecture* section prices what for.
 
 ## Integration and verification
 
@@ -1006,49 +1195,68 @@ Covers: AC8a, AC11
   variable under test.
 - **The minting slot.** Epics 2, 3 and 4 mint from the same four files. Boom-bap
   takes the slot only at Step E2, and `commit`'s catalogue-hash check (B3) is what
-  turns a lost race into a re-rehearsal instead of six unheard grooves. If Epic 2
-  or 3 mints between C3 and E2, re-run C1 and re-hear.
-- **The demo path from the PRD**, on the ship branch, by hand: `npm run dev`,
+  turns a lost race into a re-rehearsal instead of six grooves that are not the six
+  the brief points at. If Epic 2 or 3 mints between C1 and E2, re-run C1 and
+  update the brief’s seed list — nothing was heard, so the cost is one rehearsal.
+- **The demo path from the PRD**, by hand once E2 has minted: `npm run dev`,
   open one of the six by uuid from `grooves.generated.ts`, play it, and hear an
   88 bpm groove with swung sixteenths, a hard kick and snare, ghosts underneath
   and one keys stab a bar — then solve it, to check the bass still carries the
   answer under a drum-forward mix with a comp that plays once a bar.
-- **The full set before either Wave 4 track reports:** `npm run test:gen`,
+- **The full set before Track E reports:** `npm run test:gen`,
   `npm test`, `npm run lint`, `npm run build` — `build` runs `prebuild`, which
   runs `grooves:verify`, which is what catches a manifest missing its `HEARD_IN`
-  or a lock left behind by the mint.
-- **Coverage** — every R and AC below.
+  or a lock left behind by the mint. **`npm test` is green except
+  `src/features/daily-groove/data/pastPuzzles.test.ts`**, which arrives red from
+  Epic 1 and which Step E2's mint moves again. That is the one failure this epic
+  may leave standing; every other red stops it. Do not regenerate the fixture to
+  clear it — the test forbids exactly that, and *Assumptions* says why.
+- **The hand-off to Wave 5.** The epic is not done until the brief is findable
+  without this spec: `specs/new-styles.md`'s pending entry (E5) carries the six
+  committed ids, the four listening points, R8's question with `groove-02` and
+  `groove-13` named, and `rehearsal.json`'s start seed and six seeds. If a Wave 5
+  listener has to open a tech spec to know what they are listening for, E5 was
+  written badly.
+- **Coverage** — every R and AC below, with the moment each one is discharged.
 
 ## Requirement coverage
 
-| Requirement | Steps |
-| :-- | :-- |
-| R1 | A1, A7, E1 |
-| R2 | A2, A7 |
-| R3 | A3, A4 |
-| R4 | A4 |
-| R5 | A5 |
-| R6 | B1, B2, B4, C1, E2 |
-| R7 | A6 |
-| R8 | C3 |
-| R9 | D1, D2, D3 |
-| R9a | D4, F1, F2 |
-| R9b | D4, E3 |
-| R10 | C2, D4 |
-| R11 | E4, F2 |
-| AC1 | A1, A7, E1 |
-| AC2 | A2 |
-| AC3 | A3, A4 |
-| AC4 | A5 |
-| AC5 | C1, E2, F1 |
-| AC6 | A6, C1 |
-| AC7 | C3, D4 |
-| AC8 | D1, D2, D3 |
-| AC8a | B1, B3, C4, F1, F2, F3 |
-| AC8b | B2, B4, E2, E3 |
-| AC9 | C2, D4 |
-| AC10 | E4, F2 |
-| AC11 | C4, E3, F3 |
+| Requirement | Steps | Where it is discharged |
+| :-- | :-- | :-- |
+| R1 | A1, A7, E1 | the epic |
+| R2 | A2, A7 | the epic |
+| R3 | A3, A4 | the epic |
+| R4 | A4 | the epic |
+| R5 | A5 | the epic |
+| R6 | B1, B2, B4, C1, E2 | the epic |
+| R7 | A6 | the epic |
+| R8 | C3 (the question, the two neighbours, the playlist), D4 | the **verdict at Wave 5** |
+| R9 | D1, D2, D3 | **Wave 5**, on a negative first verdict |
+| R9a | D4, F1, F2 | **Wave 5** |
+| R9b | D4, and the shape of the Wave 5 procedure — it has nowhere to put a third hearing | **Wave 5** |
+| R10 | C2 (what to listen for), D4 | the **per-groove sign-off at Wave 5** |
+| R11 | E4, E5, F2 | E4 and E5 in the epic; F2 completes the record at Wave 5 |
+| AC1 | A1, A7, E1 | **done** at epic close |
+| AC2 | A2 | **done** |
+| AC3 | A3, A4 | **done** |
+| AC4 | A5 | **done** |
+| AC5 | C1, E2 | **done** — its first branch: six `boom-bap` grooves, all seven gate checks each. Its second branch ("no `boom-bap` grooves") is R9a's stopping outcome and belongs to Wave 5's F1 |
+| AC6 | A6, C1, E2 | **done** |
+| AC7 | C3, D4 | **partly** — the question, the two named neighbours and the playlist are on the record; the verdict is Wave 5's |
+| AC8 | D1, D2, D3 | **partly** — the retune procedure is written; it runs at Wave 5, on a negative first verdict |
+| AC8a | B1, B3, C4, F1, F2, F3 | **partly** — phrased "when the epic closes", and with the loop deferred the epic no longer closes on this question; the feature does. Discharged at Wave 5 |
+| AC8b | B2, B4, E2, E3 | **partly** — the six are in the catalogue at epic close, but "given a positive verdict … no third hearing was required" is only assertable once Wave 5 has heard them |
+| AC9 | C2, D4 | **partly** — the brief is written; the per-groove sign-off is Wave 5's |
+| AC10 | E4, E5, F2 | **done** at epic close, in the direction "`docs/music.md` records the outcome, `specs/new-styles.md` carries a pending brief with no verdict in it". Wave 5's F2 closes it, and F1 can flip the direction |
+| AC11 | C4, E3 | **done** — and F3 re-establishes it at Wave 5 if the six are pulled |
+
+**Read the five *partly* rows as a deferral, not a miss.** A
+`/verify-epic feature-25 epic-4` run in isolation will grade AC7, AC8, AC8a, AC8b
+and AC9 partly, because every one of them turns on a person listening and no
+person listens in this epic. AC8, AC8a and AC8b are the sharpest cases: they are
+phrased "when the epic closes", and the loop they assert now closes with the
+feature instead. All three are discharged at `## Wave 5 — the feature-wide
+listening pass`, under exactly the rules R9, R9a and R9b state.
 
 ## Assumptions
 
@@ -1085,7 +1293,8 @@ Covers: AC8a, AC11
 - **The six new grooves will take ids in the fifties or sixties.** Ids continue
   from the highest ever used (`groove-52` today), never from the catalogue's
   length, and Epics 1–3 mint eighteen before this one. Nothing in this epic
-  depends on the numbers, but the report should name them.
+  depends on the numbers, but the report should name them — and Step E5 must,
+  because Wave 5 plays the grooves by id.
 - **Answer uniqueness is a real constraint on the mint, not a formality.**
   `selectSeeds` rejects a candidate whose `root|flavour` or `scale|progression`
   already exists, so six boom-bap grooves need six unused answers among its two
@@ -1101,6 +1310,22 @@ Covers: AC8a, AC11
   spec twice gives the same mp3, which `rerender-check.ts` and the lock's
   per-groove `sha256` already assume. B4's refactor note says what to do if that
   turns out to be false.
+- **`src/features/daily-groove/data/pastPuzzles.test.ts` is red when this epic
+  starts and redder when it closes, and this epic repairs neither state.** The
+  record pins `3 × GROOVES.length` days to the grooves they resolved to at
+  thirty. `selectGrooveForDate` indexes a seeded shuffle of the *whole*
+  catalogue, so Epic 1's mint reassigned every recorded day and Step E2's six do
+  it again; the lap arithmetic moves with the length on top of that. Growth is
+  the sanctioned cause — the test says so itself, citing feature-7 R6 — and
+  regenerating the fixture from this tree is what it forbids in as many words,
+  because that "makes it agree with whatever broke it". The single re-baseline
+  happens after Wave 5 has settled, from a `git archive` of the last commit
+  before Epic 1's mint, with `provenance.catalogueLength` set to the final
+  number. Later than this epic on purpose: **Wave 5 can pull these six grooves**
+  (R9a's stopping outcome, Step F1), which changes the catalogue's length one
+  more time, so a fixture captured at this epic's close would be wrong on exactly
+  the path this epic is written to allow. `../roadmap.md` §
+  *One test is red for the whole feature, on purpose* is the authority.
 - **Epic 1 lands before Wave 1 starts.** `FeelTemplate.patterns` and
   `grooves:add --template` are both Epic 1's, and both are load-bearing here. The
   roadmap puts this epic in Wave 2 for exactly that reason.
@@ -1209,3 +1434,104 @@ edit; after it, six re-rendered grooves and a second hearing's worth of doubt
 about which audio was signed off.
 Changed: the *Architecture* neighbours list gains a **Comp** bullet; C3's
 `comp` bullet; step A5.
+
+
+### Cycle 3 — 2026-09-06 — the two hearings move to the end of the feature
+
+**Q1. Where does boom-bap's listening judgement happen?**
+Decision: **At the feature-wide listening pass — `## Wave 5 — the feature-wide
+listening pass` in [../roadmap.md](../roadmap.md) — and not inside this epic.**
+Every human sign-off in feature-25 moved there in one go: the pass runs once,
+after Epic 6, plays all thirty new grooves grouped by style with the five styles
+back to back, records a per-groove verdict in the listener's own words — which is
+what discharges every epic's "the listening sign-off is a person's, recorded per
+groove" — and hands back a list of proposed changes, each naming the template
+field to move and the re-render cost. Boom-bap's retune loop is one of those, and
+it runs there.
+
+Why: R8 asks whether boom-bap reads as its own feel, and that is a comparison this
+epic cannot stage. Alone, at the end of Wave 2, it can only be asked against two
+committed grooves picked by tempo, on the day the template was written. At Wave 5
+it is asked against the four other new styles as well — the company boom-bap will
+actually keep — which is what R8 is really after. The second reason is the build:
+with the verdict inside the epic, Wave 2 stops dead in the middle and waits for a
+person, and Epic 6 waits behind it. Deferring lets the implementation run end to
+end.
+
+What it changed: the *Approach* and the branch diagram; a new *Architecture*
+subsection saying out loud that the six ship unheard; the files table, whose "ship
+branch only" and "stop branch only" columns described branches that no longer
+exist inside the epic; C5 and C6. Track C keeps its machine half — the rehearsal
+mint, the gate, `rehearsal.json`, the `git status` check — and C1 and C4 still
+block on failure; its listening half, C2 and C3, became a written brief. Track D
+and Track F stopped being tracks of this epic and became the procedure Wave 5
+executes, keeping steps D1–D4 and F1–F3 as written. Track E runs unconditionally
+and gained Step E5, which puts the brief, the two named neighbours and the
+rehearsal seeds into `specs/new-styles.md` as a pending entry with no verdict in
+it. The execution waves lost Wave 4. The coverage table gained a column saying
+where each requirement is discharged.
+
+**The PRD's requirements are preserved in content; three acceptance criteria move
+their moment.** R9, R9a and R9b are unchanged and unweakened — a verdict, at most
+one retune, one final second hearing, never a third — and R8's and R10's hearings
+still happen, in the listener's own words, per groove. What moved is *where*. But
+AC8, AC8a and AC8b are each phrased "when the epic closes", and with the loop
+deferred the epic no longer closes on that question: the feature does. A
+`/verify-epic feature-25 epic-4` run in isolation will therefore grade those three
+**partly**, discharged at Wave 5 — and so will AC7 and AC9, whose "when a person
+hears them" is Wave 5's moment too. That is the shape of the trade rather than a
+miss, and the coverage table now says so row by row.
+
+Repeatability is what carries the loop across the gap. The fixed seed list,
+`rehearsal.json` and `commit`'s catalogue-hash refusal were Cycle 1's answer to a
+retune an hour later; they matter more now that the two hearings may be days or
+weeks apart, because "the same six seeds so the second hearing is directly
+comparable to the first" is the only thing making a Wave 5 retune a comparison
+rather than a fresh start.
+
+What it costs to reverse: nothing while the mint has not happened — put C2 and C3
+back to hearings, restore Wave 4, and the epic is Cycle 2's again. After the mint
+it costs what the *Architecture* section prices: a negative first verdict is a
+post-mint retune — one template file, `npm run grooves`, six changed mp3s and two
+changed generated files, with no id, uuid or seed moved;
+a negative second verdict is a pull that burns six groove ids permanently, which
+is the exact cost Cycle 1's Q1 was written to avoid and which deferring the
+verdict brings back. That is the risk this spec accepts on purpose. The narrower
+cost worth naming is the one Step D3 and Step D4 now carry: `tempoRange` is the
+one answer-bearing field of the three the retune may move, because `bpm` is drawn
+from it at render time, so a tempo retune re-asks those six questions while
+`swing` and `patterns.snareGhosts` change only the audio. It is harmless on six
+grooves nobody has played, and it is the distinction that would matter if the
+same retune were ever attempted on a groove already in players' hands.
+Changed: *Approach*; *Architecture* (the diagram, the new subsection, the files
+table); C5, C6; Tracks C, D, E, F; *Execution waves*; steps C1, C2, C3, C4, D1,
+D3, D4, E3, E4, E5, F1, F2, F3; *Integration and verification*; *Requirement
+coverage*.
+
+### Cycle 4 — 2026-09-06 — the past-puzzles record is re-baselined once, at the end
+
+**Absorbed from the roadmap, not decided here.** `../roadmap.md` §
+*One test is red for the whole feature, on purpose* settles
+`src/features/daily-groove/data/pastPuzzles.test.ts` for every epic in
+feature-25. It is the repo's only record of what players are already holding, it
+passes at thirty grooves, and Epic 1's mint turns it red: `selectGrooveForDate`
+indexes a seeded shuffle of the whole catalogue, so each added groove reassigns
+every recorded day, and `DAYS.length === 3 * GROOVES.length` moves with the
+length. Step E2's six do it again.
+
+No epic repairs it, and the obvious repair is the forbidden one — regenerating
+the fixture from the tree that broke it "makes it agree with whatever broke it",
+which is the single failure the record exists to catch. The one re-baseline
+happens after Wave 5, from a `git archive` of the last commit before Epic 1's
+mint. This epic has a particular reason to want it late: Wave 5 may pull these
+six grooves (F1), and a fixture captured at this epic's close would be wrong on
+the very path the epic is written to allow.
+
+Changed: an *Assumptions* bullet; Track E's *Done when*; Step E2, which now says
+the mint makes it redder and that the new catalogue length goes in the report;
+and *Integration and verification*'s full-set bullet, which names it as the one
+red this epic may leave standing. Nothing in the template, the rig or the mint
+moves.
+
+Cost of reversal: one re-baseline becomes several. Capturing it here needs its
+own archived tree, and a Wave 5 pull would invalidate it the same week.

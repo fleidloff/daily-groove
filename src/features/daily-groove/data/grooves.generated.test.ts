@@ -90,6 +90,11 @@ describe('the generated groove catalogue', () => {
     expect(new Set(GROOVES.map((g) => g.audioSrc)).size).toBe(GROOVES.length)
   })
 
+  it('gives no two grooves the same name (quick 10)', () => {
+    const names = GROOVES.map((g) => g.name)
+    expect(new Set(names).size).toBe(names.length)
+  })
+
   it('serves every groove from /grooves/', () => {
     for (const g of GROOVES) expect(g.audioSrc.startsWith('/grooves/')).toBe(true)
   })

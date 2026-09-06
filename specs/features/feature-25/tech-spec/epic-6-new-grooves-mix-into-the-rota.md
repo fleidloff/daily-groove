@@ -538,7 +538,8 @@ Covers: R11, AC10
 ## Integration and verification
 
 The tracks meet in one line of `GroovePuzzle.tsx` and one line of
-`isTodaysGroove.ts`, so there is no wiring step. What is left is proof.
+`isTodaysGroove.ts`, so there is no wiring step. What is left is proof, and then
+a handover: this epic going green is not the feature being done.
 
 1. **The pin reaches both consumers from one place.** Read
    `dailyGroove.ts`'s consumers: `grep -rn "dailyGroove" src` returns exactly
@@ -575,6 +576,28 @@ The tracks meet in one line of `GroovePuzzle.tsx` and one line of
    - With a saved solved result for today, edit its `grooveId` in
      `localStorage` to a groove id that is not in the catalogue, reload, and see
      a playable groove with no error (AC9, in the browser).
+7. **Hand over to the feature-wide listening pass.** When 1–6 are green the
+   build stops, and it stops before the feature is finished. Epic 6 ships the
+   rota change and closes on its own tests; the last thing in feature-25 is
+   `roadmap.md`'s *Wave 5 — the feature-wide listening pass*, run by hand after
+   this epic. What it inherits: a catalogue of **sixty grooves, thirty of them
+   minted by Epics 1–5 and none of the thirty heard by anyone**, and **five
+   per-style briefs**, one written by each of those epics, saying what to listen
+   for in that style's six and where the mp3s are. It plays the thirty grouped
+   by style, five styles back to back, and records a verdict per groove in the
+   listener's own words — which is what discharges Epic 1's R24/AC17, Epic 2's
+   R12/AC10, Epic 3's R10/AC10, Epic 4's R10/AC9 and Epic 5's R16/AC13. It is
+   also where Epic 4's retune loop (R9/R9a/R9b) runs, where a style's six
+   grooves can still be pulled, and where the list of proposed changes — each
+   naming the template field to move and the re-render cost -- is written.
+
+   **Epic 6 defers nothing of its own, because it has nothing to defer.** No
+   requirement in its PRD asks a person to listen to anything: R1–R6 are the
+   rota, R8–R13 the pin, R14--R15 the documents, and AC14 is four commands.
+   Item 6's demo path is by hand but it is not a listening gate -- it checks
+   *which* groove a date serves, never how one sounds — so it stays here rather
+   than moving to Wave 5. What changes is only the framing the roadmap gave this
+   epic: it is the last epic, not the end of the feature.
 
 ## Requirement coverage
 
@@ -663,6 +686,64 @@ The tracks meet in one line of `GroovePuzzle.tsx` and one line of
 - **`hooks/useProgress.ts` and `hooks/usePuzzleSession.ts` are not opened.**
   `DailyResult.grooveId` is read by a new synchronous path that runs before
   either hook exists; nothing about how it is written changes.
+- **A style pulled at Wave 5 shrinks the catalogue from sixty to fifty-four
+  *after* this epic's epoch bump and its checks, and nothing in this epic
+  breaks.** Epic 4's AC8a outcome is now reached at the feature-wide listening
+  pass, so this is a case the epic ships into rather than a hypothetical. Settled
+  fact, in five parts:
+  - **The epoch does not move again, and does not need to.** `ROTA_EPOCH` is a
+    constant, not a function of the catalogue. A length change already reshuffles
+    every date on its own — `lap = floor(dayIndex / grooves.length)` and
+    `position = dayIndex % grooves.length` both read the length — so pulling six
+    grooves re-mixes the rota whether or not the epoch is touched, and a second
+    bump would buy nothing. R2's "bumped exactly once" survives literally: both
+    reshuffles land inside one unreleased release, and the player sees exactly
+    one order, the one that ships.
+  - **The two year-long sweep fixtures are untouched.** `SWEEP_OVER_THREE` and
+    `SWEEP_OVER_SIXTEEN` sweep `['a', 'b', 'c']` and `'0123456789abcdef'` mapped
+    through the file's own `sweepGroove` — synthetic sets of three and sixteen.
+    `selectGroove.test.ts` imports no `GROOVES` and never has, so no fixture in
+    Track A is captured against the shipped catalogue. `makeGrooves(60)` in Steps
+    A1, A2, A3 and A5 is a fixture *size* chosen to match what the release ships,
+    not an assertion about it, and Step A3's "the sorted catalogue ids" means the
+    sixty ids `makeGrooves` handed in. At fifty-four the whole file passes
+    unedited; A3 merely stops describing the shipped size, which is cosmetic and
+    is not worth a recapture.
+  - **`dailyGroove`, the pin and `isTodaysGroove` are length-blind.** Each
+    resolves against `GROOVES` as it finds it, and their tests compute
+    `MIX = selectGrooveForDate(DAY, GROOVES)` at run time rather than naming a
+    groove, so they follow the catalogue down. A pinned id is resolved by
+    `grooves.find((g) => g.id === pinnedId)`, never by index, so no stored result
+    depends on a length either.
+  - **A stored `grooveId` naming a pulled groove is exactly AC9's fallback.** The
+    date takes the current mix and nothing throws — that path is specified, and
+    Steps A5 and D1 test it. What the fallback cannot keep is AC10's promise for
+    that one date: the day hydrates a solved result whose answer belongs to a
+    groove that is no longer on screen. Nobody outside this machine can be in
+    that state, because a pulled groove never reaches production — Wave 5 runs
+    before the release — so the exposure is the tester's own `localStorage` and
+    the repair is `localStorage.clear()`.
+  - **Two files go red outside this epic, and only one of them is cheap.**
+    `data/grooves.generated.test.ts`'s `covers all N catalogued grooves` is a
+    literal that Epics 1–5 walk 30 → 60, so a pull reports `expected length 54 to
+    be 60` and the repair is one number (its `lets no mode dominate the answers`
+    cap can also tip, since removing six answers removes their modes' counts —
+    same conversation Epic 1 already had at `DOMINANCE_RATIO`, not a new
+    mechanism). The expensive one is `data/pastPuzzles.test.ts`, the repo's only
+    catalogue-sized record: `3 × GROOVES.length` consecutive days, each pinned to
+    the groove it resolved to at `98a8d20`, asserting both `DAYS.length === 3 *
+    GROOVES.length` and that every recorded day still resolves to the groove it
+    names. Any length change reassigns all of them, and so does this epic's epoch
+    bump. It is therefore already red from Epic 1's mint onward and must be
+    re-baselined for the sixty-groove catalogue by whoever ships that growth; a
+    Wave 5 pull makes it red once more and costs one further run of the procedure
+    its own `provenance.ifTheCatalogueGrows` carries. No spec in feature-25 names
+    that file — recorded here as a finding, not repaired here.
+  - **Epic 6's verification is not durable across a pull, and re-running it is
+    the whole repair.** AC14's four commands, `grooves:verify` above all, have to
+    run again once six grooves leave `catalogue.json`, the lock and the manifest,
+    because a pull edits exactly the files that command watches. Not one line of
+    this epic's code changes.
 
 ## Decision log
 
@@ -696,3 +777,39 @@ alternative, an `epoch` option on the public selector, exists only for tests and
 would let a silent bump pass a fixture that names its own epoch. Reversal is
 cheap either way; the choice is about which guard stays honest.
 Changed: Contracts (`orderFor`), Steps A1/A2/A4, Assumptions.
+
+### Cycle 2 — 2026-09-06 — the feature does not end with this epic
+
+**Q4. Epic 6 is the last epic. Is it the end of the feature?**
+Decision: **No — it hands over.** Every human listening sign-off in feature-25
+has moved out of its own epic into one feature-wide listening pass, written up as
+`roadmap.md`'s *Wave 5 — the feature-wide listening pass*, so the build runs from
+Epic 1 to the end of Epic 6 without waiting for a person. Epic 6 has nothing of
+its own to defer: no requirement in its PRD asks anyone to listen, and item 6's
+demo path checks which groove a date serves rather than how one sounds, so it
+stays. What changed is the framing the roadmap gave this epic — "it is last, and
+it is the release" is now only half true, because the release has one more thing
+after it. *Integration and verification* gained item 7, naming what the pass
+inherits: sixty grooves, thirty of them unheard, and five per-style briefs.
+Cost of reversal: near zero — the epic's tracks, contracts, steps and coverage
+table are untouched, and folding the sign-offs back into their epics would be a
+change to Epics 1–5, not to this one.
+Changed: *Integration and verification* (the opening line and a new item 7).
+
+**Q5. Wave 5 can still pull a style's six grooves. What does that cost, arriving
+after this epic's epoch bump and its checks?**
+Decision: **Nothing in this epic, and it is written into Assumptions as settled
+fact rather than guarded against.** Sixty → fifty-four leaves `ROTA_EPOCH`
+alone; a length change already reshuffles every date by itself, so no second bump
+is wanted and R2 stays literally true. The two year-long sweeps are synthetic
+three- and sixteen-groove sets and `selectGroove.test.ts` imports no `GROOVES` at
+all, so nothing recaptured in Step A4 is catalogue-sized. `dailyGroove`, the pin
+and `isTodaysGroove` read the catalogue as they find it, and a pinned id is
+resolved by `find`, not by index. A stored id naming a pulled groove is AC9's
+fallback, and only a local tester can hold one, since a pulled groove never
+ships. The bill lands elsewhere: one literal in `data/grooves.generated.test.ts`,
+and a re-baseline of `data/pastPuzzles.test.ts`, which this feature already owes
+once for the growth to sixty and would owe a second time for the pull. Deliberately
+no mechanism was added to prevent any of it. Cost of reversal: an assumption is
+prose — deleting it costs nothing and changes no code.
+Changed: Assumptions (one entry, five parts).

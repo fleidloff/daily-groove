@@ -171,6 +171,39 @@ from `catalogue.json` rather than from the registry, which is also what makes it
 survive Epics 2–5: a mint adds keys, and the review of that diff is the promise
 — **additions only, no key rewritten**.
 
+### This epic ships its grooves unheard, and that is the trade
+
+Six mp3s are minted, gated, committed and shipped without a person having heard
+them. Every human listening verdict in feature-25 has moved out of the epics and
+into one **feature-wide listening pass** — `roadmap.md`'s
+*Wave 5 — the feature-wide listening pass*, which runs by hand after Epic 6,
+plays all thirty new grooves grouped by style with the five styles back to back,
+records a verdict per groove in the listener's own words, and outputs a list of
+proposed changes each naming the template field to move and the re-render it
+costs.
+
+**The risk this accepts.** A groove whose clave sits on the wrong beats, or whose
+surdo fights the comp, is found after Epic 6 rather than at the end of this epic.
+The price of that finding is a change to `templates/bossa-nova.ts` and a re-mint:
+six mp3s re-render, `catalogue.json`, `grooves.lock.json`, `events.fixture.json`
+and both manifests move with them, and Steps G1–G5 run again. Six files a player
+may already have heard change under them. That is the whole exposure — no
+committed answer moves, because nothing in this epic touches `MUSIC_LABEL`.
+
+**Why the trade was made.** The five styles are one question, not five. Whether
+this bossa is too polite is a question about the reggae, the second line, the
+boom bap and the son montuno standing next to it, and a listener who hears six
+bossa grooves alone in the week they were minted cannot answer it. Judging them
+against each other in one sitting is worth more than judging each one against a
+memory. The second gain is that the implementation runs end to end: no epic
+stops mid-build to wait for a person.
+
+**What is not traded away.** The gate still runs and still blocks. Step G1 fails
+this epic if the seven checks will not pass six candidates, and shipping four is
+not the fallback. **A gate pass is not a sign-off** — it never was, and moving the
+sign-off later does not promote it into one. What this epic owes the pass is Step
+G6's brief; what the pass owes back is the verdicts that discharge R24 and AC17.
+
 ## Contracts
 
 Frozen before any track starts. Epics 2, 3, 4 and 5 write templates against C1
@@ -570,11 +603,12 @@ costs nothing if it stops being.
   surdo on the kick, the declared straight eighths on the closed hat and no voice
   outside its kit.
 
-### Track G — The mint, the arithmetic and the sign-off
+### Track G — The mint, the arithmetic and the listening brief
 
 - **Goal** — six bossa grooves in the catalogue, all seven gate checks passing,
-  thirty untouched mp3s, both tiers' counts corrected, and a person's verdict on
-  record.
+  thirty untouched mp3s, both tiers' counts corrected, and a written brief that
+  hands the six forward: what a listener should listen for in them, and where
+  the mp3s are.
 - **Owns** — `scripts/grooves/catalogue.json`,
   `public/grooves/groove-31.mp3` … `groove-36.mp3`,
   `scripts/grooves/grooves.lock.json`,
@@ -585,9 +619,16 @@ costs nothing if it stops being.
   turn
 - **Depends on** — D (the flag), F (the template)
 - **Parallel with** — H
-- **Done when** — `npm run test:all` is green, `npm run grooves:verify` is clean,
+- **Done when** — `npm run test:all` is green **except
+  `src/features/daily-groove/data/pastPuzzles.test.ts`**, which this track's own
+  mint turns red and which this epic does not repair (see *Assumptions*),
+  `npm run grooves:verify` is clean,
   `node scripts/grooves/rerender-check.ts` reports thirty-six of thirty-six
-  matching, and the report carries a listening verdict per groove.
+  matching, and the report carries the listening brief for the six — each
+  groove's uuid, its mp3 path and its route, and what to listen for. **No human
+  verdict is collected here.** The epic ships and closes on its own tests; the
+  verdicts are recorded at `roadmap.md`'s *Wave 5 — the feature-wide listening
+  pass*, after Epic 6.
 
 The mint and the app-side counts are one track on purpose: the app suite is red
 between them, because `covers all 30 catalogued grooves` and the app's own 3×
@@ -1436,6 +1477,12 @@ Covers: R23, AC16
   grooves is the target, not a gate outcome — shipping four is not the fallback.
 - **Green when** — `catalogue.json` holds thirty-six specs, six of them
   `bossa-nova`, and `npm run test:gen` is green including `catalogue-gate`.
+- **The mint turns one app test red, here, for the rest of the feature.**
+  `src/features/daily-groove/data/pastPuzzles.test.ts` passes at thirty and fails
+  the moment the manifest reaches thirty-six: its `3 × GROOVES.length` arithmetic
+  and every recorded day's resolution both read the catalogue's length. That is
+  expected, it is not this step's to fix, and its own message says so. Record the
+  new catalogue length — thirty-six — in the epic's report and move on.
 - **Refactor** — none. Note the seeds and the rejection count in the report.
 
 #### Step G2 — the thirty do not move
@@ -1481,7 +1528,8 @@ Covers: R10, AC5
   named `const` at the top of the file so the number moves in one line. Leave
   `counts.size >= 12` exactly as it is: with overlapping sets the catalogue still
   answers to all twelve, and that assertion is the reason to care.
-- **Green when** — `npm test` green. Today's post-mint spread is max 4, min 1,
+- **Green when** — `npm test` green but for `pastPuzzles.test.ts`, whose failure
+  Step G1's mint caused and this epic leaves standing. Today's post-mint spread is max 4, min 1,
   which clears 5× with one groove of margin — enough for this epic and not for
   the feature, which is why the widening is written down as a step every later
   mint may have to repeat.
@@ -1505,20 +1553,29 @@ Covers: R14
 - **Green when** — the set matches and `toHaveLength` matches its size.
 - **Refactor** — none.
 
-#### Step G6 — a person listens to all six
+#### Step G6 — the six are handed to the feature-wide listening pass
 
-Covers: R24, AC17
+Covers: R24, AC17 — the brief half. The verdict half is discharged at
+`roadmap.md`'s *Wave 5 — the feature-wide listening pass*, and this step is what
+that pass reads.
 
-- **Test first** — none. This is the step no test can stand in for, and the gate
-  passing six candidates is not it.
-- **Implement** — run `npm run build`, open the app, reach each of the six by its
-  uuid at `/groove/<uuid>`, and play it in full. Record, per groove, in the
-  epic's report and in the listener's own words: does it read as a bossa; is the
-  clave a clave rather than a rim click on the wrong beats; is it worth playing a
-  guitar over. A groove that fails the first two is fixed in `bossa-nova.ts` and
-  re-minted, which re-runs G1–G5 for that groove.
-- **Green when** — six verdicts are written down and none of them is a
-  restatement of a gate result.
+- **Test first** — none, and none is possible. **A gate pass is not a sign-off**
+  and does not become one because the sign-off moved: the seven checks still run
+  and still block, at Step G1. This step writes down what a person will judge; it
+  does not judge.
+- **Implement** — run `npm run build` and confirm each of the six resolves at
+  `/groove/<uuid>` and plays end to end. Then write the listening brief into the
+  epic's report: for each of the six, its uuid, its `public/grooves/groove-NN.mp3`
+  path and its `/groove/<uuid>` route; and, once for the set, what a listener
+  should listen for in these six — does it read as a bossa; is the clave a clave
+  rather than a rim click on the wrong beats; does the surdo sit under it rather
+  than march; do the straight eighths keep time without stiffening; is it worth
+  playing a guitar over. Name the price of a "no" while it is cheap to state: a
+  change to `bossa-nova.ts` re-mints and re-renders these six mp3s and re-runs
+  G1–G5 for them, and no committed answer moves.
+- **Green when** — the brief names all six grooves, their files and their routes,
+  and says what to listen for. **The epic closes here.** Nothing in it waits on a
+  person.
 - **Refactor** — none.
 
 ### Track H — The documents
@@ -1598,7 +1655,11 @@ The tracks meet at Track G, and the epic is proven in this order:
    thirty-six digests, `patterns.test.ts` and `rules.test.ts` green.
 2. **The app tier.** `npm test`. Thirty-six grooves, the 5× cap, the pinned
    feature-9 answers untouched — that suite re-asserts eighteen exact answers and
-   is the second independent proof of R15.
+   is the second independent proof of R15. **Green except
+   `data/pastPuzzles.test.ts`**, which Step G1's mint turns red and which no epic
+   in this feature repairs; a run that reports only that file's failures counts as
+   the app tier passing. Do not regenerate the fixture to clear it — see
+   *Assumptions*.
 3. **The lock.** `npm run grooves:verify` reports thirty-six grooves, the notes,
    both manifests and the catalogue matching. If it reports a stale manifest,
    `npm run grooves -- --manifest-only` re-renders it and the lock — with Step D6
@@ -1613,9 +1674,17 @@ The tracks meet at Track G, and the epic is proven in this order:
    `grooves:verify`, so a stale manifest fails the build.
 7. **The demo path.** Open the app; today's puzzle still resolves and its four
    flavour options still include the answer. Then `/groove/<uuid>` for each of
-   the six bossa grooves: play it, hear the rim click a clave, the kick sit as a
-   surdo, the closed hat keep straight eighths and the keys on the syncopated
-   comp — and write down what you heard (AC17).
+   the six bossa grooves: confirm it plays end to end and that the rim, the kick,
+   the closed hat and the keys are all sounding. That is a smoke check, not a
+   verdict — it proves the six are reachable and audible, nothing about whether
+   they are good. What this epic hands forward instead is Step G6's brief, and
+   the verdicts are collected at `roadmap.md`'s *Wave 5 — the feature-wide
+   listening pass*, after Epic 6 (R24, AC17).
+
+**Nothing in this list waits on a person.** The epic is buildable, verifiable and
+closable end to end from its own tests, which is the whole reason the listening
+moved — see *Architecture* → *This epic ships its grooves unheard, and that is
+the trade*, and Decision log D9.
 
 ## Requirement coverage
 
@@ -1644,7 +1713,7 @@ The tracks meet at Track G, and the epic is proven in this order:
 | R21 | F4 (through `figures`, not `PLACEMENTS` — see the decision log), F5 |
 | R22 | F5, F6, F9 |
 | R23 | F7, G1 |
-| R24 | G6 |
+| R24 | G6 writes the brief; `roadmap.md`'s *Wave 5 — the feature-wide listening pass* records the verdicts. **Not unmet at the end of this epic** — the sign-off is discharged at the feature-wide listening pass, by design (D9) |
 | R25 | H1, H2, H4 |
 | R26 | H3 |
 | R27 | H2 |
@@ -1664,7 +1733,7 @@ The tracks meet at Track G, and the epic is proven in this order:
 | AC14 | F4, F5 |
 | AC15 | F5, F6 |
 | AC16 | G1, G3 |
-| AC17 | G6 |
+| AC17 | G6 — the per-groove brief, in the epic's report. The per-groove verdict in a listener's own words is recorded at `roadmap.md`'s *Wave 5 — the feature-wide listening pass*. A `/verify-epic` run over Epic 1 alone should read this as **discharged at the feature-wide listening pass**, not as not done. The clause it must still hold is unchanged: a gate pass is not a sign-off, and Step G1's gate does not stand in for one |
 | AC18 | H1, H2, H3 |
 
 ## Assumptions
@@ -1753,6 +1822,22 @@ The tracks meet at Track G, and the epic is proven in this order:
 - **The invocation is written with `--`.** `npm run grooves:add 6 --
   --template bossa-nova`. Every test drives `parseArgs` and `main` directly, so
   npm's argument forwarding is not part of the contract.
+- **`src/features/daily-groove/data/pastPuzzles.test.ts` goes red here, at Step
+  G1's mint, and stays red until the end of the feature.** It passes today at
+  thirty grooves. `selectGrooveForDate` indexes a seeded shuffle of the *whole*
+  catalogue, so thirty-six reassigns every recorded day, and
+  `DAYS.length === 3 * GROOVES.length` is arithmetic that breaks at thirty-six
+  and again at 42, 48, 54 and 60. Its own message calls catalogue growth
+  "sanctioned (feature-7 R6)" and branches on it. **This epic does not repair it
+  and does not regenerate it** — regenerating from this tree, the test says in as
+  many words, "makes it agree with whatever broke it", which is the one failure
+  the record exists to catch. It is re-baselined **once**, after Wave 5 has
+  settled, by `git archive`-ing the last commit before this epic's mint into a
+  scratch tree, resolving `3 × GROOVES.length` days against *that* catalogue and
+  setting `provenance.catalogueLength` to the final number.
+  `roadmap.md` § *One test is red for the whole feature, on purpose* is the
+  authority; Epic 6 records the same fact in its own Assumptions. Leave it red
+  and say so in the report.
 - **`specs/features.md` is the skill's to update**, not a track's.
 
 ## Decision log
@@ -1888,3 +1973,77 @@ all six mp3s re-render and the listening sign-off runs again. The committed
 answers survive either way — a voice list touches no `MUSIC_LABEL` draw — but six
 files a player has heard would change, so this is effectively one-way once G1
 lands.
+
+### Cycle 3 — 2026-09-06 — the listening moves to the end of the feature
+
+**D9. Every human listening verdict leaves this epic and lands in one
+feature-wide pass, after Epic 6.** `roadmap.md` gains
+*Wave 5 — the feature-wide listening pass*: all thirty new grooves played grouped
+by style, the five styles back to back, a verdict per groove in the listener's
+own words, and an output that is a list of proposed changes, each naming the
+template field to move and the re-render it costs.
+
+Two reasons, and the first decided it. **The five styles are one question, not
+five.** Whether Bossa Nova is too polite, whether the boom bap is too heavy
+beside it, whether the second line reads as a different feel or as the same feel
+louder — none of that can be answered by hearing six bossa grooves alone in the
+week they were minted. A verdict given per epic is a verdict given against a
+memory of the last style rather than against the style. **And an epic that waits
+for a person does not close.** Six epics each stopping mid-build for a listening
+session is six stalls in a run that is otherwise driven entirely by its own
+tests; now the implementation goes end to end and the listening happens once, on
+purpose, at the end.
+
+What this epic still owes: Step G6 stops collecting verdicts and starts writing a
+**brief** — the six uuids, their mp3 paths and their routes, and what a listener
+should listen for in these six. R24 and AC17 are covered by that brief plus the
+pass that consumes it, and the *Requirement coverage* table says so in those two
+rows, so a `/verify-epic` run over Epic 1 alone reads "discharged at the
+feature-wide listening pass" rather than "not done".
+Changed: Track G's title, goal and done-condition; Step G6, rewritten; item 7 of
+*Integration and verification*, demoted to a smoke check that hands the brief
+forward; the R24 and AC17 rows; and a new *Architecture* subsection stating
+plainly that the six ship unheard by design and what that risks.
+
+What did **not** change: the mints. They still happen inside each epic and they
+are still strictly serial, because each one reads the catalogue the last one
+wrote. And the gate still runs and still blocks at Step G1 — a gate pass is not a
+sign-off, and moving the sign-off later does not turn it into one. Where D6 and
+D8 above price a reversal at "the listening sign-off runs again", that sign-off
+is now the feature-wide pass; the price is the same, it is just paid later.
+
+Cost of reversal: one step. Put the verdict collection back into Step G6 and the
+epic waits on a person again — no file moves, no groove re-renders, and nothing
+else in the spec depends on the change. The cost is paid in the other direction
+instead: from Step G1 until the pass runs, a post-mint change to `bossa-nova.ts`
+costs a re-render of six mp3s, and that is the standing exposure this decision
+accepts.
+
+### Cycle 4 — 2026-09-06 — the past-puzzles record is re-baselined once, at the end
+
+**D10. `src/features/daily-groove/data/pastPuzzles.test.ts` is left red from Step
+G1's mint until the feature is finished, and re-baselined once after Wave 5.**
+This epic is where it first goes red: the record pins `3 × GROOVES.length`
+consecutive days to the grooves they resolved to at thirty, and both the
+arithmetic and the resolution read the catalogue's length, so thirty-six breaks
+them the instant the manifest is written.
+
+Why it is not repaired here. The obvious repair — regenerate the fixture from the
+tree that has thirty-six grooves — is the one the test forbids by name, because a
+record regenerated from the tree that moved it agrees with whatever moved it, and
+catching a frozen thing that moved is the only reason the record exists. And a
+fixture captured now would be wrong within the feature: Epics 2–5 each add six
+more, Epic 6 bumps `ROTA_EPOCH`, and Wave 5 can still pull a style's six. So it
+is re-baselined exactly once, last, from a `git archive` of the last commit before
+this epic's mint, with `provenance.catalogueLength` set to the number that ships.
+
+Changed: an *Assumptions* bullet naming the file and the procedure; Track G's
+done-condition and Step G4's green-condition, both now green *except* that file;
+a line in Step G1 saying the mint turns it red and the new length goes in the
+report; and item 2 of *Integration and verification*, so a run that reports only
+that file's failures still counts as the app tier passing. Nothing in the build
+changes.
+
+Cost of reversal: one re-baseline. Capture the fixture at thirty-six here instead
+and every later mint pays the same capture again — five times over, each from its
+own archived tree — for a record that is stale before the next epic lands.

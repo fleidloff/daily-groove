@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { nameFor } from './name.ts'
+import { nameFor, namesFor } from './name.ts'
 import { ADJECTIVES, NOUNS, WORDS } from './words.ts'
 
 const NOTE_WORDS = [
@@ -135,5 +135,65 @@ describe('generated names', () => {
         ).toBe(false)
       }
     }
+  })
+})
+
+describe('namesFor', () => {
+  const labels = Array.from(
+    { length: 200 },
+    (_, i) => `groove-${String(i + 1).padStart(2, '0')}`,
+  )
+
+  function firstClash(): [string, string] {
+    const seen = new Map<string, string>()
+    for (const label of labels) {
+      const name = nameFor(label)
+      const holder = seen.get(name)
+      if (holder !== undefined) return [holder, label]
+      seen.set(name, label)
+    }
+    throw new Error('no two of the first 200 labels draw the same name')
+  }
+
+  it('names every label it is given', () => {
+    const names = namesFor(labels)
+    expect(names.size).toBe(labels.length)
+    for (const label of labels) {
+      expect(names.get(label)?.trim().split(/\s+/)).toHaveLength(2)
+    }
+  })
+
+  it('gives no two labels the same name', () => {
+    const names = namesFor(labels)
+    expect(new Set(names.values()).size).toBe(labels.length)
+  })
+
+  it('leaves the first holder of a clashing name alone and moves the later one', () => {
+    const [first, later] = firstClash()
+    expect(nameFor(first)).toBe(nameFor(later))
+
+    const names = namesFor(labels)
+    expect(names.get(first)).toBe(nameFor(first))
+    expect(names.get(later)).not.toBe(nameFor(later))
+  })
+
+  it('is stable across calls for the same labels', () => {
+    expect([...namesFor(labels)]).toEqual([...namesFor(labels)])
+  })
+
+  it('draws every name, re-rolled or not, from the same two word lists', () => {
+    for (const name of namesFor(labels).values()) {
+      const [adjective, noun] = name.split(' ')
+      expect(ADJECTIVES).toContain(adjective)
+      expect(NOUNS).toContain(noun)
+    }
+  })
+
+  it('throws rather than looping when the names run out', () => {
+    const more = Array.from(
+      { length: ADJECTIVES.length * NOUNS.length + 1 },
+      (_, i) => `groove-${i + 1}`,
+    )
+    expect(() => namesFor(more)).toThrow(/name/i)
   })
 })

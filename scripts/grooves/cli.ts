@@ -11,7 +11,7 @@ import { writeManifest } from './manifest.ts'
 import { buildPools } from './pools.ts'
 import { buildLock, mergeLock, readLock, writeLock, type Lock } from './lock.ts'
 import { mixTracks } from './mix.ts'
-import { nameFor } from './name.ts'
+import { namesFor } from './name.ts'
 import { loadPack } from './pack.ts'
 import { probeHeadDelaySeconds } from './probe.ts'
 import { templateById } from './templates/index.ts'
@@ -34,12 +34,13 @@ export function toGroove(
   spec: GrooveSpec,
   music: MusicMeta,
   headDelaySeconds: number,
+  name: string,
 ): Groove {
   return {
     id: spec.id,
     uuid: spec.uuid,
     audioSrc: `/grooves/${spec.id}.mp3`,
-    name: nameFor(spec.id),
+    name,
     bpm: music.bpm,
     scale: music.scale,
     chord: music.chord,
@@ -115,7 +116,10 @@ export async function generate(options: GenerateOptions = {}): Promise<GenerateR
   const delays = audioOnDisk
     ? await Promise.all(files.map((file) => probeHeadDelaySeconds(file)))
     : files.map(() => 0)
-  const entries = rendered.map(({ spec, music }, i) => toGroove(spec, music, delays[i]))
+  const names = namesFor(rendered.map(({ spec }) => spec.id))
+  const entries = rendered.map(({ spec, music }, i) =>
+    toGroove(spec, music, delays[i], names.get(spec.id) as string),
+  )
 
   const heardIn = options.heardIn ?? readHeardIn()
   const heardInProblems = heardInFailures(heardIn, entries.map((e) => e.scale))

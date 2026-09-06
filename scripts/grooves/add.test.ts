@@ -8,6 +8,7 @@ import { readCatalogue, writeCatalogue } from './catalogue.ts'
 import { buildEvents } from './events.ts'
 import { gateCandidate } from './gate.ts'
 import { readLock } from './lock.ts'
+import { nameFor } from './name.ts'
 import { allTemplates } from './templates/index.ts'
 import { placeholderPack } from './testing/placeholderPack.ts'
 import type { GateFailure, GrooveSpec } from './types.ts'
@@ -53,6 +54,14 @@ function headDelays(manifest: string): Record<string, number> {
     /id: '([^']+)',[\s\S]*?headDelaySeconds: ([\d.e+-]+),/g,
   )) {
     out[m[1]] = Number(m[2])
+  }
+  return out
+}
+
+function manifestNames(manifest: string): Record<string, string> {
+  const out: Record<string, string> = {}
+  for (const m of manifest.matchAll(/id: '([^']+)',[\s\S]*?name: '([^']+)',/g)) {
+    out[m[1]] = m[2]
   }
   return out
 }
@@ -198,6 +207,26 @@ describe('addGrooves', () => {
     const manifest = readFileSync(f.manifestPath, 'utf8')
     for (const spec of [...TWO, ...minted]) expect(manifest).toContain(spec.id)
   })
+
+  it('re-rolls a minted name the catalogue already holds (quick 10)', async () => {
+    // groove-51 draws the name groove-01 already carries, so minting onto a
+    // catalogue that ends at groove-50 is the collision, not a contrived one.
+    const held: GrooveSpec[] = [
+      FIVE[0],
+      { id: 'groove-50', uuid: '9d1f7c84-2b36-4a0e-9f51-7c0a3d6e21b4', template: 'straight-funk', seed: 50 },
+    ]
+    expect(nameFor('groove-51')).toBe(nameFor(held[0].id))
+
+    const f = fixture(held)
+    const [minted] = await addGrooves(1, { startSeed: 1500, gate: PASS, ...f })
+    expect(minted.id).toBe('groove-51')
+
+    const names = manifestNames(readFileSync(f.manifestPath, 'utf8'))
+    expect(Object.keys(names)).toHaveLength(3)
+    expect(names[held[0].id]).toBe(nameFor(held[0].id))
+    expect(names['groove-51']).not.toBe(nameFor('groove-51'))
+    expect(new Set(Object.values(names)).size).toBe(3)
+  }, MINT_TIMEOUT_MS)
 
   it("measures every mp3 it describes, giving each entry its own file's head delay", async () => {
     const f = fixture()

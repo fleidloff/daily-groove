@@ -7,6 +7,7 @@ import { readLock, sha256File, writeLock } from './lock.ts'
 import { decodeAudioFile } from './decode.ts'
 import { buildEvents } from './events.ts'
 import { mixTracks, PEAK_CEILING, SEAM_THRESHOLD, truePeak } from './mix.ts'
+import { nameFor } from './name.ts'
 import { loadPack } from './pack.ts'
 import { templateById } from './templates/index.ts'
 import { renderVoices } from './voices.ts'
@@ -251,6 +252,22 @@ describe('the committed render', () => {
 })
 
 describe('toGroove', () => {
+  it('carries the name it is handed, and asks for none of its own (quick 10)', () => {
+    const music = {
+      bpm: 96,
+      bars: 4,
+      loopBars: 4,
+      root: 'A',
+      flavour: 'harmonic-minor',
+      scale: 'A harmonic minor',
+      chord: 'AmMaj7',
+      progression: 'Am–Dm–E7',
+      progressionDegrees: [0, 3, 4] as number[],
+    } as const
+    expect(toGroove(SPECS[0], music, 0, 'Quiet Lagoon').name).toBe('Quiet Lagoon')
+    expect(toGroove(SPECS[0], music, 0, 'Salted Ferry').name).toBe('Salted Ferry')
+  })
+
   it('carries the head delay it was measured with onto the entry', () => {
     const music = {
       bpm: 96,
@@ -263,8 +280,8 @@ describe('toGroove', () => {
       progression: 'Am–Dm–E7',
       progressionDegrees: [0, 3, 4] as number[],
     } as const
-    expect(toGroove(SPECS[0], music, 0.025057).headDelaySeconds).toBe(0.025057)
-    expect(toGroove(SPECS[1], music, 0.031111).headDelaySeconds).toBe(0.031111)
+    expect(toGroove(SPECS[0], music, 0.025057, nameFor(SPECS[0].id)).headDelaySeconds).toBe(0.025057)
+    expect(toGroove(SPECS[1], music, 0.031111, nameFor(SPECS[1].id)).headDelaySeconds).toBe(0.031111)
   })
 
   it("carries the spec's uuid onto the entry, unchanged", () => {
@@ -279,9 +296,9 @@ describe('toGroove', () => {
       progression: 'Am\u2013Dm\u2013E7',
       progressionDegrees: [0, 3, 4] as number[],
     } as const
-    expect(toGroove(SPECS[0], music, 0).uuid).toBe(SPECS[0].uuid)
-    expect(toGroove(SPECS[1], music, 0).uuid).toBe(SPECS[1].uuid)
-    expect(toGroove(SPECS[0], music, 0).uuid).not.toBe(SPECS[1].uuid)
+    expect(toGroove(SPECS[0], music, 0, nameFor(SPECS[0].id)).uuid).toBe(SPECS[0].uuid)
+    expect(toGroove(SPECS[1], music, 0, nameFor(SPECS[1].id)).uuid).toBe(SPECS[1].uuid)
+    expect(toGroove(SPECS[0], music, 0, nameFor(SPECS[0].id)).uuid).not.toBe(SPECS[1].uuid)
   })
 
   it('carries the degrees the music was built from onto the entry — R4, AC5', () => {
@@ -296,9 +313,9 @@ describe('toGroove', () => {
       progression: 'Am–Dm–E7',
       progressionDegrees: [0, 3, 4] as number[],
     } as const
-    expect(toGroove(SPECS[0], music, 0).progressionDegrees).toEqual([0, 3, 4])
+    expect(toGroove(SPECS[0], music, 0, nameFor(SPECS[0].id)).progressionDegrees).toEqual([0, 3, 4])
     expect(
-      toGroove(SPECS[0], { ...music, progressionDegrees: [0, 4, 3] }, 0)
+      toGroove(SPECS[0], { ...music, progressionDegrees: [0, 4, 3] }, 0, nameFor(SPECS[0].id))
         .progressionDegrees,
     ).toEqual([0, 4, 3])
   })
@@ -315,10 +332,10 @@ describe('toGroove', () => {
       progression: 'Am–Dm–E7',
       progressionDegrees: [0, 3, 4] as number[],
     } as const
-    const entry = toGroove(SPECS[0], music, 0.025057)
+    const entry = toGroove(SPECS[0], music, 0.025057, nameFor(SPECS[0].id))
     expect(entry.bars).toBe(4)
     expect(entry.loopBars).toBe(8)
-    expect(toGroove(SPECS[0], { ...music, loopBars: 16 }, 0.025057).loopBars).toBe(16)
+    expect(toGroove(SPECS[0], { ...music, loopBars: 16 }, 0.025057, nameFor(SPECS[0].id)).loopBars).toBe(16)
   })
 })
 
@@ -348,7 +365,7 @@ describe('displayFlavour', () => {
       chord: 'AmMaj7',
       progression: 'Am–Dm–E7',
       progressionDegrees: [0, 3, 4] as number[],
-    }, 0.025057)
+    }, 0.025057, nameFor(SPECS[0].id))
     const rest = groove.scale.slice(groove.scale.indexOf(' ') + 1)
     expect(groove.flavour).toBe(rest.charAt(0).toUpperCase() + rest.slice(1))
   })

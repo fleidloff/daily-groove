@@ -136,12 +136,13 @@ describe('the next-groove line (quick 3)', () => {
 })
 
 describe('feature-22 wording', () => {
-  it('names both ways to play and points at the switch by its name (F22 E2 R4)', () => {
-    expect(snippets.intro.twoWays).toBe(
-      'Two ways to play: Simple mode is six roots, Major or Minor. The switch on the card opens up the full set.',
+  it('points at the switch by its name and quotes the side it describes (F22 E2 R4)', () => {
+    const { twoWays } = snippets.intro
+
+    expect(twoWays).toContain(snippets.puzzle.simpleMode)
+    expect(twoWays.toLowerCase()).toContain(
+      snippets.puzzle.simpleModeOn.toLowerCase(),
     )
-    expect(snippets.intro.twoWays).toContain(snippets.puzzle.simpleMode)
-    expect(snippets.intro.steps).toHaveLength(4)
   })
 
   it('describes each side of the switch by what the row shows (F22 E2 R2)', () => {

@@ -37,7 +37,7 @@ comment.
 
 `.claude/settings.json` sets `CLAUDE_CODE_DISABLE_TERMINAL_TITLE`, so Claude
 Code writes no title of its own in this repo. Its hooks own the glyph and you
-supply the words after it. Three states, and the hooks tell them apart without
+supply the words after it. Four states, and the hooks tell them apart without
 being asked:
 
 | Glyph | State | What writes it |
@@ -45,9 +45,12 @@ being asked:
 | `◐` | a turn is running | `UserPromptSubmit`, and every `--agent-start` |
 | `✳` | blocked on you — a permission prompt, or an idle nudge | `Notification` |
 | `✔` | the turn finished and needs nothing from you | `Stop` |
+| `?` | the turn finished, but a question is open in the spec | `Stop`, when the ticket says so |
 
 `✔` survives the idle nudge that follows it, so a finished turn does not decay
-into `✳` a minute later. The next prompt clears it.
+into `✳` a minute later. The next prompt clears it. `?` takes `✔`'s place
+whenever the spec the session is on still has a question with no option ticked
+— the terminal is asking nothing, and the file is.
 
 A dispatched agent counts as running. `PreToolUse` on the agent tool and
 `SubagentStop` keep a token per live agent under `~/.claude/title-state/`, so a
@@ -74,6 +77,13 @@ state it owed, and pays it — `✔` or `✳` — when the last one reports back
   set — a fresh session reads `✳ claude`, never the folder name.
 - The text sticks until you replace it, so replace it when the task changes.
   Nothing else will.
+- **`?` follows the prefix, not your judgement.** `title.sh` reads `Q<N>)` or
+  `F<N>)` off the title, opens `specs/quick/N-*.md` or
+  `specs/features/feature-N/`, and asks whether any `## Open questions` section
+  holds a question with no option ticked. An answered question keeps its
+  unticked options, so a bare `- [ ]` is not enough on its own. Set the prefix
+  and the glyph is right; drop the prefix and a turn that ends by asking you to
+  tick something claims to need nothing.
 - Applies to every step of the chain in [docs/skills.md](docs/skills.md), and to
   `/quick-feature`, `/implement-quick-feature`, `/verify-epic` and
   `/prototype`.
