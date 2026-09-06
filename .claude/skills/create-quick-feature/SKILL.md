@@ -108,14 +108,15 @@ ticket look analyzed when it isn't.
 The Quick changes table — third table, after *Prepared candidates* and before
 the candidate ideas list, columns `# | Change | Status | Summary`. **Read the
 file first** and match its column shape. Create the table with its heading and
-legend if it isn't there yet, as `/quick-feature` §10 describes.
+legend if it isn't there yet, as `/quick-feature` §8 describes.
 
 Add the row in ascending number order, at 📝 **Drafted**:
 
 `| [N](quick/N-slug.md) | <short name> | 📝 Drafted | <one-sentence summary> |`
 
 Status is set here and never advanced by this skill. `/quick-feature` moves it
-to ❓ Questions open or ✅ Done.
+to ❓ Questions open or 🛠 Ready to build; `/implement-quick-feature` writes ✅
+Done.
 
 The name is two or three words. The summary is one sentence describing what a
 person can do or see afterwards that they couldn't before — derived from the
@@ -130,4 +131,5 @@ and narrow its summary to what remains, and say so in the report.
 
 The ticket path; the bullets, one line each; the row written; any candidate
 idea removed or narrowed. Then the next step: `/quick-feature N`, which
-analyzes the ticket and asks anything blocking inside it. Don't run it.
+analyzes the ticket and asks anything blocking inside it, and
+`/implement-quick-feature N` after that. Don't run either.

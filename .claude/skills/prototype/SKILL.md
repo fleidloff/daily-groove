@@ -62,8 +62,9 @@ say what is open, stop.
 
 **Most quick tickets don't want one at all.** A ticket you can describe in five
 bullets is usually faster to build than to draw. Say so and point at
-`/quick-feature N` unless the change is visual enough that a picture settles
-something words are circling.
+`/quick-feature N` — or `/implement-quick-feature N` if it is already analyzed —
+unless the change is visual enough that a picture settles something words are
+circling.
 
 ## 3. Read the inputs
 

@@ -2,12 +2,13 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { beforeEach, describe, expect, it } from 'vitest'
 import type { Answer, DailyResult } from '../types'
-import { parseIsoDate } from '@/lib/date'
+import { isoDate, parseIsoDate } from '@/lib/date'
 import { answerOf } from '@/lib/theory/music'
 import { GROOVES } from './grooves.generated'
 import { grooveByUuid } from '../lib/puzzle/grooveByUuid'
 import { selectGrooveForDate } from '../lib/puzzle/selectGroove'
 import { createLocalStore } from '../lib/persistence/storage'
+import { computeStreak } from '../lib/persistence/streak'
 
 type PastPuzzle = {
   date: string
@@ -187,6 +188,18 @@ const LAPS_BROKEN = GREW
       'time, so a record that stops mid-lap stops exercising the swap in orderFor.',
     ].join('\n')
 
+const STREAK_BROKEN = [
+  'A player’s streak is no longer what their stored results add up to.',
+  '',
+  'The record holds consecutive solved days, so anchored on the day after the last of them the',
+  'streak is one per day, unbroken. A different number means computeStreak’s rules moved — what',
+  'counts as qualifying, what counts as a day being over, or where the count anchors — and that',
+  'is a number on the page changing under players who did nothing.',
+  '',
+  'Unlike every other check in this file, this one does not care what the catalogue does: a',
+  'streak reads results, not grooves. Growth cannot cause this.',
+].join('\n')
+
 const UNWATCHED = GREW
   ? [
       'The catalogue ships a groove this record has never seen assigned to a day, so nothing here',
@@ -356,5 +369,15 @@ describe('a stored result from before feature-24 still resolves', () => {
       .filter((line): line is string => line !== null)
 
     expect(reassigned, REASSIGNED).toEqual([])
+  })
+
+  it('adds those days up to the streak the player was showing', async () => {
+    const store = createLocalStore()
+    for (const day of DAYS) await store.save(storedResultFor(day))
+
+    const dayAfter = parseIsoDate(DAYS[DAYS.length - 1].date)
+    dayAfter.setDate(dayAfter.getDate() + 1)
+
+    expect(computeStreak(await store.getAll(), isoDate(dayAfter)), STREAK_BROKEN).toBe(DAYS.length)
   })
 })

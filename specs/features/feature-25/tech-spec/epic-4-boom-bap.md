@@ -1119,7 +1119,7 @@ Ghost velocity is a shared constant — `GHOST_VELOCITY_RANGE = [0.15, 0.25]` in
 *where and how many* ghosts it plays, and nothing else about them. Steps A4, D1
 and D2 change with the answer.
 
-- [ ] A) **The figure only** — `patterns.snareGhosts`: how many ghosts, and on which odd sixteenths *(recommended — nothing outside `templates/boom-bap.ts` moves, and with swung sixteenths the odd steps are exactly where the swing is audible, so placement is the more distinctive lever anyway. Reversal costs nothing while the grooves are unminted; the risk it accepts is that a verdict of "the ghosts are too loud" has no lever at all, and would land option B mid-wave-2)*
+- [x] A) **The figure only** — `patterns.snareGhosts`: how many ghosts, and on which odd sixteenths *(recommended — nothing outside `templates/boom-bap.ts` moves, and with swung sixteenths the odd steps are exactly where the swing is audible, so placement is the more distinctive lever anyway. Reversal costs nothing while the grooves are unminted; the risk it accepts is that a verdict of "the ghosts are too loud" has no lever at all, and would land option B mid-wave-2)*
 - [ ] B) **Add an optional `ghostVelocity?: [number, number]` to `FeelTemplate` in Wave 1**, omitted by every other template and so behaviour-neutral, proved by `rerender-check.ts` and feature-24's `events.fixture.json` *(costs ~5 lines in `types.ts` and `events.ts` — two files Epics 2 and 3 also touch — and adds a field Epic 1's frozen contract did not include, which the PRD puts out of scope)*
 - [ ] C) **A now, B only if the first verdict names ghost level** — the cheapest start, at the price of editing two shared generator files at the moment two other epics are minting through them
 - [ ] D) **Retune swing and tempo only**, and drop ghosts from R9 — needs the PRD amended, since AC8 asserts all three changed
@@ -1131,7 +1131,7 @@ figure is two onsets a bar. Read literally, "below the lowest of the three named
 templates'" means boom-bap plays at most one comp onset a bar. Step A5 changes
 with the answer, and reversing it after the mint re-renders all six grooves.
 
-- [ ] A) **One onset a bar**, position drawn per groove — the literal reading *(recommended — it is the only reading under which AC4 passes unambiguously, and one stab a bar at 88 bpm is the idiom: the keys are a sample hit, not a comp. Reversal before the mint is one pool edit; after the mint it is six re-rendered grooves and a second hearing's worth of doubt about which audio was signed off)*
+- [x] A) **One onset a bar**, position drawn per groove — the literal reading *(recommended — it is the only reading under which AC4 passes unambiguously, and one stab a bar at 88 bpm is the idiom: the keys are a sample hit, not a comp. Reversal before the mint is one pool edit; after the mint it is six re-rendered grooves and a second hearing's worth of doubt about which audio was signed off)*
 - [ ] B) **Two onsets a bar**, with AC4 read as "fewer than the busiest of the three declare" (three) — a fuller comp, and an assertion that passes on a looser reading of the same sentence
 - [ ] C) **One onset in some bars and two in others**, drawn per bar — needs a mechanism `patterns` does not have (a pool is drawn once per groove), so it is a change to `events.ts` and to Epic 1's contract
 - [ ] D) **Fewer comp *events* per bar rather than onsets** — measured after voicing, which lets one onset of a three-note voicing count as three and makes the comparison about `playedVoicing`, not about the figure

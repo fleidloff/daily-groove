@@ -1318,7 +1318,7 @@ voicing at every comp step. R5 asks for "an arpeggiated, syncopated pattern
 rather than the block chords `COMP_PATTERNS` carries", so a step list alone does
 not satisfy it.
 
-- [ ] A) **`compArpeggio`, one tone per step, rotating by step index and pass**
+- [x] A) **`compArpeggio`, one tone per step, rotating by step index and pass**
       *(recommended — Epic 1's C8 sanctions the field, the six existing templates
       omit it and stay byte-identical, and it is the reading of R5 that produces
       an actual montuno. It also pulls density down by roughly sixteen events a

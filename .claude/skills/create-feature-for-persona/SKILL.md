@@ -209,7 +209,8 @@ Then stop. The next step differs by door, and you point at it without running
 it:
 
 - **Quick ticket** → `/quick-feature N`, which analyzes the ticket and asks
-  anything blocking inside it.
+  anything blocking inside it; `/implement-quick-feature N` builds it once
+  nothing is open.
 - **Lettered candidate** → nothing. It is parked until the user promotes it to a
   number; suggesting `/roadmap feature-X` would plan work nobody has committed
   to.

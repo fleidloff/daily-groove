@@ -1,52 +1,59 @@
 ---
 name: quick-feature
-description: Build a small change from a one-page ticket instead of the five-step chain — allocate `specs/quick/N-slug.md`, write what changes and what done means, ask any blocking question in the ticket itself, then implement it directly and run the full pre-push checks. Escalates to `/create-feature` the moment it stops being small. Use whenever the user runs `/quick-feature`, or asks for a small change, a tweak, a one-liner, or says something is too small for a feature.
-argument-hint: [what to change | N] [--go]
+description: Analyze a one-page quick ticket in `specs/quick/N-slug.md` — run the size test, write `## Notes` naming the files it will touch and the assumptions taken, and ask anything blocking as tickable options inside the ticket, folding the answers in on each re-run until nothing is open. Writes no code; `/implement-quick-feature N` builds it. Escalates to `/create-feature` the moment it stops being small. Use whenever the user runs `/quick-feature`, asks to analyze or scope a quick ticket, says they've answered a ticket's questions, or describes a small change that needs thinking through before it is built.
+argument-hint: [what to change | N]
 ---
 
-# Quick
+# Quick — analyze
 
 One ticket, one change, no chain. `/create-feature` → `/roadmap` →
 `/brainstorm` → `/writespec` → `/implement-feature` buys insurance against
 building the wrong thing, and for a change you can describe in five bullets that
 insurance costs more than the accident it prevents.
 
-**What this path drops is the planning, never the checks.** For a small change
-the risk is not "wrong feature", it is "landed in the wrong place" — and the
-lint zones in `docs/coding-guidelines.md`, the structure tests and
-`docs/testing.md`'s standard are what catch that. They are the substitute for
-the spec, so §8 is not optional.
+**This skill is the thinking half of that door.** It reads the ticket against
+the tree, decides whether the change is still small, names the files before any
+code exists, and turns everything that would change the work into a question the
+user can tick. `/implement-quick-feature N` is the other half.
 
-## 0. Never commit
+## 0. Never commit, never build
 
-Like `/implement-feature`: no `git add`, no `git commit`, no branch, no stash.
-Everything this run changes stays in the working tree for the user to read and
-commit themselves.
+No `git add`, no `git commit`, no branch, no stash.
+
+And **no source edits.** This skill writes exactly one file: the ticket. Not a
+test, not a one-line fix that "was obviously it", not a spike you meant to
+revert. The point of two runs is that the user reads the notes while the change
+is still free to be wrong; a diff sitting in the tree removes that. If the
+analysis is only settled by opening a file, open it and read it — reading is the
+job, writing is not.
 
 ## 1. Resolve the phase
 
 | Invocation | Ticket state | Phase |
 | :-- | :-- | :-- |
-| `/quick-feature 7` | `## What` and `## Done when` written by hand, no `## Notes` yet | **Analyze** — fill in `## Notes` and `## Open questions`, then stop (§4, §5). |
-| `/quick-feature 7` | analyzed, no questions open | **Build** (§6). |
+| `/quick-feature 7` | `## What` and `## Done when` written by hand, no `## Notes` yet | **Analyze** — write `## Notes` and `## Open questions`, then stop (§4, §5). |
+| `/quick-feature 7` | questions ticked | **Reconcile** — fold the answers in and ask what they opened up (§6). |
 | `/quick-feature 7` | questions unticked | Say what is open, stop. |
-| `/quick-feature <prose>` | none yet | **Draft** the whole ticket from the prose, then stop. |
-| `/quick-feature <prose> --go` | none yet | Draft and build in one run, only if the draft ends with no questions. |
+| `/quick-feature 7` | analyzed, nothing open | Say it is ready and point at `/implement-quick-feature 7`. Don't re-analyze. |
+| `/quick-feature <prose>` | none yet | **Draft** the whole ticket from the prose, then analyze it in the same run. |
 | bare `/quick-feature` | — | List `specs/quick/` with each ticket's status and ask which. |
 
 **The hand-written ticket is the normal way in.** The user opens
 `specs/quick/N-slug.md`, writes `## What` and `## Done when`, and runs
-`/quick-feature N`. Analyze and build are two runs on purpose: the notes name the
-files before any code exists, which is the cheapest moment to catch a wrong
-module.
+`/quick-feature N`. Analysis and build are separate runs on purpose: the notes
+name the files before any code exists, which is the cheapest moment to catch a
+wrong module.
 
-A ticket whose `## Open questions` still has unticked options is not buildable.
-Say what is open, and stop.
+Repeat until settled, the way `/brainstorm` does:
+
+```
+/quick-feature 7  →  tick the answers  →  /quick-feature 7  →  … until nothing is open  →  /implement-quick-feature 7
+```
 
 ## 2. The size test
 
-Both phases start here, and the build phase re-runs it — a ticket that looked
-small can stop being small the moment you open the files.
+Every phase starts here, and §6 re-runs it — an answer can make a ticket stop
+being small.
 
 1. Can you name what changes, the files it touches, and what done means, in
    five bullets or fewer?
@@ -65,16 +72,15 @@ against.
 
 More than two open questions surviving one round is itself a failed test (§5).
 
-**Escalating mid-build is allowed and expected.** If the third file you open
-tells you this is bigger than the ticket says, stop, write what you found into
-the ticket under `## Notes`, leave the working tree as it is, and say so. That
-is the escalation path working, not a run that failed.
+The verdict goes in `## Notes` in every run, including the runs where it passes.
+It is what `/implement-quick-feature` re-checks against the files it actually
+opens.
 
 ## 3. Allocate the number
 
 `specs/quick/N-slug.md` — a plain number, no padding, highest existing plus one,
-never filling a gap. The slug is the title in kebab-case. Create `specs/quick/` if it
-isn't there.
+never filling a gap. The slug is the title in kebab-case. Create `specs/quick/`
+if it isn't there.
 
 Only the draft phase allocates here. `/create-quick-feature` and `/roadmap` §3
 allocate too — the first from an interview, the second when it moves a one-epic
@@ -108,22 +114,27 @@ _None._
 intent from the person who wants the change, consequences from the session that
 has read the tree.
 
-So in the analyze phase, **do not rewrite either of the first two sections.**
-Not to tighten the wording, not to split a bullet, not to add the thing they
-obviously forgot. If a `## What` bullet is ambiguous it becomes a question (§5);
-if a `## Done when` bullet can't be settled by a test or by looking at the page,
-say so in the report and let the user fix it. Editing intent in place is how a
-ticket quietly becomes yours, and the user has no way to see it happened.
+So **do not rewrite either of the first two sections.** Not to tighten the
+wording, not to split a bullet, not to add the thing they obviously forgot. If a
+`## What` bullet is ambiguous it becomes a question (§5); if a `## Done when`
+bullet can't be settled by a test or by looking at the page, say so in the
+report and let the user fix it. Editing intent in place is how a ticket quietly
+becomes yours, and the user has no way to see it happened.
 
-The draft phase (`/quick-feature <prose>`) writes all four sections, because there is no
-hand-written ticket to preserve — but the first two still follow
+The draft phase (`/quick-feature <prose>`) writes all four sections, because
+there is no hand-written ticket to preserve — but the first two still follow
 `/create-feature` §3: the user's framing and their level of detail, not yours.
-Show the draft and let them adjust before building.
+Show the draft and let them adjust.
 
 **`## Notes` names the expected files before any code exists.** It is the
 cheapest way for the user to spot a wrong module while the change is still one
 line to correct, and it is what §2's second question is checked against. It also
 carries every assumption you took rather than asked, and the size-test verdict.
+
+Notes worth writing, beyond the file list: the test that already covers this and
+would have to change, the lint zone or structure test the change has to clear,
+and anything in the tree that contradicts a `## What` bullet. Name the file each
+time, so the user can check the claim rather than believe it.
 
 ## 5. Open questions
 
@@ -145,66 +156,50 @@ engineering reason, named as such.
 becomes an assumption under `## Notes` instead. **Two questions is the
 ceiling.** A third is the size test telling you this wants a PRD.
 
-## 6. Build it in the lead
+Say what each option costs where it differs — the module it drags in, the test
+it breaks, the size-test question it fails. An option that fails §2 is worth
+listing with that consequence written into it rather than silently dropped; the
+user decides whether the ticket moves to `/create-feature`.
 
-No dispatch. A quick change is one to three files, and the fan-out machinery in
-`/implement-feature` earns its coordination cost across epics that own disjoint
-files — here every agent would need the ticket re-explained to it, to save
-nothing.
+## 6. The answer cycle
 
-Test first, then the code: `docs/testing.md` applies unchanged, and a quick
-change is not an untested change. Run the ticket's own tests as you go; §8 is
-the gate, not the loop.
+On a re-run with answers ticked:
+
+- **Fold them in as decisions, not as new intent.** Append an
+  `## Answered — Q1-B, Q2-A` section recording what was ticked and what follows
+  from it. `## What` and `## Done when` still don't move.
+- **Re-run §2 against the answer.** An option can pull in a third module, and
+  the run where that becomes true is this one. Say it plainly and point at
+  `/create-feature`; if the user waives it, record the waiver and their words in
+  the ticket.
+- **Update `## Notes`** — the file list, the assumptions and the verdict now all
+  read against the chosen option, not against the recommendation.
+- **Ask the follow-ups the answer opened**, under the same ceiling of two. An
+  answer that opens nothing means the ticket is settled; say so rather than
+  inventing a round.
+
+Rewrite an answered question's options only to mark it answered — never to
+change what was on offer after the fact.
 
 ## 7. Agents
 
-**`musician`, for any ticket touching `scripts/grooves/`.** Dispatch it to
-decide the musical parameters and state the reasoning, then apply that yourself
-— the same two-turn shape as `/implement-feature` §5, without the waves. It is
-worth the dispatch here because `docs/music.md` is deliberately not loaded into
-a normal session, so the musical judgement is exactly the part a session that
-hasn't read it gets wrong. Note that most generator tickets fail §2's third
-question anyway and belong in a feature.
+None for the mechanics. The analysis is one session reading a handful of files,
+and a dispatched agent would need the ticket re-explained to it to save nothing.
 
-**Not `architect`.** A tech spec for a two-file change is the chain again; if
-the change wants one, it wants `/create-feature`.
+Two exceptions, both about judgement rather than work:
 
-**Not `verifier`.** It grades acceptance criteria against a PRD, and a quick
-ticket has none. The `## Done when` bullets plus §8 are the gate.
+- **`sam`**, when a question turns on what the player would do rather than on
+  what the code needs — the same use `/brainstorm` and `/roadmap` make of it.
+  The answer comes back in first person and grounds the recommendation.
+- **`musician`**, when a question about `scripts/grooves/` is musical.
+  `docs/music.md` is deliberately not loaded into a normal session, so that
+  judgement is exactly the part a session that hasn't read it gets wrong. Note
+  that most generator tickets fail §2's third question anyway and belong in a
+  feature.
 
-**Not `test-writer` or `implementer`.** They own units of a tech spec. Here the
-lead writes both the test and the code.
+Neither writes a file. The ticket stays yours.
 
-**A listening sign-off still doesn't stall the run** — if the change needs an
-ear, say so in `## Built` and leave that bullet unverified rather than claiming
-it was heard.
-
-## 8. Checks
-
-```bash
-npm run lint && npm test && npm run build
-```
-
-Plus `npm run test:gen` when anything under `scripts/grooves/` changed.
-
-Show what failed. Never report a green run you did not execute, and never weaken
-or delete a test to get one.
-
-## 9. Record what was built
-
-Append to the ticket:
-
-```markdown
-## Built
-* `path` — what changed
-* tests: <what was added, and where>
-* checks: lint / test / build — <result>
-```
-
-The ticket is the record. Quick changes write no `.implement/` or `.verify/`
-report.
-
-## 10. Register it in `specs/features.md`
+## 8. Register it in `specs/features.md`
 
 Two edits, both in that file.
 
@@ -214,19 +209,25 @@ isn't there yet. Columns `# | Change | Status | Summary`:
 
 `| [7](quick/7-slug.md) | <short name> | 📝 Drafted | <one-sentence summary> |`
 
-Status runs 📝 **Drafted** → ❓ **Questions open** → ✅ **Done**. A row goes in
-when the ticket is written, and moves to ✅ only when §8 came back green and
-every `## Done when` bullet holds. Untested is not done — same rule as
-`/implement-feature` §10.
+Status runs 📝 **Drafted** → ❓ **Questions open** → 🛠 **Ready to build** →
+✅ **Done**. This skill moves a row to ❓ when it leaves questions open and to 🛠
+when the analysis settles with none. **It never writes ✅** — that is
+`/implement-quick-feature` §7, after the checks come back green.
 
 **The candidate ideas list at the bottom** — if this ticket takes up one of
 those ideas, delete its row, exactly as `/create-feature` §5 does. Judge by
 whether the ticket covers what the idea proposed, not by the wording. Partly
 covered → keep the row and narrow it to what remains, and say so in the report.
 
-## 11. Report
+## 9. Report
 
-The ticket path; the size test's verdict; the files changed, one line each; the
-check results; and the row you wrote or moved. Then the next step — questions
-open, point at the ticket; escalated, point at `/create-feature`; built, say the
-diff is uncommitted in the working tree.
+The ticket path; the size test's verdict; the files the change is expected to
+touch, one line each; the questions you asked or the answers you folded in; and
+the row you wrote or moved.
+
+Then the next step, and only one of them:
+
+- questions open → point at the ticket, and at `/quick-feature N` again once
+  they are ticked.
+- size test failed → point at `/create-feature`.
+- settled → point at `/implement-quick-feature N`. Don't run it.

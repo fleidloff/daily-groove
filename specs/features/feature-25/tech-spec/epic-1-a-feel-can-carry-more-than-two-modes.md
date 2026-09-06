@@ -1810,7 +1810,7 @@ This epic owns both copies of the guard (`catalogue.test.ts` and the app's
 `grooves.generated.test.ts`), so it is the only place the shape can be changed
 once for the whole feature.
 
-- [ ] A) **Implement R10 literally — 5× — and let each style epic widen both
+- [x] A) **Implement R10 literally — 5× — and let each style epic widen both
       copies as its mint demands.** *(recommended only if you want the requirement
       honoured to the letter. Cost: four more epics each edit two test files they
       do not otherwise own, each widening reads as "the guard was in the way", and
@@ -1839,7 +1839,7 @@ once for the whole feature.
 voices feature-24 sourced but never played; AC15 names only three of them and
 leaves `ride` out.
 
-- [ ] A) **The closed hat.** *(recommended — it makes this epic independent of
+- [x] A) **The closed hat.** *(recommended — it makes this epic independent of
       feature-24, which the PRD's Dependencies section requires, and reads R22 as
       written. Reversal cost: once the six grooves are minted, moving the
       timekeeper re-renders all six mp3s. Their answers survive — the voice list

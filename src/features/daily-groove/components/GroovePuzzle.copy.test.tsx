@@ -6,6 +6,7 @@ import {
   control,
   guess,
   installPuzzleAudio,
+  liveRoot,
   nudgeLine,
   otherWrongFlavour,
   renderPuzzle,
@@ -118,7 +119,7 @@ describe('nothing on the page counts your tries (F19 E1)', () => {
     expect(nudgeLine()).toBeInTheDocument()
     expect(offendingCopy(readablePage())).toEqual([])
 
-    await guess(user, 'A', thirdWrongFlavour())
+    await guess(user, liveRoot(), thirdWrongFlavour())
     expect(giveUp()).toHaveAccessibleName(puzzle.giveUp)
     expect(offendingCopy(readablePage())).toEqual([])
   })
@@ -140,7 +141,7 @@ describe('nothing on the page counts your tries (F19 E1)', () => {
 
     await guess(user, 'C', wrongFlavour())
     await guess(user, 'D', otherWrongFlavour())
-    await guess(user, 'A', thirdWrongFlavour())
+    await guess(user, 'C', thirdWrongFlavour())
     await user.click(giveUp() as HTMLElement)
     await user.click(giveUp() as HTMLElement)
 

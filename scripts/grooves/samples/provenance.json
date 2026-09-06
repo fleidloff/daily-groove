@@ -1338,7 +1338,6 @@
       "modifications": "capped at 2 s, faded out over the last 80 ms, single close mic (DrumGizmo channel 8, Beyerdynamic MCE 86 II on the ride) taken as the mono channel (one microphone, not a stereo fold), 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept; not normalised: the level difference between velocity layers is the dynamic information the renderer reads)"
     }
   ],
-  "attribution": "Drum samples provided by DrumGizmo.org",
   "attributions": [
     "Drum samples provided by DrumGizmo.org",
     "Ride cymbal samples from DRSKit, provided by DrumGizmo.org"

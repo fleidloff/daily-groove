@@ -8,6 +8,7 @@ import {
   GROOVE,
   guess,
   installPuzzleAudio,
+  liveRoot,
   loopFraction,
   otherWrongFlavour,
   play,
@@ -119,7 +120,7 @@ describe('GroovePuzzle', () => {
 
     await guess(user, 'G', wrongFlavour())
     await guess(user, 'D', otherWrongFlavour())
-    await guess(user, 'A', thirdWrongFlavour())
+    await guess(user, liveRoot(), thirdWrongFlavour())
     await user.click(giveUp() as HTMLElement)
     await user.click(giveUp() as HTMLElement)
 

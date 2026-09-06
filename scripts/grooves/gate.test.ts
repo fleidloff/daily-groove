@@ -583,7 +583,11 @@ type SignOff = {
   pcm: string
   /** sha256 of the encoded file, or null where the groove is deliberately not encoder-pinned. */
   mp3: string | null
-  /** The file that was played to a person. */
+  /**
+   * The file that was played to a person. Session scratch — these are not in the
+   * repo and cannot be opened. Kept as the record of which audition round gave the
+   * approval, never quoted back as something to listen to.
+   */
   file: string
   /** What that person said about it, in their own words. */
   approval: string
@@ -737,13 +741,14 @@ const SIGN_OFFS: SignOff[] = [
 function voidSignOff(entry: SignOff): string {
   return [
     `${entry.id} no longer renders the audio a person heard and approved.`,
-    `The file that was signed off is ${entry.file}; this render was that file, and the`,
-    `words it was approved in were “${entry.approval}”.`,
+    `The words it was approved in were “${entry.approval}”.`,
     ...(entry.scope === undefined ? [] : [entry.scope]),
     `Something upstream of it moved — ${entry.upstream}.`,
     'The change may well be an improvement, but the sign-off it invalidates is a human’s ear',
-    'and nothing in this repo can re-give it. Play the new render, get it approved, and only',
-    'then re-pin this hash. Do not re-pin it to make the suite green.',
+    'and nothing in this repo can re-give it. The approved file was session scratch and is',
+    `gone; the render is reproducible from this tree instead — npm run grooves -- --only ${entry.id}`,
+    '— so render it, play it, get it approved, and only then re-pin this hash. Do not re-pin',
+    'it to make the suite green.',
   ].join('\n')
 }
 

@@ -232,6 +232,22 @@ export const coachingLine = () =>
   nudge()?.querySelector('[data-tone="neutral"]') ?? null
 export const move = () => coachingLine()?.textContent ?? null
 
+export const liveIn = (group: HTMLElement) =>
+  within(group)
+    .getAllByRole('button')
+    .filter((chip) => chip.getAttribute('aria-disabled') !== 'true')
+    .map(chipLabel)
+
+export const liveRoot = () => {
+  const root = liveIn(rootGroup()).find((label) => label !== 'C')
+  if (root === undefined) {
+    throw new Error(
+      'no live root but C — the root is confirmed, so C is the only guess the card will take',
+    )
+  }
+  return root
+}
+
 export async function guess(
   user: ReturnType<typeof userEvent.setup>,
   root: string,

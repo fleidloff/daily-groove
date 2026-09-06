@@ -105,10 +105,11 @@ Don't write `roadmap.md` while it is open.
   and a feature folder with no roadmap and a ticket with the same words is two
   places for one change.
 - In `specs/features.md`, remove the feature's row and add a row to the *Quick
-  changes* table at 📝 **Drafted**, as `/quick-feature` §10 describes. A
+  changes* table at 📝 **Drafted**, as `/quick-feature` §8 describes. A
   candidate idea the feature had retired stays retired.
 
-Then report the ticket path and point at `/quick-feature N`. Not
+Then report the ticket path and point at `/quick-feature N`, which analyzes it
+and asks anything blocking before `/implement-quick-feature N` builds it. Not
 `/brainstorm`: there is no roadmap, and there will not be one.
 
 ## 4. Shape the epics

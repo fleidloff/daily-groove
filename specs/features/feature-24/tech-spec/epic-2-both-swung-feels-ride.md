@@ -119,11 +119,14 @@ export const RIDE_PATTERNS: Record<8 | 16, number[][]>
 
 export const QUARTER_STEPS_16: number[]     // [0, 4, 8, 12], the sixteenth grid's quarters
 
-export const FEATHER_VELOCITY: number
-// Constraint, asserted: FEATHER_VELOCITY + max(humanize.velocity over riding
-// feels) < GHOST_VELOCITY_THRESHOLD. Measured today that is v + 0.13 < 0.5,
-// so v < 0.37. Proposed starting value 0.26 — the musician's call under the
-// listening sign-off.
+export const FEATHER_VELOCITY = 0.21
+// Two bounds, and the tighter one is not the ghost threshold. Asserted:
+// FEATHER_VELOCITY + max(humanize.velocity over riding feels) <
+// GHOST_VELOCITY_THRESHOLD, i.e. v + 0.13 < 0.5, so v < 0.37. Governing:
+// the kick pack's softest velocity layer tops out at maxVelocity 0.3465, and
+// a humanized feather above that crosses into kick_v80 — a harder strike with
+// audible beater click. Measured over 1086 feathers: 0.21 → 0 escapes,
+// 0.26 → 15, 0.30 → 168. 0.21 is the shipped value.
 
 export function featherSteps(sounding: number[], subdivision: 4 | 8 | 16): number[]
 // gridSteps(QUARTER_STEPS_16, subdivision) minus every step in `sounding`.
@@ -308,8 +311,12 @@ Covers: R1, R2, R11, AC1, AC2, AC10
     replacing as timekeeper (`-12`). It must not equal `shuffle`'s: a cymbal at
     110 bpm over sixteenths sits differently from one at 85 over a shuffle, and
     AC2 asserts the difference.
-  - `pan.ride: 0.26` — the same side as this feel's hats (`0.33`/`0.36`) but
-    pulled in, because a ride is a wider source than a hat.
+  - `pan.ride: -0.28` — opposite this feel's closed hat (`+0.33`), because
+    this feel's kit image is mirrored relative to `shuffle`'s: `hatClosed`
+    `+0.33`/`-0.32`, `tomHigh` `+0.18`/`-0.22`, `tomLow` `-0.20`/`+0.26`,
+    `comp` `-0.31`/`+0.28`. Copying `shuffle`'s `+0.30` sign would stack both
+    cymbals in the right ear and leave a rack tom and the comp alone on the
+    left.
   - `humanize.lean.ride: -4` — a hair ahead, one notch less than the hat's `-5`.
 
   Record the derivation in the step's report so Epic 3 can re-read it.
@@ -786,8 +793,9 @@ Only if I2 comes back negative for `swung-sixteenth`:
   second one, and Steps B1–B2 collapse into extending its coverage to the four
   feels.
 - **`FEATHER_VELOCITY` is one constant, not per feel.** Both riding feels want a
-  kick that is felt and not heard, and the bound that matters
-  (`v + humanize.velocity < 0.5`) holds for both at the proposed `0.26`. If the
+  kick that is felt and not heard, and the bound that matters — staying inside
+  the kick pack's softest layer, `v + humanize.velocity <= 0.3465` — holds for
+  both at the shipped `0.21`. If the
   listening pass wants them different, it becomes
   `Partial<Record<string, number>>` keyed by template id — a small change, and a
   later one.

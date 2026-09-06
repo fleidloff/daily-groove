@@ -32,8 +32,8 @@ const attributions = provenance.attributions ?? []
 // A licence that dedicates to the public domain asks for no credit, so the
 // line does not have to cover it. Anything else does, and an unrecognised
 // value falls through to the covered-licence check rather than being waved
-// past. scripts/grooves/samples/pack.test.ts also admits 'public-domain',
-// which no row uses today.
+// past. scripts/grooves/samples/pack.test.ts admits only CC0 and CC-BY-4.0,
+// so 'PUBLIC-DOMAIN' here is defensive rather than reachable.
 const NO_ATTRIBUTION_REQUIRED = new Set(['CC0', 'CC0-1.0', 'PUBLIC-DOMAIN'])
 
 const canonicalLicence = (licence: string) =>

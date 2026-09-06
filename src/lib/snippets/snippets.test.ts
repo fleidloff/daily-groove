@@ -2,6 +2,7 @@ import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import * as snippets from './index'
+import { moduleSpecifiers } from '../testing/specifiers'
 
 const SNIPPETS_ROOT = import.meta.dirname
 const SRC_ROOT = join(SNIPPETS_ROOT, '..', '..')
@@ -46,14 +47,35 @@ describe('the snippets module is one file per area behind one index', () => {
   })
 })
 
+const PRIVATE_FOLDER = `snippets${'/'}en`
+
 describe('the language folder is private to the index', () => {
   it('is named by no import specifier outside src/lib/snippets/', () => {
     const offenders = filesUnder(SRC_ROOT)
       .filter((file) => !file.startsWith(SNIPPETS_ROOT))
-      .filter((file) => readFileSync(file, 'utf8').includes('snippets/en'))
+      .filter((file) =>
+        moduleSpecifiers(readFileSync(file, 'utf8')).some((specifier) =>
+          specifier.includes(PRIVATE_FOLDER),
+        ),
+      )
       .map((file) => file.slice(SRC_ROOT.length + 1))
 
-    expect(offenders).toEqual([])
+    expect(
+      offenders,
+      [
+        `${offenders.join(', ')} names a file inside ${PRIVATE_FOLDER}/ in an import.`,
+        'The language folder is reached through src/lib/snippets/index.ts and nothing else,',
+        'so swapping the language stays one file rather than a search across src/.',
+      ].join('\n'),
+    ).toEqual([])
+  })
+
+  it('reads imports and not prose, so a message quoting the folder does not trip it', () => {
+    const specifier = `../${PRIVATE_FOLDER}/puzzle`
+    expect(moduleSpecifiers(`import { puzzle } from '${specifier}'`)).toEqual([specifier])
+    expect(moduleSpecifiers(`const why = 'nothing may import ${PRIVATE_FOLDER} directly'`)).toEqual(
+      [],
+    )
   })
 })
 

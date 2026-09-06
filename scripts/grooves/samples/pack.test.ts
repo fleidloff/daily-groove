@@ -13,7 +13,6 @@ const decl = JSON.parse(readFileSync(join(HERE, 'pack.json'), 'utf8')) as PackDe
 const provenance = JSON.parse(readFileSync(join(HERE, 'provenance.json'), 'utf8')) as {
   pack: string
   licence: string
-  attribution?: string
   attributions?: string[]
   samples: {
     file: string
@@ -132,7 +131,7 @@ describe('the pack declares itself', () => {
 })
 
 describe('every sample is CC0 and accounted for', () => {
-  const ALLOWED = ['CC0', 'public-domain', 'CC-BY-4.0']
+  const ALLOWED = ['CC0', 'CC-BY-4.0']
 
   it('lists every audio file present in the pack', () => {
     const listed = new Set(provenance.samples.map((s) => s.file))

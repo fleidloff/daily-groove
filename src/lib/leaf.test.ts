@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs'
 import { join, relative } from 'node:path'
 import { describe, expect, it } from 'vitest'
+import { moduleSpecifiers } from './testing/specifiers'
 
 const LIB_ROOT = import.meta.dirname
 const REPO_ROOT = join(LIB_ROOT, '..', '..')
@@ -15,36 +16,10 @@ function sourceFilesUnder(dir: string): string[] {
   return out
 }
 
-const SPECIFIER_FORMS = [
-  /\bfrom\s*(['"])([^'"]+)\1/g,
-  /\bimport\s*(['"])([^'"]+)\1/g,
-  /\bimport\s*\(\s*(['"])([^'"]+)\1/g,
-  /\brequire\s*\(\s*(['"])([^'"]+)\1/g,
-  /\bvi\s*\.\s*(?:mock|doMock)\s*\(\s*(['"])([^'"]+)\1/g,
-]
-
-function liveCode(source: string): string {
-  return source
-    .replace(/\/\*[\s\S]*?\*\//g, '')
-    .split('\n')
-    .filter((line) => {
-      const trimmed = line.trimStart()
-      return !trimmed.startsWith('//') && !trimmed.startsWith('*')
-    })
-    .join('\n')
-}
-
 function aliasedSpecifiers(source: string): string[] {
-  const hits = new Set<string>()
-  for (const form of SPECIFIER_FORMS) {
-    for (const match of liveCode(source).matchAll(form)) {
-      const specifier = match[2]
-      if (specifier === '@' || specifier.startsWith(`@${'/'}`)) {
-        hits.add(specifier)
-      }
-    }
-  }
-  return [...hits].sort()
+  return moduleSpecifiers(source).filter(
+    (specifier) => specifier === '@' || specifier.startsWith(`@${'/'}`),
+  )
 }
 
 describe('src/lib is a leaf the generator can resolve', () => {

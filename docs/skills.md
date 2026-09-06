@@ -43,37 +43,43 @@ Don't move to the next step while questions are still open. Specifying against
 unsettled requirements produces work that gets thrown away — and `/writespec`
 and `/implement-feature` will stop and tell you so anyway.
 
-## `/quick-feature` — when the chain costs more than the mistake
+## The quick door — when the chain costs more than the mistake
 
 The five steps buy insurance against building the wrong thing. For a change you
 can describe in five bullets that insurance costs more than the accident, so
-there is a second door:
+there is a second door — two skills, analyze then build:
 
 ```
-write specs/quick/N-slug.md  →  /quick-feature N  →  answer  →  /quick-feature N  →  the code
-       What + Done when            Notes + questions
+write specs/quick/N-slug.md  →  /quick-feature N  →  answer  →  /quick-feature N  →  /implement-quick-feature N
+       What + Done when          Notes + questions                 folds them in            the code
 ```
 
 You write what changes and what done means. `/quick-feature N` fills in the notes —
 the files it expects to touch, the assumptions it took — and asks anything
 blocking as tickable options inside the same file. Run it again once those are
-ticked and it builds in this session: no epics, no agents except the `musician`
-for anything under `scripts/grooves/`, and the full lint / test / build set
-before reporting. `/quick-feature <what to change>` drafts the whole ticket for you
-instead, when you'd rather not open the file. `/create-quick-feature` is the
-middle way: it interviews you like `/create-feature` does, writes only `What`
-and `Done when`, and stops — the ticket then enters `/quick-feature N` as a
-hand-written one.
+ticked: it folds the answers in and asks whatever they opened up, the same
+cycle as steps 2–4, until nothing is left open. **It writes no code at all.**
+`/quick-feature <what to change>` drafts the whole ticket for you instead, when
+you'd rather not open the file. `/create-quick-feature` is the middle way: it
+interviews you like `/create-feature` does, writes only `What` and `Done when`,
+and stops — the ticket then enters `/quick-feature N` as a hand-written one.
 
-It refuses to be the cheap door for a real feature. Four questions decide:
+`/implement-quick-feature N` builds it, and refuses a ticket that was never
+analyzed or still has a question open. No epics, no agents except the `musician`
+for anything under `scripts/grooves/`, and the full lint / test / build set
+before reporting.
+
+Neither is the cheap door for a real feature. Four questions decide:
 five bullets or fewer, at most two of the six modules in
 [architecture.md](architecture.md), nothing frozen in [music.md](music.md)
-touched, one `git revert` to roll back. Any "no" and it hands the work to
-`/create-feature` instead — including halfway through the build, if that is when
-the truth turns up.
+touched, one `git revert` to roll back. `/quick-feature` runs them against the
+ticket, `/implement-quick-feature` re-runs them against the files it opens. Any
+"no" and the work goes to `/create-feature` instead — including halfway through
+the build, if that is when the truth turns up.
 
 Quick changes get their own table in `specs/features.md`, so the index still
-shows everything that shipped.
+shows everything that shipped. Their status runs 📝 Drafted → ❓ Questions open →
+🛠 Ready to build → ✅ Done.
 
 The chain can hand over too. `/roadmap` runs the same four questions against
 the briefing before it shapes epics, and when they all pass and the answer would
@@ -111,12 +117,12 @@ A different way into step 1, or into the quick door. It walks the live app in
 character as the persona in [persona.md](persona.md) — first run with empty
 `localStorage`, then as a returner — reports what that person likes, what they
 find unclear and what they miss, picks the single strongest finding, and runs
-`/quick-feature`'s four size questions against it. All four pass and it hands
+the quick door's four size questions against it. All four pass and it hands
 the finding to `/create-quick-feature` as a ticket; any fail, or any doubt, and
 it hands it to `/create-feature` as a lettered candidate.
 
 ```
-/create-feature-for-persona  →  specs/quick/N-slug.md          →  /quick-feature N  →  …
+/create-feature-for-persona  →  specs/quick/N-slug.md          →  /quick-feature N  →  /implement-quick-feature N
                              →  specs/features/feature-X/briefing.md  →  promote to a number  →  /roadmap feature-N  →  …
 ```
 
@@ -142,6 +148,8 @@ The skills keep `specs/features.md` in step as they go, so the index never has
 to be updated by hand: `/create-feature` adds the row, `/roadmap` and
 `/brainstorm` keep its summary honest, `/writespec` marks it 🛠 Ready to
 implement, and `/implement-feature` marks it ✅ Done once every acceptance
-criterion is verified.
+criterion is verified. Quick tickets work the same way: `/quick-feature` moves
+the row to ❓ Questions open or 🛠 Ready to build, and only
+`/implement-quick-feature` writes ✅.
 
 See also: [architecture.md](architecture.md) · [testing.md](testing.md)

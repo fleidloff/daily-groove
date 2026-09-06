@@ -21,8 +21,9 @@ Testing — what must be tested, and where the tests live:
 How a feature gets built — the five skills and the one order they run in
 (`/create-feature` → `/roadmap` → `/brainstorm` → `/writespec` →
 `/implement-feature`), what each reads and writes, why answering a document's
-questions before moving on is the cheaper order, and `/quick-feature`, the one-ticket
-path for a change too small to be worth all five:
+questions before moving on is the cheaper order, and the quick door
+(`/quick-feature` → `/implement-quick-feature`), the one-ticket path for a
+change too small to be worth all five:
 @docs/skills.md
 
 ## Comments
@@ -61,7 +62,8 @@ turn that ends while its agents are still working keeps `◐` and only flips to
 - The text sticks until you replace it, so replace it when the task changes.
   Nothing else will.
 - Applies to every step of the chain in [docs/skills.md](docs/skills.md), and to
-  `/quick-feature`, `/verify-epic` and `/prototype`.
+  `/quick-feature`, `/implement-quick-feature`, `/verify-epic` and
+  `/prototype`.
 - **Only the main session sets it.** Dispatched agents never do; several of them
   run at once and would overwrite each other.
 
