@@ -1,6 +1,6 @@
 ---
 name: implement-quick-feature
-description: Build a quick ticket that `/quick-feature` has already analyzed — re-check the size test against the real files, dispatch a `test-writer` then an `implementer` over the one unit, gate it with the `verifier`, and record what was built in `specs/quick/N-slug.md`. Refuses to run on a ticket with no `## Notes` or with unticked `## Open questions`, and escalates to `/create-feature` if the change stops being small mid-build. Use whenever the user runs `/implement-quick-feature`, or asks to build, implement or ship a quick ticket.
+description: Build a quick ticket that `/quick-feature` has already analyzed — re-check the size test against the real files, write the test then the code in the lead, gate it with the `verifier` over lint, tests and build, and record what was built in `specs/quick/N-slug.md`. Refuses to run on a ticket with no `## Notes` or with unticked `## Open questions`, and escalates to `/create-feature` if the change stops being small mid-build. Use whenever the user runs `/implement-quick-feature`, or asks to build, implement or ship a quick ticket.
 argument-hint: [N]
 ---
 
@@ -53,9 +53,9 @@ against an unanswered question is a decision nobody made, arriving as a diff.
 ## 3. Re-run the size test
 
 `/quick-feature` §2's four questions, now against the files you actually open.
-The notes were written from a reading; the code is the thing. **Read them in the
-lead, before dispatching anything** — the size test is the one judgement that
-needs the whole change in view, and an agent scoped to one file cannot make it.
+The notes were written from a reading; the code is the thing. This is the
+lead's judgement and stays there — it needs the whole change in view, which is
+also why §4 keeps the build here.
 
 **Escalating mid-build is allowed and expected.** If the third file you open
 tells you this is bigger than the ticket says, stop, write what you found into
@@ -64,51 +64,55 @@ is the escalation path working, not a run that failed. Ask before continuing
 anyway — a waiver is the user's to give, and it goes in the ticket in their
 words, as `specs/quick/5-lick-variations.md` records one.
 
-## 4. Build it — red, then green
+## 4. Build it in the lead
 
-Three agents, one after another, one unit. There is no fan-out here and no
-wave: a quick change is one to three files, and the parallelism in
+**No dispatch for the build.** A quick change is one to three files, and §3 has
+already made you read all of them — handing them to an agent throws that reading
+away and pays to have it done again. The fan-out machinery in
 `/implement-feature` earns its coordination cost across epics that own disjoint
-files, not across a single ticket. What the dispatch buys instead is the same
-thing it buys there — the red step written by an agent that cannot see the
-implementation, and the grade written by an agent that cannot fix what it
-grades.
+files; here there is no parallelism to buy, and every agent would need the
+ticket re-explained to it to save nothing.
 
-1. **`test-writer`** — the red step. `docs/testing.md` applies unchanged and a
-   quick change is not an untested change: it writes a test for every
-   `## Done when` bullet a test can settle, rewrites the existing tests
-   `## Notes` says the change breaks, and runs them to confirm they fail for the
-   expected reason.
-2. **`implementer`** — the green step. It gets the ticket, the ticked option and
-   the failing tests, and writes the minimum that makes them pass.
-3. **`verifier`** — the gate, in §6. It runs the checks and grades the
-   `## Done when` bullets. It cannot fix; the lead does that.
+There is a second reason, and it is the one that bites. A quick ticket's worst
+failure is discovering mid-build that the change is not small (§3). The lead
+spots that by holding the whole change in view — two agents that each see one
+slice of it cannot.
 
-Each brief must name **the ticket path, the files the agent owns (from
-`## Notes`), the ticked option for every `## Open questions` entry, and the test
-command** — the agents start with no knowledge of this conversation. Their
-definitions under `.claude/agents/` carry the conventions, so the brief is
-per-ticket only and ships no reading list. They write no `.implement/` status
-file: they report in their reply, and the ticket's `## Built` is the record.
+Test first, then the code: `docs/testing.md` applies unchanged, and a quick
+change is not an untested change. Every `## Done when` bullet that a test can
+settle gets one. Run the ticket's own tests as you go; §6 is the gate, not the
+loop.
 
-**The lead still owns the ticket, the decisions and the fixes.** Build what the
-ticket says, under the option that was ticked. A better idea that turns up
-mid-build is a note in the report or a second ticket, not a silent substitution
-— the user reviewed `## Notes`, and the diff should be the thing they reviewed.
-If an agent comes back asking for a file the ticket does not name, that is §3's
-escalation, not a permission to widen its scope.
+Build what the ticket says, under the option that was ticked. A better idea that
+turns up mid-build is a note in the report or a second ticket, not a silent
+substitution — the user reviewed `## Notes`, and the diff should be the thing
+they reviewed.
 
-## 5. The musician, and not the architect
+## 5. Agents
 
-**`musician`, for any ticket touching `scripts/grooves/`.** Dispatch it before
-the implementer to decide the musical parameters and state the reasoning, then
-hand that reasoning to the implementer — the same two-turn shape as
-`/implement-feature` §5, without the waves. It is worth the dispatch here
-because `docs/music.md` is deliberately not loaded into a normal session, so the
-musical judgement is exactly the part a session that hasn't read it gets wrong.
+**`musician`, for any ticket touching `scripts/grooves/`.** Dispatch it to
+decide the musical parameters and state the reasoning, then apply that yourself
+— the same two-turn shape as `/implement-feature` §5, without the waves. It is
+worth the dispatch here because `docs/music.md` is deliberately not loaded into
+a normal session, so the musical judgement is exactly the part a session that
+hasn't read it gets wrong.
+
+**`verifier`, for the gate in §6.** It buys the one thing the lead cannot have:
+a reader that grades but cannot fix. You just wrote the code, which makes you
+the worst judge of whether it meets the ticket. That property holds at any size,
+and it costs one dispatch over checks you were running anyway. Its definition
+carries the substitutions a ticket needs — the `## Done when` bullets in place
+of a PRD's acceptance criteria.
 
 **Not `architect`.** A tech spec for a two-file change is the chain again; if
 the change wants one, it wants `/create-feature`.
+
+**Not `test-writer` or `implementer`, by default.** They own units of a tech
+spec, and here the lead writes both the test and the code — see §4. Their
+definitions do carry a quick-ticket section, for the one case that earns it: a
+**focused fix after the verifier's report**, scoped to the files it named. Reach
+for that when the fix is mechanical and the lead's context has moved on, not to
+build the ticket.
 
 **A listening sign-off still doesn't stall the run** — if the change needs an
 ear, say so in `## Built` and leave that bullet unverified rather than claiming
@@ -139,12 +143,11 @@ re-cite or re-grade.
 
 Then fix until it comes back clean, exactly as `/implement-feature` §9 does:
 
-1. **Fail** → fix in the lead, or dispatch an `implementer` scoped to the
-   failing files, and verify again.
-2. **Pass with gaps** → green but a bullet is uncovered. Dispatch the
-   `test-writer` for the missing test and verify again. The exception is a
-   bullet only a person can settle — a look at the page, an ear — which stays
-   **partly** with the reason said out loud.
+1. **Fail** → fix it in the lead and verify again. A focused `implementer`
+   scoped to the files the report named is the exception, not the reflex (§5).
+2. **Pass with gaps** → green but a bullet is uncovered. Write the missing test
+   and verify again. The exception is a bullet only a person can settle — a look
+   at the page, an ear — which stays **partly** with the reason said out loud.
 3. **Pass** → done.
 
 Show what failed. Never report a green run you did not execute, and never weaken
@@ -153,8 +156,8 @@ and report it** rather than looping.
 
 **The verifier cannot fix and the lead does not grade.** That split is the whole
 reason to dispatch it for a change this small: an agent that can fix a failing
-test can talk itself into a green report, and a lead that has just written the
-code is the worst reader of whether it meets the ticket.
+test can talk itself into a green report, and by §6 you have written the code
+and want it to be finished.
 
 If the verifier's report says the diff outgrew the quick door, that is §3's
 escalation arriving late — stop and ask, do not absorb it.
@@ -176,9 +179,8 @@ not the verifier's. Quick changes write no `.implement/` status file, and
 `specs/quick/.verify/N.md` is gitignored scratch, the same as an epic's.
 
 Then move the row in `specs/features.md`'s *Quick changes* table to ✅ **Done** —
-only when the verifier came back **pass** and every `## Done when` bullet
-holds. Untested is
-not done, same rule as `/implement-feature` §10. Anything short of that leaves
+only when the verifier came back **pass** and every `## Done when` bullet holds.
+Untested is not done, same rule as `/implement-feature` §10. Anything short of that leaves
 the row at 🛠 **Ready to build** and says why.
 
 ## 8. Report

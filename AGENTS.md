@@ -36,14 +36,23 @@ comment.
 ## The terminal title is yours to write
 
 `.claude/settings.json` sets `CLAUDE_CODE_DISABLE_TERMINAL_TITLE`, so Claude
-Code writes no title of its own in this repo. Its hooks own the tab instead:
-`◐` while a turn is running, `✳` while it waits for you. You supply the words
-after the glyph.
+Code writes no title of its own in this repo. Its hooks own the glyph and you
+supply the words after it. Three states, and the hooks tell them apart without
+being asked:
+
+| Glyph | State | What writes it |
+| :-- | :-- | :-- |
+| `◐` | a turn is running | `UserPromptSubmit`, and every `--agent-start` |
+| `✳` | blocked on you — a permission prompt, or an idle nudge | `Notification` |
+| `✔` | the turn finished and needs nothing from you | `Stop` |
+
+`✔` survives the idle nudge that follows it, so a finished turn does not decay
+into `✳` a minute later. The next prompt clears it.
 
 A dispatched agent counts as running. `PreToolUse` on the agent tool and
 `SubagentStop` keep a token per live agent under `~/.claude/title-state/`, so a
-turn that ends while its agents are still working keeps `◐` and only flips to
-`✳` when the last one reports back.
+turn that ends while its agents are still working keeps `◐`, remembers which end
+state it owed, and pays it — `✔` or `✳` — when the last one reports back.
 
 ```bash
 .claude/scripts/title.sh "F8) writing GrooveHeader tests"
@@ -58,7 +67,11 @@ turn that ends while its agents are still working keeps `◐` and only flips to
   feature-8`), the ticket you just allocated, the spec folder you are reading —
   and keep the prefix on every title after that until the session moves on.
 - No number in play, and the title is still the task: three to five words, what
-  you are doing now. Until you set one, the tab shows the folder name.
+  you are doing now.
+- **In doubt, write `claude`.** A tab that says `claude` and carries the right
+  glyph is honest; three invented words about work you are not sure you are
+  doing are not. It is also the fallback the script paints when nothing has been
+  set — a fresh session reads `✳ claude`, never the folder name.
 - The text sticks until you replace it, so replace it when the task changes.
   Nothing else will.
 - Applies to every step of the chain in [docs/skills.md](docs/skills.md), and to
@@ -92,10 +105,13 @@ and `.claude/agents/` defines the six roles they draw from — `architect`,
 `implementer`, `test-writer`, `verifier`, `musician`, `sam`. A tech spec's tracks
 declare a role each for exactly that reason.
 
-The quick door draws on the same roles, in sequence rather than in parallel:
-`/implement-quick-feature` runs `test-writer` → `implementer` → `verifier` over
-the one unit, and the verifier grades the ticket's `## Done when` bullets in
-place of a PRD's acceptance criteria.
+The quick door builds in the lead and dispatches once, at the end:
+`/implement-quick-feature` gates itself with the `verifier`, which grades the
+ticket's `## Done when` bullets in place of a PRD's acceptance criteria. That
+one dispatch buys the property the lead cannot have — a reader that grades but
+cannot fix. Fanning the *build* out over a two-file change buys nothing, and
+costs the one view of the whole change that catches a ticket which is no longer
+small.
 
 `sam` is the odd one out, because it builds nothing. It *is* the player in
 [docs/persona.md](docs/persona.md), and `/roadmap`, `/brainstorm`, `/prototype`

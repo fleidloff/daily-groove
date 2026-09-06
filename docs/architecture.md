@@ -63,7 +63,7 @@ The slice separates six concerns, and they are not the same thing as its folders
 | **audio** | `lib/audio/`, plus the three hooks that drive playback: `hooks/useTransport.ts`, `hooks/useReferenceNote.ts`, `hooks/useModeLick.ts` |
 | **puzzle** | `lib/puzzle/`, `lib/persistence/`, `state/`, plus the four hooks that carry the session and the settings: `hooks/usePuzzleSession.ts`, `hooks/useProgress.ts`, `hooks/useSimpleMode.ts`, `hooks/useTapSounds.ts` |
 | **coaching** | `lib/presentation/` — eleven modules behind one `index.ts` |
-| **shell** | `components/` — the composer `GroovePuzzle.tsx` and the four regions `header/`, `intro/`, `puzzle/`, `solved/` — plus the two routes under `src/app/`, and `lib/share/`, whose two modules exist only to build those routes' URLs and hand one to the browser |
+| **shell** | `components/` — the composer `GroovePuzzle.tsx`, the four regions `header/`, `intro/`, `puzzle/`, `solved/`, and `dev/`, which is no region but the dev-only preview `GroovePreview.tsx` — plus the three routes under `src/app/`, of which `dev/grooves/page.dev.tsx` is built only under `next dev`, and `lib/share/`, whose two modules exist only to build those routes' URLs and hand one to the browser |
 
 Four things sit in no module, and say so rather than being filed somewhere they
 do not belong. `src/lib/groove.ts`, `hash.ts`, `date.ts` and `branding.ts` sit

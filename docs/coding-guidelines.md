@@ -287,6 +287,17 @@ component used by two regions has stopped being regional — move it up to the
 `components/` root, or out to `src/components/` if the domain naming can be
 stripped.
 
+**`components/dev/` is not a region.** It holds `GroovePreview.tsx`, the page
+behind `src/app/dev/grooves/page.dev.tsx` (quick ticket 7), which composes
+itself and stands outside `GroovePuzzle`'s tree.
+`src/features/daily-groove/structure.test.ts` names it beside the four because
+that guard reads directories, not composition; the rule above is about the four.
+Two things follow. Its words are written inline rather than imported from
+`@/lib/snippets` — a page that `pageExtensions` keeps out of the production
+build has no second language to reach, and that waiver stops at this folder.
+And nothing the shipped app renders may import it: its one consumer is the dev
+route, through the slice's `index.ts`.
+
 *human-checked* — motivated by
 `src/features/daily-groove/components/GroovePuzzle.tsx` and its region imports;
 asserted by `src/features/daily-groove/structure.test.ts`. Which region a

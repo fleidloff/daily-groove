@@ -269,6 +269,7 @@ describe('the coaching module has one door', () => {
 
 describe('feature components sit in screen regions', () => {
   const REGIONS: Record<string, string[]> = {
+    dev: ['GroovePreview'],
     header: [
       'GrooveHeader',
       'HelpToggle',
@@ -293,12 +294,12 @@ describe('feature components sit in screen regions', () => {
 
   const entries = () => readdirSync(COMPONENTS, { withFileTypes: true })
 
-  it('contains exactly the four region directories', () => {
+  it('contains exactly the five region directories', () => {
     const dirs = entries()
       .filter((entry) => entry.isDirectory())
       .map((entry) => entry.name)
       .sort()
-    expect(dirs).toEqual(['header', 'intro', 'puzzle', 'solved'])
+    expect(dirs).toEqual(['dev', 'header', 'intro', 'puzzle', 'solved'])
   })
 
   it('holds only the root component at the components/ root', () => {

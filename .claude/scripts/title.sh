@@ -5,11 +5,13 @@ set -u
 
 BUSY="◐"
 IDLE="✳"
+DONE="✔"
 
 mode="text"
 case "${1-}" in
   --busy) mode="busy" ;;
   --idle) mode="idle" ;;
+  --done) mode="done" ;;
   --reset) mode="reset" ;;
   --agent-start) mode="agent-start" ;;
   --agent-stop) mode="agent-stop" ;;
@@ -33,6 +35,7 @@ mkdir -p "$state" 2>/dev/null
 file="$state/$name"
 agents="$file.agents"
 stopped="$file.stopped"
+finished="$file.done"
 
 agent_count() {
   set -- "$agents"/*
@@ -40,9 +43,16 @@ agent_count() {
   echo $#
 }
 
+end_glyph() {
+  case "$1" in
+    done) printf '%s' "$DONE" ;;
+    *)    printf '%s' "$IDLE" ;;
+  esac
+}
+
 case "$mode" in
-  reset)   rm -rf "$agents" "$stopped" 2>/dev/null ;;
-  busy)    rm -f "$stopped" 2>/dev/null ;;
+  reset)   rm -rf "$agents" "$stopped" "$finished" 2>/dev/null ;;
+  busy)    rm -f "$stopped" "$finished" 2>/dev/null ;;
   agent-start)
     mkdir -p "$agents" 2>/dev/null
     mktemp "$agents/XXXXXX" >/dev/null 2>&1
@@ -62,25 +72,31 @@ if [ "$mode" = "text" ]; then
   text="$*"
   [ -n "$text" ] || exit 0
   printf '%s' "$text" > "$file" 2>/dev/null
+  rm -f "$finished" 2>/dev/null
   glyph="$BUSY"
 else
   text=$(cat "$file" 2>/dev/null)
-  [ -n "$text" ] || text=$(basename "$PWD")
+  [ -n "$text" ] || text="claude"
   case "$mode" in
     busy|agent-start) glyph="$BUSY" ;;
-    idle|reset)
+    idle|done|reset)
       if [ "$running" -gt 0 ]; then
-        : > "$stopped" 2>/dev/null
+        printf '%s' "$mode" > "$stopped" 2>/dev/null
         glyph="$BUSY"
+      elif [ "$mode" = "idle" ] && [ -e "$finished" ]; then
+        glyph="$DONE"
       else
         rm -f "$stopped" 2>/dev/null
-        glyph="$IDLE"
+        [ "$mode" = "done" ] && : > "$finished" 2>/dev/null
+        glyph=$(end_glyph "$mode")
       fi
       ;;
     agent-stop)
       if [ "$running" -eq 0 ] && [ -e "$stopped" ]; then
+        deferred=$(cat "$stopped" 2>/dev/null)
         rm -f "$stopped" 2>/dev/null
-        glyph="$IDLE"
+        [ "$deferred" = "done" ] && : > "$finished" 2>/dev/null
+        glyph=$(end_glyph "${deferred:-idle}")
       else
         glyph="$BUSY"
       fi

@@ -28,6 +28,7 @@ export type UseModeLickInput = {
   output: ReferenceOutput
   voice?: LickVoice
   seed?: string
+  variation?: number
 }
 
 export function variationFor(seed: string | undefined): number {
@@ -54,8 +55,11 @@ export function useModeLick(input: UseModeLickInput): UseModeLick {
     }
   }, [held])
 
-  const { root, bpm, seed } = input
-  const variation = useMemo(() => variationFor(seed), [seed])
+  const { root, bpm, seed, variation: chosen } = input
+  const variation = useMemo(
+    () => (chosen === undefined ? variationFor(seed) : chosen),
+    [chosen, seed],
+  )
 
   const playMode = useCallback(
     (flavour: Flavour) => {

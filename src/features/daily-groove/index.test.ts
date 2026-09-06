@@ -41,6 +41,7 @@ describe('daily-groove public surface', () => {
   it('exports only the named surface and the shared types (no lib/component internals)', () => {
     const runtimeExports = Object.keys(publicSurface).sort()
     expect(runtimeExports).toEqual([
+      'GroovePreview',
       'GroovePuzzle',
       'grooveByUuid',
       'grooveHref',
@@ -71,6 +72,7 @@ describe('daily-groove public surface', () => {
       .sort()
 
     expect(names).toEqual([
+      'GroovePreview',
       'GroovePuzzle',
       'grooveByUuid',
       'grooveHref',

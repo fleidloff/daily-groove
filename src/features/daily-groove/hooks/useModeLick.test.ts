@@ -48,6 +48,7 @@ function inputs(extra: {
   clock?: { nextBeat: (now: number) => number | null }
   output?: ReferenceOutput
   seed?: string
+  variation?: number
 }) {
   return {
     pitches: PITCHES,
@@ -59,6 +60,7 @@ function inputs(extra: {
     clock: extra.clock,
     voice: extra.voice,
     seed: extra.seed,
+    variation: extra.variation,
   }
 }
 
@@ -160,6 +162,57 @@ describe('useModeLick', () => {
 
     const play = voice.play as unknown as ReturnType<typeof vi.fn>
     expect(play.mock.calls[0][0]).toEqual(play.mock.calls[1][0])
+  })
+
+  it('plays the variation it is handed, over the one the seed picks (Q7 D4)', () => {
+    const seed = GROOVES[0].uuid
+    const seeded = variationFor(seed)
+
+    for (let variation = 0; variation < LICK_VARIATIONS; variation += 1) {
+      const voice = makeVoice()
+      const { result, unmount } = renderHook(() =>
+        useModeLick(inputs({ voice, seed, variation })),
+      )
+
+      act(() => {
+        result.current.playMode('Dorian')
+      })
+
+      expect(voice.play, `variation ${variation}`).toHaveBeenCalledWith(
+        scheduleLick({ flavour: 'Dorian', root: 'C', bpm: 96, variation }),
+      )
+      unmount()
+    }
+
+    const other = (seeded + 1) % LICK_VARIATIONS
+    expect(
+      scheduleLick({ flavour: 'Dorian', root: 'C', bpm: 96, variation: other }),
+    ).not.toEqual(
+      scheduleLick({ flavour: 'Dorian', root: 'C', bpm: 96, variation: seeded }),
+    )
+  })
+
+  it('keeps the seed’s variation when none is handed to it (Q7 D4)', () => {
+    const voice = makeVoice()
+    const seed = GROOVES.find(
+      (groove) => variationFor(groove.uuid) !== 0,
+    )?.uuid as string
+    const { result } = renderHook(() =>
+      useModeLick(inputs({ voice, seed, variation: undefined })),
+    )
+
+    act(() => {
+      result.current.playMode('Dorian')
+    })
+
+    expect(voice.play).toHaveBeenCalledWith(
+      scheduleLick({
+        flavour: 'Dorian',
+        root: 'C',
+        bpm: 96,
+        variation: variationFor(seed),
+      }),
+    )
   })
 
   it('falls back to the first variation when no groove seeds it', () => {
