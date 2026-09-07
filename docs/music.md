@@ -60,14 +60,23 @@ a feel reaches for once, and a kit carrying two of them has neither. A style tha
 wants the claves gives up its rim, so the choice falls to whichever feels declare
 a rim; `bossa-nova` puts its whole clave on one.
 
-Samples come from four libraries, two of which carry an obligation.
+**The `bass` is an electric bass** — a Squier Bass VI played with a pick,
+flatwound strings, muted (Pastabass `tagliatelle`). Nine sampled notes on an even
+three-semitone grid, three velocity layers, three alternates each. It took over
+from a sampled upright, which changed the recording behind every groove and
+nothing else: no `uuid`, no slot and no answer moved, which is what *What must
+never change* below says is always allowed.
+
+Samples come from five libraries, two of which carry an obligation.
 **MuldjordKit is CC-BY 4.0 and a rendered groove must credit "Drum samples
 provided by DrumGizmo.org"**; DRSKit, which supplies the ride, is CC-BY 4.0 as
 well and carries a second string of its own — **"Ride cymbal samples from
-DRSKit, provided by DrumGizmo.org"**. The bongos, claves and cowbell (VCSL) and
-bass/comp (VSCO 2 CE) are CC0. See `scripts/grooves/samples/README.md`, which
-records why the ride is DRSKit's over a library that measured better on every
-axis, and why it ships one velocity layer on purpose.
+DRSKit, provided by DrumGizmo.org"**. The bongos, claves and cowbell (VCSL), the
+comp (VSCO 2 CE) and the bass (Pastabass) are CC0, so the pack owes exactly two
+attributions and both of them are DrumGizmo's. See
+`scripts/grooves/samples/README.md`, which records why the ride is DRSKit's over
+a library that measured better on every axis, why it ships one velocity layer on
+purpose, and the audition the bass took.
 
 ## Scales: the twelve flavours
 
@@ -194,8 +203,14 @@ the root; they are the two voices carrying the answer, and a mix that buries the
 not a stylistic choice this app can afford. Both feels' kits were dropped by a uniform
 offset — 7 dB on `boom-bap`, 5 dB on `second-line`, which had the same defect one step
 less severe — so every relationship inside each kit is exactly the one that was
-declared, and only the kit-against-band balance moved. Both now measure comp −2.6 dB
-and bass −5.1 dB against their own kick, which are `straight-funk`'s figures.
+declared, and only the kit-against-band balance moved. Both now measure comp −2.42 dB
+(`boom-bap`) and −2.61 dB (`second-line`) and bass −5.19 and −5.16 dB against their own
+kick, against `straight-funk`'s comp −2.69 and bass −5.25 — inside 0.3 dB on all four,
+which is what `templates/boom-bap.test.ts` and `second-line.test.ts` assert, at a 1.5 dB
+tolerance, against `straight-funk` rather than against a literal. The bass figures were
+re-measured when feature-27 swapped the upright for a picked electric, and came back
+*closer* to `straight-funk`'s than the upright's were; the comp figures did not move,
+because the comp did not.
 `boom-bap`'s comp plays one stab a bar, on an even sixteenth, so the chord lands
 unswung while the kit swings at 0.34 around it. Two
 passes, so there is no middle pass and the loop declares a fill bar and no
@@ -309,9 +324,10 @@ turnaround rim that its fill drops.
 
 **Bass** — `BASS_BASE_MIDI = 24` (C1), deliberately below the instrument's floor
 so roots that fit down there sit down there; only C, C♯, D and D♯ come up an
-octave. Hard floor at `28` (the open low E of a four-string, true of upright and
-electric alike) — the octave move is *skipped*, never clamped, because a note
-pushed back up to the floor is a different note. Ceiling `48`, under the comp.
+octave. Hard floor at `28` (the open low E of a four-string; an electric is what
+ships, and the figure would be the same on an upright) — the octave move is
+*skipped*, never clamped, because a note pushed back up to the floor is a
+different note. Ceiling `48`, under the comp.
 
 Three things a bass player does that an arpeggiator does not, drawn per note:
 rest (`0.18`), repeat (`0.4`), octave lift (`0.32`). **The downbeat is exempt
@@ -371,6 +387,13 @@ Masters normalise **true peak onto `PEAK_CEILING = 0.891`** (≈ −1 dBFS). Bec
 peak is pinned, RMS is a function of crest factor: the loudness spread across the
 catalogue is a *balance* question, not a master-trim one.
 
+A measured instance of that, from feature-27's bass swap. `open-ballad` carries the
+catalogue's longest bass notes (0.462 s) and a muted flatwound sustains less than an
+upright, so at a bass-over-kick balance reproduced to 0.01 dB its master RMS median
+still fell 0.96 dB — three times any other feel's. Less sustain delivers less energy
+into a peak-pinned master at the same track level. It stays comfortably inside the
+band, and the reading is physical rather than a mixing error.
+
 ## The quality gate
 
 `gate.ts`. A minted candidate enters the catalogue only if all seven checks pass.
@@ -386,11 +409,19 @@ Every failure names the check *and* the value measured.
 | Pitch | no event sounds a pitch outside the scale |
 | Density | events per bar inside the feel's declared band |
 
-The loudness band is wide on purpose. The feels span −27.1 dB (`half-time`) to
-−21.4 dB (`bossa-nova`, measured over sixty candidates), and closing that spread
-means re-balancing voices by ear. The band accommodates the measured spread rather than asserting a balance
-nobody has listened to. It is a guard against gross error — a voice left at the
-wrong gain — not a mastering tolerance.
+The loudness band is wide on purpose. Measured over the committed catalogue, single
+renders reach −26.2 dB (`half-time`'s quietest) and −21.1 dB (`straight-funk`'s
+loudest), and the per-feel medians sit well inside that, −24.3 dB (`shuffle`) to
+−22.2 dB (`second-line`) — so most of the spread is between grooves of one feel
+rather than between feels. Before feature-27 this document read −27.1 dB
+(`half-time`) to −21.4 dB (`bossa-nova`) over a sixty-candidate pool: the same
+per-render statistic, not a median — the swap moved eight of the nine medians by
+under 0.35 dB and `open-ballad`'s by 0.96, so −27.1 was never `half-time`'s median.
+The quiet end is still `half-time`'s and the loud end is no longer
+`bossa-nova`'s. Closing the spread means re-balancing
+voices by ear. The band accommodates the measured spread rather than asserting a
+balance nobody has listened to. It is a guard against gross error — a voice left at
+the wrong gain — not a mastering tolerance.
 
 ## What the gate cannot do
 
@@ -465,6 +496,7 @@ to catch a violation.
 | reverb, peak ceiling, bus behaviour | `mix.ts` |
 | what gets rejected | `gate.ts` |
 | the track a scale is heard in, shown on the reveal | `heard-in.json`, keyed by `Groove.scale`; `npm run grooves -- --manifest-only` re-renders it |
+| which instrument a voice is — swapping the recording behind it, not adding one | `samples/pack.json` (its notes, velocity layers and `nominalVelocity`) and `samples/provenance.json` (source, licence, and what was done to every file). `samples/README.md` is the rulebook for sourcing, preparing and levelling one, and the levels are turned in two independent places: the pack's `nominalVelocity` first, the template's `gain` after. `npm run notes` — not `npm run grooves` — is what rewrites the lock's `packSha256` |
 | add a voice | `types.ts` (`VoiceName`), samples, `samples/pack.json`, every template's `gain`/`pan`, a pattern, and its own RNG stream label |
 | the daily order, after minting grooves | `ROTA_EPOCH` in `src/features/daily-groove/lib/puzzle/selectGroove.ts` — bump it by one, every release that mints |
 

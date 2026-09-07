@@ -33,7 +33,7 @@ export const boomBap: FeelTemplate = {
     snare: -10,
     hatClosed: -18,
     hatOpen: -24,
-    bass: -3.1,
+    bass: -23.4,
     comp: -4.7,
   },
   pan: {

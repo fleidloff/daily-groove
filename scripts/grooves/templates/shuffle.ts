@@ -20,7 +20,7 @@ export const shuffle: FeelTemplate = {
     snare: -7,
     hatClosed: -7,
     ride: -0.93,
-    bass: 1,
+    bass: -19,
     comp: -5.9,
   },
   pan: {

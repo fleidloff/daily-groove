@@ -1,214 +1,654 @@
 {
   "pack": "vcsl-funk",
-  "licence": "CC0 1.0 Universal (VCSL, VSCO 2 CE) and CC-BY-4.0 (MuldjordKit, DRSKit)",
+  "licence": "CC0 1.0 Universal (VCSL, VSCO 2 CE, Pastabass) and CC-BY-4.0 (MuldjordKit, DRSKit)",
   "samples": [
     {
-      "file": "bass/BKCtbss_Pizz_E0_v1_rr1.flac",
-      "source": "VSCO 2 Community Edition (VSCO-2-CE), Solo Contrabass, pizzicato",
-      "sourceFile": "Strings/Solo Contrabass/Pizz/BKCtbss_Pizz_E0_v1_rr1.wav",
-      "url": "https://github.com/sgossner/VSCO-2-CE",
+      "file": "bass/Pastabass_tagliatelle_db2_vl1_rr1.flac",
+      "source": "Pastabass (Karoryfer Samples), Squier Bass VI, tagliatelle — flatwound, picked, muted, pickup combo",
+      "sourceFile": "Pastabass/samples/tagliatelle/db2_vl1_rr1.wav",
+      "url": "https://shop.karoryfer.com/pages/free-pastabass",
       "licence": "CC0",
-      "modifications": "capped at 2 s, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a bass note lands with the kick it is written beside; not normalised: the v1/v3 level difference is the dynamic information the renderer reads)"
+      "modifications": "downmixed to mono (a no-op — the source is single-channel), capped at 2.0 s, faded out over the last 80 ms, re-encoded as 44.1 kHz 16-bit FLAC. Not normalised: the vl1/vl2/vl3 level difference is the dynamic information the renderer reads. Not filtered. Not trimmed at the front: the source lead-in is kept, so a bass note lands with the kick it is written beside."
     },
     {
-      "file": "bass/BKCtbss_Pizz_E0_v1_rr2.flac",
-      "source": "VSCO 2 Community Edition (VSCO-2-CE), Solo Contrabass, pizzicato",
-      "sourceFile": "Strings/Solo Contrabass/Pizz/BKCtbss_Pizz_E0_v1_rr2.wav",
-      "url": "https://github.com/sgossner/VSCO-2-CE",
+      "file": "bass/Pastabass_tagliatelle_db2_vl1_rr2.flac",
+      "source": "Pastabass (Karoryfer Samples), Squier Bass VI, tagliatelle — flatwound, picked, muted, pickup combo",
+      "sourceFile": "Pastabass/samples/tagliatelle/db2_vl1_rr2.wav",
+      "url": "https://shop.karoryfer.com/pages/free-pastabass",
       "licence": "CC0",
-      "modifications": "capped at 2 s, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a bass note lands with the kick it is written beside; not normalised: the v1/v3 level difference is the dynamic information the renderer reads)"
+      "modifications": "downmixed to mono (a no-op — the source is single-channel), capped at 2.0 s, faded out over the last 80 ms, re-encoded as 44.1 kHz 16-bit FLAC. Not normalised: the vl1/vl2/vl3 level difference is the dynamic information the renderer reads. Not filtered. Not trimmed at the front: the source lead-in is kept, so a bass note lands with the kick it is written beside."
     },
     {
-      "file": "bass/BKCtbss_Pizz_E0_v3_rr1.flac",
-      "source": "VSCO 2 Community Edition (VSCO-2-CE), Solo Contrabass, pizzicato",
-      "sourceFile": "Strings/Solo Contrabass/Pizz/BKCtbss_Pizz_E0_v3_rr1.wav",
-      "url": "https://github.com/sgossner/VSCO-2-CE",
+      "file": "bass/Pastabass_tagliatelle_db2_vl1_rr3.flac",
+      "source": "Pastabass (Karoryfer Samples), Squier Bass VI, tagliatelle — flatwound, picked, muted, pickup combo",
+      "sourceFile": "Pastabass/samples/tagliatelle/db2_vl1_rr3.wav",
+      "url": "https://shop.karoryfer.com/pages/free-pastabass",
       "licence": "CC0",
-      "modifications": "capped at 2 s, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a bass note lands with the kick it is written beside; not normalised: the v1/v3 level difference is the dynamic information the renderer reads)"
+      "modifications": "downmixed to mono (a no-op — the source is single-channel), capped at 2.0 s, faded out over the last 80 ms, re-encoded as 44.1 kHz 16-bit FLAC. Not normalised: the vl1/vl2/vl3 level difference is the dynamic information the renderer reads. Not filtered. Not trimmed at the front: the source lead-in is kept, so a bass note lands with the kick it is written beside."
     },
     {
-      "file": "bass/BKCtbss_Pizz_E0_v3_rr2.flac",
-      "source": "VSCO 2 Community Edition (VSCO-2-CE), Solo Contrabass, pizzicato",
-      "sourceFile": "Strings/Solo Contrabass/Pizz/BKCtbss_Pizz_E0_v3_rr2.wav",
-      "url": "https://github.com/sgossner/VSCO-2-CE",
+      "file": "bass/Pastabass_tagliatelle_db2_vl2_rr1.flac",
+      "source": "Pastabass (Karoryfer Samples), Squier Bass VI, tagliatelle — flatwound, picked, muted, pickup combo",
+      "sourceFile": "Pastabass/samples/tagliatelle/db2_vl2_rr1.wav",
+      "url": "https://shop.karoryfer.com/pages/free-pastabass",
       "licence": "CC0",
-      "modifications": "capped at 2 s, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a bass note lands with the kick it is written beside; not normalised: the v1/v3 level difference is the dynamic information the renderer reads)"
+      "modifications": "downmixed to mono (a no-op — the source is single-channel), capped at 2.0 s, faded out over the last 80 ms, re-encoded as 44.1 kHz 16-bit FLAC. Not normalised: the vl1/vl2/vl3 level difference is the dynamic information the renderer reads. Not filtered. Not trimmed at the front: the source lead-in is kept, so a bass note lands with the kick it is written beside."
     },
     {
-      "file": "bass/BKCtbss_Pizz_G0_v1_rr1.flac",
-      "source": "VSCO 2 Community Edition (VSCO-2-CE), Solo Contrabass, pizzicato",
-      "sourceFile": "Strings/Solo Contrabass/Pizz/BKCtbss_Pizz_G0_v1_rr1.wav",
-      "url": "https://github.com/sgossner/VSCO-2-CE",
+      "file": "bass/Pastabass_tagliatelle_db2_vl2_rr2.flac",
+      "source": "Pastabass (Karoryfer Samples), Squier Bass VI, tagliatelle — flatwound, picked, muted, pickup combo",
+      "sourceFile": "Pastabass/samples/tagliatelle/db2_vl2_rr2.wav",
+      "url": "https://shop.karoryfer.com/pages/free-pastabass",
       "licence": "CC0",
-      "modifications": "capped at 2 s, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a bass note lands with the kick it is written beside; not normalised: the v1/v3 level difference is the dynamic information the renderer reads)"
+      "modifications": "downmixed to mono (a no-op — the source is single-channel), capped at 2.0 s, faded out over the last 80 ms, re-encoded as 44.1 kHz 16-bit FLAC. Not normalised: the vl1/vl2/vl3 level difference is the dynamic information the renderer reads. Not filtered. Not trimmed at the front: the source lead-in is kept, so a bass note lands with the kick it is written beside."
     },
     {
-      "file": "bass/BKCtbss_Pizz_G0_v1_rr2.flac",
-      "source": "VSCO 2 Community Edition (VSCO-2-CE), Solo Contrabass, pizzicato",
-      "sourceFile": "Strings/Solo Contrabass/Pizz/BKCtbss_Pizz_G0_v1_rr2.wav",
-      "url": "https://github.com/sgossner/VSCO-2-CE",
+      "file": "bass/Pastabass_tagliatelle_db2_vl2_rr3.flac",
+      "source": "Pastabass (Karoryfer Samples), Squier Bass VI, tagliatelle — flatwound, picked, muted, pickup combo",
+      "sourceFile": "Pastabass/samples/tagliatelle/db2_vl2_rr3.wav",
+      "url": "https://shop.karoryfer.com/pages/free-pastabass",
       "licence": "CC0",
-      "modifications": "capped at 2 s, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a bass note lands with the kick it is written beside; not normalised: the v1/v3 level difference is the dynamic information the renderer reads)"
+      "modifications": "downmixed to mono (a no-op — the source is single-channel), capped at 2.0 s, faded out over the last 80 ms, re-encoded as 44.1 kHz 16-bit FLAC. Not normalised: the vl1/vl2/vl3 level difference is the dynamic information the renderer reads. Not filtered. Not trimmed at the front: the source lead-in is kept, so a bass note lands with the kick it is written beside."
     },
     {
-      "file": "bass/BKCtbss_Pizz_G0_v3_rr1.flac",
-      "source": "VSCO 2 Community Edition (VSCO-2-CE), Solo Contrabass, pizzicato",
-      "sourceFile": "Strings/Solo Contrabass/Pizz/BKCtbss_Pizz_G0_v3_rr1.wav",
-      "url": "https://github.com/sgossner/VSCO-2-CE",
+      "file": "bass/Pastabass_tagliatelle_db2_vl3_rr1.flac",
+      "source": "Pastabass (Karoryfer Samples), Squier Bass VI, tagliatelle — flatwound, picked, muted, pickup combo",
+      "sourceFile": "Pastabass/samples/tagliatelle/db2_vl3_rr1.wav",
+      "url": "https://shop.karoryfer.com/pages/free-pastabass",
       "licence": "CC0",
-      "modifications": "capped at 2 s, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a bass note lands with the kick it is written beside; not normalised: the v1/v3 level difference is the dynamic information the renderer reads)"
+      "modifications": "downmixed to mono (a no-op — the source is single-channel), capped at 2.0 s, faded out over the last 80 ms, re-encoded as 44.1 kHz 16-bit FLAC. Not normalised: the vl1/vl2/vl3 level difference is the dynamic information the renderer reads. Not filtered. Not trimmed at the front: the source lead-in is kept, so a bass note lands with the kick it is written beside."
     },
     {
-      "file": "bass/BKCtbss_Pizz_G0_v3_rr2.flac",
-      "source": "VSCO 2 Community Edition (VSCO-2-CE), Solo Contrabass, pizzicato",
-      "sourceFile": "Strings/Solo Contrabass/Pizz/BKCtbss_Pizz_G0_v3_rr2.wav",
-      "url": "https://github.com/sgossner/VSCO-2-CE",
+      "file": "bass/Pastabass_tagliatelle_db2_vl3_rr2.flac",
+      "source": "Pastabass (Karoryfer Samples), Squier Bass VI, tagliatelle — flatwound, picked, muted, pickup combo",
+      "sourceFile": "Pastabass/samples/tagliatelle/db2_vl3_rr2.wav",
+      "url": "https://shop.karoryfer.com/pages/free-pastabass",
       "licence": "CC0",
-      "modifications": "capped at 2 s, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a bass note lands with the kick it is written beside; not normalised: the v1/v3 level difference is the dynamic information the renderer reads)"
+      "modifications": "downmixed to mono (a no-op — the source is single-channel), capped at 2.0 s, faded out over the last 80 ms, re-encoded as 44.1 kHz 16-bit FLAC. Not normalised: the vl1/vl2/vl3 level difference is the dynamic information the renderer reads. Not filtered. Not trimmed at the front: the source lead-in is kept, so a bass note lands with the kick it is written beside."
     },
     {
-      "file": "bass/BKCtbss_Pizz_A#0_v1_rr1.flac",
-      "source": "VSCO 2 Community Edition (VSCO-2-CE), Solo Contrabass, pizzicato",
-      "sourceFile": "Strings/Solo Contrabass/Pizz/BKCtbss_Pizz_A#0_v1_rr1.wav",
-      "url": "https://github.com/sgossner/VSCO-2-CE",
+      "file": "bass/Pastabass_tagliatelle_db2_vl3_rr3.flac",
+      "source": "Pastabass (Karoryfer Samples), Squier Bass VI, tagliatelle — flatwound, picked, muted, pickup combo",
+      "sourceFile": "Pastabass/samples/tagliatelle/db2_vl3_rr3.wav",
+      "url": "https://shop.karoryfer.com/pages/free-pastabass",
       "licence": "CC0",
-      "modifications": "capped at 2 s, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a bass note lands with the kick it is written beside; not normalised: the v1/v3 level difference is the dynamic information the renderer reads)"
+      "modifications": "downmixed to mono (a no-op — the source is single-channel), capped at 2.0 s, faded out over the last 80 ms, re-encoded as 44.1 kHz 16-bit FLAC. Not normalised: the vl1/vl2/vl3 level difference is the dynamic information the renderer reads. Not filtered. Not trimmed at the front: the source lead-in is kept, so a bass note lands with the kick it is written beside."
     },
     {
-      "file": "bass/BKCtbss_Pizz_A#0_v1_rr2.flac",
-      "source": "VSCO 2 Community Edition (VSCO-2-CE), Solo Contrabass, pizzicato",
-      "sourceFile": "Strings/Solo Contrabass/Pizz/BKCtbss_Pizz_A#0_v1_rr2.wav",
-      "url": "https://github.com/sgossner/VSCO-2-CE",
+      "file": "bass/Pastabass_tagliatelle_e2_vl1_rr1.flac",
+      "source": "Pastabass (Karoryfer Samples), Squier Bass VI, tagliatelle — flatwound, picked, muted, pickup combo",
+      "sourceFile": "Pastabass/samples/tagliatelle/e2_vl1_rr1.wav",
+      "url": "https://shop.karoryfer.com/pages/free-pastabass",
       "licence": "CC0",
-      "modifications": "capped at 2 s, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a bass note lands with the kick it is written beside; not normalised: the v1/v3 level difference is the dynamic information the renderer reads)"
+      "modifications": "downmixed to mono (a no-op — the source is single-channel), capped at 2.0 s, faded out over the last 80 ms, re-encoded as 44.1 kHz 16-bit FLAC. Not normalised: the vl1/vl2/vl3 level difference is the dynamic information the renderer reads. Not filtered. Not trimmed at the front: the source lead-in is kept, so a bass note lands with the kick it is written beside."
     },
     {
-      "file": "bass/BKCtbss_Pizz_A#0_v3_rr1.flac",
-      "source": "VSCO 2 Community Edition (VSCO-2-CE), Solo Contrabass, pizzicato",
-      "sourceFile": "Strings/Solo Contrabass/Pizz/BKCtbss_Pizz_A#0_v3_rr1.wav",
-      "url": "https://github.com/sgossner/VSCO-2-CE",
+      "file": "bass/Pastabass_tagliatelle_e2_vl1_rr2.flac",
+      "source": "Pastabass (Karoryfer Samples), Squier Bass VI, tagliatelle — flatwound, picked, muted, pickup combo",
+      "sourceFile": "Pastabass/samples/tagliatelle/e2_vl1_rr2.wav",
+      "url": "https://shop.karoryfer.com/pages/free-pastabass",
       "licence": "CC0",
-      "modifications": "capped at 2 s, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a bass note lands with the kick it is written beside; not normalised: the v1/v3 level difference is the dynamic information the renderer reads)"
+      "modifications": "downmixed to mono (a no-op — the source is single-channel), capped at 2.0 s, faded out over the last 80 ms, re-encoded as 44.1 kHz 16-bit FLAC. Not normalised: the vl1/vl2/vl3 level difference is the dynamic information the renderer reads. Not filtered. Not trimmed at the front: the source lead-in is kept, so a bass note lands with the kick it is written beside."
     },
     {
-      "file": "bass/BKCtbss_Pizz_A#0_v3_rr2.flac",
-      "source": "VSCO 2 Community Edition (VSCO-2-CE), Solo Contrabass, pizzicato",
-      "sourceFile": "Strings/Solo Contrabass/Pizz/BKCtbss_Pizz_A#0_v3_rr2.wav",
-      "url": "https://github.com/sgossner/VSCO-2-CE",
+      "file": "bass/Pastabass_tagliatelle_e2_vl1_rr3.flac",
+      "source": "Pastabass (Karoryfer Samples), Squier Bass VI, tagliatelle — flatwound, picked, muted, pickup combo",
+      "sourceFile": "Pastabass/samples/tagliatelle/e2_vl1_rr3.wav",
+      "url": "https://shop.karoryfer.com/pages/free-pastabass",
       "licence": "CC0",
-      "modifications": "capped at 2 s, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a bass note lands with the kick it is written beside; not normalised: the v1/v3 level difference is the dynamic information the renderer reads)"
+      "modifications": "downmixed to mono (a no-op — the source is single-channel), capped at 2.0 s, faded out over the last 80 ms, re-encoded as 44.1 kHz 16-bit FLAC. Not normalised: the vl1/vl2/vl3 level difference is the dynamic information the renderer reads. Not filtered. Not trimmed at the front: the source lead-in is kept, so a bass note lands with the kick it is written beside."
     },
     {
-      "file": "bass/BKCtbss_Pizz_C1_v1_rr1.flac",
-      "source": "VSCO 2 Community Edition (VSCO-2-CE), Solo Contrabass, pizzicato",
-      "sourceFile": "Strings/Solo Contrabass/Pizz/BKCtbss_Pizz_C1_v1_rr1.wav",
-      "url": "https://github.com/sgossner/VSCO-2-CE",
+      "file": "bass/Pastabass_tagliatelle_e2_vl2_rr1.flac",
+      "source": "Pastabass (Karoryfer Samples), Squier Bass VI, tagliatelle — flatwound, picked, muted, pickup combo",
+      "sourceFile": "Pastabass/samples/tagliatelle/e2_vl2_rr1.wav",
+      "url": "https://shop.karoryfer.com/pages/free-pastabass",
       "licence": "CC0",
-      "modifications": "capped at 2 s, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a bass note lands with the kick it is written beside; not normalised: the v1/v3 level difference is the dynamic information the renderer reads)"
+      "modifications": "downmixed to mono (a no-op — the source is single-channel), capped at 2.0 s, faded out over the last 80 ms, re-encoded as 44.1 kHz 16-bit FLAC. Not normalised: the vl1/vl2/vl3 level difference is the dynamic information the renderer reads. Not filtered. Not trimmed at the front: the source lead-in is kept, so a bass note lands with the kick it is written beside."
     },
     {
-      "file": "bass/BKCtbss_Pizz_C1_v1_rr2.flac",
-      "source": "VSCO 2 Community Edition (VSCO-2-CE), Solo Contrabass, pizzicato",
-      "sourceFile": "Strings/Solo Contrabass/Pizz/BKCtbss_Pizz_C1_v1_rr2.wav",
-      "url": "https://github.com/sgossner/VSCO-2-CE",
+      "file": "bass/Pastabass_tagliatelle_e2_vl2_rr2.flac",
+      "source": "Pastabass (Karoryfer Samples), Squier Bass VI, tagliatelle — flatwound, picked, muted, pickup combo",
+      "sourceFile": "Pastabass/samples/tagliatelle/e2_vl2_rr2.wav",
+      "url": "https://shop.karoryfer.com/pages/free-pastabass",
       "licence": "CC0",
-      "modifications": "capped at 2 s, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a bass note lands with the kick it is written beside; not normalised: the v1/v3 level difference is the dynamic information the renderer reads)"
+      "modifications": "downmixed to mono (a no-op — the source is single-channel), capped at 2.0 s, faded out over the last 80 ms, re-encoded as 44.1 kHz 16-bit FLAC. Not normalised: the vl1/vl2/vl3 level difference is the dynamic information the renderer reads. Not filtered. Not trimmed at the front: the source lead-in is kept, so a bass note lands with the kick it is written beside."
     },
     {
-      "file": "bass/BKCtbss_Pizz_C1_v3_rr1.flac",
-      "source": "VSCO 2 Community Edition (VSCO-2-CE), Solo Contrabass, pizzicato",
-      "sourceFile": "Strings/Solo Contrabass/Pizz/BKCtbss_Pizz_C1_v3_rr1.wav",
-      "url": "https://github.com/sgossner/VSCO-2-CE",
+      "file": "bass/Pastabass_tagliatelle_e2_vl2_rr3.flac",
+      "source": "Pastabass (Karoryfer Samples), Squier Bass VI, tagliatelle — flatwound, picked, muted, pickup combo",
+      "sourceFile": "Pastabass/samples/tagliatelle/e2_vl2_rr3.wav",
+      "url": "https://shop.karoryfer.com/pages/free-pastabass",
       "licence": "CC0",
-      "modifications": "capped at 2 s, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a bass note lands with the kick it is written beside; not normalised: the v1/v3 level difference is the dynamic information the renderer reads)"
+      "modifications": "downmixed to mono (a no-op — the source is single-channel), capped at 2.0 s, faded out over the last 80 ms, re-encoded as 44.1 kHz 16-bit FLAC. Not normalised: the vl1/vl2/vl3 level difference is the dynamic information the renderer reads. Not filtered. Not trimmed at the front: the source lead-in is kept, so a bass note lands with the kick it is written beside."
     },
     {
-      "file": "bass/BKCtbss_Pizz_C1_v3_rr2.flac",
-      "source": "VSCO 2 Community Edition (VSCO-2-CE), Solo Contrabass, pizzicato",
-      "sourceFile": "Strings/Solo Contrabass/Pizz/BKCtbss_Pizz_C1_v3_rr2.wav",
-      "url": "https://github.com/sgossner/VSCO-2-CE",
+      "file": "bass/Pastabass_tagliatelle_e2_vl3_rr1.flac",
+      "source": "Pastabass (Karoryfer Samples), Squier Bass VI, tagliatelle — flatwound, picked, muted, pickup combo",
+      "sourceFile": "Pastabass/samples/tagliatelle/e2_vl3_rr1.wav",
+      "url": "https://shop.karoryfer.com/pages/free-pastabass",
       "licence": "CC0",
-      "modifications": "capped at 2 s, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a bass note lands with the kick it is written beside; not normalised: the v1/v3 level difference is the dynamic information the renderer reads)"
+      "modifications": "downmixed to mono (a no-op — the source is single-channel), capped at 2.0 s, faded out over the last 80 ms, re-encoded as 44.1 kHz 16-bit FLAC. Not normalised: the vl1/vl2/vl3 level difference is the dynamic information the renderer reads. Not filtered. Not trimmed at the front: the source lead-in is kept, so a bass note lands with the kick it is written beside."
     },
     {
-      "file": "bass/BKCtbss_Pizz_E1_v1_rr1.flac",
-      "source": "VSCO 2 Community Edition (VSCO-2-CE), Solo Contrabass, pizzicato",
-      "sourceFile": "Strings/Solo Contrabass/Pizz/BKCtbss_Pizz_E1_v1_rr1.wav",
-      "url": "https://github.com/sgossner/VSCO-2-CE",
+      "file": "bass/Pastabass_tagliatelle_e2_vl3_rr2.flac",
+      "source": "Pastabass (Karoryfer Samples), Squier Bass VI, tagliatelle — flatwound, picked, muted, pickup combo",
+      "sourceFile": "Pastabass/samples/tagliatelle/e2_vl3_rr2.wav",
+      "url": "https://shop.karoryfer.com/pages/free-pastabass",
       "licence": "CC0",
-      "modifications": "capped at 2 s, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a bass note lands with the kick it is written beside; not normalised: the v1/v3 level difference is the dynamic information the renderer reads)"
+      "modifications": "downmixed to mono (a no-op — the source is single-channel), capped at 2.0 s, faded out over the last 80 ms, re-encoded as 44.1 kHz 16-bit FLAC. Not normalised: the vl1/vl2/vl3 level difference is the dynamic information the renderer reads. Not filtered. Not trimmed at the front: the source lead-in is kept, so a bass note lands with the kick it is written beside."
     },
     {
-      "file": "bass/BKCtbss_Pizz_E1_v1_rr2.flac",
-      "source": "VSCO 2 Community Edition (VSCO-2-CE), Solo Contrabass, pizzicato",
-      "sourceFile": "Strings/Solo Contrabass/Pizz/BKCtbss_Pizz_E1_v1_rr2.wav",
-      "url": "https://github.com/sgossner/VSCO-2-CE",
+      "file": "bass/Pastabass_tagliatelle_e2_vl3_rr3.flac",
+      "source": "Pastabass (Karoryfer Samples), Squier Bass VI, tagliatelle — flatwound, picked, muted, pickup combo",
+      "sourceFile": "Pastabass/samples/tagliatelle/e2_vl3_rr3.wav",
+      "url": "https://shop.karoryfer.com/pages/free-pastabass",
       "licence": "CC0",
-      "modifications": "capped at 2 s, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a bass note lands with the kick it is written beside; not normalised: the v1/v3 level difference is the dynamic information the renderer reads)"
+      "modifications": "downmixed to mono (a no-op — the source is single-channel), capped at 2.0 s, faded out over the last 80 ms, re-encoded as 44.1 kHz 16-bit FLAC. Not normalised: the vl1/vl2/vl3 level difference is the dynamic information the renderer reads. Not filtered. Not trimmed at the front: the source lead-in is kept, so a bass note lands with the kick it is written beside."
     },
     {
-      "file": "bass/BKCtbss_Pizz_E1_v3_rr1.flac",
-      "source": "VSCO 2 Community Edition (VSCO-2-CE), Solo Contrabass, pizzicato",
-      "sourceFile": "Strings/Solo Contrabass/Pizz/BKCtbss_Pizz_E1_v3_rr1.wav",
-      "url": "https://github.com/sgossner/VSCO-2-CE",
+      "file": "bass/Pastabass_tagliatelle_g2_vl1_rr1.flac",
+      "source": "Pastabass (Karoryfer Samples), Squier Bass VI, tagliatelle — flatwound, picked, muted, pickup combo",
+      "sourceFile": "Pastabass/samples/tagliatelle/g2_vl1_rr1.wav",
+      "url": "https://shop.karoryfer.com/pages/free-pastabass",
       "licence": "CC0",
-      "modifications": "capped at 2 s, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a bass note lands with the kick it is written beside; not normalised: the v1/v3 level difference is the dynamic information the renderer reads)"
+      "modifications": "downmixed to mono (a no-op — the source is single-channel), capped at 2.0 s, faded out over the last 80 ms, re-encoded as 44.1 kHz 16-bit FLAC. Not normalised: the vl1/vl2/vl3 level difference is the dynamic information the renderer reads. Not filtered. Not trimmed at the front: the source lead-in is kept, so a bass note lands with the kick it is written beside."
     },
     {
-      "file": "bass/BKCtbss_Pizz_E1_v3_rr2.flac",
-      "source": "VSCO 2 Community Edition (VSCO-2-CE), Solo Contrabass, pizzicato",
-      "sourceFile": "Strings/Solo Contrabass/Pizz/BKCtbss_Pizz_E1_v3_rr2.wav",
-      "url": "https://github.com/sgossner/VSCO-2-CE",
+      "file": "bass/Pastabass_tagliatelle_g2_vl1_rr2.flac",
+      "source": "Pastabass (Karoryfer Samples), Squier Bass VI, tagliatelle — flatwound, picked, muted, pickup combo",
+      "sourceFile": "Pastabass/samples/tagliatelle/g2_vl1_rr2.wav",
+      "url": "https://shop.karoryfer.com/pages/free-pastabass",
       "licence": "CC0",
-      "modifications": "capped at 2 s, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a bass note lands with the kick it is written beside; not normalised: the v1/v3 level difference is the dynamic information the renderer reads)"
+      "modifications": "downmixed to mono (a no-op — the source is single-channel), capped at 2.0 s, faded out over the last 80 ms, re-encoded as 44.1 kHz 16-bit FLAC. Not normalised: the vl1/vl2/vl3 level difference is the dynamic information the renderer reads. Not filtered. Not trimmed at the front: the source lead-in is kept, so a bass note lands with the kick it is written beside."
     },
     {
-      "file": "bass/BKCtbss_Pizz_F#1_v1_rr1.flac",
-      "source": "VSCO 2 Community Edition (VSCO-2-CE), Solo Contrabass, pizzicato",
-      "sourceFile": "Strings/Solo Contrabass/Pizz/BKCtbss_Pizz_F#1_v1_rr1.wav",
-      "url": "https://github.com/sgossner/VSCO-2-CE",
+      "file": "bass/Pastabass_tagliatelle_g2_vl1_rr3.flac",
+      "source": "Pastabass (Karoryfer Samples), Squier Bass VI, tagliatelle — flatwound, picked, muted, pickup combo",
+      "sourceFile": "Pastabass/samples/tagliatelle/g2_vl1_rr3.wav",
+      "url": "https://shop.karoryfer.com/pages/free-pastabass",
       "licence": "CC0",
-      "modifications": "capped at 2 s, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a bass note lands with the kick it is written beside; not normalised: the v1/v3 level difference is the dynamic information the renderer reads)"
+      "modifications": "downmixed to mono (a no-op — the source is single-channel), capped at 2.0 s, faded out over the last 80 ms, re-encoded as 44.1 kHz 16-bit FLAC. Not normalised: the vl1/vl2/vl3 level difference is the dynamic information the renderer reads. Not filtered. Not trimmed at the front: the source lead-in is kept, so a bass note lands with the kick it is written beside."
     },
     {
-      "file": "bass/BKCtbss_Pizz_F#1_v1_rr2.flac",
-      "source": "VSCO 2 Community Edition (VSCO-2-CE), Solo Contrabass, pizzicato",
-      "sourceFile": "Strings/Solo Contrabass/Pizz/BKCtbss_Pizz_F#1_v1_rr2.wav",
-      "url": "https://github.com/sgossner/VSCO-2-CE",
+      "file": "bass/Pastabass_tagliatelle_g2_vl2_rr1.flac",
+      "source": "Pastabass (Karoryfer Samples), Squier Bass VI, tagliatelle — flatwound, picked, muted, pickup combo",
+      "sourceFile": "Pastabass/samples/tagliatelle/g2_vl2_rr1.wav",
+      "url": "https://shop.karoryfer.com/pages/free-pastabass",
       "licence": "CC0",
-      "modifications": "capped at 2 s, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a bass note lands with the kick it is written beside; not normalised: the v1/v3 level difference is the dynamic information the renderer reads)"
+      "modifications": "downmixed to mono (a no-op — the source is single-channel), capped at 2.0 s, faded out over the last 80 ms, re-encoded as 44.1 kHz 16-bit FLAC. Not normalised: the vl1/vl2/vl3 level difference is the dynamic information the renderer reads. Not filtered. Not trimmed at the front: the source lead-in is kept, so a bass note lands with the kick it is written beside."
     },
     {
-      "file": "bass/BKCtbss_Pizz_A1_v1_rr1.flac",
-      "source": "VSCO 2 Community Edition (VSCO-2-CE), Solo Contrabass, pizzicato",
-      "sourceFile": "Strings/Solo Contrabass/Pizz/BKCtbss_Pizz_A1_v1_rr1.wav",
-      "url": "https://github.com/sgossner/VSCO-2-CE",
+      "file": "bass/Pastabass_tagliatelle_g2_vl2_rr2.flac",
+      "source": "Pastabass (Karoryfer Samples), Squier Bass VI, tagliatelle — flatwound, picked, muted, pickup combo",
+      "sourceFile": "Pastabass/samples/tagliatelle/g2_vl2_rr2.wav",
+      "url": "https://shop.karoryfer.com/pages/free-pastabass",
       "licence": "CC0",
-      "modifications": "capped at 2 s, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a bass note lands with the kick it is written beside; not normalised: the v1/v3 level difference is the dynamic information the renderer reads)"
+      "modifications": "downmixed to mono (a no-op — the source is single-channel), capped at 2.0 s, faded out over the last 80 ms, re-encoded as 44.1 kHz 16-bit FLAC. Not normalised: the vl1/vl2/vl3 level difference is the dynamic information the renderer reads. Not filtered. Not trimmed at the front: the source lead-in is kept, so a bass note lands with the kick it is written beside."
     },
     {
-      "file": "bass/BKCtbss_Pizz_A1_v1_rr2.flac",
-      "source": "VSCO 2 Community Edition (VSCO-2-CE), Solo Contrabass, pizzicato",
-      "sourceFile": "Strings/Solo Contrabass/Pizz/BKCtbss_Pizz_A1_v1_rr2.wav",
-      "url": "https://github.com/sgossner/VSCO-2-CE",
+      "file": "bass/Pastabass_tagliatelle_g2_vl2_rr3.flac",
+      "source": "Pastabass (Karoryfer Samples), Squier Bass VI, tagliatelle — flatwound, picked, muted, pickup combo",
+      "sourceFile": "Pastabass/samples/tagliatelle/g2_vl2_rr3.wav",
+      "url": "https://shop.karoryfer.com/pages/free-pastabass",
       "licence": "CC0",
-      "modifications": "capped at 2 s, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a bass note lands with the kick it is written beside; not normalised: the v1/v3 level difference is the dynamic information the renderer reads)"
+      "modifications": "downmixed to mono (a no-op — the source is single-channel), capped at 2.0 s, faded out over the last 80 ms, re-encoded as 44.1 kHz 16-bit FLAC. Not normalised: the vl1/vl2/vl3 level difference is the dynamic information the renderer reads. Not filtered. Not trimmed at the front: the source lead-in is kept, so a bass note lands with the kick it is written beside."
     },
     {
-      "file": "bass/BKCtbss_Pizz_C#2_v1_rr1.flac",
-      "source": "VSCO 2 Community Edition (VSCO-2-CE), Solo Contrabass, pizzicato",
-      "sourceFile": "Strings/Solo Contrabass/Pizz/BKCtbss_Pizz_C#2_v1_rr1.wav",
-      "url": "https://github.com/sgossner/VSCO-2-CE",
+      "file": "bass/Pastabass_tagliatelle_g2_vl3_rr1.flac",
+      "source": "Pastabass (Karoryfer Samples), Squier Bass VI, tagliatelle — flatwound, picked, muted, pickup combo",
+      "sourceFile": "Pastabass/samples/tagliatelle/g2_vl3_rr1.wav",
+      "url": "https://shop.karoryfer.com/pages/free-pastabass",
       "licence": "CC0",
-      "modifications": "capped at 2 s, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a bass note lands with the kick it is written beside; not normalised: the v1/v3 level difference is the dynamic information the renderer reads)"
+      "modifications": "downmixed to mono (a no-op — the source is single-channel), capped at 2.0 s, faded out over the last 80 ms, re-encoded as 44.1 kHz 16-bit FLAC. Not normalised: the vl1/vl2/vl3 level difference is the dynamic information the renderer reads. Not filtered. Not trimmed at the front: the source lead-in is kept, so a bass note lands with the kick it is written beside."
     },
     {
-      "file": "bass/BKCtbss_Pizz_C#2_v1_rr2.flac",
-      "source": "VSCO 2 Community Edition (VSCO-2-CE), Solo Contrabass, pizzicato",
-      "sourceFile": "Strings/Solo Contrabass/Pizz/BKCtbss_Pizz_C#2_v1_rr2.wav",
-      "url": "https://github.com/sgossner/VSCO-2-CE",
+      "file": "bass/Pastabass_tagliatelle_g2_vl3_rr2.flac",
+      "source": "Pastabass (Karoryfer Samples), Squier Bass VI, tagliatelle — flatwound, picked, muted, pickup combo",
+      "sourceFile": "Pastabass/samples/tagliatelle/g2_vl3_rr2.wav",
+      "url": "https://shop.karoryfer.com/pages/free-pastabass",
       "licence": "CC0",
-      "modifications": "capped at 2 s, faded out, downmixed to mono, 44.1 kHz 16-bit FLAC (not trimmed: the source lead-in is kept, so a bass note lands with the kick it is written beside; not normalised: the v1/v3 level difference is the dynamic information the renderer reads)"
+      "modifications": "downmixed to mono (a no-op — the source is single-channel), capped at 2.0 s, faded out over the last 80 ms, re-encoded as 44.1 kHz 16-bit FLAC. Not normalised: the vl1/vl2/vl3 level difference is the dynamic information the renderer reads. Not filtered. Not trimmed at the front: the source lead-in is kept, so a bass note lands with the kick it is written beside."
+    },
+    {
+      "file": "bass/Pastabass_tagliatelle_g2_vl3_rr3.flac",
+      "source": "Pastabass (Karoryfer Samples), Squier Bass VI, tagliatelle — flatwound, picked, muted, pickup combo",
+      "sourceFile": "Pastabass/samples/tagliatelle/g2_vl3_rr3.wav",
+      "url": "https://shop.karoryfer.com/pages/free-pastabass",
+      "licence": "CC0",
+      "modifications": "downmixed to mono (a no-op — the source is single-channel), capped at 2.0 s, faded out over the last 80 ms, re-encoded as 44.1 kHz 16-bit FLAC. Not normalised: the vl1/vl2/vl3 level difference is the dynamic information the renderer reads. Not filtered. Not trimmed at the front: the source lead-in is kept, so a bass note lands with the kick it is written beside."
+    },
+    {
+      "file": "bass/Pastabass_tagliatelle_bb2_vl1_rr1.flac",
+      "source": "Pastabass (Karoryfer Samples), Squier Bass VI, tagliatelle — flatwound, picked, muted, pickup combo",
+      "sourceFile": "Pastabass/samples/tagliatelle/bb2_vl1_rr1.wav",
+      "url": "https://shop.karoryfer.com/pages/free-pastabass",
+      "licence": "CC0",
+      "modifications": "downmixed to mono (a no-op — the source is single-channel), capped at 2.0 s, faded out over the last 80 ms, re-encoded as 44.1 kHz 16-bit FLAC. Not normalised: the vl1/vl2/vl3 level difference is the dynamic information the renderer reads. Not filtered. Not trimmed at the front: the source lead-in is kept, so a bass note lands with the kick it is written beside."
+    },
+    {
+      "file": "bass/Pastabass_tagliatelle_bb2_vl1_rr2.flac",
+      "source": "Pastabass (Karoryfer Samples), Squier Bass VI, tagliatelle — flatwound, picked, muted, pickup combo",
+      "sourceFile": "Pastabass/samples/tagliatelle/bb2_vl1_rr2.wav",
+      "url": "https://shop.karoryfer.com/pages/free-pastabass",
+      "licence": "CC0",
+      "modifications": "downmixed to mono (a no-op — the source is single-channel), capped at 2.0 s, faded out over the last 80 ms, re-encoded as 44.1 kHz 16-bit FLAC. Not normalised: the vl1/vl2/vl3 level difference is the dynamic information the renderer reads. Not filtered. Not trimmed at the front: the source lead-in is kept, so a bass note lands with the kick it is written beside."
+    },
+    {
+      "file": "bass/Pastabass_tagliatelle_bb2_vl1_rr3.flac",
+      "source": "Pastabass (Karoryfer Samples), Squier Bass VI, tagliatelle — flatwound, picked, muted, pickup combo",
+      "sourceFile": "Pastabass/samples/tagliatelle/bb2_vl1_rr3.wav",
+      "url": "https://shop.karoryfer.com/pages/free-pastabass",
+      "licence": "CC0",
+      "modifications": "downmixed to mono (a no-op — the source is single-channel), capped at 2.0 s, faded out over the last 80 ms, re-encoded as 44.1 kHz 16-bit FLAC. Not normalised: the vl1/vl2/vl3 level difference is the dynamic information the renderer reads. Not filtered. Not trimmed at the front: the source lead-in is kept, so a bass note lands with the kick it is written beside."
+    },
+    {
+      "file": "bass/Pastabass_tagliatelle_bb2_vl2_rr1.flac",
+      "source": "Pastabass (Karoryfer Samples), Squier Bass VI, tagliatelle — flatwound, picked, muted, pickup combo",
+      "sourceFile": "Pastabass/samples/tagliatelle/bb2_vl2_rr1.wav",
+      "url": "https://shop.karoryfer.com/pages/free-pastabass",
+      "licence": "CC0",
+      "modifications": "downmixed to mono (a no-op — the source is single-channel), capped at 2.0 s, faded out over the last 80 ms, re-encoded as 44.1 kHz 16-bit FLAC. Not normalised: the vl1/vl2/vl3 level difference is the dynamic information the renderer reads. Not filtered. Not trimmed at the front: the source lead-in is kept, so a bass note lands with the kick it is written beside."
+    },
+    {
+      "file": "bass/Pastabass_tagliatelle_bb2_vl2_rr2.flac",
+      "source": "Pastabass (Karoryfer Samples), Squier Bass VI, tagliatelle — flatwound, picked, muted, pickup combo",
+      "sourceFile": "Pastabass/samples/tagliatelle/bb2_vl2_rr2.wav",
+      "url": "https://shop.karoryfer.com/pages/free-pastabass",
+      "licence": "CC0",
+      "modifications": "downmixed to mono (a no-op — the source is single-channel), capped at 2.0 s, faded out over the last 80 ms, re-encoded as 44.1 kHz 16-bit FLAC. Not normalised: the vl1/vl2/vl3 level difference is the dynamic information the renderer reads. Not filtered. Not trimmed at the front: the source lead-in is kept, so a bass note lands with the kick it is written beside."
+    },
+    {
+      "file": "bass/Pastabass_tagliatelle_bb2_vl2_rr3.flac",
+      "source": "Pastabass (Karoryfer Samples), Squier Bass VI, tagliatelle — flatwound, picked, muted, pickup combo",
+      "sourceFile": "Pastabass/samples/tagliatelle/bb2_vl2_rr3.wav",
+      "url": "https://shop.karoryfer.com/pages/free-pastabass",
+      "licence": "CC0",
+      "modifications": "downmixed to mono (a no-op — the source is single-channel), capped at 2.0 s, faded out over the last 80 ms, re-encoded as 44.1 kHz 16-bit FLAC. Not normalised: the vl1/vl2/vl3 level difference is the dynamic information the renderer reads. Not filtered. Not trimmed at the front: the source lead-in is kept, so a bass note lands with the kick it is written beside."
+    },
+    {
+      "file": "bass/Pastabass_tagliatelle_bb2_vl3_rr1.flac",
+      "source": "Pastabass (Karoryfer Samples), Squier Bass VI, tagliatelle — flatwound, picked, muted, pickup combo",
+      "sourceFile": "Pastabass/samples/tagliatelle/bb2_vl3_rr1.wav",
+      "url": "https://shop.karoryfer.com/pages/free-pastabass",
+      "licence": "CC0",
+      "modifications": "downmixed to mono (a no-op — the source is single-channel), capped at 2.0 s, faded out over the last 80 ms, re-encoded as 44.1 kHz 16-bit FLAC. Not normalised: the vl1/vl2/vl3 level difference is the dynamic information the renderer reads. Not filtered. Not trimmed at the front: the source lead-in is kept, so a bass note lands with the kick it is written beside."
+    },
+    {
+      "file": "bass/Pastabass_tagliatelle_bb2_vl3_rr2.flac",
+      "source": "Pastabass (Karoryfer Samples), Squier Bass VI, tagliatelle — flatwound, picked, muted, pickup combo",
+      "sourceFile": "Pastabass/samples/tagliatelle/bb2_vl3_rr2.wav",
+      "url": "https://shop.karoryfer.com/pages/free-pastabass",
+      "licence": "CC0",
+      "modifications": "downmixed to mono (a no-op — the source is single-channel), capped at 2.0 s, faded out over the last 80 ms, re-encoded as 44.1 kHz 16-bit FLAC. Not normalised: the vl1/vl2/vl3 level difference is the dynamic information the renderer reads. Not filtered. Not trimmed at the front: the source lead-in is kept, so a bass note lands with the kick it is written beside."
+    },
+    {
+      "file": "bass/Pastabass_tagliatelle_bb2_vl3_rr3.flac",
+      "source": "Pastabass (Karoryfer Samples), Squier Bass VI, tagliatelle — flatwound, picked, muted, pickup combo",
+      "sourceFile": "Pastabass/samples/tagliatelle/bb2_vl3_rr3.wav",
+      "url": "https://shop.karoryfer.com/pages/free-pastabass",
+      "licence": "CC0",
+      "modifications": "downmixed to mono (a no-op — the source is single-channel), capped at 2.0 s, faded out over the last 80 ms, re-encoded as 44.1 kHz 16-bit FLAC. Not normalised: the vl1/vl2/vl3 level difference is the dynamic information the renderer reads. Not filtered. Not trimmed at the front: the source lead-in is kept, so a bass note lands with the kick it is written beside."
+    },
+    {
+      "file": "bass/Pastabass_tagliatelle_db3_vl1_rr1.flac",
+      "source": "Pastabass (Karoryfer Samples), Squier Bass VI, tagliatelle — flatwound, picked, muted, pickup combo",
+      "sourceFile": "Pastabass/samples/tagliatelle/db3_vl1_rr1.wav",
+      "url": "https://shop.karoryfer.com/pages/free-pastabass",
+      "licence": "CC0",
+      "modifications": "downmixed to mono (a no-op — the source is single-channel), capped at 2.0 s, faded out over the last 80 ms, re-encoded as 44.1 kHz 16-bit FLAC. Not normalised: the vl1/vl2/vl3 level difference is the dynamic information the renderer reads. Not filtered. Not trimmed at the front: the source lead-in is kept, so a bass note lands with the kick it is written beside."
+    },
+    {
+      "file": "bass/Pastabass_tagliatelle_db3_vl1_rr2.flac",
+      "source": "Pastabass (Karoryfer Samples), Squier Bass VI, tagliatelle — flatwound, picked, muted, pickup combo",
+      "sourceFile": "Pastabass/samples/tagliatelle/db3_vl1_rr2.wav",
+      "url": "https://shop.karoryfer.com/pages/free-pastabass",
+      "licence": "CC0",
+      "modifications": "downmixed to mono (a no-op — the source is single-channel), capped at 2.0 s, faded out over the last 80 ms, re-encoded as 44.1 kHz 16-bit FLAC. Not normalised: the vl1/vl2/vl3 level difference is the dynamic information the renderer reads. Not filtered. Not trimmed at the front: the source lead-in is kept, so a bass note lands with the kick it is written beside."
+    },
+    {
+      "file": "bass/Pastabass_tagliatelle_db3_vl1_rr3.flac",
+      "source": "Pastabass (Karoryfer Samples), Squier Bass VI, tagliatelle — flatwound, picked, muted, pickup combo",
+      "sourceFile": "Pastabass/samples/tagliatelle/db3_vl1_rr3.wav",
+      "url": "https://shop.karoryfer.com/pages/free-pastabass",
+      "licence": "CC0",
+      "modifications": "downmixed to mono (a no-op — the source is single-channel), capped at 2.0 s, faded out over the last 80 ms, re-encoded as 44.1 kHz 16-bit FLAC. Not normalised: the vl1/vl2/vl3 level difference is the dynamic information the renderer reads. Not filtered. Not trimmed at the front: the source lead-in is kept, so a bass note lands with the kick it is written beside."
+    },
+    {
+      "file": "bass/Pastabass_tagliatelle_db3_vl2_rr1.flac",
+      "source": "Pastabass (Karoryfer Samples), Squier Bass VI, tagliatelle — flatwound, picked, muted, pickup combo",
+      "sourceFile": "Pastabass/samples/tagliatelle/db3_vl2_rr1.wav",
+      "url": "https://shop.karoryfer.com/pages/free-pastabass",
+      "licence": "CC0",
+      "modifications": "downmixed to mono (a no-op — the source is single-channel), capped at 2.0 s, faded out over the last 80 ms, re-encoded as 44.1 kHz 16-bit FLAC. Not normalised: the vl1/vl2/vl3 level difference is the dynamic information the renderer reads. Not filtered. Not trimmed at the front: the source lead-in is kept, so a bass note lands with the kick it is written beside."
+    },
+    {
+      "file": "bass/Pastabass_tagliatelle_db3_vl2_rr2.flac",
+      "source": "Pastabass (Karoryfer Samples), Squier Bass VI, tagliatelle — flatwound, picked, muted, pickup combo",
+      "sourceFile": "Pastabass/samples/tagliatelle/db3_vl2_rr2.wav",
+      "url": "https://shop.karoryfer.com/pages/free-pastabass",
+      "licence": "CC0",
+      "modifications": "downmixed to mono (a no-op — the source is single-channel), capped at 2.0 s, faded out over the last 80 ms, re-encoded as 44.1 kHz 16-bit FLAC. Not normalised: the vl1/vl2/vl3 level difference is the dynamic information the renderer reads. Not filtered. Not trimmed at the front: the source lead-in is kept, so a bass note lands with the kick it is written beside."
+    },
+    {
+      "file": "bass/Pastabass_tagliatelle_db3_vl2_rr3.flac",
+      "source": "Pastabass (Karoryfer Samples), Squier Bass VI, tagliatelle — flatwound, picked, muted, pickup combo",
+      "sourceFile": "Pastabass/samples/tagliatelle/db3_vl2_rr3.wav",
+      "url": "https://shop.karoryfer.com/pages/free-pastabass",
+      "licence": "CC0",
+      "modifications": "downmixed to mono (a no-op — the source is single-channel), capped at 2.0 s, faded out over the last 80 ms, re-encoded as 44.1 kHz 16-bit FLAC. Not normalised: the vl1/vl2/vl3 level difference is the dynamic information the renderer reads. Not filtered. Not trimmed at the front: the source lead-in is kept, so a bass note lands with the kick it is written beside."
+    },
+    {
+      "file": "bass/Pastabass_tagliatelle_db3_vl3_rr1.flac",
+      "source": "Pastabass (Karoryfer Samples), Squier Bass VI, tagliatelle — flatwound, picked, muted, pickup combo",
+      "sourceFile": "Pastabass/samples/tagliatelle/db3_vl3_rr1.wav",
+      "url": "https://shop.karoryfer.com/pages/free-pastabass",
+      "licence": "CC0",
+      "modifications": "downmixed to mono (a no-op — the source is single-channel), capped at 2.0 s, faded out over the last 80 ms, re-encoded as 44.1 kHz 16-bit FLAC. Not normalised: the vl1/vl2/vl3 level difference is the dynamic information the renderer reads. Not filtered. Not trimmed at the front: the source lead-in is kept, so a bass note lands with the kick it is written beside."
+    },
+    {
+      "file": "bass/Pastabass_tagliatelle_db3_vl3_rr2.flac",
+      "source": "Pastabass (Karoryfer Samples), Squier Bass VI, tagliatelle — flatwound, picked, muted, pickup combo",
+      "sourceFile": "Pastabass/samples/tagliatelle/db3_vl3_rr2.wav",
+      "url": "https://shop.karoryfer.com/pages/free-pastabass",
+      "licence": "CC0",
+      "modifications": "downmixed to mono (a no-op — the source is single-channel), capped at 2.0 s, faded out over the last 80 ms, re-encoded as 44.1 kHz 16-bit FLAC. Not normalised: the vl1/vl2/vl3 level difference is the dynamic information the renderer reads. Not filtered. Not trimmed at the front: the source lead-in is kept, so a bass note lands with the kick it is written beside."
+    },
+    {
+      "file": "bass/Pastabass_tagliatelle_db3_vl3_rr3.flac",
+      "source": "Pastabass (Karoryfer Samples), Squier Bass VI, tagliatelle — flatwound, picked, muted, pickup combo",
+      "sourceFile": "Pastabass/samples/tagliatelle/db3_vl3_rr3.wav",
+      "url": "https://shop.karoryfer.com/pages/free-pastabass",
+      "licence": "CC0",
+      "modifications": "downmixed to mono (a no-op — the source is single-channel), capped at 2.0 s, faded out over the last 80 ms, re-encoded as 44.1 kHz 16-bit FLAC. Not normalised: the vl1/vl2/vl3 level difference is the dynamic information the renderer reads. Not filtered. Not trimmed at the front: the source lead-in is kept, so a bass note lands with the kick it is written beside."
+    },
+    {
+      "file": "bass/Pastabass_tagliatelle_e3_vl1_rr1.flac",
+      "source": "Pastabass (Karoryfer Samples), Squier Bass VI, tagliatelle — flatwound, picked, muted, pickup combo",
+      "sourceFile": "Pastabass/samples/tagliatelle/e3_vl1_rr1.wav",
+      "url": "https://shop.karoryfer.com/pages/free-pastabass",
+      "licence": "CC0",
+      "modifications": "downmixed to mono (a no-op — the source is single-channel), capped at 2.0 s, faded out over the last 80 ms, re-encoded as 44.1 kHz 16-bit FLAC. Not normalised: the vl1/vl2/vl3 level difference is the dynamic information the renderer reads. Not filtered. Not trimmed at the front: the source lead-in is kept, so a bass note lands with the kick it is written beside."
+    },
+    {
+      "file": "bass/Pastabass_tagliatelle_e3_vl1_rr2.flac",
+      "source": "Pastabass (Karoryfer Samples), Squier Bass VI, tagliatelle — flatwound, picked, muted, pickup combo",
+      "sourceFile": "Pastabass/samples/tagliatelle/e3_vl1_rr2.wav",
+      "url": "https://shop.karoryfer.com/pages/free-pastabass",
+      "licence": "CC0",
+      "modifications": "downmixed to mono (a no-op — the source is single-channel), capped at 2.0 s, faded out over the last 80 ms, re-encoded as 44.1 kHz 16-bit FLAC. Not normalised: the vl1/vl2/vl3 level difference is the dynamic information the renderer reads. Not filtered. Not trimmed at the front: the source lead-in is kept, so a bass note lands with the kick it is written beside."
+    },
+    {
+      "file": "bass/Pastabass_tagliatelle_e3_vl1_rr3.flac",
+      "source": "Pastabass (Karoryfer Samples), Squier Bass VI, tagliatelle — flatwound, picked, muted, pickup combo",
+      "sourceFile": "Pastabass/samples/tagliatelle/e3_vl1_rr3.wav",
+      "url": "https://shop.karoryfer.com/pages/free-pastabass",
+      "licence": "CC0",
+      "modifications": "downmixed to mono (a no-op — the source is single-channel), capped at 2.0 s, faded out over the last 80 ms, re-encoded as 44.1 kHz 16-bit FLAC. Not normalised: the vl1/vl2/vl3 level difference is the dynamic information the renderer reads. Not filtered. Not trimmed at the front: the source lead-in is kept, so a bass note lands with the kick it is written beside."
+    },
+    {
+      "file": "bass/Pastabass_tagliatelle_e3_vl2_rr1.flac",
+      "source": "Pastabass (Karoryfer Samples), Squier Bass VI, tagliatelle — flatwound, picked, muted, pickup combo",
+      "sourceFile": "Pastabass/samples/tagliatelle/e3_vl2_rr1.wav",
+      "url": "https://shop.karoryfer.com/pages/free-pastabass",
+      "licence": "CC0",
+      "modifications": "downmixed to mono (a no-op — the source is single-channel), capped at 2.0 s, faded out over the last 80 ms, re-encoded as 44.1 kHz 16-bit FLAC. Not normalised: the vl1/vl2/vl3 level difference is the dynamic information the renderer reads. Not filtered. Not trimmed at the front: the source lead-in is kept, so a bass note lands with the kick it is written beside."
+    },
+    {
+      "file": "bass/Pastabass_tagliatelle_e3_vl2_rr2.flac",
+      "source": "Pastabass (Karoryfer Samples), Squier Bass VI, tagliatelle — flatwound, picked, muted, pickup combo",
+      "sourceFile": "Pastabass/samples/tagliatelle/e3_vl2_rr2.wav",
+      "url": "https://shop.karoryfer.com/pages/free-pastabass",
+      "licence": "CC0",
+      "modifications": "downmixed to mono (a no-op — the source is single-channel), capped at 2.0 s, faded out over the last 80 ms, re-encoded as 44.1 kHz 16-bit FLAC. Not normalised: the vl1/vl2/vl3 level difference is the dynamic information the renderer reads. Not filtered. Not trimmed at the front: the source lead-in is kept, so a bass note lands with the kick it is written beside."
+    },
+    {
+      "file": "bass/Pastabass_tagliatelle_e3_vl2_rr3.flac",
+      "source": "Pastabass (Karoryfer Samples), Squier Bass VI, tagliatelle — flatwound, picked, muted, pickup combo",
+      "sourceFile": "Pastabass/samples/tagliatelle/e3_vl2_rr3.wav",
+      "url": "https://shop.karoryfer.com/pages/free-pastabass",
+      "licence": "CC0",
+      "modifications": "downmixed to mono (a no-op — the source is single-channel), capped at 2.0 s, faded out over the last 80 ms, re-encoded as 44.1 kHz 16-bit FLAC. Not normalised: the vl1/vl2/vl3 level difference is the dynamic information the renderer reads. Not filtered. Not trimmed at the front: the source lead-in is kept, so a bass note lands with the kick it is written beside."
+    },
+    {
+      "file": "bass/Pastabass_tagliatelle_e3_vl3_rr1.flac",
+      "source": "Pastabass (Karoryfer Samples), Squier Bass VI, tagliatelle — flatwound, picked, muted, pickup combo",
+      "sourceFile": "Pastabass/samples/tagliatelle/e3_vl3_rr1.wav",
+      "url": "https://shop.karoryfer.com/pages/free-pastabass",
+      "licence": "CC0",
+      "modifications": "downmixed to mono (a no-op — the source is single-channel), capped at 2.0 s, faded out over the last 80 ms, re-encoded as 44.1 kHz 16-bit FLAC. Not normalised: the vl1/vl2/vl3 level difference is the dynamic information the renderer reads. Not filtered. Not trimmed at the front: the source lead-in is kept, so a bass note lands with the kick it is written beside."
+    },
+    {
+      "file": "bass/Pastabass_tagliatelle_e3_vl3_rr2.flac",
+      "source": "Pastabass (Karoryfer Samples), Squier Bass VI, tagliatelle — flatwound, picked, muted, pickup combo",
+      "sourceFile": "Pastabass/samples/tagliatelle/e3_vl3_rr2.wav",
+      "url": "https://shop.karoryfer.com/pages/free-pastabass",
+      "licence": "CC0",
+      "modifications": "downmixed to mono (a no-op — the source is single-channel), capped at 2.0 s, faded out over the last 80 ms, re-encoded as 44.1 kHz 16-bit FLAC. Not normalised: the vl1/vl2/vl3 level difference is the dynamic information the renderer reads. Not filtered. Not trimmed at the front: the source lead-in is kept, so a bass note lands with the kick it is written beside."
+    },
+    {
+      "file": "bass/Pastabass_tagliatelle_e3_vl3_rr3.flac",
+      "source": "Pastabass (Karoryfer Samples), Squier Bass VI, tagliatelle — flatwound, picked, muted, pickup combo",
+      "sourceFile": "Pastabass/samples/tagliatelle/e3_vl3_rr3.wav",
+      "url": "https://shop.karoryfer.com/pages/free-pastabass",
+      "licence": "CC0",
+      "modifications": "downmixed to mono (a no-op — the source is single-channel), capped at 2.0 s, faded out over the last 80 ms, re-encoded as 44.1 kHz 16-bit FLAC. Not normalised: the vl1/vl2/vl3 level difference is the dynamic information the renderer reads. Not filtered. Not trimmed at the front: the source lead-in is kept, so a bass note lands with the kick it is written beside."
+    },
+    {
+      "file": "bass/Pastabass_tagliatelle_g3_vl1_rr1.flac",
+      "source": "Pastabass (Karoryfer Samples), Squier Bass VI, tagliatelle — flatwound, picked, muted, pickup combo",
+      "sourceFile": "Pastabass/samples/tagliatelle/g3_vl1_rr1.wav",
+      "url": "https://shop.karoryfer.com/pages/free-pastabass",
+      "licence": "CC0",
+      "modifications": "downmixed to mono (a no-op — the source is single-channel), capped at 2.0 s, faded out over the last 80 ms, re-encoded as 44.1 kHz 16-bit FLAC. Not normalised: the vl1/vl2/vl3 level difference is the dynamic information the renderer reads. Not filtered. Not trimmed at the front: the source lead-in is kept, so a bass note lands with the kick it is written beside."
+    },
+    {
+      "file": "bass/Pastabass_tagliatelle_g3_vl1_rr2.flac",
+      "source": "Pastabass (Karoryfer Samples), Squier Bass VI, tagliatelle — flatwound, picked, muted, pickup combo",
+      "sourceFile": "Pastabass/samples/tagliatelle/g3_vl1_rr2.wav",
+      "url": "https://shop.karoryfer.com/pages/free-pastabass",
+      "licence": "CC0",
+      "modifications": "downmixed to mono (a no-op — the source is single-channel), capped at 2.0 s, faded out over the last 80 ms, re-encoded as 44.1 kHz 16-bit FLAC. Not normalised: the vl1/vl2/vl3 level difference is the dynamic information the renderer reads. Not filtered. Not trimmed at the front: the source lead-in is kept, so a bass note lands with the kick it is written beside."
+    },
+    {
+      "file": "bass/Pastabass_tagliatelle_g3_vl1_rr3.flac",
+      "source": "Pastabass (Karoryfer Samples), Squier Bass VI, tagliatelle — flatwound, picked, muted, pickup combo",
+      "sourceFile": "Pastabass/samples/tagliatelle/g3_vl1_rr3.wav",
+      "url": "https://shop.karoryfer.com/pages/free-pastabass",
+      "licence": "CC0",
+      "modifications": "downmixed to mono (a no-op — the source is single-channel), capped at 2.0 s, faded out over the last 80 ms, re-encoded as 44.1 kHz 16-bit FLAC. Not normalised: the vl1/vl2/vl3 level difference is the dynamic information the renderer reads. Not filtered. Not trimmed at the front: the source lead-in is kept, so a bass note lands with the kick it is written beside."
+    },
+    {
+      "file": "bass/Pastabass_tagliatelle_g3_vl2_rr1.flac",
+      "source": "Pastabass (Karoryfer Samples), Squier Bass VI, tagliatelle — flatwound, picked, muted, pickup combo",
+      "sourceFile": "Pastabass/samples/tagliatelle/g3_vl2_rr1.wav",
+      "url": "https://shop.karoryfer.com/pages/free-pastabass",
+      "licence": "CC0",
+      "modifications": "downmixed to mono (a no-op — the source is single-channel), capped at 2.0 s, faded out over the last 80 ms, re-encoded as 44.1 kHz 16-bit FLAC. Not normalised: the vl1/vl2/vl3 level difference is the dynamic information the renderer reads. Not filtered. Not trimmed at the front: the source lead-in is kept, so a bass note lands with the kick it is written beside."
+    },
+    {
+      "file": "bass/Pastabass_tagliatelle_g3_vl2_rr2.flac",
+      "source": "Pastabass (Karoryfer Samples), Squier Bass VI, tagliatelle — flatwound, picked, muted, pickup combo",
+      "sourceFile": "Pastabass/samples/tagliatelle/g3_vl2_rr2.wav",
+      "url": "https://shop.karoryfer.com/pages/free-pastabass",
+      "licence": "CC0",
+      "modifications": "downmixed to mono (a no-op — the source is single-channel), capped at 2.0 s, faded out over the last 80 ms, re-encoded as 44.1 kHz 16-bit FLAC. Not normalised: the vl1/vl2/vl3 level difference is the dynamic information the renderer reads. Not filtered. Not trimmed at the front: the source lead-in is kept, so a bass note lands with the kick it is written beside."
+    },
+    {
+      "file": "bass/Pastabass_tagliatelle_g3_vl2_rr3.flac",
+      "source": "Pastabass (Karoryfer Samples), Squier Bass VI, tagliatelle — flatwound, picked, muted, pickup combo",
+      "sourceFile": "Pastabass/samples/tagliatelle/g3_vl2_rr3.wav",
+      "url": "https://shop.karoryfer.com/pages/free-pastabass",
+      "licence": "CC0",
+      "modifications": "downmixed to mono (a no-op — the source is single-channel), capped at 2.0 s, faded out over the last 80 ms, re-encoded as 44.1 kHz 16-bit FLAC. Not normalised: the vl1/vl2/vl3 level difference is the dynamic information the renderer reads. Not filtered. Not trimmed at the front: the source lead-in is kept, so a bass note lands with the kick it is written beside."
+    },
+    {
+      "file": "bass/Pastabass_tagliatelle_g3_vl3_rr1.flac",
+      "source": "Pastabass (Karoryfer Samples), Squier Bass VI, tagliatelle — flatwound, picked, muted, pickup combo",
+      "sourceFile": "Pastabass/samples/tagliatelle/g3_vl3_rr1.wav",
+      "url": "https://shop.karoryfer.com/pages/free-pastabass",
+      "licence": "CC0",
+      "modifications": "downmixed to mono (a no-op — the source is single-channel), capped at 2.0 s, faded out over the last 80 ms, re-encoded as 44.1 kHz 16-bit FLAC. Not normalised: the vl1/vl2/vl3 level difference is the dynamic information the renderer reads. Not filtered. Not trimmed at the front: the source lead-in is kept, so a bass note lands with the kick it is written beside."
+    },
+    {
+      "file": "bass/Pastabass_tagliatelle_g3_vl3_rr2.flac",
+      "source": "Pastabass (Karoryfer Samples), Squier Bass VI, tagliatelle — flatwound, picked, muted, pickup combo",
+      "sourceFile": "Pastabass/samples/tagliatelle/g3_vl3_rr2.wav",
+      "url": "https://shop.karoryfer.com/pages/free-pastabass",
+      "licence": "CC0",
+      "modifications": "downmixed to mono (a no-op — the source is single-channel), capped at 2.0 s, faded out over the last 80 ms, re-encoded as 44.1 kHz 16-bit FLAC. Not normalised: the vl1/vl2/vl3 level difference is the dynamic information the renderer reads. Not filtered. Not trimmed at the front: the source lead-in is kept, so a bass note lands with the kick it is written beside."
+    },
+    {
+      "file": "bass/Pastabass_tagliatelle_g3_vl3_rr3.flac",
+      "source": "Pastabass (Karoryfer Samples), Squier Bass VI, tagliatelle — flatwound, picked, muted, pickup combo",
+      "sourceFile": "Pastabass/samples/tagliatelle/g3_vl3_rr3.wav",
+      "url": "https://shop.karoryfer.com/pages/free-pastabass",
+      "licence": "CC0",
+      "modifications": "downmixed to mono (a no-op — the source is single-channel), capped at 2.0 s, faded out over the last 80 ms, re-encoded as 44.1 kHz 16-bit FLAC. Not normalised: the vl1/vl2/vl3 level difference is the dynamic information the renderer reads. Not filtered. Not trimmed at the front: the source lead-in is kept, so a bass note lands with the kick it is written beside."
+    },
+    {
+      "file": "bass/Pastabass_tagliatelle_bb3_vl1_rr1.flac",
+      "source": "Pastabass (Karoryfer Samples), Squier Bass VI, tagliatelle — flatwound, picked, muted, pickup combo",
+      "sourceFile": "Pastabass/samples/tagliatelle/bb3_vl1_rr1.wav",
+      "url": "https://shop.karoryfer.com/pages/free-pastabass",
+      "licence": "CC0",
+      "modifications": "downmixed to mono (a no-op — the source is single-channel), capped at 2.0 s, faded out over the last 80 ms, re-encoded as 44.1 kHz 16-bit FLAC. Not normalised: the vl1/vl2/vl3 level difference is the dynamic information the renderer reads. Not filtered. Not trimmed at the front: the source lead-in is kept, so a bass note lands with the kick it is written beside."
+    },
+    {
+      "file": "bass/Pastabass_tagliatelle_bb3_vl1_rr2.flac",
+      "source": "Pastabass (Karoryfer Samples), Squier Bass VI, tagliatelle — flatwound, picked, muted, pickup combo",
+      "sourceFile": "Pastabass/samples/tagliatelle/bb3_vl1_rr2.wav",
+      "url": "https://shop.karoryfer.com/pages/free-pastabass",
+      "licence": "CC0",
+      "modifications": "downmixed to mono (a no-op — the source is single-channel), capped at 2.0 s, faded out over the last 80 ms, re-encoded as 44.1 kHz 16-bit FLAC. Not normalised: the vl1/vl2/vl3 level difference is the dynamic information the renderer reads. Not filtered. Not trimmed at the front: the source lead-in is kept, so a bass note lands with the kick it is written beside."
+    },
+    {
+      "file": "bass/Pastabass_tagliatelle_bb3_vl1_rr3.flac",
+      "source": "Pastabass (Karoryfer Samples), Squier Bass VI, tagliatelle — flatwound, picked, muted, pickup combo",
+      "sourceFile": "Pastabass/samples/tagliatelle/bb3_vl1_rr3.wav",
+      "url": "https://shop.karoryfer.com/pages/free-pastabass",
+      "licence": "CC0",
+      "modifications": "downmixed to mono (a no-op — the source is single-channel), capped at 2.0 s, faded out over the last 80 ms, re-encoded as 44.1 kHz 16-bit FLAC. Not normalised: the vl1/vl2/vl3 level difference is the dynamic information the renderer reads. Not filtered. Not trimmed at the front: the source lead-in is kept, so a bass note lands with the kick it is written beside."
+    },
+    {
+      "file": "bass/Pastabass_tagliatelle_bb3_vl2_rr1.flac",
+      "source": "Pastabass (Karoryfer Samples), Squier Bass VI, tagliatelle — flatwound, picked, muted, pickup combo",
+      "sourceFile": "Pastabass/samples/tagliatelle/bb3_vl2_rr1.wav",
+      "url": "https://shop.karoryfer.com/pages/free-pastabass",
+      "licence": "CC0",
+      "modifications": "downmixed to mono (a no-op — the source is single-channel), capped at 2.0 s, faded out over the last 80 ms, re-encoded as 44.1 kHz 16-bit FLAC. Not normalised: the vl1/vl2/vl3 level difference is the dynamic information the renderer reads. Not filtered. Not trimmed at the front: the source lead-in is kept, so a bass note lands with the kick it is written beside."
+    },
+    {
+      "file": "bass/Pastabass_tagliatelle_bb3_vl2_rr2.flac",
+      "source": "Pastabass (Karoryfer Samples), Squier Bass VI, tagliatelle — flatwound, picked, muted, pickup combo",
+      "sourceFile": "Pastabass/samples/tagliatelle/bb3_vl2_rr2.wav",
+      "url": "https://shop.karoryfer.com/pages/free-pastabass",
+      "licence": "CC0",
+      "modifications": "downmixed to mono (a no-op — the source is single-channel), capped at 2.0 s, faded out over the last 80 ms, re-encoded as 44.1 kHz 16-bit FLAC. Not normalised: the vl1/vl2/vl3 level difference is the dynamic information the renderer reads. Not filtered. Not trimmed at the front: the source lead-in is kept, so a bass note lands with the kick it is written beside."
+    },
+    {
+      "file": "bass/Pastabass_tagliatelle_bb3_vl2_rr3.flac",
+      "source": "Pastabass (Karoryfer Samples), Squier Bass VI, tagliatelle — flatwound, picked, muted, pickup combo",
+      "sourceFile": "Pastabass/samples/tagliatelle/bb3_vl2_rr3.wav",
+      "url": "https://shop.karoryfer.com/pages/free-pastabass",
+      "licence": "CC0",
+      "modifications": "downmixed to mono (a no-op — the source is single-channel), capped at 2.0 s, faded out over the last 80 ms, re-encoded as 44.1 kHz 16-bit FLAC. Not normalised: the vl1/vl2/vl3 level difference is the dynamic information the renderer reads. Not filtered. Not trimmed at the front: the source lead-in is kept, so a bass note lands with the kick it is written beside."
+    },
+    {
+      "file": "bass/Pastabass_tagliatelle_bb3_vl3_rr1.flac",
+      "source": "Pastabass (Karoryfer Samples), Squier Bass VI, tagliatelle — flatwound, picked, muted, pickup combo",
+      "sourceFile": "Pastabass/samples/tagliatelle/bb3_vl3_rr1.wav",
+      "url": "https://shop.karoryfer.com/pages/free-pastabass",
+      "licence": "CC0",
+      "modifications": "downmixed to mono (a no-op — the source is single-channel), capped at 2.0 s, faded out over the last 80 ms, re-encoded as 44.1 kHz 16-bit FLAC. Not normalised: the vl1/vl2/vl3 level difference is the dynamic information the renderer reads. Not filtered. Not trimmed at the front: the source lead-in is kept, so a bass note lands with the kick it is written beside."
+    },
+    {
+      "file": "bass/Pastabass_tagliatelle_bb3_vl3_rr2.flac",
+      "source": "Pastabass (Karoryfer Samples), Squier Bass VI, tagliatelle — flatwound, picked, muted, pickup combo",
+      "sourceFile": "Pastabass/samples/tagliatelle/bb3_vl3_rr2.wav",
+      "url": "https://shop.karoryfer.com/pages/free-pastabass",
+      "licence": "CC0",
+      "modifications": "downmixed to mono (a no-op — the source is single-channel), capped at 2.0 s, faded out over the last 80 ms, re-encoded as 44.1 kHz 16-bit FLAC. Not normalised: the vl1/vl2/vl3 level difference is the dynamic information the renderer reads. Not filtered. Not trimmed at the front: the source lead-in is kept, so a bass note lands with the kick it is written beside."
+    },
+    {
+      "file": "bass/Pastabass_tagliatelle_bb3_vl3_rr3.flac",
+      "source": "Pastabass (Karoryfer Samples), Squier Bass VI, tagliatelle — flatwound, picked, muted, pickup combo",
+      "sourceFile": "Pastabass/samples/tagliatelle/bb3_vl3_rr3.wav",
+      "url": "https://shop.karoryfer.com/pages/free-pastabass",
+      "licence": "CC0",
+      "modifications": "downmixed to mono (a no-op — the source is single-channel), capped at 2.0 s, faded out over the last 80 ms, re-encoded as 44.1 kHz 16-bit FLAC. Not normalised: the vl1/vl2/vl3 level difference is the dynamic information the renderer reads. Not filtered. Not trimmed at the front: the source lead-in is kept, so a bass note lands with the kick it is written beside."
+    },
+    {
+      "file": "bass/Pastabass_tagliatelle_db4_vl1_rr1.flac",
+      "source": "Pastabass (Karoryfer Samples), Squier Bass VI, tagliatelle — flatwound, picked, muted, pickup combo",
+      "sourceFile": "Pastabass/samples/tagliatelle/db4_vl1_rr1.wav",
+      "url": "https://shop.karoryfer.com/pages/free-pastabass",
+      "licence": "CC0",
+      "modifications": "downmixed to mono (a no-op — the source is single-channel), capped at 2.0 s, faded out over the last 80 ms, re-encoded as 44.1 kHz 16-bit FLAC. Not normalised: the vl1/vl2/vl3 level difference is the dynamic information the renderer reads. Not filtered. Not trimmed at the front: the source lead-in is kept, so a bass note lands with the kick it is written beside."
+    },
+    {
+      "file": "bass/Pastabass_tagliatelle_db4_vl1_rr2.flac",
+      "source": "Pastabass (Karoryfer Samples), Squier Bass VI, tagliatelle — flatwound, picked, muted, pickup combo",
+      "sourceFile": "Pastabass/samples/tagliatelle/db4_vl1_rr2.wav",
+      "url": "https://shop.karoryfer.com/pages/free-pastabass",
+      "licence": "CC0",
+      "modifications": "downmixed to mono (a no-op — the source is single-channel), capped at 2.0 s, faded out over the last 80 ms, re-encoded as 44.1 kHz 16-bit FLAC. Not normalised: the vl1/vl2/vl3 level difference is the dynamic information the renderer reads. Not filtered. Not trimmed at the front: the source lead-in is kept, so a bass note lands with the kick it is written beside."
+    },
+    {
+      "file": "bass/Pastabass_tagliatelle_db4_vl1_rr3.flac",
+      "source": "Pastabass (Karoryfer Samples), Squier Bass VI, tagliatelle — flatwound, picked, muted, pickup combo",
+      "sourceFile": "Pastabass/samples/tagliatelle/db4_vl1_rr3.wav",
+      "url": "https://shop.karoryfer.com/pages/free-pastabass",
+      "licence": "CC0",
+      "modifications": "downmixed to mono (a no-op — the source is single-channel), capped at 2.0 s, faded out over the last 80 ms, re-encoded as 44.1 kHz 16-bit FLAC. Not normalised: the vl1/vl2/vl3 level difference is the dynamic information the renderer reads. Not filtered. Not trimmed at the front: the source lead-in is kept, so a bass note lands with the kick it is written beside."
+    },
+    {
+      "file": "bass/Pastabass_tagliatelle_db4_vl2_rr1.flac",
+      "source": "Pastabass (Karoryfer Samples), Squier Bass VI, tagliatelle — flatwound, picked, muted, pickup combo",
+      "sourceFile": "Pastabass/samples/tagliatelle/db4_vl2_rr1.wav",
+      "url": "https://shop.karoryfer.com/pages/free-pastabass",
+      "licence": "CC0",
+      "modifications": "downmixed to mono (a no-op — the source is single-channel), capped at 2.0 s, faded out over the last 80 ms, re-encoded as 44.1 kHz 16-bit FLAC. Not normalised: the vl1/vl2/vl3 level difference is the dynamic information the renderer reads. Not filtered. Not trimmed at the front: the source lead-in is kept, so a bass note lands with the kick it is written beside."
+    },
+    {
+      "file": "bass/Pastabass_tagliatelle_db4_vl2_rr2.flac",
+      "source": "Pastabass (Karoryfer Samples), Squier Bass VI, tagliatelle — flatwound, picked, muted, pickup combo",
+      "sourceFile": "Pastabass/samples/tagliatelle/db4_vl2_rr2.wav",
+      "url": "https://shop.karoryfer.com/pages/free-pastabass",
+      "licence": "CC0",
+      "modifications": "downmixed to mono (a no-op — the source is single-channel), capped at 2.0 s, faded out over the last 80 ms, re-encoded as 44.1 kHz 16-bit FLAC. Not normalised: the vl1/vl2/vl3 level difference is the dynamic information the renderer reads. Not filtered. Not trimmed at the front: the source lead-in is kept, so a bass note lands with the kick it is written beside."
+    },
+    {
+      "file": "bass/Pastabass_tagliatelle_db4_vl2_rr3.flac",
+      "source": "Pastabass (Karoryfer Samples), Squier Bass VI, tagliatelle — flatwound, picked, muted, pickup combo",
+      "sourceFile": "Pastabass/samples/tagliatelle/db4_vl2_rr3.wav",
+      "url": "https://shop.karoryfer.com/pages/free-pastabass",
+      "licence": "CC0",
+      "modifications": "downmixed to mono (a no-op — the source is single-channel), capped at 2.0 s, faded out over the last 80 ms, re-encoded as 44.1 kHz 16-bit FLAC. Not normalised: the vl1/vl2/vl3 level difference is the dynamic information the renderer reads. Not filtered. Not trimmed at the front: the source lead-in is kept, so a bass note lands with the kick it is written beside."
+    },
+    {
+      "file": "bass/Pastabass_tagliatelle_db4_vl3_rr1.flac",
+      "source": "Pastabass (Karoryfer Samples), Squier Bass VI, tagliatelle — flatwound, picked, muted, pickup combo",
+      "sourceFile": "Pastabass/samples/tagliatelle/db4_vl3_rr1.wav",
+      "url": "https://shop.karoryfer.com/pages/free-pastabass",
+      "licence": "CC0",
+      "modifications": "downmixed to mono (a no-op — the source is single-channel), capped at 2.0 s, faded out over the last 80 ms, re-encoded as 44.1 kHz 16-bit FLAC. Not normalised: the vl1/vl2/vl3 level difference is the dynamic information the renderer reads. Not filtered. Not trimmed at the front: the source lead-in is kept, so a bass note lands with the kick it is written beside."
+    },
+    {
+      "file": "bass/Pastabass_tagliatelle_db4_vl3_rr2.flac",
+      "source": "Pastabass (Karoryfer Samples), Squier Bass VI, tagliatelle — flatwound, picked, muted, pickup combo",
+      "sourceFile": "Pastabass/samples/tagliatelle/db4_vl3_rr2.wav",
+      "url": "https://shop.karoryfer.com/pages/free-pastabass",
+      "licence": "CC0",
+      "modifications": "downmixed to mono (a no-op — the source is single-channel), capped at 2.0 s, faded out over the last 80 ms, re-encoded as 44.1 kHz 16-bit FLAC. Not normalised: the vl1/vl2/vl3 level difference is the dynamic information the renderer reads. Not filtered. Not trimmed at the front: the source lead-in is kept, so a bass note lands with the kick it is written beside."
+    },
+    {
+      "file": "bass/Pastabass_tagliatelle_db4_vl3_rr3.flac",
+      "source": "Pastabass (Karoryfer Samples), Squier Bass VI, tagliatelle — flatwound, picked, muted, pickup combo",
+      "sourceFile": "Pastabass/samples/tagliatelle/db4_vl3_rr3.wav",
+      "url": "https://shop.karoryfer.com/pages/free-pastabass",
+      "licence": "CC0",
+      "modifications": "downmixed to mono (a no-op — the source is single-channel), capped at 2.0 s, faded out over the last 80 ms, re-encoded as 44.1 kHz 16-bit FLAC. Not normalised: the vl1/vl2/vl3 level difference is the dynamic information the renderer reads. Not filtered. Not trimmed at the front: the source lead-in is kept, so a bass note lands with the kick it is written beside."
     },
     {
       "file": "comp/Player_dyn2_rr1_012.flac",

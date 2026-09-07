@@ -186,6 +186,11 @@ describe('every sample is CC0 and accounted for', () => {
     expect(provenance.attributions).toContain('Drum samples provided by DrumGizmo.org')
   })
 
+  // feature-27's bass came in CC0 - Pastabass, Karoryfer Samples, checked at the release
+  // archive's own LICENSE and again at the vendor's page - so it owes no attribution: the
+  // count stays 2 and that feature's Epic 2, the app's credit line, is dropped. The
+  // sibling assertion above filters on licence !== 'CC0', so the 81 bass rows fall out of
+  // it and it holds over them trivially.
   it('owes a second attribution once a second CC-BY library ships, which is Epic 3’s flag', () => {
     if (decl.voices.ride === undefined) return
     expect(provenance.attributions).toContain(
@@ -262,8 +267,15 @@ describe('the pack is stocked for Epic 2', () => {
     }
   })
 
+  // feature-27, R9/AC5: Pastabass records all nine of its notes at three dynamics, and
+  // the measurement kept every one of them - worst net step 4.60 dB at the 0.74/0.86
+  // boundary against the 7.5 dB quick-8 flattened the comp for. So the bass exempts
+  // nothing. The list stays as the measured record, empty, rather than as a deleted key,
+  // and the round-robin guard it carried for the contrabass's MIDI 42, 45 and 49 now sits
+  // in ../pack.test.ts as "round-robins every bass layer, so a repeated note never
+  // replays one file".
   const SINGLE_VELOCITY_IN_SOURCE: Partial<Record<VoiceName, number[]>> = {
-    bass: [42, 45, 49],
+    bass: [],
   }
 
   // quick-8: the comp is not short of recordings — VSCO 2 CE ships three dynamics and
@@ -627,6 +639,91 @@ describe('the README records the ride audition R5 asked for — R4, R5, AC13b', 
       row,
       'the R4 rejection counts against R5\u2019s bound of three, so the reason has to travel with it',
     ).toMatch(/round.?robin|alternate|one sample|single velocity|one velocity/i)
+  })
+})
+
+// AC1 says the verdict is recorded in the epic's implementation notes, and .implement/ is
+// gitignored - the feature-25 and quick-8 sign-off files SIGN_OFFS cites by name cannot be
+// opened from this repo. The ride's audition survived because someone wrote it into
+// README.md and then wrote a test that fails if it is deleted. This does the same for the
+// bass, and it is the only committed record AC1 will have.
+describe('the README records the bass audition R1 asked for — R1, R10, AC1', () => {
+  const CANDIDATES = [
+    { library: 'tagliatelle', verdict: /chosen/i },
+    { library: 'Growlybass', verdict: /rejected/i },
+    // fetuccine reached the ear and drew no comment. "No verdict" is the record that was
+    // frozen; calling it a rejection would be a verdict nobody gave.
+    { library: 'fetuccine', verdict: /no verdict|not mentioned|no comment/i },
+  ]
+
+  const shortlist = readmeTables().find((rows) =>
+    CANDIDATES.every(({ library }) => rows.some((row) => row.join(' ').includes(library))),
+  )
+
+  function shortlistRows(): string[][] {
+    expect(
+      shortlist,
+      `no README table names all of ${CANDIDATES.map((c) => c.library).join(', ')} — the shortlist R1 requires is the epic's report, and it is gone`,
+    ).toBeDefined()
+    return shortlist!
+  }
+
+  function linesNaming(token: string): string {
+    return README.split('\n')
+      .filter((line) => line.includes(token))
+      .join('\n')
+  }
+
+  // A blockquote wraps, so the verdict is matched against the README with its line
+  // breaks and quote markers collapsed. Where the words break is Track C's business;
+  // that they are still there is this test's.
+  const prose = README.replace(/\s*\n\s*>?\s*/g, ' ')
+
+  it('carries one table naming all three candidates that reached the ear', () => {
+    expect(
+      shortlistRows().length,
+      'the shortlist table has no rows under its header',
+    ).toBeGreaterThan(CANDIDATES.length)
+  })
+
+  it('gives every candidate its verdict and the licence it was checked under', () => {
+    for (const { library, verdict } of CANDIDATES) {
+      const row = shortlistRows().find((cells) => cells.join(' ').includes(library))
+      expect(row, `${library} has no row in the shortlist`).toBeDefined()
+      const text = row!.join(' ')
+      expect(text, `${library} is listed with no verdict`).toMatch(verdict)
+      expect(text, `${library} is listed with no licence`).toMatch(/CC0|CC-BY/)
+    }
+  })
+
+  it('names exactly one of them as the mapping that shipped', () => {
+    const chosen = shortlistRows().filter((cells) => /chosen/i.test(cells.join(' ')))
+    expect(
+      chosen.length,
+      'the shortlist does not say which candidate was chosen, or says it of more than one',
+    ).toBe(1)
+    expect(chosen[0].join(' ')).toContain('tagliatelle')
+  })
+
+  it('keeps the verdict in the words it was given in', () => {
+    expect(
+      prose,
+      'the words the instrument was chosen in are gone, and .implement/ cannot be read from here',
+    ).toContain('already wins against our upright')
+    expect(prose, 'the candidate that was turned down by ear lost its own words').toContain(
+      'not what I have in mind',
+    )
+  })
+
+  it('says why the libraries that never reached the ear were turned down — R1, R4', () => {
+    expect(
+      linesNaming('Bass Guitar YR'),
+      'a rejection on measurement counts against R1\u2019s bound of three, so the reason has to travel with it',
+    ).toMatch(/round.?robin|alternate|one sample|single velocity|one velocity|register/i)
+    expect(
+      linesNaming('Fiedler'),
+      'the one library that holds an actual Precision was rejected on licence, and that is the finding R1 leaves behind',
+    ).toMatch(/licen[cs]e|-NC|-SA|redistribut/i)
   })
 })
 

@@ -6,21 +6,32 @@ bundle.
 
 ## Source and licence
 
-The pack draws on four libraries. Two are **CC0 1.0 Universal** — public domain,
-no attribution required. The drums and the ride are **CC-BY 4.0**, which carries
-an obligation the other two do not:
+The pack draws on five libraries. Three are **CC0 1.0 Universal** — public
+domain, no attribution required. The drums and the ride are **CC-BY 4.0**, which
+carries an obligation the other three do not:
 
 | Library | Voices | Licence | Licence text |
 | :-- | :-- | :-- | :-- |
 | [MuldjordKit (FreePats edition)](https://freepats.zenvoid.org/Percussion/acoustic-drum-kit.html), by Lars Muldjord | `kick`, `snare`, `hatClosed`, `hatOpen`, `rim`, `tomHigh`, `tomLow` | CC-BY 4.0 | `LICENSE-MuldjordKit.txt` |
 | [DRSKit v2.1](https://drumgizmo.org/wiki/doku.php?id=kits:drskit), by the DrumGizmo team | `ride`, `rideBell` | CC-BY 4.0 | `LICENSE-DRSKit.txt` |
 | [Versilian Community Sample Library (VCSL)](https://github.com/sgossner/VCSL) | `bongoHigh`, `bongoLow`, `claves`, `cowbell` | CC0 | `LICENSE.txt` |
-| [VSCO 2 Community Edition](https://github.com/sgossner/VSCO-2-CE) | `bass`, `comp` | CC0 | `LICENSE-VSCO-2-CE.txt` |
+| [VSCO 2 Community Edition](https://github.com/sgossner/VSCO-2-CE) | `comp` | CC0 | `LICENSE-VSCO-2-CE.txt` |
+| [Pastabass](https://shop.karoryfer.com/pages/free-pastabass), by Karoryfer Samples | `bass` | CC0 | none — see below |
 
 `LICENSE-DRSKit.txt` is byte-for-byte `LICENSE-MuldjordKit.txt`: both kits are
 CC-BY 4.0 and the text is the same. It is copied rather than shared so the source
 table keeps one *Licence text* cell per library, and a reader is never asked to
 know that two kits happen to sit under one licence.
+
+**Pastabass ships no licence text of its own, and the empty cell is deliberate.**
+CC0 requires none. The two older CC0 rows each carry a copy because they were
+committed with one, and duplicating a public-domain dedication a third time
+records nothing the row does not already say: `provenance.json` names the licence
+`CC0` on all 81 bass files and the archive's own `Pastabass/LICENSE` is the
+CC0 1.0 Universal text verbatim, checked at the source. `samples/pack.test.ts`
+derives a required `LICENSE-<Library>.txt` from the **non-CC0** rows only, so
+nothing asks for one. If a later reader would rather have every row's text on
+disk, adding `LICENSE-Pastabass.txt` is one file and breaks nothing.
 
 ## ⚠ The drums and the ride carry an attribution obligation, and there are now two of them
 
@@ -77,14 +88,31 @@ The length cap is per voice — long enough to hold that voice's decay and no lo
 and the fade is the last 80 ms of it. The kick, the snare and the toms are capped at
 one second; the hats and the rim at their own, shorter lengths — a cross-stick is over
 almost as soon as it starts, so `rim` is capped at 0.8 s. The pitched voices ring, and
-are capped where the ring stops being useful: the pizzicato bass at two seconds
-(`afade=t=out:st=1.92:d=0.08 -t 2`), which holds a plucked note's useful decay, and the
-upright piano at two and a half (`afade=t=out:st=2.42:d=0.08 -t 2.5`) — VSCO's piano
+are capped where the ring stops being useful: the electric bass at two seconds
+(`afade=t=out:st=1.92:d=0.08 -t 2`) — where the cap is not what binds, and the *Length
+caps* table below says what does — and the upright piano at two and a half (`afade=t=out:st=2.42:d=0.08 -t 2.5`) — VSCO's piano
 takes run on for twelve. A source shorter than the fade's start comes through
 untouched: nothing was cut, so there is nothing to fade.
 
 Nothing is trimmed at the *front*: every file keeps its source lead-in, so a bass note
 lands with the kick it is written beside rather than ahead of it.
+
+**The bass's downmix is `-ac 1`, because its sources are already mono.** Every one of
+Pastabass's 81 source files is single-channel — verified with `ffprobe` on all 81 — so
+`pan=mono|c0=0.5*c0+0.5*c1` has nothing to fold and errors on a mono input. `-ac 1`
+stands in and is a no-op on these sources. It is the same class of departure as the
+ride's `c0=c7` below: a different operation, not a typo. One invocation per file, run 81
+times:
+
+```sh
+ffmpeg -i Pastabass/samples/tagliatelle/db2_vl1_rr1.wav \
+  -af "afade=t=out:st=1.92:d=0.08" \
+  -t 2 -ac 1 -ar 44100 -sample_fmt s16 \
+  bass/Pastabass_tagliatelle_db2_vl1_rr1.flac
+```
+
+Nothing else about the bass departs from the shape above: no front trim, no
+normalisation, no filter.
 
 The two percussion voices added in feature-24 were prepared with the same shape. Claves,
 capped at 0.4 s — by 0.30 s the hit is 58–60 dB below its own peak, so the cap holds the
@@ -253,6 +281,152 @@ later. The 2.0 s cap is set long enough not to bind at the slowest shuffle tempo
 (78 bpm → 1.538 s); the tail knob is that constant, which is tempo-relative and
 the better place for it.
 
+## The bass, and the audition it took
+
+**The pack has an electric bass, and it is Pastabass's muted flatwound Bass VI —
+chosen by ear over a brighter Jazz Bass that measured about as well, and over the
+one library that actually holds a Precision, which no licence would let us
+commit.** That sentence is the record feature-27 asks for, and the uncomfortable
+half of it is the point: the brief asked for a 60s Fender Precision, and the only
+freely published Precision in circulation is licence-blocked three ways over.
+
+Every row's licence was checked **at the source, before a byte was downloaded**,
+and the two bars are deliberately different. A licence that *fails* on its stated
+terms needs one reading, because a second cannot rescue it. A licence that
+*passes* has to hold in two independent places, because this is the check that
+puts audio in the repo permanently.
+
+| Library | Instrument | Licence | Outcome |
+| :-- | :-- | :-- | :-- |
+| **[Pastabass](https://shop.karoryfer.com/pages/free-pastabass) — `tagliatelle`**, Karoryfer Samples | Squier Bass VI — flatwounds, pick, muted, pickup combo | **CC0 1.0**, two ways: the archive's own `Pastabass/LICENSE` is the CC0 1.0 Universal text verbatim and its `readme.txt` grants "redistribution as part of larger sample libraries"; independently the vendor's free-samples page says all their free libraries are CC0, and GitHub reports SPDX `CC0-1.0` | **Chosen.** Prepared, rendered, heard, and preferred to the contrabass |
+| Pastabass — `fetuccine`, same library and archive | Squier Bass VI — flatwounds, fingers, neck pickup | CC0 1.0, the same licence file, checked the same two ways | **No verdict.** Prepared and rendered; it reached the ear as the third A/B file and was not commented on. Nothing is inferred from that — neither approval nor rejection |
+| **[Growlybass](https://shop.karoryfer.com/pages/free-growlybass)**, Karoryfer Samples | Squier Jazz Bass — roundwounds, fingers, both pickups on 10, recorded direct | CC0 1.0, two ways: the archive's `LICENSE`, plus the vendor page and the SPDX tag | **Rejected by ear** — *"02-growlybass is not what I have in mind."* The best-sampled library of the three, and it lost on tone |
+| **[Bass Guitar YR](https://freepats.zenvoid.org/ElectricGuitar/clean-electric-bass.html)**, FreePats | Yamaha RBX — a split-coil P-style pickup, which makes it the closest thing to a Precision on offer anywhere | CC0 1.0, two ways: the FreePats project page and the repo's own `README.txt` and `LICENSE.txt` | **Rejected on measurement, unheard,** and it is the costliest rejection here. 12 files (finger) / 13 (pick) **in total**: one per semitone from sounding MIDI 28 to 39/40, **one velocity layer, no round robins**. Its top note sounds at 39, so the upper third of the register would shift up 9–12 semitones, five times past the transparent bound — and one file per note is the machine-gun artefact feature-9 spent a whole feature undoing |
+| **[Precision E-Bass](https://www.fiedler-audio.de/creative-commons-library/)**, Fiedler Audio | **a Fender Precision — literally the instrument the brief asked for** | modified **CC BY-NC-SA 3.0**, and the page forbids incorporating the library into sound libraries | **Rejected on licence, unheard.** Four failures at once: 3.0 is not 4.0, `-NC` is out, `-SA` is out, and this repo commits its audio, so the redistribution bar alone would end it |
+| **[Rickenbacker 4001](https://sfzinstruments.github.io/basses/rickenbacker4001)**, Project16 | Rickenbacker 4001, many articulations | CC-BY-NC-SA-3.0 | **Rejected on licence, unheard.** `-NC`, `-SA`, and 3.0 |
+| **[Standard Bass](https://sfzinstruments.github.io/basses/standard_bass)**, Unreal Instruments | multi-articulation bass | "Custom" — no licence text published at the source | **Rejected, unheard.** A licence whose text cannot be read cannot be read twice |
+| **[Black And Blue Basses](https://shop.karoryfer.com/pages/free-black-and-blue-basses)**, Karoryfer | a hollowbody played with the fingers and a solidbody played with a pick; **the vendor names neither make nor model** | CC0 1.0, two ways | **Not shortlisted.** Three candidates is the cap; a hollowbody is a different instrument class, and with the models unnamed its fit could only have been guessed at rather than measured |
+| Pastabass — `spaghetti`, `linguine`, same archive | Bass VI at the bridge pickup — roundwounds and flatwounds | CC0 1.0, two ways | **Not shortlisted.** The cap, and both sit further from the recipe: a bridge pickup is the thin end of the instrument, and roundwounds are the wrong strings for the decade |
+| **[Fashionbass](https://shop.karoryfer.com/pages/free-fashionbass)** and **[Swagbass](https://shop.karoryfer.com/pages/free-swagbass)**, Karoryfer | Killer KB-Simmony and Ibanez BTB-400QM, both in **fifths tuning (CGDA)** | CC0 1.0, two ways | **Not shortlisted.** The cap. A fifths-tuned neck gives a different string gauge and speaking length per pitch than any Precision |
+| Meatbass and Sneakybass, Karoryfer | **double basses**, bowed and pizzicato | CC0 1.0, two ways | **Not shortlisted.** This change exists to replace a pizzicato double bass |
+| **[Big Little Bass](https://github.com/sfzinstruments/karoryfer.big-little-bass)**, Karoryfer | Washburn AB95 hollowbody, sampled at the 12th fret and above | CC0 1.0, two ways | **Not shortlisted.** Deliberately a ukulele-bass speaking length — the opposite of a 34-inch Precision |
+| [VCSL](https://github.com/sgossner/VCSL) | — | CC0 | **Rejected: it holds no electric bass.** Its Composite Chordophones are two harps and a strumstick |
+| VSCO 2 CE | Solo Contrabass, pizzicato | CC0 | **The incumbent, and the reference the candidates were played against.** It has no electric bass |
+| GM soundfonts (FluidR3 GM, GeneralUser GS) | GM programs 34/35, "Electric Bass" | not checked at the source | **Not pursued, and the licence was never the reason.** A GM program carries one or two recordings across the whole register, so it fails Bass Guitar YR's measurement bar before a licence matters |
+
+**Three survived to preparation, which is the cap exactly:** Pastabass
+`tagliatelle`, Pastabass `fetuccine`, Growlybass. Two of the three come from one
+archive, and that bought coverage rather than spending a slot: Pastabass's
+mappings are four different instruments to the ear — the same bass with different
+strings, a different pickup, a different hand and a mute — while sharing one
+download, one licence check and one provenance source. So the three candidates
+span the decision the ear actually had to make: a bright roundwound Jazz Bass
+with the pickups wide open, flatwounds and fingers on the neck pickup (the 60s
+Precision *recipe* on a different body), and flatwounds picked and muted, which
+is the Motown thump a 60s Precision made on records.
+
+### The verdict, in the listener's own words
+
+Given 2026-09-07, on `groove-01` — `straight-funk`, 105 bpm, C mixolydian — the
+`straight-funk` groove that spends the largest share of its bass note-time below
+MIDI 32 (54.4%), which is where a pickup and a plucked string differ most. The
+contrabass and all three candidates were played back to back **at matched
+bass-track loudness**: post-trim bass RMS **−41.168 dBFS in all four files**,
+matched to 0.000 dB. Never at matched master loudness — `mixTracks` pins true
+peak onto `PEAK_CEILING`, so all four masters sit at 0.8910 by construction and
+an A/B matched there would be an A/B of two different balances, in which the ear
+picks the louder bass.
+
+> "already listened to some in the audition ab folder. 02-growlybass is not what
+> I have in mind. 04-pastabass-tagliatelle sounds very good. If possible, we can
+> fine tune that bass. But the audition track I heard already wins against our
+> upright"
+
+**What that verdict covers, and what it does not.** It settles the instrument and
+nothing else. It was explicitly not a verdict on the level — the bass in those
+renders sat exactly where the contrabass sat, by construction — nor on the other
+eight feels, nor on pan, humanize or reverb, none of which differed between the
+four files. And **"if possible, we can fine tune that bass" is not a request to
+filter or EQ.** *The pack shapes format and envelope. It does not carry a filter.*
+above is the rule; the fine-tuning it points at is `gain.bass`, per feel, by ear.
+
+**This is the one sign-off in the pack's history that `SIGN_OFFS` cannot hold,
+and this section is its only committed home.** `gate.test.ts`'s `voidSignOff`
+requires a pinned hash to reproduce, from the committed tree, the audio a person
+actually heard, and these four renders can never satisfy it: they were built from
+a scratch `pack.json` in a gitignored folder, carrying a scratch bass trim that
+is no template value, against the *old* committed templates. So `straight-funk`
+is heard a second time once its `gain.bass` is settled against the committed
+pack, and that second verdict is the one `SIGN_OFFS` pins.
+
+### The bass is bright, and that was kept on purpose
+
+The picked flatwound has more pick attack in the 1–3 kHz region than a plucked
+upright ever had, and it was raised as a possible change on 2026-09-07 — then
+settled the other way in the same conversation: *"just go with it, no change for
+now. no filter applied. it might be even good for Sam cause the bass is more
+audible"*, and *"ok, got it. We keep it as is"*.
+
+**So the brightness is a decision, not an oversight, and the reason is the
+player's rather than the engineer's.** A bass you can pick out of the mix is a
+bass you can play along to, which is the whole reason that voice is the one the
+persona in [docs/persona.md](../../../docs/persona.md) leans on. An engineer
+balancing this pack alone would probably take some of it off.
+
+**If it is ever darkened, reach for the other mapping and not for a filter.**
+Pastabass's `fetuccine` — flatwounds, fingers, neck pickup, the 60s Precision
+recipe on a different body — is the shortlisted candidate that goes exactly that
+way. It was prepared and rendered for the audition as
+`03-pastabass-fetuccine.mp3`, so the work of measuring it is already done and
+recorded in the shortlist above. *The pack shapes format and envelope. It does
+not carry a filter.* is still the rule, and there is no filter anywhere in the
+render path — `voices.ts`, `mix.ts` and `pack.ts` have none between them. A
+darker bass is a different recording, per the rule, and never an EQ curve.
+
+### What measurement decided, and what it did not
+
+Two rejections were settled by measurement before anything was heard — Bass
+Guitar YR on register and alternates, and every `-NC` / `-SA` / custom row on
+licence. Among the three that were prepared, **measurement did not separate
+them**, and the numbers are kept so nobody re-runs them looking for a winner:
+
+| | Growlybass | `fetuccine` | **`tagliatelle`** |
+| :-- | --: | --: | --: |
+| sampled notes in the shipped register | 10 | 8 | **9** |
+| widest gap between sampled notes, bound 4 | 3 | 3 | **3** |
+| lowest sampled note, sounding | 25 | 28 | **25** |
+| shortfall below the register the generator plays, bound 4 | 1 | 4 | **1** |
+| worst pitch error against equal temperament | 31.1¢ | 8.9¢ | **7.0¢** |
+| velocity layers declared, out of those recorded | 3 of 4 | 3 of 4 | **3 of 3** |
+| worst net step at a live layer boundary, 7.5 dB flattens | 2.59 dB | 5.00 dB | **4.60 dB** |
+| files reaching full scale in the shipped set | 32 of 120 | 6 of 96 | **0 of 81** |
+| widest level spread between alternates inside one layer | 4.1 dB | 5.1 dB | **3.9 dB** |
+
+All three clear every bar. **So the finding is the ride's again, one instrument
+later: the best-sampled library of the three — four recorded velocity layers
+against three, and the cleanest layer levelling of any design measured — was
+turned down by ear in five words.** If you are sourcing the next voice, that is
+the finding to carry, not the table.
+
+Two of those rows are findings rather than scores:
+
+- **no file in the shipped set reaches full scale** — 0 of 81, worst run 0
+  samples at |v| ≥ 0.9995. That was a live risk and not a formality: Growlybass
+  ships 32 of 120 that do, with runs up to 65 consecutive samples pinned at
+  digital zero, and `fetuccine` 6 of 96;
+- **MIDI 46's `vl1` alternates spread 3.9 dB**, the widest in the shipped set,
+  and a nominal is derived from the first-listed alternate — which assumes the
+  alternates inside a layer are level-matched. It is inside this pack's own norms;
+  the cowbell's two alternates are 3.96 dB apart and its own section records that
+  as a known concern. But it is the one bass note where the assumption is
+  loosest, and a repeated note at MIDI 46 is where to listen for it.
+
+**What none of the three fixed, and what it costs.** All three sources are
+recorded **16–19 dB hotter** than VSCO's contrabass, whose files peak at −20 to
+−36 dBFS, and nothing in the pack can absorb that — see *Levelling* below, which
+has the arithmetic and the measured starting point. The whole of it belongs in
+`gain.bass`, which is the two-job rule working exactly as written.
+
 ## Voice mapping
 
 | Voice | Instrument | Layers × round-robins |
@@ -270,7 +444,7 @@ the better place for it.
 | `bongoLow` | VCSL Bongos, low (`BongoL_Hit1`) | 3 × 2 |
 | `claves` | VCSL Claves, legacy set — one pair, resampled down a fifth, sounding ~1.56 kHz | 1 × 2 |
 | `cowbell` | VCSL Cowbells — `Cowbell1` and `Cowbell2`, open strokes | 1 × 2 |
-| `bass` | Solo Contrabass, pizzicato (VSCO 2 CE) | 8 notes; 5 × 2 layers × 2, 3 × 1 layer × 2 |
+| `bass` | Squier Bass VI, picked, flatwound, muted (Pastabass `tagliatelle`) | 9 notes × 3 layers × 3 |
 | `comp` | Upright Piano (VSCO 2 CE) | 11 notes × 1 |
 
 ## Two toms, and three layers that mean something
@@ -287,18 +461,20 @@ same one is replayed.
 
 ## ⚠ A sampled note's sounding pitch is measured, never read off its filename
 
-This is the pack's oldest rule and the one it has been burned by twice.
+This is the pack's oldest rule and the one it has been burned by three times.
 
 VCSL's TX81Z Clavisynth — the stand-in `comp` used to be — is labelled two octaves
 below where it sounds: `Clavisynth_C2_vl2.wav` sounds at **C4**, with no spectral energy
 at all at the named frequency. Had that been read rather than measured, every comp chord
-would have been two octaves out and the game unplayable. VSCO 2 CE's contrabass is the
-second instance, and names octaves with C3 as middle C (see below). Neither sample is
-still in the pack; the rule outlives both, and both pitched voices carry the frequency
-they were measured at as `measuredHz` in `pack.json` so the claim can be re-checked
-rather than trusted.
+would have been two octaves out and the game unplayable. VSCO 2 CE's contrabass was the
+second instance: it names octaves with C3 as middle C, so `BKCtbss_Pizz_E0_*.wav` sounded
+at MIDI 28. **Pastabass is the third, and it goes the other way** — its filenames sit an
+*octave above* sounding pitch, so `e2` sounds at MIDI 28 and `db2` at **MIDI 25** (see
+below). Neither of the first two is still in the pack; the rule outlives all three, and
+both pitched voices carry the frequency they were measured at as `measuredHz` in
+`pack.json` so the claim can be re-checked rather than trusted.
 
-The trap has a third shape, and the upright piano is it. VSCO 2 CE's `Keys/Upright
+The trap has another shape again, and the upright piano is it. VSCO 2 CE's `Keys/Upright
 Piano` names its files `Player_dyn{1,2,3}_rr1_{000..044}.wav`, and the numeric suffix is
 neither a MIDI number nor a semitone offset: the files step by 2 while the pitch steps by
 **4 semitones**, so index `012` sounds at MIDI 45, `014` at 49, `024` at 69 (measured
@@ -332,7 +508,9 @@ played, so seven of the eleven sampled notes never mattered to this table:
 
 Net step is the recorded difference minus what the nominals paid back — 8.87 dB at 0.45
 (0.225 → 0.625) and 3.16 dB at 0.8 (0.625 → 0.9). Neither `comp` nor `bass` declared a
-`nominalVelocity` at all, so both fell through `nominalOf` to the band midpoint. The
+`nominalVelocity` at the time, so both fell through `nominalOf` to the band midpoint; the
+bass declares one on every layer of every note now, and the comp's single layer declares
+0.5 outright. The
 recorded dynamics are 10–14 dB apart and the bands imply 3–9, so no calibration of
 `nominalVelocity` could close either boundary: continuity at 0.8 needs a nominal above 1,
 or 2.8× against `MAX_LAYER_GAIN = 2`; the 0.45 boundary wants 3.6×.
@@ -371,7 +549,8 @@ it off the machine-gun artefact instead: `COMP_SPREAD_RANGE` rolls each voicing 
 pitches, and humanize gives every event its own velocity — the same recording is never
 struck twice running at the same pitch and the same gain. Three velocity layers were
 never that guard: 83% of comp notes already replayed one `dyn2` file. Sourcing real
-alternates is its own ticket, beside the bass one.
+alternates is still its own ticket; the bass ticket that used to sit beside it is closed,
+and the bass ships three alternates per layer.
 
 **Two knock-on effects worth knowing before you read the tables below.**
 
@@ -385,6 +564,86 @@ alternates is its own ticket, beside the bass one.
   table is built from `decl.voices[voice].layers`, and both pitched voices declare their
   layers per note under `notes` instead. Their levelling lives in this section and in the
   bass's own, not in that table.
+
+## The bass keeps the velocity layers its library recorded
+
+The ride's section and the comp's both say a recording offered more than the pack
+declares. **The bass's says the opposite: Pastabass records three velocity layers for
+every note and all three ship.** The method is quick ticket 8's — the same one that
+flattened the comp — and the measurements are written down here because the answer came
+out the other way, and the numbers are the only thing that makes that checkable.
+
+**The window the bass actually plays decides everything, and it is narrower than the
+declaration suggests.** `VELOCITIES.bass` is `{ strong: 0.92, medium: 0.8, weak: 0.68 }`
+and the largest `humanize.velocity` in the registry is `shuffle`'s `0.13`, so the
+theoretical window is 0.55 … 1.0. Measured over every bass event the catalogue produces
+— 2474 of them, straight out of `buildEvents`, so these are the humanized velocities the
+renderer really sees — it is **0.5796 … 1.0000, a 4.75 dB window**, median 0.817. The
+library's recorded dynamics span 14–20 dB. That is the ride's situation rather than the
+comp's: the ride's window is 2.9 dB, and `hatClosed`, whose four layers carry real
+information, spans 11.8.
+
+**The boundaries sit at 0.74 and 0.86 — the midpoints between `VELOCITIES.bass`'s rows.**
+That is the same reasoning that put `hatClosed`'s thresholds on its velocity rows: it is
+the only placement that gives a crossing a chance of being a musical accent rather than
+jitter. It also avoids by construction the defect quick-8 found on the committed
+contrabass, whose lower boundary sat *exactly* on `VELOCITIES.bass.medium = 0.8`, so
+59.7% of bass events landed on the line and humanize flipped them from one recording to
+the other on the same note.
+
+Peak dBFS below is the first-listed alternate of each layer, measured on the prepared
+FLAC with `ffmpeg volumedetect`. The **net** step at a boundary is the recorded
+difference minus what the nominals pay back — `(peak₂ − peak₁) − 20·log₁₀(nominal₂ /
+nominal₁)` — which is zero wherever the ratio rule is free to run, and non-zero only
+where the headroom floor caps the payback:
+
+| MIDI | `vl1` | `vl2` | `vl3` | **net @0.86** | **net @1** |
+| --: | --: | --: | --: | --: | --: |
+| 25 | −12.4 | −6.7 | −3.3 | +1.10 | +0.00 |
+| 28 | −15.5 | −8.7 | −2.9 | **+4.60** | +0.00 |
+| 31 | −13.9 | −6.9 | −1.4 | +4.50 | +0.00 |
+| 34 | −13.0 | −7.2 | −2.3 | +2.70 | −0.00 |
+| 37 | −11.9 | −7.8 | −0.8 | +2.79 | **+0.30** |
+| 40 | −14.0 | −8.5 | −2.2 | +3.80 | −0.00 |
+| 43 | −9.4 | −5.9 | −1.3 | +0.10 | −0.00 |
+| 46 | −8.3 | −3.6 | −0.0 | +0.30 | −0.00 |
+| 49 | −11.3 | −3.0 | −0.7 | +2.60 | +0.00 |
+
+Median net step **+2.70 dB** at 0.86 and **+0.00 dB** at 1; worst **4.60 dB** and
+**0.30 dB**. The flatten threshold is **7.5 dB** — quick-8's figure, the one number in
+this repo that came with a listening verdict attached — so **neither boundary comes near
+it, and both stand.** The top boundary is continuous to within 0.30 dB on every note,
+because `vl2` is never so far under `vl3` that the floor bites. The lower boundary
+carries the whole residue: the ratio rule wants nominals of 0.218–0.366 for `vl1` and
+the floor forbids anything under 0.3701, so 0.10–4.60 dB of the recorded step is never
+paid back. Even that worst case is 1.6× smaller than the *smallest* step quick-8
+flattened the comp for.
+
+**And the argument that settled the comp does not apply here at all.** What chose one
+layer for the comp was chord balance: one note of a chord crossing a boundary moved its
+position *inside* that chord by up to 4.2 dB, against the 1.1 dB per voice that
+`COMP_VOICE_DROP` sets on purpose. **The bass plays one note at a time.** It is in the
+ride's position, and a timbre step on a monophonic voice reads as expression, not as a
+voice sitting wrong inside a chord.
+
+The three layers also stand at tighter headroom targets than the one committed: at a
+1.7× target the two boundaries measure 5.69 and 1.71 dB, at 1.4× they measure 6.69 and
+3.40 — both still far under 7.5. **Neither losing candidate can say that:** Growlybass's
+four-band design breaches at 1.7 and `fetuccine`'s top boundary breaches at 1.4. What is
+committed is the 2.0× target, for one reason that outranks the extra margin — it is the
+pack the audition was rendered from, and therefore the audio a person approved.
+
+**What the measurement cannot settle, and what to listen for.** Both live boundaries sit
+inside the jitter band of a `VELOCITIES.bass` row, so some crossings are humanize rather
+than intent — the mechanism that made the comp's timbre flicker on an unchanged chord.
+What is different is that the *level* step is 0.10–4.60 dB here against the comp's
+4.5–10.8, and that the voice is monophonic. **That is a prediction, not a finding.**
+Listen for a repeated bass note that changes colour between passes while its level and
+timing move as they should — the 0.74 boundary, which 92.3% of events sit above and 17.7%
+below; for the bottom of the register in particular, where MIDI 28 and 31 carry the two
+largest net steps; and for whether the muted flatwound tone reads as *even* rather than
+as *flat*. If it reads flat, quick-8's note applies: the answer is that feel's
+`VELOCITIES` or its accent depth, not the pack.
 
 ## ⚠ The cross-stick has one velocity layer
 
@@ -483,55 +742,77 @@ Every note in a pitched voice's register must sit within **2 semitones** of a sa
 note — the bound that keeps linear interpolation transparent — so no gap between
 sampled notes may be wider than 4 semitones.
 
-- `bass` sounding MIDI 28–49, covering 26–51. Widest gap 4 semitones.
+- `bass` sounding MIDI 25–49, covering 23–51. Widest gap 3 semitones.
 - `comp` sounding MIDI 45–85, covering 43–87. Widest gap 4 semitones.
 
 `comp` is on an even 4-semitone grid because the upright piano was sampled that way —
 the library holds a note every 4 semitones from MIDI 21 up, and the pack takes the
 eleven of them that cover its register: 45, 49, 53, 57, 61, 65, 69, 73, 77, 81, 85.
-`bass` is not: a real instrument is sampled where its player found it useful, so the
-contrabass's notes fall at 28, 31, 34, 36, 40, 42, 45, 49 — uneven, but never more than
-4 apart.
+`bass` is on an even 3-semitone grid for the same reason and not by principle: Karoryfer
+sampled Pastabass in minor thirds, and the pack takes all nine that cover its register —
+25, 28, 31, 34, 37, 40, 43, 46, 49. The contrabass it replaced was uneven (28, 31, 34,
+36, 40, 42, 45, 49), because a real instrument is sampled where its player found it
+useful. Either shape is fine; what the bound cares about is the widest gap, which fell
+from 4 to 3.
 
 `Keys/Upright Nr1` was the other upright on offer and was rejected: it samples every
 five to seven semitones, which would ask the resampler for 3.5-semitone shifts and break
 the bound it is transparent within.
 
-## ⚠ The bass does not reach the bottom of its declared register
+## ⚠ The bass is one semitone short at the bottom of its declared register
 
-`bass` is asked to cover sounding MIDI 22–50. It covers **26–51**. The bottom four
-semitones are not sampled, and they cannot be: MIDI 28 is the open low E of a
-four-string contrabass, the lowest note the instrument has. VSCO 2 CE holds no
-five-string or C-extension contrabass, and nothing else in either library plays in that
-register.
+`bass` is asked to cover sounding MIDI 22–50. It covers **23–51**, so **only MIDI 22 is
+unsampled** — and nothing ever asks for it. `inRegister` in `events.ts` places a bass
+root no lower than `BASS_BASE_MIDI - 12 = 24`, which sits inside the two semitones MIDI
+25 covers, so the worst real case is a **1-semitone** downshift. The contrabass this
+replaced needed 4. `lowestSampledMidi - BASS_PLAYED.lowest` is **1** against a documented
+bound of 4, and `pack.test.ts` asserts it.
 
-MIDI 22–25 is therefore played by resampling the low E down by up to 6 semitones. That
-is past the transparent bound, but it is the *downward* direction — interpolating a
-sample longer, which images rather than aliases — and `events.ts` only ever asks for
-MIDI 24 and above (`BASS_BASE_MIDI - 12`), so the worst real case is a 4-semitone drop
-on a root that has been octave-displaced.
+**MIDI 25 is a real recording, and that is the whole reason it is allowed to be there.**
+Karoryfer sampled the low E string tuned down to C# as well as at pitch, so `db2` is a
+played note rather than arithmetic. Committing a pitched-down copy instead would be the
+identical arithmetic the renderer already does at load time: it adds no information, only
+the appearance of coverage. That rule has not moved. A shortfall is documented, never
+faked away — this one is just a great deal smaller than the old one.
 
-The alternative would have been to pitch a sample down offline and commit it as a
-sampled note. That is the identical arithmetic the renderer already does at load time,
-so it would have added no information — only the appearance of coverage.
+**One thing worth knowing about that note.** A low E slackened to C# is a slacker string
+than the rest of the instrument, and it will not match its neighbours' tone exactly. The
+catalogue's bass never goes below MIDI 28 today, so nothing reaches it. It is declared
+because the register needs sounding 26 covered natively, and because a real recording
+beats a 4-semitone downshift if a future feel ever drops there.
 
-## ⚠ VSCO 2 names octaves with C3 as middle C
+## ⚠ Pastabass's filenames sit an octave above sounding pitch
 
-`BKCtbss_Pizz_E0_*.wav` sounds at **MIDI 28** — E1 in scientific pitch notation, 41 Hz,
-the contrabass's open low E. Read as scientific notation, `E0` would be 21 Hz, an octave
-below anything the instrument can play; read as a written contrabass part — which is
-notated an octave above sounding pitch — it would be an octave the other way. Both are
-wrong, and both are the kind of wrong the measurement rule above is about.
+`Pastabass_tagliatelle_e2_*.wav` sounds at **MIDI 28** — 41.3 Hz, the open low E of a
+bass guitar. The library's SFZ maps that file at `pitch_keycenter=40`, and every note in
+it is written an octave above where it sounds, the way a bass part is notated. Read as
+scientific pitch notation the whole set would be an octave sharp and the game unplayable.
 
-The declared `midi` values were established by measuring the fundamental of every file,
-and each note carries the frequency it was measured at as `measuredHz` in `pack.json`.
-A pizzicato contrabass makes this less obvious than it sounds: on the low notes the
-fundamental is *weaker* than the second and third harmonics, so a peak-picking tuner
-reads an octave high. The measurement fits the whole harmonic series instead.
+`db2` is the extreme case: it **sounds at MIDI 25** — 34.8 Hz, C#1 — because the low E
+string was tuned down to C# for it. Its filename says `db2`, its pitch says C#1, and only
+measurement says which one the pack should believe.
 
-Measured against equal temperament the instrument is a little out, note to note:
-between −30 and +32 cents, which is a real player on a real fingerboard rather than a
-tuning error. `pack.test.ts` allows half a semitone.
+The declared `midi` values were established by fitting the harmonic series of every one
+of the 81 files, and each note carries the frequency it was measured at as `measuredHz`
+in `pack.json`. A picked bass makes this less obvious than it sounds: on the low notes
+the fundamental is *weaker* than the second and third partials, so a peak-picking tuner
+reads an octave high. `measuredHz` is the **median over all nine files of a note** —
+three velocity layers × three alternates — and that is not belt-and-braces. On one
+candidate's lowest note, three of twelve files fitted an octave high on their own,
+because H1 there sits 20–25 dB under the strongest partial. A median over nine is not
+fooled by three; a single file is.
+
+Measured against equal temperament this instrument is **within 5.6 cents on every note**
+— worst +5.6¢ at MIDI 25 and −4.9¢ at MIDI 37, against the half semitone `pack.test.ts`
+allows. It is a direct-recorded, freshly-tuned instrument: unlike the contrabass it
+replaced (−30 to +32 cents, a real player on a real fingerboard) and unlike the piano's
+Railsback stretch, there is nothing here to explain.
+
+**`measuredHz` changes no audio, and that is worth stating.** `pack.ts` reads `note.midi`
+for `rootMidi` and for `transpose`; `measuredHz` is a declared record that `pack.test.ts`
+checks against the declared note's nominal frequency. Proven rather than assumed:
+refining these figures from a single-file fit to the nine-file median re-rendered the
+audition's four A/B MP3s byte for byte identical.
 
 ## Levelling
 
@@ -612,6 +893,58 @@ hits a bar with tails that overlap, against the hat's two hits that do not.
 `humanize.lean.ride` (−2) were not moved. The sign-off was given on a render that
 used both, so changing either would ship something nobody heard.
 
+### Worked example — the bass, and the headroom edge it sits on
+
+The bass is the second voice levelled from scratch under the rule above, and the first
+where the rule **ran out of room**. In the README's own two-job order:
+
+**The pack half, fixed first.** The top layer covers 0.86 … 1, so its nominal is that
+band's midpoint, **0.93**. Each lower layer is 0.93 scaled by the ratio of its measured
+peak to `vl3`'s, on the first-listed alternate: MIDI 49's `vl2` peaks at −3.0 dBFS
+against `vl3`'s −0.7, a ratio of 0.7673, and 0.93 × 0.7673 = **0.7136**. That derivation
+runs note by note, which is why `nominalVelocity` differs per note on this voice where
+the drums declare one per layer — the recorded distance between `vl1`, `vl2` and `vl3` is
+not the same at MIDI 28 as it is at MIDI 49.
+
+**Where it ran out.** `gainFor` is `Math.min(velocity / nominalVelocity, MAX_LAYER_GAIN)`
+with `MAX_LAYER_GAIN = 2`, so a layer's nominal has to clear `maxVelocity / 2` or the
+layer asks for more gain than the clamp will give. The ratio rule wants 0.218–0.366 for
+`vl1`, all of it under the 0.37 floor, so every note's `vl1` is floored at **0.3701**
+instead — and the residue nobody pays back is the net step the section on the layers
+measures.
+
+| layer | maxVelocity | nominalVelocity | loudest / nominal |
+| :-- | --: | --: | --: |
+| `vl1`, all nine notes | 0.74 | 0.3701 | **1.99946** |
+| `vl2`, MIDI 37 — the tightest | 0.86 | 0.4301 | **1.99953** |
+| `vl2`, the other eight notes | 0.86 | 0.4770 … 0.7136 | 1.80294 … 1.20516 |
+| `vl3`, all nine notes | 1 | 0.93 | 1.07527 |
+
+`loudest(layer)` is `min(maxVelocity, min(1, VELOCITIES.bass.strong + max humanize.velocity))`,
+which for this voice is just `min(maxVelocity, 1)`: 0.92 + 0.13 clamps to 1.
+
+> **`VELOCITIES.bass.strong` cannot rise, and no template's `humanize.velocity` can rise,
+> without the bass clamping into `MAX_LAYER_GAIN`.** `vl1`'s nominal is 0.3701 against a
+> band top of 0.74, so `gainFor` reaches 1.99946 at the top of that band.
+
+That is the same hard edge the ride records (`VELOCITIES.ride.strong` cannot rise above
+0.87) and the comp (`VELOCITIES.comp.strong` cannot rise above 0.77), and it is exactly
+the position `rim` was corrected *out of*. Read it as a recorded edge, not as headroom in
+hand. Every layer does clear the bound, which the contrabass it replaced did not: that
+voice declared no `nominalVelocity` at all, fell through to band midpoints, and sat
+**exactly on 2.00** on all eight of its notes — `VELOCITIES.bass.medium` being 0.8 meant
+every off-eighth bass note in the catalogue landed on that clamp. `pack.test.ts` pins the
+bound per layer now.
+
+**The template half, second, and only then.** The whole level difference between the two
+instruments belongs there. Pastabass's sources are recorded 16–19 dB hotter than VSCO's
+contrabass, and no pack-side value can absorb that: `nominalVelocity` is bounded above by
+1 and the ratio rule already puts the top layer at 0.93, so the mechanism has about
+0.6 dB left in it, not 16. Measured on `groove-01`, matching the contrabass's own
+bass-track RMS needs **−18.68 dB** on top of the old `gain.bass` of `−1`. That figure is
+a starting point measured against the old instrument's level, **not a value anyone has
+heard** — all nine templates' `gain.bass` are set by ear, per feel.
+
 ### The bands as committed
 
 | Voice | maxVelocity | nominalVelocity | alternates |
@@ -670,5 +1003,19 @@ of it.
 | `bongoHigh`, `bongoLow` | 0.80 s |
 | `claves` | 0.40 s |
 | `cowbell` | 0.80 s |
-| `bass` | 2.00 s |
+| `bass` | 2.00 s — the note-off binds long before the cap does; see below |
 | `comp` | 2.50 s |
+
+**The bass's 2.00 s cap is not what binds, and it is kept for that reason.** The
+longest bass note in the whole catalogue is **0.462 s** (`groove-78`,
+`open-ballad`); `addAt` in `voices.ts` plays at most `durationSec + RELEASE_SEC`
+of a sample, and `transpose` reads at most 1.12× of that in source time at the
+pack's largest upward shift of 2 semitones — so **at most 0.527 s of any bass
+file is ever heard**, 3.8× under the cap. At 1.92 s the source's tail is still
+13.6 dB under its attack RMS, so the cap does cut a ringing tail; nothing ever
+reads that far. **Do not shorten it to save bytes.** That would be a change
+nobody can hear, and it would leave a future feel with a longer note running into
+a cap set for the wrong reason. Per feel, the longest bass note runs
+`open-ballad` 0.462, `half-time` 0.429, `shuffle` 0.380, `boom-bap` 0.349,
+`second-line` 0.341, `straight-funk` 0.313, `swung-sixteenth` 0.283,
+`bright-straight` 0.250, `bossa-nova` 0.244 s.

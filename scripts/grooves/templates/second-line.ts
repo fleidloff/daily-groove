@@ -68,7 +68,7 @@ export const secondLine: FeelTemplate = {
     // true peak onto the ceiling, so a transient-heavy kit renders quiet. The bass and
     // the comp are the two voices that sustain, and they are what keeps loop RMS off
     // the gate's -29 floor.
-    bass: -1.9,
+    bass: -22.2,
     comp: -4.2,
   },
   pan: {

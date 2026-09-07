@@ -348,140 +348,298 @@
     "bass": {
       "notes": [
         {
-          "midi": 28,
-          "measuredHz": 40.9,
+          "midi": 25,
+          "measuredHz": 34.76,
           "layers": [
             {
-              "maxVelocity": 0.8,
+              "maxVelocity": 0.74,
+              "nominalVelocity": 0.3701,
               "files": [
-                "bass/BKCtbss_Pizz_E0_v1_rr1.flac",
-                "bass/BKCtbss_Pizz_E0_v1_rr2.flac"
+                "bass/Pastabass_tagliatelle_db2_vl1_rr1.flac",
+                "bass/Pastabass_tagliatelle_db2_vl1_rr2.flac",
+                "bass/Pastabass_tagliatelle_db2_vl1_rr3.flac"
+              ]
+            },
+            {
+              "maxVelocity": 0.86,
+              "nominalVelocity": 0.6288,
+              "files": [
+                "bass/Pastabass_tagliatelle_db2_vl2_rr1.flac",
+                "bass/Pastabass_tagliatelle_db2_vl2_rr2.flac",
+                "bass/Pastabass_tagliatelle_db2_vl2_rr3.flac"
               ]
             },
             {
               "maxVelocity": 1,
+              "nominalVelocity": 0.93,
               "files": [
-                "bass/BKCtbss_Pizz_E0_v3_rr1.flac",
-                "bass/BKCtbss_Pizz_E0_v3_rr2.flac"
+                "bass/Pastabass_tagliatelle_db2_vl3_rr1.flac",
+                "bass/Pastabass_tagliatelle_db2_vl3_rr2.flac",
+                "bass/Pastabass_tagliatelle_db2_vl3_rr3.flac"
+              ]
+            }
+          ]
+        },
+        {
+          "midi": 28,
+          "measuredHz": 41.31,
+          "layers": [
+            {
+              "maxVelocity": 0.74,
+              "nominalVelocity": 0.3701,
+              "files": [
+                "bass/Pastabass_tagliatelle_e2_vl1_rr1.flac",
+                "bass/Pastabass_tagliatelle_e2_vl1_rr2.flac",
+                "bass/Pastabass_tagliatelle_e2_vl1_rr3.flac"
+              ]
+            },
+            {
+              "maxVelocity": 0.86,
+              "nominalVelocity": 0.477,
+              "files": [
+                "bass/Pastabass_tagliatelle_e2_vl2_rr1.flac",
+                "bass/Pastabass_tagliatelle_e2_vl2_rr2.flac",
+                "bass/Pastabass_tagliatelle_e2_vl2_rr3.flac"
+              ]
+            },
+            {
+              "maxVelocity": 1,
+              "nominalVelocity": 0.93,
+              "files": [
+                "bass/Pastabass_tagliatelle_e2_vl3_rr1.flac",
+                "bass/Pastabass_tagliatelle_e2_vl3_rr2.flac",
+                "bass/Pastabass_tagliatelle_e2_vl3_rr3.flac"
               ]
             }
           ]
         },
         {
           "midi": 31,
-          "measuredHz": 48.51,
+          "measuredHz": 49.13,
           "layers": [
             {
-              "maxVelocity": 0.8,
+              "maxVelocity": 0.74,
+              "nominalVelocity": 0.3701,
               "files": [
-                "bass/BKCtbss_Pizz_G0_v1_rr1.flac",
-                "bass/BKCtbss_Pizz_G0_v1_rr2.flac"
+                "bass/Pastabass_tagliatelle_g2_vl1_rr1.flac",
+                "bass/Pastabass_tagliatelle_g2_vl1_rr2.flac",
+                "bass/Pastabass_tagliatelle_g2_vl1_rr3.flac"
+              ]
+            },
+            {
+              "maxVelocity": 0.86,
+              "nominalVelocity": 0.4937,
+              "files": [
+                "bass/Pastabass_tagliatelle_g2_vl2_rr1.flac",
+                "bass/Pastabass_tagliatelle_g2_vl2_rr2.flac",
+                "bass/Pastabass_tagliatelle_g2_vl2_rr3.flac"
               ]
             },
             {
               "maxVelocity": 1,
+              "nominalVelocity": 0.93,
               "files": [
-                "bass/BKCtbss_Pizz_G0_v3_rr1.flac",
-                "bass/BKCtbss_Pizz_G0_v3_rr2.flac"
+                "bass/Pastabass_tagliatelle_g2_vl3_rr1.flac",
+                "bass/Pastabass_tagliatelle_g2_vl3_rr2.flac",
+                "bass/Pastabass_tagliatelle_g2_vl3_rr3.flac"
               ]
             }
           ]
         },
         {
           "midi": 34,
-          "measuredHz": 58.07,
+          "measuredHz": 58.26,
           "layers": [
             {
-              "maxVelocity": 0.8,
+              "maxVelocity": 0.74,
+              "nominalVelocity": 0.3701,
               "files": [
-                "bass/BKCtbss_Pizz_A#0_v1_rr1.flac",
-                "bass/BKCtbss_Pizz_A#0_v1_rr2.flac"
+                "bass/Pastabass_tagliatelle_bb2_vl1_rr1.flac",
+                "bass/Pastabass_tagliatelle_bb2_vl1_rr2.flac",
+                "bass/Pastabass_tagliatelle_bb2_vl1_rr3.flac"
+              ]
+            },
+            {
+              "maxVelocity": 0.86,
+              "nominalVelocity": 0.529,
+              "files": [
+                "bass/Pastabass_tagliatelle_bb2_vl2_rr1.flac",
+                "bass/Pastabass_tagliatelle_bb2_vl2_rr2.flac",
+                "bass/Pastabass_tagliatelle_bb2_vl2_rr3.flac"
               ]
             },
             {
               "maxVelocity": 1,
+              "nominalVelocity": 0.93,
               "files": [
-                "bass/BKCtbss_Pizz_A#0_v3_rr1.flac",
-                "bass/BKCtbss_Pizz_A#0_v3_rr2.flac"
+                "bass/Pastabass_tagliatelle_bb2_vl3_rr1.flac",
+                "bass/Pastabass_tagliatelle_bb2_vl3_rr2.flac",
+                "bass/Pastabass_tagliatelle_bb2_vl3_rr3.flac"
               ]
             }
           ]
         },
         {
-          "midi": 36,
-          "measuredHz": 64.28,
+          "midi": 37,
+          "measuredHz": 69.1,
           "layers": [
             {
-              "maxVelocity": 0.8,
+              "maxVelocity": 0.74,
+              "nominalVelocity": 0.3701,
               "files": [
-                "bass/BKCtbss_Pizz_C1_v1_rr1.flac",
-                "bass/BKCtbss_Pizz_C1_v1_rr2.flac"
+                "bass/Pastabass_tagliatelle_db3_vl1_rr1.flac",
+                "bass/Pastabass_tagliatelle_db3_vl1_rr2.flac",
+                "bass/Pastabass_tagliatelle_db3_vl1_rr3.flac"
+              ]
+            },
+            {
+              "maxVelocity": 0.86,
+              "nominalVelocity": 0.4301,
+              "files": [
+                "bass/Pastabass_tagliatelle_db3_vl2_rr1.flac",
+                "bass/Pastabass_tagliatelle_db3_vl2_rr2.flac",
+                "bass/Pastabass_tagliatelle_db3_vl2_rr3.flac"
               ]
             },
             {
               "maxVelocity": 1,
+              "nominalVelocity": 0.93,
               "files": [
-                "bass/BKCtbss_Pizz_C1_v3_rr1.flac",
-                "bass/BKCtbss_Pizz_C1_v3_rr2.flac"
+                "bass/Pastabass_tagliatelle_db3_vl3_rr1.flac",
+                "bass/Pastabass_tagliatelle_db3_vl3_rr2.flac",
+                "bass/Pastabass_tagliatelle_db3_vl3_rr3.flac"
               ]
             }
           ]
         },
         {
           "midi": 40,
-          "measuredHz": 82.2,
+          "measuredHz": 82.37,
           "layers": [
             {
-              "maxVelocity": 0.8,
+              "maxVelocity": 0.74,
+              "nominalVelocity": 0.3701,
               "files": [
-                "bass/BKCtbss_Pizz_E1_v1_rr1.flac",
-                "bass/BKCtbss_Pizz_E1_v1_rr2.flac"
+                "bass/Pastabass_tagliatelle_e3_vl1_rr1.flac",
+                "bass/Pastabass_tagliatelle_e3_vl1_rr2.flac",
+                "bass/Pastabass_tagliatelle_e3_vl1_rr3.flac"
+              ]
+            },
+            {
+              "maxVelocity": 0.86,
+              "nominalVelocity": 0.4503,
+              "files": [
+                "bass/Pastabass_tagliatelle_e3_vl2_rr1.flac",
+                "bass/Pastabass_tagliatelle_e3_vl2_rr2.flac",
+                "bass/Pastabass_tagliatelle_e3_vl2_rr3.flac"
               ]
             },
             {
               "maxVelocity": 1,
+              "nominalVelocity": 0.93,
               "files": [
-                "bass/BKCtbss_Pizz_E1_v3_rr1.flac",
-                "bass/BKCtbss_Pizz_E1_v3_rr2.flac"
+                "bass/Pastabass_tagliatelle_e3_vl3_rr1.flac",
+                "bass/Pastabass_tagliatelle_e3_vl3_rr2.flac",
+                "bass/Pastabass_tagliatelle_e3_vl3_rr3.flac"
               ]
             }
           ]
         },
         {
-          "midi": 42,
-          "measuredHz": 92.28,
+          "midi": 43,
+          "measuredHz": 97.92,
           "layers": [
             {
-              "maxVelocity": 1,
+              "maxVelocity": 0.74,
+              "nominalVelocity": 0.3701,
               "files": [
-                "bass/BKCtbss_Pizz_F#1_v1_rr1.flac",
-                "bass/BKCtbss_Pizz_F#1_v1_rr2.flac"
+                "bass/Pastabass_tagliatelle_g3_vl1_rr1.flac",
+                "bass/Pastabass_tagliatelle_g3_vl1_rr2.flac",
+                "bass/Pastabass_tagliatelle_g3_vl1_rr3.flac"
+              ]
+            },
+            {
+              "maxVelocity": 0.86,
+              "nominalVelocity": 0.5476,
+              "files": [
+                "bass/Pastabass_tagliatelle_g3_vl2_rr1.flac",
+                "bass/Pastabass_tagliatelle_g3_vl2_rr2.flac",
+                "bass/Pastabass_tagliatelle_g3_vl2_rr3.flac"
+              ]
+            },
+            {
+              "maxVelocity": 1,
+              "nominalVelocity": 0.93,
+              "files": [
+                "bass/Pastabass_tagliatelle_g3_vl3_rr1.flac",
+                "bass/Pastabass_tagliatelle_g3_vl3_rr2.flac",
+                "bass/Pastabass_tagliatelle_g3_vl3_rr3.flac"
               ]
             }
           ]
         },
         {
-          "midi": 45,
-          "measuredHz": 112.07,
+          "midi": 46,
+          "measuredHz": 116.6,
           "layers": [
             {
-              "maxVelocity": 1,
+              "maxVelocity": 0.74,
+              "nominalVelocity": 0.3701,
               "files": [
-                "bass/BKCtbss_Pizz_A1_v1_rr1.flac",
-                "bass/BKCtbss_Pizz_A1_v1_rr2.flac"
+                "bass/Pastabass_tagliatelle_bb3_vl1_rr1.flac",
+                "bass/Pastabass_tagliatelle_bb3_vl1_rr2.flac",
+                "bass/Pastabass_tagliatelle_bb3_vl1_rr3.flac"
+              ]
+            },
+            {
+              "maxVelocity": 0.86,
+              "nominalVelocity": 0.6144,
+              "files": [
+                "bass/Pastabass_tagliatelle_bb3_vl2_rr1.flac",
+                "bass/Pastabass_tagliatelle_bb3_vl2_rr2.flac",
+                "bass/Pastabass_tagliatelle_bb3_vl2_rr3.flac"
+              ]
+            },
+            {
+              "maxVelocity": 1,
+              "nominalVelocity": 0.93,
+              "files": [
+                "bass/Pastabass_tagliatelle_bb3_vl3_rr1.flac",
+                "bass/Pastabass_tagliatelle_bb3_vl3_rr2.flac",
+                "bass/Pastabass_tagliatelle_bb3_vl3_rr3.flac"
               ]
             }
           ]
         },
         {
           "midi": 49,
-          "measuredHz": 139.07,
+          "measuredHz": 138.75,
           "layers": [
             {
-              "maxVelocity": 1,
+              "maxVelocity": 0.74,
+              "nominalVelocity": 0.3701,
               "files": [
-                "bass/BKCtbss_Pizz_C#2_v1_rr1.flac",
-                "bass/BKCtbss_Pizz_C#2_v1_rr2.flac"
+                "bass/Pastabass_tagliatelle_db4_vl1_rr1.flac",
+                "bass/Pastabass_tagliatelle_db4_vl1_rr2.flac",
+                "bass/Pastabass_tagliatelle_db4_vl1_rr3.flac"
+              ]
+            },
+            {
+              "maxVelocity": 0.86,
+              "nominalVelocity": 0.7136,
+              "files": [
+                "bass/Pastabass_tagliatelle_db4_vl2_rr1.flac",
+                "bass/Pastabass_tagliatelle_db4_vl2_rr2.flac",
+                "bass/Pastabass_tagliatelle_db4_vl2_rr3.flac"
+              ]
+            },
+            {
+              "maxVelocity": 1,
+              "nominalVelocity": 0.93,
+              "files": [
+                "bass/Pastabass_tagliatelle_db4_vl3_rr1.flac",
+                "bass/Pastabass_tagliatelle_db4_vl3_rr2.flac",
+                "bass/Pastabass_tagliatelle_db4_vl3_rr3.flac"
               ]
             }
           ]

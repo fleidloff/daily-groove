@@ -20,7 +20,7 @@ export const swungSixteenth: FeelTemplate = {
     snare: -7,
     hatClosed: -12,
     ride: -0.4,
-    bass: -1,
+    bass: -20.7,
     comp: -3.9,
   },
   pan: {

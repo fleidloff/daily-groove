@@ -20,7 +20,7 @@ export const openBallad: FeelTemplate = {
     snare: -10,
     hatClosed: -15,
     hatOpen: -21,
-    bass: -1,
+    bass: -22,
     comp: -5.9,
   },
   pan: {

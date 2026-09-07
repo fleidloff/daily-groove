@@ -5,6 +5,8 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { loadPack } from './pack.ts'
+import { VELOCITIES } from './events.ts'
+import { allTemplates } from './templates/index.ts'
 import type { PackDeclaration, Pcm, VelocityLayer, VoiceName } from './types.ts'
 
 const here = dirname(fileURLToPath(import.meta.url))
@@ -156,7 +158,15 @@ const committed = JSON.parse(
 
 const committedProvenance = JSON.parse(
   readFileSync(join(SAMPLES, 'provenance.json'), 'utf8'),
-) as { samples: { file: string; source: string; sourceFile: string; licence: string }[] }
+) as {
+  samples: {
+    file: string
+    source: string
+    sourceFile: string
+    licence: string
+    modifications?: string
+  }[]
+}
 
 const PERCUSSIVE: VoiceName[] = ['kick', 'snare', 'hatClosed', 'hatOpen', 'rim', 'tomHigh', 'tomLow']
 
@@ -318,16 +328,72 @@ function midiOf(hz: number): number {
   return 12 * Math.log2(hz / 440) + 69
 }
 
+function hzOf(midi: number): number {
+  return 440 * 2 ** ((midi - 69) / 12)
+}
+
+// pack.ts's own nominalOf is module-private and stays that way. This is the same rule:
+// the layer's declared nominalVelocity, or the midpoint of the band it covers.
+function nominalOf(layers: VelocityLayer[], at: number): number {
+  const layer = layers[at]
+  if (layer.nominalVelocity !== undefined) return layer.nominalVelocity
+  return ((at === 0 ? 0 : layers[at - 1].maxVelocity) + layer.maxVelocity) / 2
+}
+
+// The register events.ts can ask the pack for, not a measurement of one catalogue.
+// BASS_BASE_MIDI is 24, so inRegister places a root there before BASS_FLOOR_MIDI (28)
+// lifts it, and BASS_CEILING_MIDI is 48. Measured over the working tree's grooves with
+// buildEvents, the bass asks for sounding MIDI 28-48 (feature-27,
+// .implement/audition/layers.md), so `lowest: 24` is the base's worst case rather than a
+// note anything plays, and `highest: 47` sits a semitone under the ceiling. events.ts is
+// untouched by feature-27 (its contract C2), so both numbers stay as written.
 const BASS_PLAYED = { lowest: 24, highest: 47 }
 
+// A request inside BASS_PLAYED is served by the nearest sampled note, and R6 caps that
+// distance at 2 semitones, so these are the notes the catalogue can actually be handed.
+// Measuring the whole declared range instead would grade a note nothing ever plays.
+function playedNotesOf(voice: VoiceName): MeasuredNote[] {
+  return notesOf(voice).filter(
+    (note) => note.midi >= BASS_PLAYED.lowest - 2 && note.midi <= BASS_PLAYED.highest + 2,
+  )
+}
+
+// quick ticket 8's figure, measured on the comp, and the only threshold in this repo that
+// came with a listening verdict attached: a layer step this large is what made a single
+// comp note leap out of its part, and the comp was flattened to one layer rather than
+// ship it. Both of the bass's live boundaries are measured against it below.
+const FLATTEN_THRESHOLD = 7.5
+
+function dbfsOf(file: string): number {
+  return 20 * Math.log10(peakOf(file))
+}
+
+// The audible step at a layer boundary is not what the two recordings differ by. gainFor
+// divides by nominalVelocity, so the nominals pay part of that difference back, and what
+// is left over is the step a listener hears:
+//
+//   net step = (peak_{i+1} - peak_i, dB) - 20*log10(nominal_{i+1} / nominal_i)
+//
+// samples/README.md's ratio rule makes that zero by construction; it is non-zero only
+// where the headroom floor above caps the payback. Measured on the first-listed alternate
+// of each layer, because that is the file every nominal in the pack was derived from.
+function netStepsOf(note: MeasuredNote): number[] {
+  const peaks = note.layers.map((layer) => dbfsOf(layer.files[0]))
+  return peaks.slice(1).map(
+    (peak, i) =>
+      peak - peaks[i] - 20 * Math.log10(nominalOf(note.layers, i + 1) / nominalOf(note.layers, i)),
+  )
+}
+
 describe('the committed pack’s bass', () => {
-  it('is a pizzicato contrabass from VSCO 2 CE, and no FM Piano file survives', () => {
+  it('is a picked Squier Bass VI from Pastabass, and no contrabass file survives', () => {
     const files = pitchedFilesOf('bass')
     expect(files.length, 'bass declares no files').toBeGreaterThan(0)
     for (const file of files) {
-      expect(file, `${file} is not a contrabass pizzicato sample`).toMatch(
-        /^bass\/BKCtbss_Pizz_/,
+      expect(file, `${file} is not a Pastabass tagliatelle sample`).toMatch(
+        /^bass\/Pastabass_tagliatelle_/,
       )
+      expect(file, `${file} is the contrabass feature-27 replaced`).not.toMatch(/BKCtbss_Pizz_/)
     }
     expect(readdirSync(join(SAMPLES, 'bass')).sort()).toEqual(
       files.map((file) => file.slice('bass/'.length)).sort(),
@@ -369,7 +435,7 @@ describe('the committed pack’s bass', () => {
 
   it('samples the bass no more than four semitones apart', () => {
     const midi = notesOf('bass').map((note) => note.midi)
-    expect(midi.length, 'bass has too few sampled notes').toBeGreaterThanOrEqual(8)
+    expect(midi.length, 'bass has too few sampled notes').toBeGreaterThanOrEqual(9)
     for (let i = 1; i < midi.length; i += 1) {
       expect(
         midi[i] - midi[i - 1],
@@ -378,12 +444,12 @@ describe('the committed pack’s bass', () => {
     }
   })
 
-  it('covers the register the contrabass has: MIDI 26 up, not the 22 the spec asks for', () => {
+  it('covers the register the Bass VI has: MIDI 23 up, not the 22 the spec asks for', () => {
     const midi = notesOf('bass').map((note) => note.midi)
     const lowest = midi[0]
     const highest = midi[midi.length - 1]
 
-    expect(lowest, 'the lowest sampled note is not the contrabass’s open low E').toBe(28)
+    expect(lowest, 'the lowest sampled note is not the low E tuned down to C#').toBe(25)
     expect(highest + 2, 'the bass does not reach the top of its register').toBeGreaterThanOrEqual(50)
 
     expect(BASS_PLAYED.highest).toBeLessThanOrEqual(highest + 2)
@@ -403,25 +469,145 @@ describe('the committed pack’s bass', () => {
     }
   })
 
+  // Pastabass names its files an octave above sounding pitch, the way a bass guitar part
+  // is notated: the file called db2 sounds at MIDI 25 - 34.65 Hz, C#1, the low E string
+  // tuned down to C#. Read as scientific pitch the whole set would be an octave sharp and
+  // the game unplayable. Third instance of this trap in the pack after the Clavisynth and
+  // the contrabass, which is why every pitch here is measured and none is read.
   it('is not the octave the filenames would suggest read as scientific pitch', () => {
     const lowest = notesOf('bass')[0]
-    expect(lowest.midi).toBe(28)
-    expect(lowest.measuredHz).toBeGreaterThan(39)
-    expect(lowest.measuredHz).toBeLessThan(43)
+    expect(lowest.midi).toBe(25)
+    expect(
+      lowest.measuredHz,
+      'the lowest note does not sound within half a semitone of C#1',
+    ).toBeGreaterThan(hzOf(24.5))
+    expect(lowest.measuredHz).toBeLessThan(hzOf(25.5))
+    expect(
+      lowest.layers[0].files[0],
+      'the lowest note is no longer the file the library calls db2',
+    ).toContain('db2')
   })
 
-  it('records a VSCO 2 CE provenance entry for every bass file', () => {
+  it('declares an explicit nominalVelocity on every bass layer', () => {
+    for (const note of notesOf('bass')) {
+      for (const layer of note.layers) {
+        expect(
+          typeof layer.nominalVelocity,
+          `bass MIDI ${note.midi} layer at ${layer.maxVelocity} defaults to its band midpoint`,
+        ).toBe('number')
+        expect(layer.nominalVelocity!).toBeGreaterThan(0)
+        expect(layer.nominalVelocity!).toBeLessThanOrEqual(1)
+      }
+    }
+  })
+
+  // gainFor in voices.ts is Math.min(velocity / nominalVelocity, MAX_LAYER_GAIN) with
+  // MAX_LAYER_GAIN = 2, and humanize clamps velocity to 1, so a layer whose nominal sits
+  // at or under half the loudest velocity that can reach it plays into the clamp. That is
+  // the wall rim was "one change away from" before feature-24 declared its nominals.
+  // Until feature-27 no bass layer declared a nominalVelocity at all: every one fell
+  // through to a band midpoint and eight of them landed exactly on 2.00.
+  it('leaves every bass layer headroom for the jitter humanize adds on top of a strong hit', () => {
+    const jitter = Math.max(...allTemplates().map((template) => template.humanize.velocity))
+    const loudest = Math.min(1, VELOCITIES.bass.strong + jitter)
+    for (const note of notesOf('bass')) {
+      note.layers.forEach((layer, i) => {
+        expect(
+          Math.min(layer.maxVelocity, loudest) / nominalOf(note.layers, i),
+          `bass MIDI ${note.midi} layer at ${layer.maxVelocity} asks for more than 2x its recorded level at a humanized strong hit`,
+        ).toBeLessThan(2)
+      })
+    }
+  })
+
+  it('keeps every velocity-layer boundary under the 7.5 dB that flattened the comp', () => {
+    const notes = playedNotesOf('bass')
+    expect(notes.length, 'no bass note sits in the register the catalogue plays').toBeGreaterThan(0)
+
+    for (const note of notes) {
+      const steps = netStepsOf(note)
+      expect(steps.length, `bass MIDI ${note.midi} has no layer boundary to measure`).toBeGreaterThan(0)
+      steps.forEach((step, i) => {
+        expect(
+          Math.abs(step),
+          `bass MIDI ${note.midi}: the boundary into the layer at ${note.layers[i + 1].maxVelocity} steps ${step.toFixed(2)} dB after its nominals pay back — at or past ${FLATTEN_THRESHOLD} dB quick-8 flattened the comp's layers rather than ship the step`,
+        ).toBeLessThan(FLATTEN_THRESHOLD)
+      })
+    }
+  }, 120_000)
+
+  // The two figures the decision was taken on. They are prose in samples/README.md and in
+  // .implement/audition/layers.md, and a document cannot fail; this is what re-measures
+  // them. A tolerance rather than an equality because the frozen table was taken with
+  // ffmpeg volumedetect, whose dB is rounded to one decimal, while peakOf reads the
+  // decoded samples directly - the two agree to 0.03 dB on this pack.
+  it('measures the two boundary maxima the layer decision was frozen on', () => {
+    const worst = new Map<number, { step: number; midi: number }>()
+    for (const note of playedNotesOf('bass')) {
+      netStepsOf(note).forEach((step, i) => {
+        const boundary = note.layers[i + 1].maxVelocity
+        const held = worst.get(boundary)
+        if (held === undefined || Math.abs(step) > Math.abs(held.step)) {
+          worst.set(boundary, { step, midi: note.midi })
+        }
+      })
+    }
+
+    expect([...worst.keys()].sort((a, b) => a - b)).toEqual([0.86, 1])
+
+    for (const [boundary, frozen] of [
+      [0.86, 4.6],
+      [1, 0.3],
+    ]) {
+      const measured = worst.get(boundary)!
+      expect(
+        Math.abs(measured.step),
+        `the boundary at ${boundary} now steps ${Math.abs(measured.step).toFixed(2)} dB at its worst note (MIDI ${measured.midi}), against the ${frozen.toFixed(2)} dB the audition froze in samples/README.md. Re-measure the pack, do not re-type the number`,
+      ).toBeCloseTo(frozen, 1)
+    }
+  }, 120_000)
+
+  // The bass exempts nothing in samples/pack.test.ts's SINGLE_VELOCITY_IN_SOURCE any
+  // more - Pastabass records all nine notes at three dynamics - so the round-robin guard
+  // that table carried for the contrabass's MIDI 42, 45 and 49 is stated here instead.
+  it('round-robins every bass layer, so a repeated note never replays one file', () => {
+    for (const note of notesOf('bass')) {
+      for (const layer of note.layers) {
+        expect(
+          layer.files.length,
+          `bass MIDI ${note.midi} layer at ${layer.maxVelocity} cannot round-robin`,
+        ).toBeGreaterThanOrEqual(2)
+        expect(
+          new Set(layer.files).size,
+          `bass MIDI ${note.midi} repeats a file inside one layer`,
+        ).toBe(layer.files.length)
+      }
+    }
+  })
+
+  it('records a Pastabass provenance entry for every bass file', () => {
     const recorded = new Map(committedProvenance.samples.map((s) => [s.file, s]))
     for (const file of pitchedFilesOf('bass')) {
       const entry = recorded.get(file)
       expect(entry, `${file} is in the pack but not in provenance.json`).toBeDefined()
-      expect(entry!.source, `${file} does not name VSCO 2 CE`).toContain('VSCO-2-CE')
+      expect(entry!.source, `${file} does not name Pastabass`).toContain('Pastabass')
       expect(entry!.licence).toBe('CC0')
-      expect(entry!.sourceFile).toMatch(/^Strings\/Solo Contrabass\/Pizz\//)
+      expect(entry!.sourceFile).toMatch(/^Pastabass\/samples\/tagliatelle\//)
+      const modifications = entry!.modifications ?? ''
+      expect(modifications.length, `${file} does not say what was done to it`).toBeGreaterThan(0)
+      expect(modifications, `${file} does not record its length cap`).toMatch(/cap/i)
+      expect(modifications, `${file} does not record its fade`).toMatch(/fade/i)
+      expect(modifications, `${file} does not record the mono downmix`).toMatch(/mono/i)
+      expect(modifications, `${file} does not record that it was left alone`).toMatch(
+        /not normalis|un-normalis/i,
+      )
     }
   })
 
-  it('ships the VSCO 2 CE licence beside the VCSL one', () => {
+  // Pastabass is CC0, so it owes no licence text of its own. LICENSE.txt is the CC0 deed
+  // every CC0 row in the pack rests on, and LICENSE-VSCO-2-CE.txt stays because the comp
+  // is still the VSCO 2 CE upright piano.
+  it('ships the CC0 licence text its own rows rest on, and VSCO 2 CE’s beside it', () => {
     for (const licence of ['LICENSE.txt', 'LICENSE-VSCO-2-CE.txt']) {
       expect(existsSync(join(SAMPLES, licence)), `${licence} is missing`).toBe(true)
       expect(readFileSync(join(SAMPLES, licence), 'utf8')).toContain('CC0 1.0 Universal')

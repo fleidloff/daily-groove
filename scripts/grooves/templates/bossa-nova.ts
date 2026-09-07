@@ -23,7 +23,7 @@ export const bossaNova: FeelTemplate = {
     snare: -16,
     hatClosed: -13,
     rim: -9,
-    bass: -4,
+    bass: -23.2,
     comp: -8.1,
   },
   pan: {

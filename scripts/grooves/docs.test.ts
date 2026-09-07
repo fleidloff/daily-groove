@@ -503,10 +503,39 @@ describe('the music document', () => {
 
     it('credits every library the pack now draws on', () => {
       const section = flatten(sectionOf(heading()[0]))
-      expect(section).not.toMatch(/three libraries/)
-      expect(section).toMatch(/four libraries/)
+      expect(section).not.toMatch(/four libraries/)
+      expect(section).toMatch(/five libraries/)
       expect(section).toContain('Drum samples provided by DrumGizmo.org')
       expect(section).toContain('Ride cymbal samples from DRSKit')
+    })
+
+    // The bass came in CC0, so the pack still owes exactly the two DrumGizmo
+    // strings and the app's credit line does not change. A document that said
+    // otherwise would send a reader looking for a third obligation.
+    it('names Pastabass and VSCO 2 CE among the libraries that owe nothing', () => {
+      const section = flatten(sectionOf(heading()[0]))
+      expect(section, 'the bass library is not credited').toContain('Pastabass')
+      expect(section, 'VSCO 2 CE still supplies the comp').toContain('VSCO 2 CE')
+      expect(
+        section,
+        'VSCO 2 CE no longer supplies the bass, so it may not be credited for one',
+      ).not.toMatch(/bass\/comp \(VSCO 2 CE\)/)
+      expect(
+        section,
+        'nothing says the pack owes only the two attributions it owes',
+      ).toMatch(/two attributions/)
+    })
+
+    it('names the instrument the bass plays, and it is an electric', () => {
+      const section = flatten(sectionOf(heading()[0]))
+      expect(section, 'nothing says the bass is electric').toMatch(/electric bass/i)
+      expect(section, 'the instrument is not named').toContain('Bass VI')
+      expect(section, 'the sample set behind it is not named').toContain('tagliatelle')
+    })
+
+    it('says nowhere that the app plays a pizzicato contrabass', () => {
+      expect(musicDoc()).not.toMatch(/contrabass/i)
+      expect(musicDoc()).not.toMatch(/pizzicato/i)
     })
 
     it('records that the claves and the rim never sound in the same groove', () => {
@@ -563,6 +592,27 @@ describe('the music document', () => {
       expect(row.join(' | ')).toMatch(/fixed|never varies|clave/i)
       expect(row.join(' | '), 'nothing tells the reader when PLACEMENTS is the answer instead')
         .toMatch(/PLACEMENTS/)
+    })
+
+    // `rowSendingTo` cannot be used here: `add a voice` names `samples/pack.json`
+    // too, and adding a voice is not replacing the instrument behind one. The
+    // label carries the difference, so both cells are matched.
+    it('sends the instrument behind a voice to the sample pack', () => {
+      const rows = routingRows().filter(
+        (cells) =>
+          /instrument|sample set/i.test(cells[0] ?? '') &&
+          /samples\/pack\.json/.test(cells[1] ?? ''),
+      )
+      expect(
+        rows.length,
+        'no routing row sending which instrument a voice is to `samples/pack.json`',
+      ).toBe(1)
+      const row = rows[0]!.join(' | ')
+      expect(row, 'a swapped instrument is a provenance change too').toMatch(
+        /provenance\.json/,
+      )
+      expect(row, 'nothing names the rulebook for preparing and levelling a sample')
+        .toMatch(/samples\/README\.md/)
     })
   })
 

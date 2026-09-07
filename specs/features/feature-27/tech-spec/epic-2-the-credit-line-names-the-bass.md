@@ -3,6 +3,15 @@
 PRD: [../prd/epic-2-the-credit-line-names-the-bass.md](../prd/epic-2-the-credit-line-names-the-bass.md) ·
 Roadmap: [../roadmap.md](../roadmap.md)
 
+> **Dropped — 2026-09-07. Not work owed; this file is the record of a cycle.**
+> Epic 1's audition picked Pastabass `tagliatelle` (Squier Bass VI, pick,
+> flatwounds, muted), which is **CC0 1.0**. Nothing is owed, so
+> `provenance.attributions` stays length 2, the credit under the groove box is
+> unchanged, and no file this spec names is touched. The PRD's R1 and the
+> roadmap both make the epic conditional on a length of 3; at 2 it is dropped,
+> which its own *Out of scope* calls "the right outcome, not a gap".
+> Everything below assumed the CC-BY branch and did not happen.
+
 ## Approach
 
 This epic is one sentence of prose, three links and a count. Its whole difficulty
