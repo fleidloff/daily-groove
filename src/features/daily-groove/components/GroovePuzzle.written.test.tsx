@@ -18,6 +18,7 @@ import {
   GROOVE,
   guess,
   installPuzzleAudio,
+  liveRoot,
   move,
   nudgeLine,
   otherWrongFlavour,
@@ -165,19 +166,20 @@ describe('GroovePuzzle — written pitch', () => {
     expect(dimmedBefore.length).toBeGreaterThanOrEqual(2)
     const moveBefore = move()
     const countBefore = nudgeLine()?.textContent ?? null
-    await user.click(within(rootGroup()).getByRole('button', { name: 'E' }))
+    const selected = liveRoot() as Root
+    await user.click(within(rootGroup()).getByRole('button', { name: selected }))
     await user.click(within(flavourGroup()).getByRole('button', { name: 'Aeolian' }))
     const attemptsBefore = (await createLocalStore().getAll())[0].attempts
 
     await toAlto(user)
 
     expect(dimmed()).toEqual(dimmedBefore.map((r) => ALTO(r as Root)))
-    expect(pressed()).toEqual([ALTO('E')])
+    expect(pressed()).toEqual([ALTO(selected)])
     expect(move()).toBe(moveBefore)
     expect(nudgeLine()?.textContent ?? null).toBe(countBefore)
     expect(control()).toBeEnabled()
     expect(control()).toHaveAccessibleName(
-      coaching.checkPair({ root: ALTO('E'), flavour: 'Aeolian' }),
+      coaching.checkPair({ root: ALTO(selected), flavour: 'Aeolian' }),
     )
     expect((await createLocalStore().getAll())[0].attempts).toEqual(attemptsBefore)
     await expect(createLocalPreferenceStore().get()).resolves.toEqual({
