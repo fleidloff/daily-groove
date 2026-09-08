@@ -81,6 +81,7 @@ not built — the ticket says why.
 | [11](quick/11-no-repeats-within-three-days.md) | No repeats in three days | ✅ Done | Reorders the upcoming grooves so no mode, root or style repeats within three days, with the style shipped in the manifest so the rota can read it. |
 | [12](quick/12-raise-the-dominance-floor.md) | Raise the dominance floor | ✅ Done | Mints six grooves across `open-ballad`, `half-time` and `swung-sixteenth` so the three rarest modes all reach 4, taking the dominance spread from 6.00 to 1.50 and tightening `DOMINANCE_RATIO` 6 → 2 instead of widening it again. |
 | [13](quick/13-change-the-groove-volume.md) | Groove volume | 📝 Drafted | Adds a volume slider that scales every sound the app plays — groove loop, reference note and mode lick — and keeps the level across reloads in `localStorage`. |
+| [14](quick/14-bossa-turnaround-does-not-read.md) | Bossa turnaround | 📝 Drafted | Makes bossa-nova's turnaround audible — today its fill lands twice in sixteen bars and carries only four snare hits on the feel's quietest voice, over an unchanged hat and clave and its sparsest kick figure, so a fill bar can be thinner than the bar before it. First step of a broader pass to make the bossa groove more authentic. |
 
 ---
 
