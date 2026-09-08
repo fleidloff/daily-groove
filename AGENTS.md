@@ -82,6 +82,29 @@ state it owed, and pays it — `✔` or `✳` — when the last one reports back
 - **Only the main session sets it.** Dispatched agents never do; several of them
   run at once and would overwrite each other.
 
+## Nothing is committed until the row says Done
+
+**Never run `git commit`, `git add`, `git push`, or create a branch or stash on
+your own initiative.** Every change stays in the working tree so it can be read
+as one diff.
+
+The one thing that changes that is the **Status** column in
+[specs/features.md](specs/features.md). A feature or a quick ticket is committed
+only once its row reads ✅ **Done** — and the row reaches ✅ only when every
+acceptance criterion is verified, not when the work feels finished. So the order
+is always: build → verify → mark the row → *then* the commit is the user's to
+ask for.
+
+- **A row at 🔨 In progress means do not commit**, however green the suite is.
+- **`/implement-feature` never commits**, and its §0 says so; this generalises
+  that rule to every path, including `/implement-quick-feature`, a fix made by
+  hand, and anything an agent did.
+- **Getting to ✅ is work, not paperwork.** An acceptance criterion graded
+  *partly* keeps the row off ✅, so closing it — writing the missing test,
+  committing an assertion that only lived in scratch — is what unblocks the
+  commit. Say what is standing in the way rather than asking to commit anyway.
+- If a commit is genuinely needed mid-flight to make progress, **stop and ask**.
+
 ## Changing what the grooves sound like
 
 **[docs/music.md](docs/music.md)** — the musical model of the generator under

@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { readFixture } from './eventsFixture.ts'
 import { loadPack } from './pack.ts'
 import { VELOCITIES } from './events.ts'
 import { allTemplates } from './templates/index.ts'
@@ -340,14 +341,26 @@ function nominalOf(layers: VelocityLayer[], at: number): number {
   return ((at === 0 ? 0 : layers[at - 1].maxVelocity) + layer.maxVelocity) / 2
 }
 
-// The register events.ts can ask the pack for, not a measurement of one catalogue.
-// BASS_BASE_MIDI is 24, so inRegister places a root there before BASS_FLOOR_MIDI (28)
-// lifts it, and BASS_CEILING_MIDI is 48. Measured over the working tree's grooves with
-// buildEvents, the bass asks for sounding MIDI 28-48 (feature-27,
-// .implement/audition/layers.md), so `lowest: 24` is the base's worst case rather than a
-// note anything plays, and `highest: 47` sits a semitone under the ceiling. events.ts is
-// untouched by feature-27 (its contract C2), so both numbers stay as written.
-const BASS_PLAYED = { lowest: 24, highest: 47 }
+// The register events.ts can ask the pack for. BASS_BASE_MIDI is 24 and BASS_FLOOR_MIDI
+// is 25, so 25 is exactly the lowest value inRegister can return: `lowest` is a note the
+// catalogue plays, not the base's worst case. `highest: 48` is BASS_CEILING_MIDI and is
+// measured, 102 events deep in the committed event record — the `47` this line carried
+// until feature-28 epic 1 was wrong before that epic touched it.
+const BASS_PLAYED = { lowest: 25, highest: 48 }
+
+// What the catalogue actually asks the pack for, read off the committed byte-identity
+// record of all 54 grooves' event streams rather than re-rendered here.
+function askedBassMidi(): number[] {
+  const midi: number[] = []
+  for (const digest of Object.values(readFixture())) {
+    for (const event of digest.events) {
+      const parts = event.split(':')
+      if (!event.startsWith('bass@') || parts.length < 4) continue
+      midi.push(Number(parts[3]))
+    }
+  }
+  return midi.sort((a, b) => a - b)
+}
 
 // A request inside BASS_PLAYED is served by the nearest sampled note, and R6 caps that
 // distance at 2 semitones, so these are the notes the catalogue can actually be handed.
@@ -444,7 +457,7 @@ describe('the committed pack’s bass', () => {
     }
   })
 
-  it('covers the register the Bass VI has: MIDI 23 up, not the 22 the spec asks for', () => {
+  it('covers the register the Bass VI sampled: MIDI 25 up, and claims no pitch below it', () => {
     const midi = notesOf('bass').map((note) => note.midi)
     const lowest = midi[0]
     const highest = midi[midi.length - 1]
@@ -452,8 +465,18 @@ describe('the committed pack’s bass', () => {
     expect(lowest, 'the lowest sampled note is not the low E tuned down to C#').toBe(25)
     expect(highest + 2, 'the bass does not reach the top of its register').toBeGreaterThanOrEqual(50)
 
+    const asked = askedBassMidi()
+    expect(asked.length, 'the event record holds no bass notes to measure').toBeGreaterThan(0)
+    expect(
+      asked[asked.length - 1],
+      'the catalogue plays a note the played register does not claim',
+    ).toBe(BASS_PLAYED.highest)
+
     expect(BASS_PLAYED.highest).toBeLessThanOrEqual(highest + 2)
-    expect(lowest - BASS_PLAYED.lowest, 'the low octave drops further than 4 semitones below the pack').toBeLessThanOrEqual(4)
+    expect(
+      lowest - BASS_PLAYED.lowest,
+      'the register claims a pitch the recording does not hold — the floor is the lowest sampled note, not the pack’s interpolation limit',
+    ).toBe(0)
   })
 
   it('declares a midi that its measured fundamental agrees with, within half a semitone', () => {

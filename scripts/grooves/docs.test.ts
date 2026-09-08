@@ -1,12 +1,18 @@
 import { readFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 
-import { PLACEMENTS, RIDE_PATTERNS } from './events.ts'
-import { allTemplates } from './templates/index.ts'
+import { readCatalogue } from './catalogue.ts'
+import { PLACEMENTS, RIDE_PATTERNS, buildEvents } from './events.ts'
+import { fixtureKey, readFixture } from './eventsFixture.ts'
+import { rmsDbfs } from './level.ts'
+import { loadPack } from './pack.ts'
+import { allTemplates, templateById } from './templates/index.ts'
 import { FLAVOURS_MAX, FLAVOURS_MIN } from './templates/rules.ts'
-import type { FeelTemplate } from './types.ts'
+import type { FeelTemplate, SamplePack, VoiceName } from './types.ts'
 import { VOICE_NAMES } from './types.ts'
+import { renderVoices } from './voices.ts'
 
 const REPO_ROOT = resolve(import.meta.dirname, '..', '..')
 
@@ -181,6 +187,130 @@ function ridingTemplateIds(): string[] {
     .filter((template) => template.voices.includes('ride'))
     .map((template) => template.id)
     .sort()
+}
+
+const VOICING_HEADING = '## Voicing'
+
+const GROOVE_02 = 'groove-02'
+
+// A pitch a whole octave under another one. Not a repo constant worth importing: the
+// three groove-02 figures the record quotes are one measurement and two octaves down
+// from it, and this is the step between them.
+const OCTAVE = 12
+
+// The floor as the catalogue sounds it, not as a source literal: `BASS_FLOOR_MIDI` is
+// not exported, and the paragraph's claim is about a note that is played anyway — a
+// floor no groove reaches is not one a reader could hear. Read off the committed
+// byte-identity record of all 54 event streams, the way `pack.test.ts` reads it, so
+// nothing here renders audio.
+function bassMidiOf(events: readonly string[]): { at: number; midi: number }[] {
+  return events
+    .filter((event) => event.startsWith('bass@') && event.split(':').length >= 4)
+    .map((event) => ({
+      at: Number(event.slice('bass@'.length).split(':')[0]),
+      midi: Number(event.split(':')[3]),
+    }))
+}
+
+function lowestBassMidi(): number {
+  const midi = Object.values(readFixture()).flatMap((digest) =>
+    bassMidiOf(digest.events).map((note) => note.midi),
+  )
+  expect(midi.length, 'the committed event record holds no bass note to measure')
+    .toBeGreaterThan(0)
+  return Math.min(...midi)
+}
+
+function bassMidiOnBarTwo(id: string): number {
+  const spec = readCatalogue().find((candidate) => candidate.id === id)
+  expect(spec, `${id} is not in the catalogue`).toBeDefined()
+  const digest = readFixture()[fixtureKey(spec!)]
+  expect(digest, `${id} has no entry in the committed event record`).toBeDefined()
+
+  const barSec = (60 / digest!.music.bpm) * 4
+  const notes = bassMidiOf(digest!.events)
+  expect(notes.length, `${id} sounds no pitched bass note`).toBeGreaterThan(0)
+  // Humanize and drift move a downbeat by milliseconds, so beat one of bar two is the
+  // bass note nearest the bar line rather than the one exactly on it.
+  const nearest = notes.reduce((best, note) =>
+    Math.abs(note.at - barSec) < Math.abs(best.at - barSec) ? note : best,
+  )
+  expect(
+    Math.abs(nearest.at - barSec),
+    `${id} sounds no bass note on bar 2 beat 1`,
+  ).toBeLessThan(0.05)
+  return nearest.midi
+}
+
+const SAMPLE_RATE = 44100
+const OVERHANG_BARS = 1
+
+// The three feels whose comp and bass the balance paragraph quotes against each other.
+const BALANCED_FEELS = ['boom-bap', 'second-line', 'straight-funk'] as const
+
+// The paragraph quotes its figures to two decimals, so one unit in its own last place is
+// the tolerance. Half a unit — exact agreement after rounding — would be tighter but
+// flaps: `straight-funk`'s bass median measures −5.5458 and sits 0.0008 dB from the
+// boundary that prints it as −5.55. Both times these four numbers went stale they were
+// out by about 0.3 dB, thirty times this bound, so nothing that has actually gone wrong
+// here could hide inside it.
+const QUOTED_PLACES = 2
+const QUOTED_TOLERANCE_DB = 0.01
+
+let samples: Promise<SamplePack> | null = null
+function pack(): Promise<SamplePack> {
+  samples ??= loadPack(fileURLToPath(new URL('./samples', import.meta.url)))
+  return samples
+}
+
+function median(values: number[]): number {
+  const sorted = [...values].sort((a, b) => a - b)
+  const half = sorted.length / 2
+  return sorted.length % 2 === 1 ? sorted[Math.floor(half)] : (sorted[half - 1] + sorted[half]) / 2
+}
+
+// The same measurement `templates/boom-bap.test.ts` and `second-line.test.ts` make with
+// their own `harmonyOverKick`: post-gain track RMS against the kick, per committed
+// groove, median over the feel's own. Duplicated rather than imported because those two
+// files own their assertions and this one owns the document's figures.
+async function harmonyOverKick(id: string): Promise<{ comp: number; bass: number }> {
+  const template = templateById(id)
+  const specs = readCatalogue().filter((spec) => spec.template === id)
+  expect(specs.length, `${id} has no committed grooves to measure`).toBeGreaterThan(0)
+
+  const rendered = await pack()
+  const comp: number[] = []
+  const bass: number[] = []
+
+  for (const spec of specs) {
+    const { events, music } = buildEvents(spec, template)
+    const tracks = renderVoices(events, rendered, SAMPLE_RATE, {
+      id: spec.id,
+      bars: music.loopBars,
+      bpm: music.bpm,
+      passes: music.loopBars / music.bars,
+      overhangBars: OVERHANG_BARS,
+    })
+    const level = (voice: VoiceName) => {
+      const track = tracks.find((candidate) => candidate.voice === voice)
+      if (!track) throw new Error(`${spec.id} renders no ${voice}`)
+      return rmsDbfs(track.pcm) + (template.gain[voice] as number)
+    }
+    comp.push(level('comp') - level('kick'))
+    bass.push(level('bass') - level('kick'))
+  }
+
+  return { comp: median(comp), bass: median(bass) }
+}
+
+let balance: Promise<Map<string, { comp: number; bass: number }>> | null = null
+function measuredBalance(): Promise<Map<string, { comp: number; bass: number }>> {
+  balance ??= (async () => {
+    const measured = new Map<string, { comp: number; bass: number }>()
+    for (const feel of BALANCED_FEELS) measured.set(feel, await harmonyOverKick(feel))
+    return measured
+  })()
+  return balance
 }
 
 describe('the music document', () => {
@@ -638,6 +768,179 @@ describe('the music document', () => {
         expect(bullet, `${label} is not named`).toContain(label)
       }
     })
+  })
+
+
+  // AC16 — R28 and R29. The Voicing paragraph carries three claims that were false the
+  // day the floor moved to 25 and one that was never written down, and nothing in this
+  // file had ever read it. Four cases, one per clause of the criterion.
+  describe('the bass register', () => {
+    const voicing = () => sentencesOf(sectionOf(VOICING_HEADING))
+
+    const sentenceMatching = (patterns: RegExp[], what: string): string => {
+      const sentence = voicing().find((candidate) =>
+        patterns.every((pattern) => pattern.test(candidate)),
+      )
+      expect(sentence, `nothing under "${VOICING_HEADING}" ${what}`).toBeDefined()
+      return sentence!
+    }
+
+    it('states the floor as the lowest note the bass sounds, in MIDI and by name', () => {
+      const floor = lowestBassMidi()
+      const sentence = sentenceMatching([/hard floor/i], 'states a hard floor')
+      expect(
+        sentence,
+        `the catalogue's lowest bass note is MIDI ${floor}, and the floor is quoted as something else`,
+      ).toMatch(new RegExp(`\`${floor}\``))
+      expect(sentence, 'the floor is stated as a number and never named as a pitch').toContain(
+        'C♯1',
+      )
+      expect(sentence, 'nothing says the floor is a note the library sampled').toMatch(/sampled/)
+    })
+
+    it('says why the floor is a sampled note and not the pack’s interpolation limit', () => {
+      const floor = lowestBassMidi()
+      const sentence = sentenceMatching(
+        [/interpolation/i],
+        'distinguishes the floor from the pack’s interpolation limit',
+      )
+      expect(sentence, 'the reason is not that the floor is a sampled note').toMatch(/sampled/)
+      // Two semitones is the shift `samples/pack.test.ts` allows a pitched voice, so this
+      // is the note a reader would otherwise reach for. Derived from the floor, so moving
+      // the floor reddens the reasoning as well as the figure above it.
+      expect(
+        sentence,
+        'the note the reader would otherwise reach for is not named',
+      ).toContain(`MIDI ${floor - 2}`)
+    })
+
+    it('claims the four-string low E nowhere as the floor, and lists C alone as coming up an octave', () => {
+      expect(
+        musicDoc(),
+        'the phrase the floor used to be stated as is still in the document',
+      ).not.toMatch(/open low E/i)
+      expect(
+        sentencesOf(musicDoc()).filter(
+          (sentence) => /\blow E\b/.test(sentence) && /floor/i.test(sentence),
+        ),
+        'a sentence still states the four-string low E as the bass floor',
+      ).toEqual([])
+      expect(
+        musicDoc(),
+        'the four pitch classes that came up an octave at the old floor are still listed',
+      ).not.toMatch(/C, C♯, D and D♯/)
+
+      const sentence = sentenceMatching(
+        [/comes? up an octave/],
+        'says which roots come up an octave',
+      )
+      const named = [
+        ...new Set(
+          [...sentence.matchAll(/\b([A-G][♯♭]?)\d?\b/g)].map((match) => match[1]),
+        ),
+      ]
+      expect(named, 'a root other than C is still said to come up an octave').toEqual(['C'])
+    })
+
+    it('explains groove-02’s bar 2 beat 1 rather than leaving it as an oversight', () => {
+      const sounded = bassMidiOnBarTwo(GROOVE_02)
+      // The section names groove-02 twice — here and again as one of the 31 lifted
+      // downbeats — and only the resolution mentions the floor.
+      const sentence = sentenceMatching(
+        [new RegExp(GROOVE_02), /floor/i],
+        `resolves ${GROOVE_02} against the floor`,
+      )
+      expect(sentence, 'the bar and the beat are not named').toMatch(/bar 2 beat 1/)
+      for (const [figure, what] of [
+        [sounded, 'the pitch the note actually sounds'],
+        [sounded - OCTAVE, 'the pitch the root folds to before the lift'],
+        [sounded - 2 * OCTAVE, 'the pitch under the floor that is out of reach'],
+      ] as const) {
+        expect(sentence, `${what} (${figure}) is not quoted`).toMatch(
+          new RegExp(`\\b${figure}\\b`),
+        )
+      }
+      expect(
+        sentence,
+        'nothing says the note is left alone on purpose rather than missed',
+      ).toMatch(/deliberate/i)
+    })
+  })
+
+  // The four medians in this paragraph have gone stale twice — once when feature-27
+  // swapped the bass, once when this epic lowered the floor — and were corrected by hand
+  // both times. Measured here instead, so the third time is a red test.
+  describe('the kit-against-band balance figures', () => {
+    const balanceParagraph = (): string => {
+      const paragraph = sectionOf(FEELS_HEADING)
+        .split('\n\n')
+        .map(flatten)
+        .find((block) => /against their own kick/.test(block))
+      expect(paragraph, 'no paragraph about the kit-against-band balance').toBeDefined()
+      return paragraph!
+    }
+
+    // Signed, two decimals: the dB figures the paragraph quotes, and not the swing, the
+    // tolerance or the whole-dB offsets it also names.
+    const quotedFigures = (): number[] =>
+      [...balanceParagraph().matchAll(/[-−]\d+\.\d{2}(?!\d)/g)].map((match) =>
+        Number(match[0].replace('−', '-')),
+      )
+
+    it('names the three feels it compares, and quotes one figure per feel and voice', async () => {
+      const paragraph = balanceParagraph()
+      for (const feel of BALANCED_FEELS) {
+        expect(paragraph, `${feel} is not named in the paragraph`).toContain(`\`${feel}\``)
+      }
+      expect(
+        quotedFigures().length,
+        'the paragraph quotes something other than a comp and a bass median per feel',
+      ).toBe((await measuredBalance()).size * 2)
+    }, 120_000)
+
+    // The paragraph's own summary claim, and the one figure in it that is a threshold
+    // rather than a measurement. It holds regardless of which quoted figure the prose
+    // hangs on which feel, which is the half the two cases above do not pin.
+    it('keeps the two re-gained feels inside the deviation it claims', async () => {
+      const claimed = /inside (\d+(?:\.\d+)?) dB on all four/.exec(balanceParagraph())
+      expect(claimed, 'the paragraph claims no bound on the deviation').not.toBeNull()
+      const bound = Number(claimed![1])
+
+      const measured = await measuredBalance()
+      const reference = measured.get('straight-funk')
+      expect(reference, 'straight-funk is the feel the other two are measured against')
+        .toBeDefined()
+
+      const over: string[] = []
+      for (const [feel, levels] of measured) {
+        if (feel === 'straight-funk') continue
+        for (const voice of ['comp', 'bass'] as const) {
+          const deviation = Math.abs(levels[voice] - reference![voice])
+          if (deviation > bound) {
+            over.push(`${feel} ${voice} sits ${deviation.toFixed(QUOTED_PLACES)} dB off straight-funk's, past the ${bound} dB the paragraph claims`)
+          }
+        }
+      }
+      expect(over).toEqual([])
+    }, 120_000)
+
+    it('quotes the comp and bass medians the three feels actually render', async () => {
+      const stale: string[] = []
+      for (const [feel, measured] of await measuredBalance()) {
+        for (const voice of ['comp', 'bass'] as const) {
+          const value = measured[voice]
+          const quoted = quotedFigures().find(
+            (figure) => Math.abs(figure - value) <= QUOTED_TOLERANCE_DB,
+          )
+          if (quoted === undefined) {
+            stale.push(
+              `${feel} ${voice} renders ${value.toFixed(QUOTED_PLACES)} dB over its kick, and no figure the paragraph quotes is within ${QUOTED_TOLERANCE_DB} dB of it`,
+            )
+          }
+        }
+      }
+      expect(stale).toEqual([])
+    }, 120_000)
   })
 
   describe('the feathered kick', () => {

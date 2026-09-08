@@ -42,7 +42,7 @@ const BASS_OCTAVE_LIFT = 12
 
 const BASS_CEILING_MIDI = 48
 
-const BASS_FLOOR_MIDI = 28
+const BASS_FLOOR_MIDI = 25
 
 const BASS_REST_CHANCE = 0.18
 const BASS_REPEAT_CHANCE = 0.4
@@ -356,9 +356,9 @@ function ghostSteps(steps: number[], subdivision: number): number[] {
   return out
 }
 
-function inRegister(midi: number, base: number): number {
+function inRegister(midi: number, base: number, floor: number): number {
   const placed = base + (((midi % 12) + 12) % 12)
-  return placed < BASS_FLOOR_MIDI ? placed + 12 : placed
+  return placed < floor ? placed + 12 : placed
 }
 
 function inCompRegister(midi: number): number {
@@ -433,10 +433,46 @@ function pitchClass(midi: number): number {
   return ((Math.round(midi) % 12) + 12) % 12
 }
 
+// Test-only. The bass register's three floor-dependent decision sites, reported
+// so a test can compare the decisions across two floors instead of guessing them
+// back out of final pitches — which cannot be done, because the pop and the lift
+// both leave a note at 37-39 whatever the floor was.
+// scripts/grooves/bassFloor.test.ts is the only consumer.
+export type BassDecisions = {
+  pops: {
+    bar: number
+    index: number
+    step: number
+    folded: number
+    wants: boolean
+    can: boolean
+    final: number
+  }[]
+  approaches: {
+    bar: number
+    target: number
+    wantsBelow: boolean
+    belowOk: boolean
+    approach: number
+  }[]
+  lifts: { bottom: number; bar: number; step: number; from: number; to: number }[]
+}
+
+// Test-only, and nothing on the normal path passes one: every production caller
+// of buildEvents takes two arguments, so the floor is BASS_FLOOR_MIDI and no
+// decisions are collected.
+export type BuildEventsOptions = {
+  bassFloorMidi?: number
+  decisions?: BassDecisions
+}
+
 export function buildEvents(
   spec: GrooveSpec,
   template: FeelTemplate,
+  options: BuildEventsOptions = {},
 ): { events: NoteEvent[]; music: MusicMeta; harmony: Harmony } {
+  const bassFloor = options.bassFloorMidi ?? BASS_FLOOR_MIDI
+  const decisions = options.decisions
   if (template.patterns) assertPatterns(template, PLACEMENTS)
   if (template.figures) assertFigures(template)
 
@@ -597,7 +633,7 @@ export function buildEvents(
       const drop = rhythmRng()
 
       if (i === 0) {
-        const root = inRegister(chord[0], BASS_BASE_MIDI)
+        const root = inRegister(chord[0], BASS_BASE_MIDI, bassFloor)
         previousBass = root
         notes.push({ step, midi: root })
         return
@@ -608,10 +644,14 @@ export function buildEvents(
       if (repeat < BASS_REPEAT_CHANCE && previousBass !== null) {
         midi = previousBass
       } else {
-        midi = inRegister(chord[i % chord.length], BASS_BASE_MIDI)
-        if (drop < BASS_OCTAVE_CHANCE && midi + BASS_OCTAVE_LIFT <= BASS_CEILING_MIDI) {
+        midi = inRegister(chord[i % chord.length], BASS_BASE_MIDI, bassFloor)
+        const folded = midi
+        const wants = drop < BASS_OCTAVE_CHANCE
+        const can = midi + BASS_OCTAVE_LIFT <= BASS_CEILING_MIDI
+        if (wants && can) {
           midi += BASS_OCTAVE_LIFT
         }
+        decisions?.pops.push({ bar: barInPass, index: i, step, folded, wants, can, final: midi })
       }
       previousBass = midi
       notes.push({ step, midi })
@@ -623,10 +663,12 @@ export function buildEvents(
       bassFigure.push(notes)
       continue
     }
-    const target = inRegister(nextRoot, BASS_BASE_MIDI)
+    const target = inRegister(nextRoot, BASS_BASE_MIDI, bassFloor)
     const approachStep = template.subdivision - 1
-    const approach =
-      direction < 0.5 && target - 1 >= BASS_FLOOR_MIDI ? target - 1 : target + 1
+    const wantsBelow = direction < 0.5
+    const belowOk = target - 1 >= bassFloor
+    const approach = wantsBelow && belowOk ? target - 1 : target + 1
+    decisions?.approaches.push({ bar: barInPass, target, wantsBelow, belowOk, approach })
     previousBass = approach
     approaches.add(bassFigure.length)
     bassFigure.push(
@@ -676,7 +718,15 @@ export function buildEvents(
     )
   if (liftable.length > 0) {
     const highest = liftable.reduce((high, note) => (note.midi > high.midi ? note : high))
+    const from = highest.midi
     highest.midi += BASS_OCTAVE_LIFT
+    decisions?.lifts.push({
+      bottom,
+      bar: bassFigure.findIndex((notes) => notes.includes(highest)),
+      step: highest.step,
+      from,
+      to: highest.midi,
+    })
   }
 
   const repeatsSomewhere = () => {

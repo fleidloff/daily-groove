@@ -35,7 +35,7 @@ import { FIGURE_BARS_PER_PASS, PATTERN_GRID } from './patterns.ts'
 import { fixtureKey, readFixture, serialiseEvent, serialiseGroove } from './eventsFixture.ts'
 import { intBetween, pick, rngFor } from './rng.ts'
 import { readCatalogue } from './catalogue.ts'
-import { ROOTS } from '../../src/lib/theory/roots.ts'
+import { ROOTS, pitchClassOf } from '../../src/lib/theory/roots.ts'
 import { allTemplates, templateById } from './templates/index.ts'
 import { buildHarmony, pitchClassesOf } from './theory/harmony.ts'
 import { pitchesOf, scaleName } from '../../src/lib/theory/scales.ts'
@@ -228,7 +228,7 @@ describe('buildEvents — the instrumentation', () => {
       const { events } = buildEvents({ ...spec, seed }, template)
       for (const event of events) {
         if (event.voice === 'bass') {
-          expect(event.midi).toBeGreaterThanOrEqual(28)
+          expect(event.midi).toBeGreaterThanOrEqual(25)
           expect(event.midi).toBeLessThanOrEqual(48)
         }
         if (event.voice === 'comp') {
@@ -237,6 +237,51 @@ describe('buildEvents — the instrumentation', () => {
         }
       }
     }
+  })
+
+  it('bottoms out on the pack’s lowest sampled note, and still lifts C — R1, R2, AC1', () => {
+    const bassMidis = readCatalogue().flatMap((groove) =>
+      buildEvents(groove, templateById(groove.template))
+        .events.filter((event) => event.voice === 'bass')
+        .map((event) => event.midi as number),
+    )
+    expect(Math.min(...bassMidis), 'the floor is not the lowest sampled note').toBe(25)
+    expect(
+      bassMidis.filter((midi) => midi % 12 === 0 && midi < 36),
+      'C no longer comes up an octave',
+    ).toEqual([])
+    expect(bassMidis, 'C2 is never played').toContain(36)
+  })
+
+  it('puts a C♯, D or E♭ root on the low string — R4, AC3', () => {
+    const LOW_ROOTED = new Set(['C♯', 'D', 'E♭'])
+    const found: string[] = []
+    for (const groove of readCatalogue()) {
+      const { events, music } = buildEvents(groove, templateById(groove.template))
+      if (!LOW_ROOTED.has(music.root)) continue
+      found.push(groove.id)
+      const downbeat = events
+        .filter((event) => event.voice === 'bass')
+        .reduce((first, event) => (event.timeSec < first.timeSec ? event : first))
+      const where = `${groove.id} rooted ${music.root}`
+      expect(downbeat.midi, where).toBe(24 + pitchClassOf(music.root))
+      expect(downbeat.midi, where).toBeGreaterThanOrEqual(25)
+      expect(downbeat.midi, where).toBeLessThanOrEqual(27)
+    }
+    expect(found, 'the twelve low-rooted grooves').toEqual([
+      'groove-03',
+      'groove-09',
+      'groove-14',
+      'groove-17',
+      'groove-18',
+      'groove-19',
+      'groove-40',
+      'groove-42',
+      'groove-50',
+      'groove-51',
+      'groove-53',
+      'groove-73',
+    ])
   })
 })
 
@@ -548,7 +593,7 @@ describe('buildEvents — every template renders', () => {
           const { events } = buildEvents({ id: 'g', uuid: UUID, template: feel.id, seed }, feel)
           for (const event of events) {
             if (event.voice === 'bass') {
-              expect(event.midi, feel.id).toBeGreaterThanOrEqual(24)
+              expect(event.midi, feel.id).toBeGreaterThanOrEqual(25)
               expect(event.midi, feel.id).toBeLessThanOrEqual(48)
             }
             if (event.voice === 'comp') {

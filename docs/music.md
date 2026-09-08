@@ -203,14 +203,16 @@ the root; they are the two voices carrying the answer, and a mix that buries the
 not a stylistic choice this app can afford. Both feels' kits were dropped by a uniform
 offset — 7 dB on `boom-bap`, 5 dB on `second-line`, which had the same defect one step
 less severe — so every relationship inside each kit is exactly the one that was
-declared, and only the kit-against-band balance moved. Both now measure comp −2.42 dB
-(`boom-bap`) and −2.61 dB (`second-line`) and bass −5.19 and −5.16 dB against their own
-kick, against `straight-funk`'s comp −2.69 and bass −5.25 — inside 0.3 dB on all four,
+declared, and only the kit-against-band balance moved. Both now measure comp −2.41 dB
+(`boom-bap`) and −2.61 dB (`second-line`) and bass −5.51 and −5.59 dB against their own
+kick, against `straight-funk`'s comp −2.69 and bass −5.55 — inside 0.3 dB on all four,
 which is what `templates/boom-bap.test.ts` and `second-line.test.ts` assert, at a 1.5 dB
 tolerance, against `straight-funk` rather than against a literal. The bass figures were
-re-measured when feature-27 swapped the upright for a picked electric, and came back
-*closer* to `straight-funk`'s than the upright's were; the comp figures did not move,
-because the comp did not.
+re-measured when feature-27 swapped the upright for a picked electric, and again at the
+MIDI 25 floor feature-28 lowered the register to — both times *closer* to
+`straight-funk`'s than the upright's were, because a floor that quietens every feel's
+bass alike moves the deviation barely at all; the comp figures did not move, because the
+comp did not.
 `boom-bap`'s comp plays one stab a bar, on an even sixteenth, so the chord lands
 unswung while the kit swings at 0.34 around it. Two
 passes, so there is no middle pass and the loop declares a fill bar and no
@@ -323,17 +325,63 @@ turnaround rim that its fill drops.
 ## Voicing
 
 **Bass** — `BASS_BASE_MIDI = 24` (C1), deliberately below the instrument's floor
-so roots that fit down there sit down there; only C, C♯, D and D♯ come up an
-octave. Hard floor at `28` (the open low E of a four-string; an electric is what
-ships, and the figure would be the same on an upright) — the octave move is
+so roots that fit down there sit down there; only C comes up an octave, to C2,
+which is the lowest C a four-string plays. Hard floor at `25` — C♯1, 34.76 Hz,
+the lowest note the Squier Bass VI library sampled — and the octave move is
 *skipped*, never clamped, because a note pushed back up to the floor is a
-different note. Ceiling `48`, under the comp.
+different note. The floor is a **sampled** note and not the pack's interpolation
+limit: MIDI 23 sits inside the two-semitone shift `samples/pack.test.ts` allows a
+pitched voice, and is not a note this instrument has, so the register claims no
+pitch the recording does not hold and there is nothing down there to reach for.
+Ceiling `48`, under the comp. groove-02 bar 2 beat 1 reads like something the
+floor missed and is not: its B folds to 35 and `BASS_OCTAVE_LIFT` takes it to 47,
+under the ceiling, while B0 is MIDI 23 — below the lowest sampled note and
+unreachable from a floor at 25 — so that note is deliberately unchanged, a
+ceiling-and-pop matter rather than a floor one.
 
 Three things a bass player does that an arpeggiator does not, drawn per note:
-rest (`0.18`), repeat (`0.4`), octave lift (`0.32`). **The downbeat is exempt
-from all three** — always the bar's root, in the base octave. It anchors the bar,
-the comp's rootless voicing depends on it, and an approach note in the bar before
-resolves onto it.
+rest (`0.18`), repeat (`0.4`), octave lift (`0.32`). **None of the three is drawn
+for the downbeat** (`events.ts:599-604`), so the figure is built with the bar's
+root on beat one, in the base octave. It anchors the bar, the comp's rootless
+voicing depends on it, and an approach note in the bar before resolves onto it.
+
+**It does not always stay there, and this document used to say it did.** The
+sentence above used to read "always the bar's root, in the base octave", and that
+was **wrong** rather than imprecise, so it is retracted here instead of softened.
+A later site — the **always-lift** — guarantees the line moves by an octave
+somewhere in the four bars: it takes the highest note that sits above the figure's
+own lowest and has room under `48`, and lifts it (`events.ts:672-680`). Its filter
+excludes the approach note and **not the downbeat**, so a downbeat root is a legal
+pick, and measured over the committed catalogue **31 of the 54 lifts land on one** —
+ten of them in bar 1, and all five C-rooted grooves taking that bar's 36 to the
+ceiling at 48. The groove-02 reading above is one of the 31: bar 2 beat 1 is a
+downbeat. What the lift cannot reach is a root that folds to 25–27, because those
+*are* the figure's lowest note, which is why the low-rooted grooves state their root
+low on every bar.
+
+Nothing in the repo records whether that is a defect or the arrangement, and this
+paragraph does not settle it. What is on the record is a listening: fourteen of the
+twenty renders `gate.test.ts`'s sign-off table pins contain a lifted downbeat root,
+`groove-01` among them, so it has been heard and approved rather than shipped
+unheard. **The reading here is that it stays, documented, and is not worth a
+re-render.** A bass player does state a root up the octave; the lifted note is still
+seven semitones under the comp's floor; and the comp drops its root either way,
+because `playedVoicing` compares pitch classes and not pitches. Against that, the
+one thing genuinely lost is the bar's low anchor in the bar it lands on, ten times
+out of fifty-four on bar 1 — position zero of the file, where a player hears the
+tonic first. Anyone who decides that matters should know the price before opening a
+ticket: `index > 0` on the filter is one clause, and every one of the 31 has another
+note to lift instead, so no groove loses its octave move — but it moves audio in 31
+grooves, voids fourteen sign-offs and re-renders the catalogue. That is a change with
+a listening gate on it, not a tidy-up.
+
+The approach note is a semitone from the next bar's root, drawn below or above
+(`events.ts:626-629`): below when the draw asks for it, and
+**below gives way to above whenever a semitone below would fall under the
+floor** — so exactly one pitch class is never approached from below, whichever
+fold lands on the floor, and the floor at 25 moves that one from E to C♯. No
+ceiling twin is needed: `target` is `inRegister(nextRoot, 24)` and tops out at
+36, so a semitone above it never comes near `48`.
 
 **Comp** — folded into a fixed window, MIDI `55–76`, so a groove in B does not
 sit a major seventh above one in C. The ceiling keeps it out of the soloist's
@@ -410,8 +458,8 @@ Every failure names the check *and* the value measured.
 | Density | events per bar inside the feel's declared band |
 
 The loudness band is wide on purpose. Measured over the committed catalogue, single
-renders reach −26.2 dB (`half-time`'s quietest) and −21.1 dB (`straight-funk`'s
-loudest), and the per-feel medians sit well inside that, −24.3 dB (`shuffle`) to
+renders reach −26.3 dB (`half-time`'s quietest) and −21.1 dB (`straight-funk`'s
+loudest), and the per-feel medians sit well inside that, −24.6 dB (`shuffle`) to
 −22.2 dB (`second-line`) — so most of the spread is between grooves of one feel
 rather than between feels. Before feature-27 this document read −27.1 dB
 (`half-time`) to −21.4 dB (`bossa-nova`) over a sixty-candidate pool: the same

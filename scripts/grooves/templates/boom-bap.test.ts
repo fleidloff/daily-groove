@@ -234,12 +234,12 @@ describe('boom-bap mix — A3, R3, AC3', () => {
   //
   // Tolerance. The six committed grooves spread about 4 dB between them (comp −3.84 …
   // +0.23 against the kick), so only the median reads the balance rather than one
-  // groove's voicing. Re-measured on the picked electric bass feature-27 swapped in,
-  // the medians are comp −2.42 / bass −5.19 against straight-funk's −2.69 / −5.25:
-  // deviations of 0.27 and 0.07 dB. The larger is still the comp's, which the bass swap
-  // did not touch, and it is the same 0.27 dB the contrabass measured — so 1.5 dB is
-  // five times the larger of the two and leaves 1.23 dB of room above it, still four
-  // times tighter than the floor's slack.
+  // groove's voicing. Re-measured at the MIDI 25 bass floor feature-28 lowered the
+  // register to, the medians are comp −2.41 / bass −5.51 against straight-funk's
+  // −2.69 / −5.55: deviations of 0.27 and 0.04 dB. The larger is still the comp's,
+  // which neither the bass swap nor the lower floor touched, and it is the same 0.27 dB
+  // the contrabass measured — so 1.5 dB is five times the larger of the two and leaves
+  // 1.23 dB of room above it, still four times tighter than the floor's slack.
   it('puts its comp and its bass where straight-funk puts them, over the six that shipped', async () => {
     const mine = await harmonyOverKick('boom-bap')
     const funk = await harmonyOverKick('straight-funk')

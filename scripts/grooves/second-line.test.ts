@@ -589,9 +589,10 @@ describe('second-line harmony balance — the mix the harmony verdict bought', (
   //
   // Tolerance. The six committed grooves spread about 2 dB between them (comp −4.03 …
   // −2.23 against the kick), so only the median reads the balance rather than one
-  // groove's voicing. Re-measured on the picked electric bass feature-27 swapped in,
-  // the medians are comp −2.61 / bass −5.16 against straight-funk's −2.69 / −5.25:
-  // deviations of 0.08 and 0.09 dB, so 1.5 dB leaves 1.41 dB of room above the larger.
+  // groove's voicing. Re-measured at the MIDI 25 bass floor feature-28 lowered the
+  // register to, the medians are comp −2.61 / bass −5.59 against straight-funk's
+  // −2.69 / −5.55: deviations of 0.08 and 0.04 dB, so 1.5 dB leaves 1.42 dB of room
+  // above the larger.
   it('puts its comp and its bass where straight-funk puts them, over the six that shipped', async () => {
     const mine = await harmonyOverKick('second-line')
     const funk = await harmonyOverKick('straight-funk')
