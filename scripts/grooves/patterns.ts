@@ -21,20 +21,50 @@ export const FIGURE_BARS_PER_PASS = 4
 // events.ts' PLACEMENTS, seen through the one line this file cares about.
 export type PlacementTable = Record<string, { snare?: number[]; [key: string]: unknown }>
 
-const FLAT_POOLS = ['kick', 'hatClosed', 'bass', 'comp', 'snareGhosts'] as const
+// comp is routed to assertPhrasePool instead: its figures may span bars.
+const FLAT_POOLS = ['kick', 'hatClosed', 'bass', 'snareGhosts'] as const
 
 function fail(templateId: string, subject: string, detail: string): never {
   throw new Error(`${templateId}: ${subject} ${detail}`)
 }
 
-function assertSteps(templateId: string, subject: string, steps: number[]): void {
+function assertSteps(templateId: string, subject: string, steps: number[], bars = 1): void {
+  const limit = PATTERN_GRID * bars
   for (const step of steps) {
-    if (!Number.isInteger(step) || step < 0 || step >= PATTERN_GRID) {
+    if (!Number.isInteger(step) || step < 0 || step >= limit) {
+      fail(templateId, subject, `has step ${step}, outside the 0…${limit - 1} sixteenth grid`)
+    }
+  }
+}
+
+function barsSpanned(figure: number[]): number {
+  return Math.floor(Math.max(...figure) / PATTERN_GRID) + 1
+}
+
+// The comp is the one pool whose figures may run past the first bar: a step of 18 is
+// bar 2's step 2. Nothing else buckets by bar at emission, so nothing else may.
+function assertPhrasePool(templateId: string, subject: string, pool: number[][]): void {
+  if (pool.length === 0) fail(templateId, subject, 'is an empty pool')
+  for (const figure of pool) {
+    if (figure.length === 0) fail(templateId, subject, 'holds a figure with no steps')
+    assertSteps(templateId, subject, figure, FIGURE_BARS_PER_PASS)
+
+    const bars = barsSpanned(figure)
+    if (FIGURE_BARS_PER_PASS % bars !== 0) {
       fail(
         templateId,
         subject,
-        `has step ${step}, outside the 0…${PATTERN_GRID - 1} sixteenth grid`,
+        `holds a ${bars}-bar figure, which does not divide the ${FIGURE_BARS_PER_PASS}-bar pass`,
       )
+    }
+    for (let bar = 0; bar < bars; bar += 1) {
+      if (!figure.some((step) => Math.floor(step / PATTERN_GRID) === bar)) {
+        fail(
+          templateId,
+          subject,
+          `holds a ${bars}-bar figure whose bar ${bar + 1} sounds nothing, and a bar has to state its chord`,
+        )
+      }
     }
   }
 }
@@ -107,7 +137,9 @@ export function assertPatterns(
 
   for (const voice of PATTERN_VOICES) {
     if (pools[voice] === undefined) continue
-    if ((FLAT_POOLS as readonly string[]).includes(voice)) {
+    if (voice === 'comp') {
+      assertPhrasePool(template.id, 'patterns.comp', pools.comp as number[][])
+    } else if ((FLAT_POOLS as readonly string[]).includes(voice)) {
       assertFlatPool(template.id, `patterns.${voice}`, pools[voice] as number[][])
     } else if (voice === 'ride') {
       assertRidePool(template.id, pools.ride as Partial<Record<Subdivision, number[][]>>)
@@ -130,6 +162,14 @@ export function assertPatterns(
 function assertFigure(templateId: string, figure: FixedFigure): void {
   const subject = `figures.${figure.voice}`
 
+  if (figure.voice === 'bass' || figure.voice === 'comp') {
+    fail(
+      templateId,
+      subject,
+      'names a pitched voice: a figure emits no midi, so the chord would sound at the sample’s ' +
+        `root pitch — declare patterns.${figure.voice} instead`,
+    )
+  }
   if (figure.voice === 'snare') {
     fail(templateId, subject, 'may not name the snare, which comes from placement.snare or patterns.kit')
   }

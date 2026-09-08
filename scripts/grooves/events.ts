@@ -107,7 +107,7 @@ export const RIDE_ACCENTS = [1, 0.9, 0.95]
 
 export const RIDE_SUSTAIN_SIXTEENTHS = 8
 
-const COMP_ACCENTS = [1.12, 1, 0.88, 1.12, 0.88]
+export const COMP_ACCENTS = [1.12, 1, 0.88, 1.12, 0.88]
 
 function clampVelocity(velocity: number): number {
   return Math.min(1, Math.max(MIN_VELOCITY, velocity))
@@ -330,6 +330,20 @@ function scaleStep(step: number, subdivision: number): number {
   return Math.min(subdivision - 1, Math.round((step * subdivision) / PATTERN_RESOLUTION))
 }
 
+// A pool figure may run past its first bar: step 18 is bar 2's step 2. Splitting it
+// here is what lets one drawn figure span bars while the emission stays per bar.
+export function figureBars(steps: number[], subdivision: number): number[][] {
+  const bars = Math.floor(Math.max(...steps) / PATTERN_RESOLUTION) + 1
+  return Array.from({ length: bars }, (_, bar) =>
+    gridSteps(
+      steps.filter((step) => Math.floor(step / PATTERN_RESOLUTION) === bar).map(
+        (step) => step % PATTERN_RESOLUTION,
+      ),
+      subdivision,
+    ),
+  )
+}
+
 export function gridSteps(steps: number[], subdivision: number): number[] {
   const seen = new Set<number>()
   const out: number[] = []
@@ -497,7 +511,7 @@ export function buildEvents(
     pick(rhythmRng, pools?.hatClosed ?? (rides ? HAT_PUNCTUATION_PATTERNS : HAT_PATTERNS)),
   )
   const bassSteps = grid(pick(rhythmRng, pools?.bass ?? BASS_PATTERNS))
-  const compSteps = grid(pick(rhythmRng, pools?.comp ?? COMP_PATTERNS))
+  const compPhrase = figureBars(pick(rhythmRng, pools?.comp ?? COMP_PATTERNS), template.subdivision)
 
   const ridePool = (pools?.ride ?? RIDE_PATTERNS)[template.subdivision]
   if (rides && !ridePool) {
@@ -559,12 +573,17 @@ export function buildEvents(
     hatAccents.set(step, HAT_ACCENTS[index % HAT_ACCENTS.length])
   })
 
-  const compIndex = new Map<number, number>()
-  compSteps.forEach((step, index) => {
-    compIndex.set(step, index)
-  })
+  // The accent cycle indexes the hit's position in the whole phrase rather than in the
+  // bar, so a two-bar figure gives its second bar a different shape from its first. It
+  // restarts each phrase, not each bar: only `pass` walks the pair.
+  const compPhraseOffsets = compPhrase.reduce<number[]>(
+    (offsets, bar) => [...offsets, offsets[offsets.length - 1] + bar.length],
+    [0],
+  )
+  const compAccent = (position: number, pass: number) =>
+    COMP_ACCENTS[(position + pass) % COMP_ACCENTS.length]
 
-  const accentedVelocity = (voice: VoiceName, step: number, sixteenth: number, pass = 0) => {
+  const accentedVelocity = (voice: VoiceName, step: number, sixteenth: number) => {
     const base = velocityFor(voice, sixteenth)
     if (voice === 'hatClosed' || voice === 'hatOpen') {
       return clampVelocity(base * (hatAccents.get(step) ?? 1))
@@ -572,10 +591,7 @@ export function buildEvents(
     if (voice === 'ride') {
       return clampVelocity(base * (rideAccents.get(step) ?? 1))
     }
-    if (voice !== 'comp') return base
-    const index = compIndex.get(step)
-    if (index === undefined) return base
-    return clampVelocity(base * COMP_ACCENTS[(index + pass) % COMP_ACCENTS.length])
+    return base
   }
 
   const secPerBeat = 60 / bpm
@@ -866,9 +882,13 @@ export function buildEvents(
       if (plays('comp')) {
         const voicing = compFigure[barInPass]
         const spread = voicing.length > 1 ? compSpreadSec / (voicing.length - 1) : 0
-        for (const step of compSteps) {
+        const phraseBar = barInPass % compPhrase.length
+        compPhrase[phraseBar].forEach((step, inBar) => {
           const sixteenth = (step * PATTERN_RESOLUTION) / template.subdivision
-          const base = accentedVelocity('comp', step, sixteenth, pass)
+          const base = clampVelocity(
+            velocityFor('comp', sixteenth) *
+              compAccent(compPhraseOffsets[phraseBar] + inBar, pass),
+          )
           voicing.forEach((midi, index) => {
             const below = voicing.length - 1 - index
             add(
@@ -881,7 +901,7 @@ export function buildEvents(
               index * spread,
             )
           })
-        }
+        })
       }
     }
 

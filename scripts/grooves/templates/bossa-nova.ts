@@ -23,7 +23,7 @@ export const bossaNova: FeelTemplate = {
     snare: -16,
     hatClosed: -13,
     rim: -9,
-    bass: -22.2,
+    bass: -21.2,
     comp: -8.1,
   },
   pan: {
@@ -52,11 +52,16 @@ export const bossaNova: FeelTemplate = {
       [0, 6, 8],
       [0, 8, 14],
     ],
+    // Two bars each, against a clave that alternates over two. Bar one of every
+    // figure is what it always was; only the answering bar is new. Step 14 is barred
+    // throughout: a comp note lasts a quarter and takes the current bar's voicing, so
+    // a hit on the "and" of 4 is the old chord ringing into the new one, not an
+    // anticipation. Flat notation — bar two is the written step plus 16.
     comp: [
-      [0, 6, 12],
-      [2, 6, 12],
-      [0, 6],
-      [2, 8, 12],
+      [0, 6, 12, 18, 22, 26],
+      [2, 6, 12, 16, 28],
+      [0, 6, 18, 26],
+      [2, 8, 12, 16, 22, 26],
     ],
     snareGhosts: [
       [3, 11],

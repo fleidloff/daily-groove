@@ -145,6 +145,33 @@ describe('assertPatterns', () => {
     expect(() => assertPatterns(withPatterns({ bass: [[0, 15]] }))).not.toThrow()
   })
 
+  describe('a comp figure may span bars — quick-15', () => {
+    it('takes a step past the first bar, where every other pool still refuses one', () => {
+      expect(() => assertPatterns(withPatterns({ comp: [[0, 6, 18, 26]] }))).not.toThrow()
+      expect(() => assertPatterns(withPatterns({ comp: [[0, 16, 32, 63]] }))).not.toThrow()
+      for (const voice of ['kick', 'hatClosed', 'bass', 'snareGhosts'] as const) {
+        expect(() => assertPatterns(withPatterns({ [voice]: [[0, 16]] })), voice).toThrow(/16/)
+      }
+    })
+
+    it('still rejects a step past the four bars of a pass, quoting it', () => {
+      expect(() => assertPatterns(withPatterns({ comp: [[0, 64]] }))).toThrow(/64/)
+      expect(() => assertPatterns(withPatterns({ comp: [[-1]] }))).toThrow(/-1/)
+      expect(() => assertPatterns(withPatterns({ comp: [[2.5]] }))).toThrow(/2\.5/)
+    })
+
+    it('rejects a length that does not divide the pass, naming the bar count', () => {
+      expect(() => assertPatterns(withPatterns({ comp: [[0, 16, 32]] }))).toThrow(/3/)
+      expect(() => assertPatterns(withPatterns({ comp: [[0, 16, 32]] }))).toThrow(/comp/)
+      expect(() => assertPatterns(withPatterns({ comp: [[0, 16, 32, 48]] }))).not.toThrow()
+    })
+
+    it('rejects a bar that sounds nothing, because the bar must state its chord', () => {
+      expect(() => assertPatterns(withPatterns({ comp: [[0, 6, 36, 52]] }))).toThrow(/comp/)
+      expect(() => assertPatterns(withPatterns({ comp: [[0, 6, 36, 52]] }))).toThrow(/bar 2/)
+    })
+  })
+
   it('keeps the bongos, the ride and the kit to their own shapes', () => {
     expect(() =>
       assertPatterns(withPatterns({ bongos: [{ high: [3, 11], low: [16] }] })),
@@ -226,6 +253,17 @@ describe('assertFigures', () => {
     expect(() => assertFigures(withFigures([{ voice: 'rim', bars: [[16]] }]))).toThrow(/16/)
     expect(() => assertFigures(withFigures([{ voice: 'rim', bars: [[-1]] }]))).toThrow(/-1/)
     expect(() => assertFigures(withFigures([{ voice: 'rim', bars: [[2.5]] }]))).toThrow(/2\.5/)
+  })
+
+  it('rejects a pitched figure, because a figure carries no midi — quick-15', () => {
+    for (const voice of ['comp', 'bass'] as const) {
+      expect(() => assertFigures(withFigures([{ voice, bars: [[0, 6], [2, 8]] }])), voice).toThrow(
+        new RegExp(voice),
+      )
+      expect(() => assertFigures(withFigures([{ voice, bars: [[0, 6], [2, 8]] }])), voice).toThrow(
+        /pitched|midi/i,
+      )
+    }
   })
 
   it('rejects a snare figure, because the snare has two sources already', () => {

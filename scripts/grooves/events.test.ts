@@ -24,8 +24,10 @@ import {
   RIDE_LABEL,
   RIDE_PATTERNS,
   RIDE_SUSTAIN_SIXTEENTHS,
+  COMP_ACCENTS,
   VELOCITIES,
   buildEvents,
+  figureBars,
   gridSteps,
   middlePassOf,
   playedVoicing,
@@ -1741,6 +1743,42 @@ describe('every template’s density band admits its own grooves', () => {
   }
 })
 
+// quick-15 D1. Nothing else pins the decode: the bossa tests check that the pool holds
+// two-bar figures and that bar 2 differs from bar 1, all of which a wrong bucketing —
+// `step % 2`, say — would still satisfy.
+describe('figureBars — a flat figure splits into the bars it names — quick-15', () => {
+  it('reads bar from step >> 4 and position from step & 15', () => {
+    expect(figureBars([0, 6, 12, 18, 22, 26], 8)).toEqual([
+      [0, 3, 6],
+      [1, 3, 5],
+    ])
+    expect(figureBars([2, 6, 12, 16, 28], 8)).toEqual([
+      [1, 3, 6],
+      [0, 6],
+    ])
+  })
+
+  it('leaves a single-bar figure exactly as gridSteps left it', () => {
+    for (const figure of [[0, 6, 12], [2, 8, 12], [0, 4, 8, 12], [3, 11]]) {
+      expect(figureBars(figure, 8), `${figure}`).toEqual([gridSteps(figure, 8)])
+      expect(figureBars(figure, 16), `${figure} at 16`).toEqual([gridSteps(figure, 16)])
+    }
+  })
+
+  it('keeps the written order irrelevant and the bar count derived from the highest step', () => {
+    expect(figureBars([26, 0, 18, 6], 8)).toEqual(figureBars([0, 6, 18, 26], 8))
+    expect(figureBars([0, 16, 32, 48], 8)).toHaveLength(4)
+    expect(figureBars([0, 15], 16)).toHaveLength(1)
+    expect(figureBars([0, 16], 16)).toHaveLength(2)
+  })
+
+  it('grids each bar on its own, so a squashed collision cannot cross a barline', () => {
+    // 5 and 6 both round to eighth-step 3 and dedupe; 21 and 22 are that pair one bar
+    // up, and must dedupe within their own bar rather than against bar one's.
+    expect(figureBars([5, 6, 21, 22], 8)).toEqual([[3], [3]])
+  })
+})
+
 describe('buildEvents — the comp stops being perfect — R1, R2, R3, R4, R5, R6, R7, R8', () => {
   const dry = (feel: FeelTemplate = template): FeelTemplate => ({
     ...feel,
@@ -1784,6 +1822,58 @@ describe('buildEvents — the comp stops being perfect — R1, R2, R3, R4, R5, R
   const topOf = (chord: Chord) => chord.notes[chord.notes.length - 1].velocity
 
   const classOf = (sixteenth: number) => sixteenth % 4
+
+  // quick-15 D5. The cycle is five long and indexes the hit's position in the whole
+  // phrase, so a two-bar figure gives its second bar a different shape from its first.
+  // A per-bar restart would give both bars the same one, which is what this catches.
+  it('runs COMP_ACCENTS across the whole phrase, not from zero each bar — quick-15', () => {
+    const twoBar: FeelTemplate = {
+      ...dry(),
+      id: 'two-bar-comp',
+      subdivision: 8,
+      patterns: { comp: [[0, 4, 8, 16, 20, 24]] },
+    }
+    const chords = compChords(twoBar, 1).filter((chord) => chord.bar < 2)
+    expect(chords, 'the phrase did not sound six chords over its two bars').toHaveLength(6)
+
+    // All six sit on a quarter, so velocityFor hands every one the same `strong` base
+    // and the ratios below are the accent and nothing else.
+    expect(
+      new Set(chords.map((chord) => chord.sixteenth % 4)),
+      'the six hits do not share one metric class, so these ratios are not accents alone',
+    ).toEqual(new Set([0]))
+
+    const ratios = chords.map((chord) => topOf(chord) / topOf(chords[0]))
+    for (const [i, ratio] of ratios.entries()) {
+      expect(ratio, `hit ${i} takes COMP_ACCENTS[${i % COMP_ACCENTS.length}]`).toBeCloseTo(
+        COMP_ACCENTS[i % COMP_ACCENTS.length] / COMP_ACCENTS[0],
+        6,
+      )
+    }
+    // The fifth hit is where the two readings part. Bar two's opening hit cannot tell
+    // them apart — COMP_ACCENTS[3] and COMP_ACCENTS[0] are both 1.12 — but its second
+    // hit is 0.88 continued against 1 restarted.
+    expect(ratios[4], 'bar two restarted the cycle at COMP_ACCENTS[1]').not.toBeCloseTo(
+      COMP_ACCENTS[1] / COMP_ACCENTS[0],
+      6,
+    )
+  })
+
+  it('leaves a one-bar comp figure indexing from zero in every bar — quick-15', () => {
+    const oneBar: FeelTemplate = {
+      ...dry(),
+      id: 'one-bar-comp',
+      subdivision: 8,
+      patterns: { comp: [[0, 4, 8]] },
+    }
+    const chords = compChords(oneBar, 1)
+    const barOne = chords.filter((chord) => chord.bar === 0).map(topOf)
+    expect(barOne).toHaveLength(3)
+    expect(
+      chords.filter((chord) => chord.bar === 1).map(topOf),
+      'a one-bar figure stopped repeating its accent shape bar to bar',
+    ).toEqual(barOne)
+  })
 
   it('strikes two chords of one step class differently — R1, R2, AC1, AC2', () => {
     for (const feel of allTemplates()) {

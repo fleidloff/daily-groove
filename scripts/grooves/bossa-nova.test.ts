@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { readCatalogue } from './catalogue.ts'
 import {
   BARS_PER_PASS,
+  figureBars,
   DEFAULT_PLACEMENT,
   PATTERN_RESOLUTION,
   buildEvents,
@@ -101,6 +102,82 @@ describe('bossa-nova over the catalogue — feature-25 R21, R23, AC14, AC16', ()
         `${groove.spec.id} rim strokes`,
       ).toBe(8 * CLAVE[0].length + 8 * CLAVE[1].length)
     }
+  })
+
+  describe('the comp answers the clave over two bars — quick-15', () => {
+    const compIn = (groove: Rendered, bar: number) => groove.bars[bar].get('comp') ?? []
+
+    it('declares a pool of two-bar phrases, every bar sounding', () => {
+      const pool = feel.patterns?.comp
+      expect(pool, 'bossa-nova stopped declaring its own comp pool').toBeDefined()
+      for (const figure of pool!) {
+        expect(Math.max(...figure) >> 4, `${figure} is not two bars`).toBe(1)
+        for (const bar of [0, 1]) {
+          expect(
+            figure.some((step) => step >> 4 === bar),
+            `${figure} sounds nothing in bar ${bar + 1}`,
+          ).toBe(true)
+        }
+      }
+    })
+
+    it('plays a different comp bar against each side of the clave, in all six', () => {
+      for (const groove of rendered) {
+        const odd = compIn(groove, 0)
+        const even = compIn(groove, 1)
+        expect(odd.length, `${groove.spec.id} bar 1 comps nothing`).toBeGreaterThan(0)
+        expect(even.length, `${groove.spec.id} bar 2 comps nothing`).toBeGreaterThan(0)
+        expect(even, `${groove.spec.id} repeats bar 1 in bar 2`).not.toEqual(odd)
+      }
+    })
+
+    it('repeats the two-bar phrase across the whole loop, fills included', () => {
+      for (const groove of rendered) {
+        for (let bar = 0; bar < BARS; bar++) {
+          expect(compIn(groove, bar), `${groove.spec.id} bar ${bar}`).toEqual(
+            compIn(groove, bar % 2),
+          )
+        }
+      }
+    })
+
+    // The emission site reads compPhrase[barInPass % length]. figureBars' own tests
+    // cannot see a swap there — they never reach the bar loop — and the two accent
+    // tests use a synthetic figure whose bars are identical, so a (barInPass + 1)
+    // ordering survives both. This is the assertion that names it.
+    it('sounds the phrase’s first bar first, not its second — quick-15', () => {
+      const pool = feel.patterns!.comp!.map((figure) => figureBars(figure, feel.subdivision))
+      const asSixteenths = (steps: number[]) =>
+        steps.map((step) => step * (PATTERN_RESOLUTION / feel.subdivision))
+
+      for (const groove of rendered) {
+        const drawn = pool.filter(
+          (phrase) => String(asSixteenths(phrase[0])) === String(compIn(groove, 0)),
+        )
+        expect(drawn, `${groove.spec.id} bar 1 matches no pool entry read forwards`).toHaveLength(1)
+        expect(compIn(groove, 1), `${groove.spec.id} bar 2`).toEqual(asSixteenths(drawn[0][1]))
+        expect(
+          pool.some((phrase) => String(asSixteenths(phrase[1])) === String(compIn(groove, 0))),
+          `${groove.spec.id} bar 1 is some pool entry's second bar — the phrase is reversed`,
+        ).toBe(false)
+      }
+    })
+
+    it('states the chord inside the first two eighths of every bar', () => {
+      for (const groove of rendered) {
+        for (let bar = 0; bar < BARS; bar++) {
+          expect(Math.min(...compIn(groove, bar)), `${groove.spec.id} bar ${bar}`).toBeLessThanOrEqual(2)
+        }
+      }
+    })
+
+    it('never comps on the "and" of 4, where the voicing is still the old bar’s', () => {
+      for (const groove of rendered) {
+        for (let bar = 0; bar < BARS; bar++) {
+          expect(compIn(groove, bar), `${groove.spec.id} bar ${bar}`).not.toContain(AND_OF_FOUR)
+        }
+      }
+    })
   })
 
   it('keeps the shared rim placement suppressed, fills included — R21, AC14', () => {

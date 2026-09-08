@@ -1015,6 +1015,22 @@ const FEATURE_28_SCOPE_LEGACY =
 //
 // Questions 1 and 2 are open and unanswered. If either is later answered against the
 // pack, these pins go void and this table is what will say so.
+// Quick-15's two-bar bossa comp, and the gain.bass raise −22.2 → −21.2 that followed it
+// in the same session. Both changes re-rendered the same six grooves, so one verdict
+// covers both and neither can be re-pinned without the other.
+const QUICK_15_APPROVAL = 'the grooves sound good'
+
+const QUICK_15_SCOPE =
+  'Said of bossa-nova on 2026-09-08, after the two changes above landed together: ' +
+  'quick-15 rewrote patterns.comp as four two-bar phrases, and gain.bass then rose ' +
+  '−22.2 → −21.2 when he asked for the bass. He did not say which of the six he ' +
+  'played, so what is claimed is that bossa grooves were played and approved — the ' +
+  'same limit the feature-28 entries carry, and the reason this scope field exists. ' +
+  'An earlier sentence in the same session, “yes, gain is fine now”, is not this ' +
+  'verdict and is not quoted as one: it settled the level, this one is about the ' +
+  'grooves. What it does not cover: the two questions feature-27 left open, still ' +
+  'open, and no device was recorded.'
+
 const SIGN_OFFS: SignOff[] = [
   {
     // Pinned 2026-09-07 by feature-27 epic 1's listening pass — the first entry this
@@ -1509,25 +1525,26 @@ const SIGN_OFFS: SignOff[] = [
     // mp3 stays null for the reason given on groove-40; the file that was played,
     // public/grooves/groove-57.mp3, hashes to
     // 4ca2a621b6641396e373b3c28b0b5ad57b4e1419766ee5af95ca6576c27ee722 (716 007 bytes),
-    // and this render reproduces it byte for byte.
+    // and that render reproduced it byte for byte. Quick-15 re-rendered it twice — once
+    // by the two-bar comp, once by gain.bass −22.2 → −21.2 — and the file standing at
+    // that path on 2026-09-08, at the same byte length, is
+    // f4b0f2efab3e70f20335d2b6268af9dab89be605b4724f47aad65f92fb0bb1a3. This render
+    // reproduces that one. "Standing at that path", not "played": the scope field below
+    // records that he did not say which of the six bossa grooves he put on, and this
+    // sentence may not quietly claim it was this one.
     id: 'groove-57',
-    pcm: 'ecdda52be74afe7328b2d0a239182140582e6611447310f22a6135c135b252ed',
+    pcm: 'a4e21b50b827277251d8431e7e1b54608dbf830406e8c8b1340aa3ab199e8843',
     mp3: null,
     file: 'public/grooves/groove-57.mp3',
-    approval: FEATURE_28_APPROVAL_GAIN,
-    scope:
-      FEATURE_28_SCOPE_GAIN +
-      ' Two earlier verdicts on this groove exist and neither is quoted: gate A’s, which ' +
-      'was the complaint this raise answered, and session 3’s, given while the file on ' +
-      'disk was still the pre-raise render. An approval is something a person gave about ' +
-      'a particular render, and both of those renders are gone.',
+    approval: QUICK_15_APPROVAL,
+    scope: QUICK_15_SCOPE,
     upstream:
       'events.ts’s BASS_FLOOR_MIDI (25) — the constant feature-28 moved, and the first ' +
       'place to look when this fails — as much as samples/pack.json’s Pastabass ' +
       'tagliatelle set or the rim, kick and snare alternates — the bossa clave in ' +
       'bossa-nova’s figures block, its patterns pools for kick, hatClosed, bass, comp ' +
       'and snareGhosts, FILLS[bossa-nova], DEFAULT_PLACEMENT, or the template’s ' +
-      'gain.bass (−22.2), its other gains, pan or humanize block',
+      'gain.bass (−21.2), its other gains, pan or humanize block',
   },
   {
     // Re-pinned 2026-09-07 for feature-27 epic 1's bass swap, in the words below. The
@@ -1547,22 +1564,29 @@ const SIGN_OFFS: SignOff[] = [
     // public/grooves/groove-58.mp3, hashes to
     // da9ff088a644ac7f34d39e9c30b99a7b05447b9c33e3457778405fffc9d0af56 (689 675 bytes),
     // and that render reproduced it byte for byte on 2026-09-07. Feature-28 re-rendered
-    // it twice — once by the floor, once by bossa-nova's −22.2. The file played on
-    // 2026-09-08, at the same path and the same byte length, is
-    // 7cc6b04f74e339c9cf94f29b8027ce0733b9d36c938babea60afe301f574cd2b, and this render reproduces
-    // that one.
+    // it twice — once by the floor, once by bossa-nova's −22.2. The file standing at
+    // that path on 2026-09-08, at the same byte length, was
+    // 7cc6b04f74e339c9cf94f29b8027ce0733b9d36c938babea60afe301f574cd2b. Quick-15 then
+    // re-rendered it twice more — the two-bar comp, then gain.bass −22.2 → −21.2 — and
+    // the file standing there later the same day, at the same byte length, is
+    // 80e8072853a05a95cb25eecc26a379e2242eab31d126478f9f3d7d6966ab05c2. This render
+    // reproduces that one. "Standing there", not "played": the scope field below records
+    // that he did not say which of the six bossa grooves he put on. The nine other
+    // entries in this table still say "the file played on", inherited from feature-28
+    // and carrying the same overclaim; quick-15 re-pinned only these two and left the
+    // rest rather than editing entries it had not re-measured.
     id: 'groove-58',
-    pcm: 'fb261c62a2da452debf6c47f3037443610eb8cc3548768beaac6ba26c8d7f2f7',
+    pcm: '18e55cb0d774d078386df17383a3883eb3071e38ffeb12ab26c263c5a372c3b3',
     mp3: null,
     file: 'public/grooves/groove-58.mp3',
-    approval: FEATURE_28_APPROVAL_LEGACY,
-    scope: FEATURE_28_SCOPE_LEGACY,
+    approval: QUICK_15_APPROVAL,
+    scope: QUICK_15_SCOPE,
     upstream:
       'samples/pack.json — the bass’s Pastabass tagliatelle set as much as the comp’s ' +
       'single dyn2 layer or the rim, kick and snare alternates — the bossa clave in ' +
       'bossa-nova’s figures block, its patterns pools for kick, hatClosed, bass, comp ' +
       'and snareGhosts, FILLS[bossa-nova], DEFAULT_PLACEMENT, or the template’s ' +
-      'gain.bass (−22.2), its other gains, pan or humanize block',
+      'gain.bass (−21.2), its other gains, pan or humanize block',
   },
   {
     // Re-pinned 2026-09-07 for feature-27 epic 1's bass swap, in the words below. The
