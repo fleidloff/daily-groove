@@ -179,7 +179,7 @@ pair and not one more, which is what dropping the rule bought.
 | `shuffle` | 78–92 | 8 | 0.64 | blues, aeolian | 4 | 16–38 | ride |
 | `half-time` | 68–80 | 16 | 0.28 | phrygian, harmonic-minor | 2 | 14–48 | hat |
 | `bright-straight` | 116–132 | 8 | 0.06 | lydian, ionian | 4 | 17–40 | hat |
-| `open-ballad` | 62–74 | 8 | 0.02 | melodic-minor, lydian-dominant | 2 | 8–30 | hat |
+| `open-ballad` | 62–74 | 16 | 0.02 | melodic-minor, lydian-dominant | 2 | 27–37 | hat |
 | `bossa-nova` | 122–138 | 8 | 0.01 | ionian, lydian, dorian, melodic-minor | 4 | 20–36 | hat |
 | `second-line` | 88–96 | 16 | 0.22 | mixolydian, blues, ionian, harmonic-major | 4 | 21–30 | hat |
 | `boom-bap` | 86–92 | 16 | 0.34 | dorian, aeolian, phrygian | 2 | 17–33 | hat |

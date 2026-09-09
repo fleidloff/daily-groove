@@ -32,6 +32,9 @@ const UNCHANGED = [
 
 // AC5, R6. The sites where floor 28 folded to 37-39 and failed `midi + 12 <= 48`,
 // and floor 25 folds to 25-27, passes, and pops back to the pitch it already had.
+// Thirteen since quick-18, which gave open-ballad its own bass pool on the sixteenth
+// grid: groove-49 and groove-77 are open-ballad and contribute the three new sites.
+// Every one still lands on 37-39, which is the claim; only the count moved.
 const UNBLOCKED_POPS = [
   'groove-08 bar0 step5 -> 37',
   'groove-08 bar3 step5 -> 37',
@@ -40,7 +43,10 @@ const UNBLOCKED_POPS = [
   'groove-34 bar3 step6 -> 39',
   'groove-40 bar1 step6 -> 39',
   'groove-42 bar3 step3 -> 38',
+  'groove-49 bar3 step10 -> 38',
   'groove-75 bar3 step10 -> 37',
+  'groove-77 bar1 step10 -> 37',
+  'groove-77 bar2 step6 -> 38',
   'groove-82 bar0 step14 -> 38',
   'groove-82 bar2 step8 -> 39',
 ]
@@ -175,16 +181,16 @@ describe('AC4 — 48 grooves move and these six do not', () => {
     expect(changed).toHaveLength(48)
   })
 
-  it('moves 508 bass notes and nothing that is not a bass note', () => {
+  it('moves 506 bass notes and nothing that is not a bass note', () => {
     expect(nonBassDifferences).toBe(0)
-    expect(bassDifferences).toBe(508)
+    expect(bassDifferences).toBe(506)
   })
 
   it('keeps every event count, so no draw moved with the floor', () => {
     expect(countMismatches).toEqual([])
     const total = (side: Built[]) => side.reduce((sum, g) => sum + g.lines.length, 0)
-    expect(total(after)).toBe(20135)
-    expect(total(before)).toBe(20135)
+    expect(total(after)).toBe(20489)
+    expect(total(before)).toBe(20489)
   })
 })
 
@@ -223,13 +229,13 @@ describe('AC5, R6 — the octave pop is unchanged', () => {
 
   it('draws the pop from the same rhythm stream at both floors, at the same sites', () => {
     expect(moved).toEqual([])
-    expect(wantToPop).toBe(71)
+    expect(wantToPop).toBe(75)
   })
 
-  it('unblocks ten sites, and they are these ten', () => {
+  it('unblocks thirteen sites, and they are these thirteen', () => {
     expect(unblocked.slice().sort()).toEqual(UNBLOCKED_POPS)
-    expect(firedBefore).toBe(61)
-    expect(firedAfter).toBe(71)
+    expect(firedBefore).toBe(62)
+    expect(firedAfter).toBe(75)
   })
 
   it('changes the sounding pitch at none of the sites where a pop fires', () => {
@@ -238,7 +244,7 @@ describe('AC5, R6 — the octave pop is unchanged', () => {
 
   it('lands every unblocked pop on 37, 38 or 39, the pitch the higher floor already sounded', () => {
     const landings = unblocked.map((site) => Number(site.split(' -> ')[1]))
-    expect(landings).toHaveLength(10)
+    expect(landings).toHaveLength(13)
     for (const midi of landings) expect(midi).toBeGreaterThanOrEqual(37)
     for (const midi of landings) expect(midi).toBeLessThanOrEqual(39)
   })

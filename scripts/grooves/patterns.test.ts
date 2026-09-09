@@ -13,7 +13,6 @@ import type { FeelTemplate, FixedFigure, PatternPools } from './types.ts'
 import {
   brightStraight,
   halfTime,
-  openBallad,
   shuffle,
   straightFunk,
   swungSixteenth,
@@ -203,8 +202,11 @@ describe('assertPatterns', () => {
   })
 })
 
-describe('the six committed templates', () => {
-  const committed = [straightFunk, shuffle, brightStraight, halfTime, openBallad, swungSixteenth]
+// Five, not six: quick-18 gave open-ballad its own pools and a hatOpen figure, so it
+// left this list. The claim is unchanged for the ones still in it — these feels draw
+// their rhythm from the shared pools in events.ts and state no fixed figure.
+describe('the templates that declare nothing of their own', () => {
+  const committed = [straightFunk, shuffle, brightStraight, halfTime, swungSixteenth]
 
   it('declares no pattern block and no fixed figure', () => {
     for (const template of committed) {

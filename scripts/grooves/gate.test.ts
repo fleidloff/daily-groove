@@ -696,6 +696,23 @@ const FEATURE_28_APPROVAL_ANCHORS =
 // and swung-sixteenth's six at −19.5.
 const FEATURE_28_APPROVAL_GAIN = 'all sound good now. Thanks a lot'
 
+// Quick-18's open-ballad rebuild: subdivision 8 → 16, its own hat, kick, bass and comp
+// pools, a hatOpen figure marking bars 4 and 8, and FILLS['open-ballad'] closing a bar
+// that had no hi-hat at all. It re-rendered all five open-ballad grooves and no other
+// feel, and moved no answer — every one keeps its bpm, root, mode and progression.
+const QUICK_18_APPROVAL =
+  'listened to the new grooves. All sound very good and more interesting than before'
+
+const QUICK_18_SCOPE =
+  'Said of open-ballad on 2026-09-09, after the rebuild above. “The new grooves” is ' +
+  'the five this ticket re-rendered — groove-49, groove-51, groove-77, groove-78 and ' +
+  'groove-79 — which is what had just been played to him and the only audio that ' +
+  'moved; it is read as covering all five and no more. “More interesting than before” ' +
+  'is a comparative against audio he had heard, which is what makes it worth quoting: ' +
+  'the complaint that opened the ticket was his own, that this feel was boring. What it ' +
+  'does not cover: no device was recorded, nothing was asked about level or balance, ' +
+  'and the flavour monoculture the ticket measured and left alone was not put to him.'
+
 // Session 5 — the seven feature-27 entries the anchor rule does not make anchors.
 const FEATURE_28_APPROVAL_LEGACY =
   'listened to all 7. All sound good. I think what the bass does sounds more like a ' +
@@ -1791,12 +1808,19 @@ const SIGN_OFFS: SignOff[] = [
     // and that render reproduced it byte for byte on 2026-09-07. Feature-28 re-rendered
     // it: the file played on 2026-09-08, at the same path and the same byte length, is
     // 914649abe5576e9b277e91acf2fa86dff3ba004b69b93fbfbb151a7d36419487, and this render reproduces that one.
+    //
+    // Re-pinned 2026-09-09 for quick-18's open-ballad rebuild, in QUICK_18_APPROVAL's
+    // words. The feature-28 pin it replaces was c30c0e2c…4ba1, and that render no longer
+    // exists: the feel is on the sixteenth grid now. The file at this path is
+    // e01966c037bd41eacc3d04d2a115ebe0a65b87721d4037be0b8a4f3bd16046d0, still 710 364
+    // bytes — the third render in a row at that length. This entry's scope names the
+    // grooves that were played, so it carries no "standing at that path" caveat.
     id: 'groove-78',
-    pcm: 'c30c0e2cdeb45514f658f583d0c54efdbde47e34f2c91c46b8af624a0c094ba1',
+    pcm: '18eb6cdb36e4601c7165b783124344b33b5969e032ee526dd73c4fce574ea37b',
     mp3: null,
     file: 'public/grooves/groove-78.mp3',
-    approval: FEATURE_28_APPROVAL_LEGACY,
-    scope: FEATURE_28_SCOPE_LEGACY,
+    approval: QUICK_18_APPROVAL,
+    scope: QUICK_18_SCOPE,
     upstream:
       'samples/pack.json — the bass’s Pastabass tagliatelle set as much as the comp’s ' +
       'single dyn2 layer or the tom and snare alternates — KICK_PATTERNS, HAT_PATTERNS, ' +
@@ -1829,12 +1853,18 @@ const SIGN_OFFS: SignOff[] = [
     // public/grooves/groove-79.mp3, hashes to
     // 5cbf8cc890c942abc2bddeae42f9a14de50424437abb0a02731142cbc1e0fe4b (679 017 bytes),
     // and this render reproduces it byte for byte.
+    //
+    // Re-pinned 2026-09-09 for quick-18, for the reason given on groove-78. The
+    // feature-28 pin it replaces was 295ebd07…918a; the file at this path is
+    // 1fa15e4a455cbf014eb1a5a19211683c7fd2ff95ecb5552ba8ade7aa09118bb2, still 679 017
+    // bytes. Its old scope's one reservation was about groove-57's level under a
+    // different feature and does not travel to this verdict.
     id: 'groove-79',
-    pcm: '295ebd0715b33a4d3f08f3becd3d3e35a0f47a86727d409e305ac24d11fd918a',
+    pcm: '57d7ad8188c11a39dfc6a87b5daaa4006ac453ad597795b5fcaaf71d437af543',
     mp3: null,
     file: 'public/grooves/groove-79.mp3',
-    approval: FEATURE_28_APPROVAL_SPAN,
-    scope: FEATURE_28_SCOPE_SPAN,
+    approval: QUICK_18_APPROVAL,
+    scope: QUICK_18_SCOPE,
     upstream:
       'events.ts’s BASS_FLOOR_MIDI (25) — the constant feature-28 moved, and the first ' +
       'place to look when this fails — as much as samples/pack.json’s Pastabass ' +

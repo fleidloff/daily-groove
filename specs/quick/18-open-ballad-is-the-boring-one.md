@@ -220,3 +220,45 @@ Member 2 keeps step 15 on purpose: it chokes the figure's open hat 220 ms later,
 **Size test, re-run against all four answers: passes.** Question 3 passes outright now that the flavour ask is dropped — `subdivision`, `patterns`, `figures`, `density` and `FILLS` are all off the frozen list. Question 1 lands on five: the grid move, the four pools, the `figures` entry, `FILLS['open-ballad']`, and the re-render with its two re-pins. One module, one revert. **The waiver in `## What` is not spent.**
 
 **Verdict: settled. No question is open.**
+
+## Built
+
+* `scripts/grooves/templates/open-ballad.ts` — `subdivision: 8 → 16`, and its own `patterns` for `hatClosed` (3), `kick` (5), `bass` (4) and `comp` (4, two of them two-bar). `figures` marks the hat open at 14, and at 10 and 14 in the fourth bar of each pass. `density` `{8, 30}` → `{27, 37}`.
+* `scripts/grooves/events.ts` — new `FILLS['open-ballad']`. It closes the defect `## Notes` found rather than adding a gesture: `DEFAULT_FILL` names no `hatClosed`, so this feel's last bar had no hi-hat at all. It names no `hatOpen` either, because the figure plays through fills and `add` does not dedupe.
+* `scripts/grooves/gate.test.ts` — groove-78 and groove-79 re-pinned on the listening verdict below. New `QUICK_18_APPROVAL` / `QUICK_18_SCOPE`; `PENDING_SIGN_OFFS` untouched and still empty.
+* `scripts/grooves/open-ballad.test.ts` — **new**, 13 tests.
+* `scripts/grooves/bassFloor.test.ts` — six measurements re-taken and `UNBLOCKED_POPS` 10 → 13 sites.
+* `scripts/grooves/events.test.ts` — the pinned comp mean and `PRE_EPIC_COMP['groove-49']`, both commented with what moved and why.
+* `scripts/grooves/patterns.test.ts` — open-ballad left the "declares no pattern block and no fixed figure" list, which is five templates now.
+* `docs/music.md` — the feel table's open-ballad row.
+* `scripts/grooves/events.fixture.json` regenerated. Five mp3s and `grooves.lock.json` re-rendered by a full `npm run grooves`. **`grooves.generated.ts` unmodified.**
+
+**Measured after.** Events/sec per groove: 8.38 · 8.99 · 9.48 · 9.81 · 10.28, mean **9.39** against 7.02 before. open-ballad goes from the emptiest of nine to third-emptiest, and its *floor* of 8.38 now beats half-time's 7.50 and boom-bap's 7.57 — so it is no longer the emptiest at the floor, the quartile or the median. **Not at every quantile**, and the exception is worth naming: its maximum of 10.28 is still the *lowest maximum* of the nine feels, so its busiest groove is quieter than any other feel's busiest. An earlier draft of this line claimed "no longer the emptiest at any quantile", which does not follow from a floor comparison and is false at the top. Per bar 30.00–35.25 against a declared 27–37; a 4000-seed sweep gives 28.38–35.75, so the band holds. RMS: groove-78 −21.99, groove-79 −23.25 dBFS.
+
+**No committed answer moved**, checked three ways: all five grooves' bpm, root, mode and progression compared identical; `grooves.generated.ts` came out unmodified; and `events.test.ts`'s own `leaves the answer alone when a rhythm pool changes` passes. The verifier then re-derived it a fourth way, comparing the whole `music` and `harmony` objects including `progressionMidi`. It also corrected one of those legs: `headDelaySeconds` is `0.025057` for **every** groove in the catalogue, so an unmodified manifest says nothing about the delay — it is an encoder constant. The answer half of that leg stands.
+
+**tests:**
+* `open-ballad.test.ts` — the pool's figures stay distinct once gridded, which is the whole reason for the subdivision move and was a no-op before it; the hat reaches an odd sixteenth, which the eighth grid made unreachable; no closed hat under an open one, asserted both over the render and **statically over every pool member**; the figure opens twice in bars 4 and 8 and once elsewhere; the fill bar keeps its hat; the fill names no `hatOpen`; and the ticket's own payload — no longer the emptiest style per second, measured over the whole registry.
+* Plus R7/AC7's guarantee asserted at its mechanism — `COMP_ACCENTS` averages to exactly one — for the reason two paragraphs down.
+
+**checks:** lint clean · `tsc --noEmit` clean · `npm test` 3057 · `npm run test:gen` 1585 · `npm run build` exit 0 · `npm run grooves:verify` clean.
+
+**The verifier's three findings, all taken.**
+
+* **A test I re-pinned had stopped testing anything.** `events.test.ts`'s `PRE_EPIC_MEAN_VELOCITY` compares each pre-feature-22 feel's comp mean against its value before that feature. open-ballad's moved 5.0% against a 2% tolerance for a reason unrelated to feature-22, and re-pinning made the comparison self-satisfied — my first comment claimed the opposite. The pin stays as a tripwire with the consequence written down instead of denied, and R7/AC7's claim is restored in `open-ballad.test.ts`. **My first attempt at that restoration was also wrong**, and the second verifier pass caught it: it compared a humanized render to a dry one, but the dry override zeroes `humanize` while `COMP_ACCENTS` is applied on both sides (`events.ts:940`), so it measured a zero-mean gaussian rather than the accent curve — and it did not assert the "varies" half at all. It is now asserted at the mechanism instead: `COMP_ACCENTS` averages to exactly one, with one accent above the centre and one below. Pool-, seed- and feel-independent, and mutation-checked by raising an accent.
+* **A mutation survived.** Putting steps 10 and 14 back into the *third* `hatClosed` member left all 11 tests green, because the five shipped grooves draw only members 0 and 1 — member 2 is never rendered. Q3-A's rule is now asserted over the declaration, not inferred from what got drawn, and reverting the production line turns it red.
+* **My rank claim was one out.** 9.39 events/sec is third-emptiest of nine, not fourth; second-line's 9.70 still beats it.
+
+**And two the second pass added, both taken.** The R7/AC7 restatement above, and the "any quantile" overstatement corrected in *Measured after*. It also noted that the blast radius outran `## Notes` by two files — `bassFloor.test.ts` and `patterns.test.ts` were not predicted there. Both edits are correct; the prediction was short.
+
+**Three edits reverted rather than kept.** The first round unpinned both sign-offs into `PENDING_SIGN_OFFS`, which meant widening that list's contract, `pendingSignOff`'s message, and the `/feature/i` guard that gates it. The listening pass landed before the fix round, so all three came out: both entries carry a hash, the list is empty, and no shared machinery moved. **The guard defect is real and survives** — the verifier defeated even the widened version, since groove-79's `upstream` passes on an incidental `feature-28` and a *numbered denial* passes too. It is quick-14's review finding, not this ticket's, and it wants a ticket of its own.
+
+**verifier: pass with gaps, then pass.**
+
+* D1 — **struck** (Q4-A). The flavour spread needs ≥9 open-ballad grooves; `## Notes` has the arithmetic.
+* D2 — **live, and settled on its own "or" clause**, which asks the ticket to record why it still ships two altered scales rather than to change them. `## Notes` is that record: `lydian-dominant` is offered by this template alone, `manifest.test.ts:397` requires all twelve modes present, and `DOMINANCE_RATIO = 2` against a max of 6 puts its floor at 3 of the feel's 5 grooves. The verifier graded it **partly** and put the choice here, on the ground that nothing asserts the record exists — correctly, since a test that read a spec file would be new machinery. It is settled the way D6 is settled, by a person reading it, and that is what the bullet asked for.
+* D3 — **done.** `open-ballad.test.ts` › `is no longer the emptiest style in the app per second`.
+* D4 — **struck** (Q4-A).
+* D5 — **done** on its live half. `open-ballad.test.ts` › `keeps a tempo band a ballad can be played over`. The spread half was struck.
+* D6 — **done.** No answer moved, which is recorded above and asserted; groove-78 and groove-79 re-pinned on the verdict — *"listened to the new grooves. All sound very good and more interesting than before"*.
+* D7 — **struck** (Q4-A).

@@ -245,6 +245,28 @@ export const DEFAULT_FILL: FillPhrase = {
 
 export const FILLS: Record<string, { fill: FillPhrase; variation?: FillPhrase }> = {
   'half-time': { fill: { snare: [8, 12], tomHigh: [10], tomLow: [14] } },
+  // Declared to close a hole rather than to add a gesture: DEFAULT_FILL names no
+  // hatClosed, and a marked bar emits only the phrase's voices, so open-ballad's last
+  // bar had no hi-hat at all for three and a half seconds.
+  //
+  // The bar marks itself by *changing* the hat — sixteenths give way to eighths —
+  // rather than by out-counting an ordinary bar, which is what a ballad drummer plays.
+  // It keeps the kick on 1 and 3 and both backbeats, because a ballad does not abandon
+  // them for a roll, and the toms answer from the "and" of 3 into the second half of
+  // beat 4 so the downbeat arrives on its own. Steps 10 and 14 are left out of the hat
+  // for the reason the template's pool leaves them out: the hatOpen figure plays
+  // through fills and supplies both here, so the two lines together state the eighths.
+  // hatOpen is deliberately unnamed — the figure already sounds it, and `add` does not
+  // dedupe.
+  'open-ballad': {
+    fill: {
+      kick: [0, 8],
+      snare: [4, 12],
+      hatClosed: [0, 2, 4, 6, 8, 12],
+      tomHigh: [10, 11],
+      tomLow: [13, 14],
+    },
+  },
   shuffle: {
     fill: { kick: [0], snare: [0, 4, 14], tomHigh: [6, 8], tomLow: [10, 12] },
   },
