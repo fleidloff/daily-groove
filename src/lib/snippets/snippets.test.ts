@@ -145,10 +145,25 @@ describe('feature-22 wording', () => {
     )
   })
 
+  // The wording lives here and is asserted here; the *numbers* in it are asserted
+  // against the option counts in ModeToggle.test.tsx, because src/lib/snippets/ and
+  // src/lib/theory/ may not name each other — coding-guidelines.md and
+  // features/daily-groove/structure.test.ts's "snippets and theory are siblings".
   it('describes each side of the switch by what the row shows (F22 E2 R2)', () => {
     expect(snippets.puzzle.simpleModeOn).toBe('Six roots, Major or Minor')
-    expect(snippets.puzzle.simpleModeOff).toBe('Twelve roots, four modes')
+    expect(snippets.puzzle.simpleModeOff).toBe('All roots, six modes')
     expect(snippets.puzzle.simpleMode).toBe('Simple mode')
+  })
+
+  // `puzzle.modeGroup` is 'Mode' in both modes, so in simple mode a group labelled
+  // Mode holds Major and Minor. The intro is where the two senses collided — it used
+  // to say the switch "enables guessing modes instead", which reads as though the
+  // Major/Minor row were not modes. Quick-19 left the card alone and made the intro
+  // say which it means, so this asserts the qualifier rather than the whole sentence.
+  it('says which sense of "mode" the switch turns on (quick-19)', () => {
+    const { twoWays } = snippets.intro
+    expect(twoWays.toLowerCase()).toContain('named modes')
+    expect(twoWays.toLowerCase()).not.toContain('guessing modes')
   })
 
   it('names both kits in the drum credit under puzzle (F22 E2 R8, F24 E3 R6, AC5)', () => {

@@ -15,7 +15,7 @@ export const puzzle = {
   ruledOut: ({ roots }) => `${roots} roots ruled out. Narrowing as you go.`,
   simpleMode: 'Simple mode',
   simpleModeOn: 'Six roots, Major or Minor',
-  simpleModeOff: 'Twelve roots, four modes',
+  simpleModeOff: 'All roots, six modes',
   tapSounds: 'Tap sounds',
   drumCredit: 'Drum samples from MuldjordKit and DRSKit,',
   drumCreditPublisher: ' provided by DrumGizmo.org',

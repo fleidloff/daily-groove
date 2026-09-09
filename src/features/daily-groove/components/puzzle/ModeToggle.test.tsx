@@ -4,8 +4,54 @@ import userEvent from '@testing-library/user-event'
 import { ModeToggle } from './ModeToggle'
 import { puzzle } from '@/lib/snippets'
 import { DISPLAY_NAMES } from '@/lib/theory/names'
+import { MODE_OPTION_COUNT, SIMPLE_ROOT_OPTION_COUNT } from '@/lib/theory/music'
 
 const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+
+// The counts the two captions state, checked against the counts the rows offer.
+// Quick-6 changed the mode chips from four to six and the caption kept saying four
+// for three releases, because the only thing asserting it was an exact-string
+// assertion in snippets.test.ts — which moves with the wording rather than against
+// the code, and cannot import theory anyway.
+//
+// The captions spell their numbers out, as the rest of the copy does, so the word is
+// what gets compared. A template literal carrying an expression is not a copied
+// sentence, so eslint.config.mjs's rule — which binds only `TemplateLiteral
+// [expressions.length=0]` — does not reach these.
+const NUMBER_WORDS: Record<number, string> = {
+  2: 'two',
+  4: 'four',
+  6: 'six',
+  7: 'seven',
+  12: 'twelve',
+}
+
+describe('the captions count what the rows offer — quick-19', () => {
+  it('says how many modes the full row has', () => {
+    const word = NUMBER_WORDS[MODE_OPTION_COUNT]
+    expect(word, `no word for ${MODE_OPTION_COUNT} — add it to NUMBER_WORDS`).toBeDefined()
+
+    render(<ModeToggle simple={false} onChange={vi.fn()} />)
+
+    expect(screen.getByText(puzzle.simpleModeOff).textContent?.toLowerCase()).toContain(
+      `${word} modes`,
+    )
+  })
+
+  it('says how many roots simple mode has', () => {
+    const word = NUMBER_WORDS[SIMPLE_ROOT_OPTION_COUNT]
+    expect(
+      word,
+      `no word for ${SIMPLE_ROOT_OPTION_COUNT} — add it to NUMBER_WORDS`,
+    ).toBeDefined()
+
+    render(<ModeToggle simple onChange={vi.fn()} />)
+
+    expect(screen.getByText(puzzle.simpleModeOn).textContent?.toLowerCase()).toContain(
+      `${word} roots`,
+    )
+  })
+})
 
 describe('ModeToggle', () => {
   it('is a switch whose name says what it switches (R1, AC1)', () => {

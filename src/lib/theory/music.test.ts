@@ -3,6 +3,8 @@ import { join, relative } from 'node:path'
 import { describe, it, expect } from 'vitest'
 import type { Answer, Groove } from '../groove'
 import {
+  MODE_OPTION_COUNT,
+  SIMPLE_ROOT_OPTION_COUNT,
   answerOf,
   flavourOptions,
   flavourPool,
@@ -83,9 +85,12 @@ describe('flavourOptions', () => {
     (_label, date) => {
       const groove = CATALOGUE[1]
       const options = flavourOptions(date, groove, CATALOGUE)
-      expect(options).toHaveLength(6)
+      // Against the constant, not a literal: a caption states this number, and
+      // ModeToggle.test.tsx checks the caption against the same export. Pinning a
+      // literal here would let a change to the call site pass by updating this line.
+      expect(options).toHaveLength(MODE_OPTION_COUNT)
       expect(options).toContain(groove.flavour)
-      expect(new Set(options).size).toBe(6)
+      expect(new Set(options).size).toBe(MODE_OPTION_COUNT)
     },
   )
 
@@ -124,8 +129,8 @@ describe('simpleRootOptions', () => {
     'offers six distinct roots on %s (R2, AC2)',
     (_label, date) => {
       const options = simpleRootOptions(date, ANSWER)
-      expect(options).toHaveLength(6)
-      expect(new Set(options).size).toBe(6)
+      expect(options).toHaveLength(SIMPLE_ROOT_OPTION_COUNT)
+      expect(new Set(options).size).toBe(SIMPLE_ROOT_OPTION_COUNT)
     },
   )
 
@@ -172,7 +177,7 @@ describe('simpleRootOptions', () => {
     const date = new Date(2026, 5, 14)
     for (const root of ROOTS) {
       const options = simpleRootOptions(date, { root, flavour: 'Ionian' })
-      expect(options).toHaveLength(6)
+      expect(options).toHaveLength(SIMPLE_ROOT_OPTION_COUNT)
       expect(options).toContain(root)
     }
   })

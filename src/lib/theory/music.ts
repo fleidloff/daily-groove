@@ -11,16 +11,39 @@ export function flavourPool(grooves: Groove[]): Flavour[] {
   return Array.from(new Set(grooves.map((g) => g.flavour))).sort()
 }
 
+// Named because the copy states them. `puzzle.simpleModeOff` says how many modes the
+// full row offers and `puzzle.simpleModeOn` how many roots the simple row offers, and
+// ModeToggle.test.tsx counts the words in those captions against these, and this
+// module's own test pins the option lengths to them, so the number in the copy and
+// the number of chips cannot part company. A caption that disagreed with its row is
+// what quick-19 was opened for. (Not snippets.test.ts: src/lib/snippets/ and
+// src/lib/theory/ may not name each other — see structure.test.ts's "snippets and
+// theory are siblings".) Two constants rather than one: both are 6 today
+// and that is a coincidence, so a shared one would make changing either silently
+// change the other.
+export const MODE_OPTION_COUNT = 6
+export const SIMPLE_ROOT_OPTION_COUNT = 6
+
 export function flavourOptions(
   date: Date,
   groove: Groove,
   grooves: Groove[],
 ): Flavour[] {
-  return buildOptions(groove.flavour, flavourPool(grooves), isoDate(date), 6)
+  return buildOptions(
+    groove.flavour,
+    flavourPool(grooves),
+    isoDate(date),
+    MODE_OPTION_COUNT,
+  )
 }
 
 export function simpleRootOptions(date: Date, answer: Answer): Root[] {
-  return buildOptions(answer.root, ROOTS, isoDate(date), 6) as Root[]
+  return buildOptions(
+    answer.root,
+    ROOTS,
+    isoDate(date),
+    SIMPLE_ROOT_OPTION_COUNT,
+  ) as Root[]
 }
 
 const BEATS_PER_BAR = 4
