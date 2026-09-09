@@ -457,18 +457,21 @@ describe('the audition rig', () => {
     expect(options.lockPath).not.toBe(DEFAULT_LOCK_PATH)
   })
 
-  it('narrows the catalogue to the ids --only names, and asks nothing of heard-in.json', () => {
+  // --only used to set options.catalogue, which narrowed what generate rendered *and*
+  // what it wrote: the manifest came out holding only the named ids, the option pools
+  // were built from them alone, and heardIn was cleared to stop the table failing
+  // against six scales. Quick-14 ran it over six bossa grooves and lost the other 48.
+  it('names the ids to re-encode and leaves the catalogue alone', () => {
     const options = optionsFrom(parseArgs(['--only', 'groove-07']))
-    const expected = readCatalogue().filter((s) => s.id === 'groove-07')
 
-    expect(expected).toHaveLength(1)
-    expect(options.catalogue).toEqual(expected)
-    expect(options.heardIn).toEqual({})
+    expect(options.encodeOnly).toEqual(['groove-07'])
+    expect(options.catalogue, '--only narrows the catalogue again').toBeUndefined()
+    expect(options.heardIn, '--only drops the heard-in table again').toBeUndefined()
   })
 
   it('takes --only more than once', () => {
     const options = optionsFrom(parseArgs(['--only', 'groove-07', '--only', 'groove-01']))
-    expect(options.catalogue?.map((s) => s.id)).toEqual(['groove-01', 'groove-07'])
+    expect(options.encodeOnly).toEqual(['groove-07', 'groove-01'])
   })
 
   it('names an --only id the catalogue does not hold, instead of rendering everything', () => {
@@ -519,6 +522,59 @@ describe('the audition rig', () => {
     expect(sha256File(DEFAULT_MANIFEST_PATH)).toBe(manifestBefore)
     expect(statSync(DEFAULT_MANIFEST_PATH).mtimeMs).toBe(manifestMtimeBefore)
     expect(readLock(DEFAULT_LOCK_PATH)).toEqual(lockBefore)
+  }, RENDER_TIMEOUT_MS)
+
+  // The assertion quick-14 needed and did not have. It is written against the manifest
+  // the run produces rather than against options, because the loss happened inside
+  // generate: a narrowed catalogue reaches writeManifest and buildPools, and neither
+  // can tell a subset run from a full one.
+  it('writes a manifest covering every groove, not only the ones it re-encodes', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'audition-'))
+    const catalogue = readCatalogue()
+
+    const { entries, pcm } = await generate({
+      ...optionsFrom(parseArgs(['--only', 'groove-07', '--out', dir])),
+      pack: placeholderPack(),
+      encode: false,
+    })
+
+    expect(entries.map((e) => e.id)).toEqual(catalogue.map((s) => s.id))
+    expect(entries.length, 'the catalogue shrank to what --only names').toBeGreaterThan(1)
+    expect([...pcm.keys()], 'mixed audio for a groove it was not asked to re-encode').toEqual([
+      'groove-07',
+    ])
+
+    const written = readFileSync(join(dir, 'grooves.generated.ts'), 'utf8')
+    for (const spec of catalogue) {
+      expect(written, `${spec.id} is missing from the manifest`).toContain(`id: '${spec.id}'`)
+    }
+    expect(written, 'the heard-in table was dropped').toContain('HEARD_IN')
+  }, RENDER_TIMEOUT_MS)
+
+  // The delay probe used to be all-or-nothing: one absent mp3 and every groove in the
+  // manifest got headDelaySeconds: 0. That was invisible while --only rendered only what
+  // it named; once the manifest covers the catalogue, one missing file would zero the
+  // other 53. Probed against the committed renders, with one file deliberately absent.
+  it('keeps every head delay a subset run does not re-encode', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'audition-'))
+    const catalogue = readCatalogue()
+    const skipped = catalogue.filter((s) => s.id !== 'groove-01')
+
+    for (const spec of skipped) {
+      copyFileSync(join(DEFAULT_OUT_DIR, `${spec.id}.mp3`), join(dir, `${spec.id}.mp3`))
+    }
+
+    const { entries } = await generate({
+      ...optionsFrom(parseArgs(['--only', 'groove-07', '--out', dir])),
+      pack: placeholderPack(),
+      encode: false,
+    })
+
+    const delayOf = (id: string) => entries.find((e) => e.id === id)!.headDelaySeconds
+    expect(delayOf('groove-01'), 'a groove with no mp3 on disk should read 0').toBe(0)
+    for (const spec of skipped) {
+      expect(delayOf(spec.id), `${spec.id} was zeroed by groove-01's absence`).toBeGreaterThan(0)
+    }
   }, RENDER_TIMEOUT_MS)
 })
 

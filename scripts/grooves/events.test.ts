@@ -26,6 +26,7 @@ import {
   RIDE_SUSTAIN_SIXTEENTHS,
   COMP_ACCENTS,
   VELOCITIES,
+  assertFill,
   buildEvents,
   figureBars,
   gridSteps,
@@ -1555,6 +1556,64 @@ describe('buildEvents — the last pass ends with a fill — R5, R6, R7, R8, R9,
         expect([...(played.get(voice) ?? [])].sort((a, b) => a - b), voice).toEqual(steps)
       }
       expect([...played.keys()].sort()).toEqual(Object.keys(DEFAULT_FILL).sort())
+    })
+  })
+
+  describe('assertFill — a fill may not name a pitched voice — quick-14', () => {
+    it('rejects bass and comp, and takes every drum', () => {
+      for (const voice of ['bass', 'comp'] as VoiceName[]) {
+        expect(() => assertFill('t', 'fill', { [voice]: [0] }), voice).toThrow(
+          new RegExp(`FILLS\\.fill names ${voice}`),
+        )
+        expect(() => assertFill('t', 'variation', { snare: [0], [voice]: [0] }), voice).toThrow(
+          /root pitch/,
+        )
+      }
+      const everyDrum = Object.fromEntries(
+        (Object.keys(FILL_DURATIONS) as VoiceName[])
+          .filter((voice) => voice !== 'bass' && voice !== 'comp')
+          .map((voice) => [voice, [0]]),
+      )
+      expect(Object.keys(everyDrum).length, 'FILL_DURATIONS stopped naming every voice').toBe(13)
+      expect(() => assertFill('t', 'fill', everyDrum)).not.toThrow()
+    })
+
+    it('guards every phrase the registry declares, and the default', () => {
+      expect(() => assertFill('default', 'fill', DEFAULT_FILL)).not.toThrow()
+      for (const [id, declared] of Object.entries(FILLS)) {
+        expect(() => assertFill(id, 'fill', declared.fill), id).not.toThrow()
+        const variation = declared.variation
+        if (variation) {
+          expect(() => assertFill(id, 'variation', variation), id).not.toThrow()
+        }
+      }
+    })
+
+    // The two above test the guard. This one tests that it is installed: buildEvents
+    // reads FILLS by template id, so a phrase reaches the emission site through this
+    // table and nowhere else. Without this, deleting both call sites keeps the suite
+    // green and the trap stays open.
+    it('stops buildEvents, not just a direct call', () => {
+      const feel = templateById('bossa-nova')
+      const spec: GrooveSpec = { id: 'g', uuid: UUID, template: feel.id, seed: 1 }
+      const kept = FILLS[feel.id]
+      expect(kept.variation, 'bossa-nova stopped declaring both phrases').toBeDefined()
+
+      const cases = [
+        { name: 'fill.comp', entry: { ...kept, fill: { ...kept.fill, comp: [0] } } },
+        { name: 'variation.bass', entry: { ...kept, variation: { ...kept.variation, bass: [0] } } },
+      ]
+
+      for (const { name, entry } of cases) {
+        try {
+          FILLS[feel.id] = entry
+          expect(() => buildEvents(spec, feel), name).toThrow(/may not name a pitched voice/)
+        } finally {
+          FILLS[feel.id] = kept
+        }
+      }
+
+      expect(() => buildEvents(spec, feel), 'the table was not restored').not.toThrow()
     })
   })
 

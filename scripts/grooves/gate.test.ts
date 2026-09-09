@@ -1015,21 +1015,30 @@ const FEATURE_28_SCOPE_LEGACY =
 //
 // Questions 1 and 2 are open and unanswered. If either is later answered against the
 // pack, these pins go void and this table is what will say so.
-// Quick-15's two-bar bossa comp, and the gain.bass raise −22.2 → −21.2 that followed it
-// in the same session. Both changes re-rendered the same six grooves, so one verdict
-// covers both and neither can be re-pinned without the other.
-const QUICK_15_APPROVAL = 'the grooves sound good'
+// Quick-14's turnaround: bossa-nova's surdo opens to quarters in both marked bars and
+// the fill takes a snare on beat 3. It re-rendered the same six grooves quick-15 did, so
+// these words replace quick-15's on the two entries below rather than joining them — the
+// audio that verdict was spoken about no longer exists anywhere, which is why quick-15's
+// two constants are gone from this file rather than kept beside these.
+const QUICK_14_APPROVAL = 'listened to all of them. I like the fill much better. Stilly subtle but audible'
 
-const QUICK_15_SCOPE =
-  'Said of bossa-nova on 2026-09-08, after the two changes above landed together: ' +
-  'quick-15 rewrote patterns.comp as four two-bar phrases, and gain.bass then rose ' +
-  '−22.2 → −21.2 when he asked for the bass. He did not say which of the six he ' +
-  'played, so what is claimed is that bossa grooves were played and approved — the ' +
-  'same limit the feature-28 entries carry, and the reason this scope field exists. ' +
-  'An earlier sentence in the same session, “yes, gain is fine now”, is not this ' +
-  'verdict and is not quoted as one: it settled the level, this one is about the ' +
-  'grooves. What it does not cover: the two questions feature-27 left open, still ' +
-  'open, and no device was recorded.'
+const QUICK_14_SCOPE =
+  'Said of bossa-nova on 2026-09-09, after quick-14 rewrote FILLS[bossa-nova]’s two ' +
+  'phrases: kick [0, 4, 8, 12] in both marked bars, and fill.snare gaining step 8. ' +
+  'It replaces the quick-15 verdict — “the grooves sound good”, said on 2026-09-08 ' +
+  'without saying which of the six he played. This one says “all of them”, which is ' +
+  'more than that and still less than a list: nothing was sent to him and the session ' +
+  'does not record which files he opened, so what is claimed is that he played what he ' +
+  'took “all of them” to mean and both entries below sit inside it. That is the same ' +
+  'limit the feature-28 entries carry, and the reason this field exists rather than a ' +
+  'stronger one. “Stilly” is his typo for “still” and is quoted as written. The ' +
+  'reservation is part of the verdict and not a defect: the turnaround is meant to be a ' +
+  'push rather than a roll (see the comment over FILLS[bossa-nova]), so “subtle but ' +
+  'audible” is the target and “much better” is the pass. What it does not cover: nothing ' +
+  'about the bass, the comp or the level was put to him in this session, so the ' +
+  'gain.bass of −21.2 the entries name still rests on the 2026-09-08 session that asked ' +
+  'for it; no device was recorded; and the two questions feature-27 left open are still ' +
+  'open.'
 
 const SIGN_OFFS: SignOff[] = [
   {
@@ -1529,15 +1538,24 @@ const SIGN_OFFS: SignOff[] = [
     // by the two-bar comp, once by gain.bass −22.2 → −21.2 — and the file standing at
     // that path on 2026-09-08, at the same byte length, is
     // f4b0f2efab3e70f20335d2b6268af9dab89be605b4724f47aad65f92fb0bb1a3. This render
-    // reproduces that one. "Standing at that path", not "played": the scope field below
-    // records that he did not say which of the six bossa grooves he put on, and this
-    // sentence may not quietly claim it was this one.
+    // reproduces that one.
+    //
+    // Re-pinned 2026-09-09 for quick-14's turnaround, in QUICK_14_APPROVAL's words. The
+    // quick-15 pin it replaces was a4e21b50…8843, and that render no longer exists
+    // anywhere: the surdo opens in bars 7 and 15 now, so the audio quick-15's verdict was
+    // spoken about is gone rather than superseded. The file at this path is
+    // ef832d72448bb187d8bc91d4fdc6873f02c00d76025512aeca2bad61f6016786, still 716 007
+    // bytes — the third render in a row at that length, so nothing but a hash notices.
+    // The "standing at that path" caveat the two pins before it carried is narrower here
+    // but not gone: the verdict says "all of them", which is more than quick-15's silence
+    // about which grooves were put on and still short of naming this one. QUICK_14_SCOPE
+    // is where that inference is stated and bounded; this comment may not go past it.
     id: 'groove-57',
-    pcm: 'a4e21b50b827277251d8431e7e1b54608dbf830406e8c8b1340aa3ab199e8843',
+    pcm: '1490a02c4c2a220017495c7dc36c759ffa769b3183688a45d25330fda16adf57',
     mp3: null,
     file: 'public/grooves/groove-57.mp3',
-    approval: QUICK_15_APPROVAL,
-    scope: QUICK_15_SCOPE,
+    approval: QUICK_14_APPROVAL,
+    scope: QUICK_14_SCOPE,
     upstream:
       'events.ts’s BASS_FLOOR_MIDI (25) — the constant feature-28 moved, and the first ' +
       'place to look when this fails — as much as samples/pack.json’s Pastabass ' +
@@ -1570,17 +1588,23 @@ const SIGN_OFFS: SignOff[] = [
     // re-rendered it twice more — the two-bar comp, then gain.bass −22.2 → −21.2 — and
     // the file standing there later the same day, at the same byte length, is
     // 80e8072853a05a95cb25eecc26a379e2242eab31d126478f9f3d7d6966ab05c2. This render
-    // reproduces that one. "Standing there", not "played": the scope field below records
-    // that he did not say which of the six bossa grooves he put on. The nine other
-    // entries in this table still say "the file played on", inherited from feature-28
-    // and carrying the same overclaim; quick-15 re-pinned only these two and left the
-    // rest rather than editing entries it had not re-measured.
+    // reproduces that one. The nine other entries in this table still say "the file
+    // played on", inherited from feature-28 and carrying an overclaim these two no longer
+    // do; quick-15 re-pinned only these two and left the rest rather than editing entries
+    // it had not re-measured, and quick-14 kept to the same rule.
+    //
+    // Re-pinned 2026-09-09 for quick-14's turnaround, in QUICK_14_APPROVAL's words. The
+    // quick-15 pin it replaces was 18e55cb0…c3b3. The file at this path is
+    // fb8cd214f7f85abbf06ee5b28797bdef509ab612a8eb05dcca70372a2382f1f7, still 689 675
+    // bytes. "Standing there" is weakened rather than dropped, for the reason given on
+    // groove-57: "all of them" is an inference about which files were opened, and
+    // QUICK_14_SCOPE is the field that carries it.
     id: 'groove-58',
-    pcm: '18e55cb0d774d078386df17383a3883eb3071e38ffeb12ab26c263c5a372c3b3',
+    pcm: '2c7dbc94b96e55475e4d2df82c69c827344295593ee146bdc0e6f64f9fc58683',
     mp3: null,
     file: 'public/grooves/groove-58.mp3',
-    approval: QUICK_15_APPROVAL,
-    scope: QUICK_15_SCOPE,
+    approval: QUICK_14_APPROVAL,
+    scope: QUICK_14_SCOPE,
     upstream:
       'samples/pack.json — the bass’s Pastabass tagliatelle set as much as the comp’s ' +
       'single dyn2 layer or the rim, kick and snare alternates — the bossa clave in ' +

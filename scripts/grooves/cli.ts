@@ -57,6 +57,12 @@ export function toGroove(
 
 export type GenerateOptions = {
   catalogue?: GrooveSpec[]
+  /**
+   * The ids to re-encode. Every other groove in the catalogue is still measured and
+   * still written to the manifest, the pools and the lock — it just keeps the mp3 it
+   * already has. Absent means encode all of them.
+   */
+  encodeOnly?: readonly string[]
   packDir?: string
   outDir?: string
   manifestPath?: string
@@ -86,6 +92,13 @@ export async function generate(options: GenerateOptions = {}): Promise<GenerateR
   const pack = options.pack ?? (await loadPack(options.packDir ?? DEFAULT_PACK_DIR))
   const shouldEncode = options.encode ?? true
 
+  // Which grooves get new audio. What goes into the manifest is a separate question and
+  // the answer is always "all of them": the option pools and the heard-in table are
+  // derived from every entry, so a manifest built from a subset would drop the rest of
+  // the catalogue and narrow the pools to whatever happened to be re-encoded. Mixing is
+  // the expensive half, so a subset run skips that and keeps the cheap half.
+  const encodeOnly = options.encodeOnly === undefined ? null : new Set(options.encodeOnly)
+
   mkdirSync(outDir, { recursive: true })
 
   const rendered: { spec: GrooveSpec; music: MusicMeta }[] = []
@@ -94,6 +107,10 @@ export async function generate(options: GenerateOptions = {}): Promise<GenerateR
   for (const spec of specs) {
     const template = templateById(spec.template)
     const { events, music } = buildEvents(spec, template)
+    rendered.push({ spec, music })
+
+    if (encodeOnly !== null && !encodeOnly.has(spec.id)) continue
+
     const tracks = renderVoices(events, pack, SAMPLE_RATE, {
       id: spec.id,
       bars: music.loopBars,
@@ -107,16 +124,19 @@ export async function generate(options: GenerateOptions = {}): Promise<GenerateR
     })
 
     pcm.set(spec.id, master)
-    rendered.push({ spec, music })
 
     if (shouldEncode) await encodeMp3(master, join(outDir, `${spec.id}.mp3`))
   }
 
   const files = rendered.map(({ spec }) => join(outDir, `${spec.id}.mp3`))
-  const audioOnDisk = files.every((file) => existsSync(file))
-  const delays = audioOnDisk
-    ? await Promise.all(files.map((file) => probeHeadDelaySeconds(file)))
-    : files.map(() => 0)
+  const onDisk = files.map((file) => existsSync(file))
+  const audioOnDisk = onDisk.every(Boolean)
+  // Probed per file, not all-or-nothing. A first run has no mp3 at all and every delay is
+  // 0, which is what the lock write below keys off; but once encodeOnly can leave 48
+  // files untouched, one absent mp3 must not zero the delay of every groove beside it.
+  const delays = await Promise.all(
+    files.map((file, i) => (onDisk[i] ? probeHeadDelaySeconds(file) : 0)),
+  )
   const names = namesFor(rendered.map(({ spec }) => spec.id))
   const entries = rendered.map(({ spec, music }, i) =>
     toGroove(spec, music, delays[i], names.get(spec.id) as string),
@@ -253,14 +273,16 @@ export function optionsFrom(args: CliArgs): GenerateOptions {
   }
 
   if (args.only.length > 0) {
-    const wanted = new Set(args.only)
-    const catalogue = readCatalogue().filter((spec) => wanted.has(spec.id))
+    const catalogue = readCatalogue()
     const missing = args.only.filter((id) => !catalogue.some((spec) => spec.id === id))
     if (missing.length > 0) {
       throw new Error(`--only: no catalogue entry named ${missing.join(', ')}`)
     }
-    options.catalogue = catalogue
-    options.heardIn = {}
+    // encodeOnly, not catalogue: --only names the grooves to re-encode, and the manifest
+    // it writes still covers every one of them. It used to narrow the catalogue itself,
+    // which silently rewrote grooves.generated.ts down to the named ids, emptied the
+    // option pools and dropped the heard-in table — quick-14 hit that.
+    options.encodeOnly = args.only
   }
 
   return options
@@ -284,10 +306,18 @@ if (invokedDirectly) {
     process.exit(1)
   }
 
-  const { entries } = await generate(options)
+  const { entries, pcm } = await generate(options)
   if (args.manifestOnly) console.log('manifest-only: no audio was encoded')
-  console.log(`rendered ${entries.length} grooves`)
-  for (const e of entries) {
+
+  // pcm holds what was mixed, which is what --only narrows. entries is the whole
+  // catalogue either way, so printing it would report 54 for a two-groove run.
+  const encoded = entries.filter((e) => pcm.has(e.id))
+  console.log(
+    encoded.length === entries.length
+      ? `rendered ${entries.length} grooves`
+      : `rendered ${encoded.length} of ${entries.length} grooves; the manifest covers all ${entries.length}`,
+  )
+  for (const e of encoded) {
     console.log(`  ${e.id}  ${e.name.padEnd(22)} ${e.scale.padEnd(20)} ${e.chord.padEnd(10)} ${e.bpm}bpm`)
   }
 }

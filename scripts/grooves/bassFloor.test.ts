@@ -183,8 +183,8 @@ describe('AC4 — 48 grooves move and these six do not', () => {
   it('keeps every event count, so no draw moved with the floor', () => {
     expect(countMismatches).toEqual([])
     const total = (side: Built[]) => side.reduce((sum, g) => sum + g.lines.length, 0)
-    expect(total(after)).toBe(20099)
-    expect(total(before)).toBe(20099)
+    expect(total(after)).toBe(20135)
+    expect(total(before)).toBe(20135)
   })
 })
 

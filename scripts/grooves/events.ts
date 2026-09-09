@@ -251,9 +251,20 @@ export const FILLS: Record<string, { fill: FillPhrase; variation?: FillPhrase }>
   // A bossa has no drum fill: the hat and the clave never stop, and the turnaround is
   // a snare push rather than a roll. Both phrases are declared because the feel carries
   // no toms, which would make the default `withoutToms` variation identical to its fill.
+  //
+  // What marks the bar is the surdo opening to quarters. Every figure in the template's
+  // kick pool leaves beat 2 empty, so `[0, 4, 8, 12]` states a position no ordinary bar
+  // of this feel ever states, and it is the phrase end the surdo player actually plays.
+  // Both marked bars open it; the fill's extra snare on beat 3 is all that separates
+  // them, which is why the fill still marks more than the variation.
+  //
+  // Every step here must be even. This feel is on the eighth grid, and `scaleStep`
+  // rounds `step * 8 / 16`, so an odd step lands on its neighbour and `gridSteps`
+  // dedupes the collision without an error — half of a written odd figure would
+  // silently vanish.
   'bossa-nova': {
-    fill: { kick: [0, 8], snare: [4, 10, 12, 14], hatClosed: [0, 2, 4, 6, 8, 10, 12, 14] },
-    variation: { kick: [0, 8], snare: [4, 12, 14], hatClosed: [0, 2, 4, 6, 8, 10, 12, 14] },
+    fill: { kick: [0, 4, 8, 12], snare: [4, 8, 10, 12, 14], hatClosed: [0, 2, 4, 6, 8, 10, 12, 14] },
+    variation: { kick: [0, 4, 8, 12], snare: [4, 10, 12, 14], hatClosed: [0, 2, 4, 6, 8, 10, 12, 14] },
   },
   // The fill is the style, not a punctuation on it: a bar-long snare figure with the
   // toms answering it into beat 4, and no crash to arrive at, because the kit has
@@ -294,6 +305,8 @@ export const FILLS: Record<string, { fill: FillPhrase; variation?: FillPhrase }>
 
 const TOM_VOICES: VoiceName[] = ['tomHigh', 'tomLow']
 
+const PITCHED_VOICES: VoiceName[] = ['bass', 'comp']
+
 export const FILL_DURATIONS: Record<VoiceName, number> = {
   kick: 2,
   snare: 2,
@@ -310,6 +323,19 @@ export const FILL_DURATIONS: Record<VoiceName, number> = {
   bongoLow: 1,
   bass: 2,
   comp: 4,
+}
+
+// A fill phrase carries no midi, so a pitched voice in one renders the chord at the
+// sample's root note with no error — the same trap assertFigure closes for figures.
+export function assertFill(templateId: string, subject: string, phrase: FillPhrase): void {
+  for (const voice of PITCHED_VOICES) {
+    if (voice in phrase) {
+      throw new Error(
+        `${templateId}: FILLS.${subject} names ${voice}: a fill phrase emits no midi, so the ` +
+          `note would sound at the sample's root pitch — a fill may not name a pitched voice`,
+      )
+    }
+  }
 }
 
 function withoutToms(phrase: FillPhrase): FillPhrase {
@@ -779,6 +805,8 @@ export function buildEvents(
       .map(([voice, steps]) => [voice, grid(steps)] as [VoiceName, number[]])
 
   const declared = FILLS[template.id] ?? { fill: DEFAULT_FILL }
+  assertFill(template.id, 'fill', declared.fill)
+  if (declared.variation) assertFill(template.id, 'variation', declared.variation)
   const fillPhrase = resolvePhrase(declared.fill)
   const variationPhrase = resolvePhrase(declared.variation ?? withoutToms(declared.fill))
   const middlePass = middlePassOf(template.passes)

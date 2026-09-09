@@ -101,7 +101,7 @@ In all six grooves `0 < distance(variation) < distance(fill)`, so `:1600` holds;
 3. `docs/music.md`'s four frozen things are clear. A fill phrase is *fixed*, not drawn: it consumes no `rng()` on any stream, so `MUSIC_LABEL`'s and `RHYTHM_LABEL`'s draw orders are untouched. `src/lib/hash.ts`, `FLAVOURS`, the template's `flavours` and every `uuid` untouched. The doc's own line covers the rest: *"The audio itself is not on this list. Re-rendering every MP3 is always allowed."*
 4. One `git revert` — the phrase edit, six mp3s, the manifest, the lock and the two re-pins are one commit.
 
-**Measured: the fill bar is thinner than the bar before it in all six grooves, not sometimes.** Struck drum events, bar 14 → bar 15 → bar 7:
+**Measured: the fill bar is thinner than the bar before it in all six grooves, not sometimes.** Events per bar, bar 14 → bar 15 → bar 7 — **ghosts counted here**, unlike the tables under `## Answered` and `## Built`. Two things separate this row's 18–19 from `## Built`'s 15–17, not one: the ghosts are worth 2 (bar 14 reads 16–17 without them), and this table measures bar 14 alone where `## Built` measures every unmarked bar, the odd ones of which carry one rim stroke fewer:
 
 | | ordinary (b14) | fill (b15) | variation (b7) |
 | :-- | :-- | :-- | :-- |
@@ -150,3 +150,67 @@ Not touched, and worth saying because the options priced them: `templates/bossa-
 * **Both phrases keep the `hatClosed` line verbatim.** It is identical to an ordinary bar and must be: `resolvePhrase` replaces the bar wholesale, so a fill phrase that omitted the hat would stop it dead, which is the one thing `events.ts:251` says a bossa never does.
 
 **Verdict: settled. No question is open.**
+
+## Built
+
+* `scripts/grooves/events.ts` — `FILLS['bossa-nova']`'s two phrases are Q1-A's: `kick [0, 4, 8, 12]` in both, `fill.snare` gaining step 8. The comment above them now says what the surdo does and why every step must be even. New exported `assertFill`, called at the `declared = FILLS[template.id]` site in `buildEvents` for both phrases, rejecting `bass` and `comp`. **The only production file the change touches**, as the notes predicted.
+* `scripts/grooves/gate.test.ts` — groove-57 and groove-58 re-pinned on the listening verdict below, not deferred. New `QUICK_14_APPROVAL` / `QUICK_14_SCOPE`; `QUICK_15_APPROVAL` and `QUICK_15_SCOPE` deleted, because those two entries were their only consumers and the audio they were spoken about no longer exists. `PENDING_SIGN_OFFS` is untouched and still empty.
+* `scripts/grooves/bassFloor.test.ts` — catalogue event total 20099 → 20135, exactly the +6 × 6 the two marked bars add.
+* `scripts/grooves/events.fixture.json` — regenerated (`node scripts/grooves/eventsFixture.ts --write`).
+* six mp3s + `grooves.lock.json` re-rendered. `grooves.generated.ts` **unmodified** — no answer moved, which is also the proof that a `FillPhrase` consumes no `rng()`.
+
+**Measured after, against the prediction in `## Answered`.** Struck drum events per bar, ghosts excluded:
+
+| | ordinary | variation (b7) | fill (b15) |
+| :-- | :-- | :-- | :-- |
+| predicted | 15–16 | 18 | 19 |
+| measured | 15–17 | **18** | **19** |
+
+Bar 3 and bar 11 are 15–16 and unmarked. RMS: 53 −22.79 · 54 −23.64 · 55 −22.45 · 56 −22.48 · 57 −22.40 · 58 −22.14 dBFS, all inside −29…−20.
+
+**tests:**
+* `bossa-nova.test.ts` — a new `describe`: the surdo pool leaves beat 2 empty; the kick opens to quarters in bars 7 and 15 **and nowhere else**, which is `## Done when`'s last bullet as a test rather than as prose; no marked bar is thinner than the bar before it, on the kick and on total struck events; bar 15 marks more than bar 7 and both more than every unmarked bar, bars 3 and 11 included, which `ORDINARY_BARS` alone excludes; the hat and the clave run unbroken through both. `Rendered` gained a ghost-excluding `struck` count for the last three.
+* `events.test.ts` — `assertFill` rejects `bass` and `comp` and takes all thirteen drum voices; every phrase the registry declares passes, `DEFAULT_FILL` included; and one that swaps a pitched voice into `FILLS['bossa-nova']` and expects `buildEvents` to throw, so the guard is tested *installed* and not just written.
+
+**checks:** see the verifier line below — lint / test / test:gen / build / grooves:verify.
+
+**Two things the ticket got wrong, both found by building it.**
+
+* **`grooves.generated.ts` does not change.** The notes listed it among the files to expect; `headDelaySeconds` came out identical for all six, so a render leaves it byte-for-byte.
+* **`npm run grooves -- --only groove-53 … groove-58` was destructive**, and the ticket's own notes told me to run it. Fixed here, on request — see below.
+
+## Also built — `--only` no longer truncates the catalogue
+
+Not in the ticket. Added mid-build after `--only` wiped `grooves.generated.ts` from 54 grooves down to 6, and Fred asked for the footgun rather than a warning about it.
+
+**What was wrong.** `optionsFrom` set `options.catalogue` to just the named ids, and `generate` builds three things from whatever catalogue it is given: the manifest (`writeManifest(entries, …)`), the option pools (`buildPools(entries)`) and the lock. So `--only` silently rewrote the manifest down to the ids it named, narrowed `SCALE_POOL` / `CHORD_POOL` / `PROGRESSION_POOL` to those grooves' answers, and dropped `HEARD_IN` — the last one deliberately, because `options.heardIn = {}` was the only way to stop `heardInFailures` complaining about the 48 scales that were no longer being rendered. A flag whose whole purpose is a subset re-render could not be used for one.
+
+**What it does now.** `--only` sets a new `encodeOnly` instead of `catalogue`, and `generate` separates the two questions: every groove is still measured with `buildEvents` and still written to the manifest, the pools and the lock; only the named ids are mixed and encoded. Mixing is the expensive half, so a subset run stays fast. `options.heardIn = {}` is gone, so the heard-in table survives.
+
+* `scripts/grooves/cli.ts` — `GenerateOptions.encodeOnly`; the render loop pushes every spec and `continue`s past the mix for anything not named; `optionsFrom` sets `encodeOnly` and stops narrowing the catalogue or clearing `heardIn`; the head delay is probed per file rather than all-or-nothing; the summary line reports what it encoded rather than what the manifest covers.
+* `scripts/grooves/cli.test.ts` — the two option-level tests rewritten around `encodeOnly`, plus two new ones: `writes a manifest covering every groove, not only the ones it re-encodes` asserts the manifest names **every** catalogue id, that `pcm` holds only `groove-07`, and that `HEARD_IN` survives; `keeps every head delay a subset run does not re-encode` covers the probe. Reverting `cli.ts` to its old lines fails all four; verified by doing it.
+* `gate.test.ts`'s two `npm run grooves -- --only <id>` recommendations are **left as they were** — they were right, the tool was broken.
+
+Proved end to end: `npm run grooves -- --only groove-57 --only groove-58` now leaves `grooves.generated.ts` and `grooves.lock.json` byte-identical, still 54 grooves, and prints `rendered 2 of 54 grooves; the manifest covers all 54`.
+
+**Size test, re-run with this in.** Question 1 is the one that gives: seven bullets, not five. Questions 2, 3 and 4 still pass unchanged — one module (`scripts/grooves/` is all catalogue), nothing frozen in `docs/music.md` moved, one `git revert`. Fred asked for the widening in as many words, which is the waiver, and it is recorded here rather than assumed. Worth knowing for next time: the escalation trigger was not the bossa edit outgrowing its ticket, it was a tool the ticket's own instructions told me to use being wrong.
+
+**One detour, taken and then undone.** Following the notes, both entries first went `pcm: null` into `PENDING_SIGN_OFFS`, which meant rewording `pendingSignOff` and that list's contract — machinery shared by all twenty entries, for a mechanism feature-28 R27 wrote for "approved but not rendered" and not for "rendered but not approved". The verifier called it truthful but flagged three statements it left stale, and that the widened `upstream` strings satisfied the `/feature/i` guard through the phrase "rather than a feature" — a dodge. The listening pass landed before the fix round, so the whole detour reverted: both entries carry a hash, the list is empty, and no shared machinery moved.
+
+**verifier: fail, then pass, then pass with findings taken.** Three rounds.
+
+* **Round 1 — fail.** `npm run build` exited 1 on a type error vitest cannot see: `if (declared.variation)` does not narrow inside the arrow function passed to `expect`, and the repo has no standalone typecheck script, so it surfaces only in `next build`. Two coverage findings taken with it — `assertFill` was tested but not tested *installed*, and a case named for thirteen voices asserted three.
+* **Round 2 — pass.** Both `pcm` hashes reproduce, the quote matches byte for byte in all three places, the `PENDING_SIGN_OFFS` detour is gone without trace, and `--only` was run for real in a scratch copy of the tree. Six non-blocking findings, four taken:
+  * `QUICK_14_SCOPE` said "all six were played" where the words say "all of them" — the referent lives in the session, not the quote. Softened to claim exactly that and no more, since bounding the claim is the field's whole job.
+  * **A widening this change caused.** The head-delay probe was all-or-nothing (`audioOnDisk ? probe all : zero all`). Harmless while `--only` measured only what it named; once the manifest covers the catalogue, one absent mp3 would write `headDelaySeconds: 0` for the other 53 and exit 0. Now probed per file — a first run with no audio still reads 0 everywhere, which is what the lock write keys off. `cli.test.ts` › `keeps every head delay a subset run does not re-encode` copies 53 committed renders into a temp dir, leaves one out, and fails against the old two lines.
+  * `ORDINARY_BARS` filters out every `barInPass 3`, so bars 3 and 11 were pinned on their kick but never compared on struck events. That comparison now runs over `[...ORDINARY_BARS, 3, 11]`, with an assertion that neither marked bar leaked into the set.
+  * The two measurement tables disagreed on ghosts and only one said so. Both now do.
+  * Not taken, noted: a subset run's second half is no longer cheap — 54 `buildEvents`, 54 ffprobes, 54 lock hashes, and it fails if any *other* groove's events have drifted. That is the trade the fix buys, and it is the right way round.
+
+Both fixes were mutation-checked by reverting the production lines and watching the new tests go red.
+
+* D1 *bar 15 of groove-56 and groove-57 reads as a turnaround* — **settled by ear, 2026-09-09**: *"listened to all of them. I like the fill much better. Stilly subtle but audible"*. `bossa-nova.test.ts`'s `marks bar 15 more than bar 7, and both more than every unmarked bar` is the standing proxy.
+* D2 *a fill bar is never thinner than the bar before it* — `bossa-nova.test.ts` › `never thins a marked bar against the bar before it`, on the kick and on struck events, all six grooves.
+* D3 *all six pass the seven gate checks with RMS inside −29…−20* — `catalogue-gate.test.ts` › `accepts $id ($template)` over all 54; measured above.
+* D4 *groove-57's and groove-58's `SIGN_OFFS` re-pinned on a fresh listening verdict* — both re-pinned on D1's words: `1490a02c…df57` and `2c7dbc94…8683`. `gate.test.ts` › `renders the exact audio that was played to a person and approved` passes for both.
+* D5 *whether the 8-bar spacing changed is recorded either way* — it did not. `## Answered — Q2-A` is the record, and `bossa-nova.test.ts` › `opens the kick to quarters in both marked bars and nowhere else` is the test, so bars 3 and 11 staying ordinary is asserted rather than asserted-in-prose.

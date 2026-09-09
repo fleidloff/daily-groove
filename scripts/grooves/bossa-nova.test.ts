@@ -4,6 +4,7 @@ import {
   BARS_PER_PASS,
   figureBars,
   DEFAULT_PLACEMENT,
+  GHOST_VELOCITY_THRESHOLD,
   PATTERN_RESOLUTION,
   buildEvents,
   gridSteps,
@@ -34,6 +35,19 @@ const SURDO: number[][] = [
 // approach note and the comp's anticipation, and every figure in SURDO is silent there.
 const AND_OF_FOUR = 14
 
+// Beat 2 on the sixteenth grid. Every figure in SURDO leaves it empty, which is what
+// makes the opened surdo a position no ordinary bar of this feel has ever stated.
+const BEAT_TWO = 4
+
+// The two bars barRole marks in a four-pass loop: the middle pass' last bar and the
+// last pass' last bar. Bars 3 and 11 are deliberately not among them — quick-14 Q2-A.
+const MARKED_BARS = [7, 15]
+
+// The surdo opened to quarters. Both marked bars play it.
+const QUARTERS = [0, 4, 8, 12]
+
+const DRUMS = new Set<VoiceName>(feel.voices.filter((voice) => voice !== 'bass' && voice !== 'comp'))
+
 const BARS = BARS_PER_PASS * feel.passes
 
 type Rendered = {
@@ -41,6 +55,8 @@ type Rendered = {
   bpm: number
   /** sixteenth-grid steps each voice states, per bar of the loop */
   bars: Map<VoiceName, number[]>[]
+  /** struck drum events per bar, ghosts excluded — the metric events.test.ts measures a fill by */
+  struck: number[]
   offGrid: number
 }
 
@@ -48,6 +64,7 @@ function render(spec: GrooveSpec): Rendered {
   const { events, music } = buildEvents(spec, feel)
   const stepSec = ((60 / music.bpm) * 4) / feel.subdivision
   const bars: Map<VoiceName, number[]>[] = Array.from({ length: BARS }, () => new Map())
+  const struck = Array.from({ length: BARS }, () => 0)
   let offGrid = 0
 
   for (const event of events as NoteEvent[]) {
@@ -59,9 +76,12 @@ function render(spec: GrooveSpec): Rendered {
     const stated = bars[bar].get(event.voice) ?? []
     if (!stated.includes(sixteenth)) stated.push(sixteenth)
     bars[bar].set(event.voice, stated.sort((a, b) => a - b))
+    if (DRUMS.has(event.voice) && !(event.voice === 'snare' && event.velocity < GHOST_VELOCITY_THRESHOLD)) {
+      struck[bar] += 1
+    }
   }
 
-  return { spec, bpm: music.bpm, bars, offGrid }
+  return { spec, bpm: music.bpm, bars, struck, offGrid }
 }
 
 const rendered = specs.map(render)
@@ -195,6 +215,71 @@ describe('bossa-nova over the catalogue — feature-25 R21, R23, AC14, AC16', ()
         }
       }
     }
+  })
+
+  describe('the turnaround opens the surdo — quick-14', () => {
+    it('states beat 2, which no figure in the surdo pool does', () => {
+      for (const figure of SURDO) {
+        expect(figure, `${figure} already states beat 2`).not.toContain(BEAT_TWO)
+      }
+    })
+
+    it('opens the kick to quarters in both marked bars and nowhere else', () => {
+      for (const groove of rendered) {
+        for (let bar = 0; bar < BARS; bar++) {
+          const kick = groove.bars[bar].get('kick') ?? []
+          if (MARKED_BARS.includes(bar)) {
+            expect(kick, `${groove.spec.id} bar ${bar} does not open the surdo`).toEqual(QUARTERS)
+          } else {
+            expect(SURDO, `${groove.spec.id} bar ${bar} left the surdo pool`).toContainEqual(kick)
+          }
+        }
+      }
+    })
+
+    it('never thins a marked bar against the bar before it', () => {
+      for (const groove of rendered) {
+        for (const bar of MARKED_BARS) {
+          const kick = (steps: number) => (groove.bars[steps].get('kick') ?? []).length
+          expect(kick(bar), `${groove.spec.id} bar ${bar} kick against bar ${bar - 1}`)
+            .toBeGreaterThanOrEqual(kick(bar - 1))
+          expect(groove.struck[bar], `${groove.spec.id} bar ${bar} against bar ${bar - 1}`)
+            .toBeGreaterThan(groove.struck[bar - 1])
+        }
+      }
+    })
+
+    it('marks bar 15 more than bar 7, and both more than every unmarked bar', () => {
+      // ORDINARY_BARS drops every barInPass 3, so on its own it never looks at bars 3
+      // and 11 — the two Q2-A left unmarked. They are the bars that would go quiet if a
+      // later edit marked the turnaround by some other voice, so they are named here.
+      const unmarked = [...ORDINARY_BARS, 3, 11]
+      expect(unmarked, 'a marked bar slipped into the unmarked set').not.toContain(7)
+      expect(unmarked).not.toContain(15)
+
+      for (const groove of rendered) {
+        const ordinary = Math.max(...unmarked.map((bar) => groove.struck[bar]))
+        expect(groove.struck[15], `${groove.spec.id} fill against variation`).toBeGreaterThan(
+          groove.struck[7],
+        )
+        expect(groove.struck[7], `${groove.spec.id} variation against unmarked`).toBeGreaterThan(
+          ordinary,
+        )
+      }
+    })
+
+    it('keeps the hat and the clave running through both marked bars', () => {
+      for (const groove of rendered) {
+        for (const bar of MARKED_BARS) {
+          expect(groove.bars[bar].get('hatClosed'), `${groove.spec.id} bar ${bar} hat`).toEqual(
+            groove.bars[bar - 1].get('hatClosed'),
+          )
+          expect(groove.bars[bar].get('rim'), `${groove.spec.id} bar ${bar} rim`).toEqual(
+            CLAVE[bar % CLAVE.length],
+          )
+        }
+      }
+    })
   })
 
   it('draws the kick from the template surdo pool, one figure a groove — R21, AC14', () => {
