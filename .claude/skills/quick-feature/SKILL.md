@@ -1,6 +1,6 @@
 ---
 name: quick-feature
-description: Analyze a one-page quick ticket in `specs/quick/N-slug.md` — run the size test, write `## Notes` naming the files it will touch and the assumptions taken, and ask anything blocking as tickable options inside the ticket, folding the answers in on each re-run until nothing is open. Writes no code; `/implement-quick-feature N` builds it. Escalates to `/create-feature` the moment it stops being small. Use whenever the user runs `/quick-feature`, asks to analyze or scope a quick ticket, says they've answered a ticket's questions, or describes a small change that needs thinking through before it is built.
+description: Analyze a one-page quick ticket in `specs/quick/N-slug.md` — run the size test, write `## Notes` naming the files it will touch and the assumptions taken, and ask anything blocking as tickable options inside the ticket, folding the answers in on each re-run until nothing is open. Writes no code; `/implement-quick-feature N` builds it. Suggests `/create-feature` when it stops being small, and leaves that call to the user. Use whenever the user runs `/quick-feature`, asks to analyze or scope a quick ticket, says they've answered a ticket's questions, or describes a small change that needs thinking through before it is built.
 argument-hint: [what to change | N]
 ---
 
@@ -64,11 +64,18 @@ being small.
    re-renders the catalogue or reassigns past puzzles is never quick.
 4. Is one `git revert` the whole rollback?
 
-**Any "no" means hand it to `/create-feature` instead.** Say which question
-failed and why, and stop. Don't negotiate the ticket down until it fits — a
-change trimmed to pass this test is a feature being smuggled through the cheap
-door, and the parts you trimmed come back as a second ticket nobody planned
-against.
+**Any "no" is a suggestion to hand it to `/create-feature`, not a refusal.** Say
+which question failed and what it costs — the module it drags in, the frozen
+thing it touches, the tests it breaks — and recommend the chain. Then carry on
+with the ticket unless the user moves it: the door a change goes through is
+theirs to choose, and a waiver goes in `## What` when it is given up front or in
+`## Notes` when it arrives mid-analysis, in their own words.
+
+What still doesn't happen: **don't negotiate the ticket down until it fits.** A
+change trimmed to pass this test is a feature smuggled through the cheap door,
+and the parts you trimmed come back as a second ticket nobody planned against.
+Saying "this fails question 3 and here is the bill" is the job; shrinking the
+work so the question stops failing is not.
 
 More than two open questions surviving one round is itself a failed test (§5).
 
@@ -229,5 +236,5 @@ Then the next step, and only one of them:
 
 - questions open → point at the ticket, and at `/quick-feature N` again once
   they are ticked.
-- size test failed → point at `/create-feature`.
+- size test failed and the user has not waived it → recommend `/create-feature`, and say which question failed. Their call, so don't treat it as the end of the run.
 - settled → point at `/implement-quick-feature N`. Don't run it.

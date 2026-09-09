@@ -1,6 +1,6 @@
 ---
 name: implement-quick-feature
-description: Build a quick ticket that `/quick-feature` has already analyzed — re-check the size test against the real files, write the test then the code in the lead, gate it with the `verifier` over lint, tests and build, and record what was built in `specs/quick/N-slug.md`. Refuses to run on a ticket with no `## Notes` or with unticked `## Open questions`, and escalates to `/create-feature` if the change stops being small mid-build. Use whenever the user runs `/implement-quick-feature`, or asks to build, implement or ship a quick ticket.
+description: Build a quick ticket that `/quick-feature` has already analyzed — re-check the size test against the real files, write the test then the code in the lead, gate it with the `verifier` over lint, tests and build, and record what was built in `specs/quick/N-slug.md`. Refuses to run on a ticket with no `## Notes` or with unticked `## Open questions`, and suggests `/create-feature` if the change stops being small mid-build, leaving that call to the user. Use whenever the user runs `/implement-quick-feature`, or asks to build, implement or ship a quick ticket.
 argument-hint: [N]
 ---
 

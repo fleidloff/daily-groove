@@ -77,8 +77,11 @@ five bullets or fewer, at most two of the six modules in
 [architecture.md](architecture.md), nothing frozen in [music.md](music.md)
 touched, one `git revert` to roll back. `/quick-feature` runs them against the
 ticket, `/implement-quick-feature` re-runs them against the files it opens. Any
-"no" and the work goes to `/create-feature` instead — including halfway through
-the build, if that is when the truth turns up.
+"no" is a **suggestion** to move the work to `/create-feature` — including
+halfway through the build, if that is when the truth turns up. It is not a gate:
+say which question failed and what it costs, then carry on unless the user moves
+it. Whether a ticket is too big for this door is theirs to decide, and their
+waiver goes in the ticket in their own words.
 
 Quick changes get their own table in `specs/features.md`, so the index still
 shows everything that shipped. Their status runs 📝 Drafted → ❓ Questions open →
