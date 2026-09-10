@@ -3,7 +3,6 @@ import type {
   GrooveSpec,
   MusicMeta,
   NoteEvent,
-  Subdivision,
   VoiceName,
 } from './types.ts'
 import { assertFigures, assertPatterns } from './patterns.ts'
@@ -13,10 +12,100 @@ import { ROOTS } from '../../src/lib/theory/roots.ts'
 import { buildHarmony } from './theory/harmony.ts'
 import type { Harmony } from './theory/harmony.ts'
 import { scaleName } from '../../src/lib/theory/scales.ts'
+import {
+  BARS_PER_PASS,
+  BEATS_PER_BAR,
+  PATTERN_RESOLUTION,
+  featherSteps,
+  figureBars,
+  ghostSteps,
+  gridSteps,
+  middlePassOf,
+  sixteenthOf,
+} from './events/grid.ts'
+import {
+  BASS_PATTERNS,
+  BONGO_PATTERNS,
+  COMP_PATTERNS,
+  HAT_PATTERNS,
+  HAT_PUNCTUATION_PATTERNS,
+  KICK_PATTERNS,
+  RIDE_PATTERNS,
+  RIDE_SUSTAIN_SIXTEENTHS,
+  SNARE_GHOST_PATTERNS,
+} from './events/pools.ts'
+import {
+  BONGO_ACCENTS,
+  COMP_ACCENTS,
+  FEATHER_VELOCITY,
+  GHOST_VELOCITY_RANGE,
+  HAT_ACCENTS,
+  RIDE_ACCENTS,
+  accentCycle,
+  clampVelocity,
+  velocityFor,
+} from './events/velocity.ts'
+import {
+  DEFAULT_FILL,
+  FILLS,
+  FILL_DURATIONS,
+  PLACEMENTS,
+  assertFill,
+  placementFor,
+  withoutToms,
+  type FillPhrase,
+} from './events/fills.ts'
+import {
+  COMP_SPREAD_RANGE,
+  COMP_VOICE_DROP,
+  playedVoicing,
+  voiceLead,
+} from './events/voicing.ts'
+import { BASS_FLOOR_MIDI, buildBassLine, type BassDecisions } from './events/bass.ts'
 
-const BEATS_PER_BAR = 4
-
-export const BARS_PER_PASS = 4
+export {
+  BARS_PER_PASS,
+  PATTERN_RESOLUTION,
+  QUARTER_STEPS_16,
+  featherSteps,
+  figureBars,
+  gridSteps,
+  middlePassOf,
+} from './events/grid.ts'
+export {
+  HAT_PUNCTUATION_PATTERNS,
+  RIDE_PATTERNS,
+  RIDE_SUSTAIN_SIXTEENTHS,
+} from './events/pools.ts'
+export {
+  COMP_ACCENTS,
+  FEATHER_VELOCITY,
+  GHOST_VELOCITY_THRESHOLD,
+  HAT_ACCENTS,
+  RIDE_ACCENTS,
+  VELOCITIES,
+} from './events/velocity.ts'
+export {
+  DEFAULT_FILL,
+  DEFAULT_PLACEMENT,
+  FILLS,
+  FILL_DURATIONS,
+  PLACEMENTS,
+  assertFill,
+  type FillPhrase,
+} from './events/fills.ts'
+export {
+  COMP_REGISTER_CEILING,
+  COMP_REGISTER_LOW,
+  playedVoicing,
+  voiceLead,
+} from './events/voicing.ts'
+export {
+  BASS_SUSTAIN_DEFAULT,
+  BASS_SUSTAIN_FLOOR,
+  BASS_WALK_CEILING,
+  type BassDecisions,
+} from './events/bass.ts'
 
 // FROZEN. The committed answers derive from this exact string and draw
 // order, so a change re-keys the whole catalogue.
@@ -36,47 +125,6 @@ export const RIDE_LABEL = 'ride'
 // nothing may be inserted into an existing one.
 export const KIT_LABEL = 'kit'
 
-const BASS_BASE_MIDI = 24
-
-const BASS_OCTAVE_LIFT = 12
-
-const BASS_CEILING_MIDI = 48
-
-const BASS_FLOOR_MIDI = 25
-
-// A walking line needs room to step four times a bar without hitting the fold window's
-// wall; the drawn figure never moves far enough to care. G2, a fourth under the drawn
-// figure's ceiling and twelve semitones under the comp's floor.
-export const BASS_WALK_CEILING = 43
-
-// A walking bass steps; it does not leap. Nothing may move further than a fifth.
-const BASS_WALK_MAX_STEP = 7
-
-// Two symbols, not one: raising a single constant would have skipped the clamp below
-// and given every feel a flat 3. quick-24; docs/music.md § Voicing.
-export const BASS_SUSTAIN_FLOOR = 2
-
-export const BASS_SUSTAIN_DEFAULT = 3
-
-// One length for all four quarters, and detached quarters read as a march rather than a
-// line; even quarters are what a walking bass is. Under four, so the note-off still
-// lands before the next attack. A shorter approach note was tried and rejected — it made
-// beat 4 a pickup at the cost of the evenness that carries the line.
-const BASS_WALK_SUSTAIN = 3.5
-
-// Every walking note is a quarter, so `velocityFor` calls all four `strong` and the
-// whole line plays one velocity layer. These cross the pack's layer boundaries at 0.86
-// and 0.74 on purpose: beats 2 and 4 get a softer attack, not merely a quieter one.
-const BASS_WALK_VELOCITIES = [0.92, 0.78, 0.85, 0.74]
-
-const BASS_REST_CHANCE = 0.18
-const BASS_REPEAT_CHANCE = 0.4
-const BASS_OCTAVE_CHANCE = 0.32
-
-const COMP_SPREAD_RANGE: [number, number] = [0.005, 0.015]
-
-const COMP_VOICE_DROP = 0.12
-
 export const BACKING_VOICES: VoiceName[] = [
   'kick',
   'snare',
@@ -89,499 +137,6 @@ export const BACKING_VOICES: VoiceName[] = [
   'bass',
   'comp',
 ]
-
-export const COMP_REGISTER_LOW = 55
-export const COMP_REGISTER_CEILING = 76
-
-export const GHOST_VELOCITY_THRESHOLD = 0.5
-
-const GHOST_VELOCITY_RANGE: [number, number] = [0.15, 0.25]
-
-const MIN_VELOCITY = 0.05
-
-export const VELOCITIES: Record<VoiceName, { strong: number; medium: number; weak: number }> = {
-  kick: { strong: 0.98, medium: 0.86, weak: 0.74 },
-  snare: { strong: 1, medium: 0.7, weak: 0.45 },
-  hatClosed: { strong: 0.75, medium: 0.45, weak: 0.32 },
-  hatOpen: { strong: 0.75, medium: 0.68, weak: 0.6 },
-  ride: { strong: 0.78, medium: 0.62, weak: 0.55 },
-  rideBell: { strong: 0.8, medium: 0.66, weak: 0.55 },
-  claves: { strong: 0.7, medium: 0.6, weak: 0.5 },
-  cowbell: { strong: 0.74, medium: 0.62, weak: 0.52 },
-  rim: { strong: 0.55, medium: 0.5, weak: 0.42 },
-  tomHigh: { strong: 0.92, medium: 0.8, weak: 0.68 },
-  tomLow: { strong: 0.95, medium: 0.83, weak: 0.71 },
-  bongoHigh: { strong: 0.66, medium: 0.56, weak: 0.46 },
-  bongoLow: { strong: 0.7, medium: 0.6, weak: 0.5 },
-  bass: { strong: 0.92, medium: 0.8, weak: 0.68 },
-  comp: { strong: 0.72, medium: 0.62, weak: 0.52 },
-}
-
-function velocityFor(voice: VoiceName, step: number): number {
-  const shape = VELOCITIES[voice]
-  if (step % 4 === 0) return shape.strong
-  if (step % 2 === 0) return shape.medium
-  return shape.weak
-}
-
-export const HAT_ACCENTS = [1, 0.72, 0.88, 0.66]
-
-// Three, so the cycle is coprime with the four-beat bar and never locks to
-// it, and shallow, because a wavering pulse reads worse than a flat one.
-export const RIDE_ACCENTS = [1, 0.9, 0.95]
-
-export const RIDE_SUSTAIN_SIXTEENTHS = 8
-
-export const COMP_ACCENTS = [1.12, 1, 0.88, 1.12, 0.88]
-
-function clampVelocity(velocity: number): number {
-  return Math.min(1, Math.max(MIN_VELOCITY, velocity))
-}
-
-export const PATTERN_RESOLUTION = 16
-
-const KICK_PATTERNS: number[][] = [
-  [0, 6, 10],
-  [0, 3, 6, 10],
-  [0, 6, 10, 14],
-  [0, 7, 10],
-  [0, 6, 8, 14],
-]
-
-const HAT_PATTERNS: number[][] = [
-  [0, 2, 4, 6, 8, 10, 12, 14],
-  [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
-  [0, 2, 3, 4, 6, 8, 10, 11, 12, 14],
-]
-
-// A riding feel's hat is the left foot under the ride, so every figure holds
-// beats 2 and 4; the second picks up the "and" of 4 that hatOpen vacated.
-export const HAT_PUNCTUATION_PATTERNS: number[][] = [
-  [4, 12],
-  [4, 12, 14],
-  [0, 4, 8, 12],
-]
-
-// On a riding feel the ride is the pulse, so every figure keeps every quarter
-// and outnumbers the busiest foot hat.
-export const RIDE_PATTERNS: Partial<Record<Subdivision, number[][]>> = {
-  8: [
-    [0, 2, 4, 6, 8, 10, 12, 14],
-    [0, 4, 6, 8, 12, 14],
-    [0, 4, 6, 8, 12],
-  ],
-  // At swing 0.44 applySwing delays the odd sixteenths, so a step on 3, 7, 11
-  // or 15 is the "a" of its beat — a late flick, not the shuffle's triplet ping.
-  //
-  // Signed off 2026-09-05: Fred heard six renders of groove-40 and said "5 sounds
-  // best, go with the proposal" — cell 5, the 6-hit member below. A listening pass,
-  // not a measurement. The 8-hit member it replaces was heard first and rejected
-  // ("in groove 40, the ride is too loud. It get's a bit too much"). The members
-  // differ by where the flick lands rather than by how many there are, because this
-  // feel's bar is 25-35 % shorter than the shuffle's and the count that matters is
-  // per second, not per bar.
-  16: [
-    [0, 3, 4, 8, 11, 12],
-    [0, 4, 7, 8, 12, 15],
-    [0, 4, 8, 12, 15],
-  ],
-}
-
-export const QUARTER_STEPS_16 = [0, 4, 8, 12]
-
-// The loudest round value whose humanized ceiling (0.21 + 0.13) still sits
-// inside the softest recorded kick layer, whose maxVelocity is 0.3465.
-export const FEATHER_VELOCITY = 0.21
-
-export function featherSteps(
-  sounding: number[],
-  subdivision: FeelTemplate['subdivision'],
-): number[] {
-  return gridSteps(QUARTER_STEPS_16, subdivision).filter((step) => !sounding.includes(step))
-}
-
-const BASS_PATTERNS: number[][] = [
-  [0, 6, 10],
-  [0, 3, 10],
-  [0, 6, 10, 14],
-  [0, 8, 14],
-]
-
-const SNARE_GHOST_PATTERNS: number[][] = [
-  [3, 11],
-  [7, 15],
-  [11, 15],
-  [3, 7, 11],
-  [3, 11, 15],
-]
-
-const BONGO_PATTERNS: { high: number[]; low: number[] }[] = [
-  { high: [3, 11], low: [6] },
-  { high: [7, 15], low: [2, 10] },
-  { high: [3, 7, 13], low: [10] },
-  { high: [11], low: [3, 14] },
-]
-
-const BONGO_ACCENTS = [1, 0.82, 0.94, 0.74]
-
-const COMP_PATTERNS: number[][] = [
-  [2, 10],
-  [2, 6, 10],
-  [0, 10],
-  [2, 11],
-]
-
-type Placement = {
-  snare: number[]
-  hatOpen: number[]
-  rim: number[]
-  rimBars: number[]
-}
-
-export const DEFAULT_PLACEMENT: Placement = {
-  snare: [4, 12],
-  hatOpen: [14],
-  rim: [15],
-  rimBars: [1, 3],
-}
-
-export const PLACEMENTS: Record<string, Partial<Placement>> = {
-  'half-time': { snare: [8] },
-  'bright-straight': { rim: [14], rimBars: [3] },
-  // No snare key: patterns.kit owns this feel's snare line, and declaring both throws.
-  // The cross-stick clicks on the "e" of 4 — the one sixteenth every kit figure and
-  // every tom accent leaves empty — and it clicks in all four bars, so a pass whose
-  // last bar is a fill still has it three times.
-  'second-line': { hatOpen: [14], rim: [13], rimBars: [0, 1, 2, 3] },
-}
-
-function placementFor(templateId: string): Placement {
-  return { ...DEFAULT_PLACEMENT, ...(PLACEMENTS[templateId] ?? {}) }
-}
-
-export type FillPhrase = Partial<Record<VoiceName, number[]>>
-
-export const DEFAULT_FILL: FillPhrase = {
-  kick: [0],
-  snare: [0, 2, 4, 6, 14],
-  tomHigh: [8, 10],
-  tomLow: [12],
-}
-
-export const FILLS: Record<string, { fill: FillPhrase; variation?: FillPhrase }> = {
-  'half-time': { fill: { snare: [8, 12], tomHigh: [10], tomLow: [14] } },
-  // Declared to close a hole rather than to add a gesture: DEFAULT_FILL names no
-  // hatClosed, and a marked bar emits only the phrase's voices, so open-ballad's last
-  // bar had no hi-hat at all for three and a half seconds.
-  //
-  // The bar marks itself by *changing* the hat — sixteenths give way to eighths —
-  // rather than by out-counting an ordinary bar, which is what a ballad drummer plays.
-  // It keeps the kick on 1 and 3 and both backbeats, because a ballad does not abandon
-  // them for a roll, and the toms answer from the "and" of 3 into the second half of
-  // beat 4 so the downbeat arrives on its own. Steps 10 and 14 are left out of the hat
-  // for the reason the template's pool leaves them out: the hatOpen figure plays
-  // through fills and supplies both here, so the two lines together state the eighths.
-  // hatOpen is deliberately unnamed — the figure already sounds it, and `add` does not
-  // dedupe.
-  'open-ballad': {
-    fill: {
-      kick: [0, 8],
-      snare: [4, 12],
-      hatClosed: [0, 2, 4, 6, 8, 12],
-      tomHigh: [10, 11],
-      tomLow: [13, 14],
-    },
-  },
-  shuffle: {
-    fill: { kick: [0], snare: [0, 4, 14], tomHigh: [6, 8], tomLow: [10, 12] },
-  },
-  // A bossa has no drum fill: the hat and the clave never stop, and the turnaround is
-  // a snare push rather than a roll. Both phrases are declared because the feel carries
-  // no toms, which would make the default `withoutToms` variation identical to its fill.
-  //
-  // What marks the bar is the surdo opening to quarters. Every figure in the template's
-  // kick pool leaves beat 2 empty, so `[0, 4, 8, 12]` states a position no ordinary bar
-  // of this feel ever states, and it is the phrase end the surdo player actually plays.
-  // Both marked bars open it; the fill's extra snare on beat 3 is all that separates
-  // them, which is why the fill still marks more than the variation.
-  //
-  // Every step here must be even. This feel is on the eighth grid, and `scaleStep`
-  // rounds `step * 8 / 16`, so an odd step lands on its neighbour and `gridSteps`
-  // dedupes the collision without an error — half of a written odd figure would
-  // silently vanish.
-  'bossa-nova': {
-    fill: { kick: [0, 4, 8, 12], snare: [4, 8, 10, 12, 14], hatClosed: [0, 2, 4, 6, 8, 10, 12, 14] },
-    variation: { kick: [0, 4, 8, 12], snare: [4, 10, 12, 14], hatClosed: [0, 2, 4, 6, 8, 10, 12, 14] },
-  },
-  // The fill is the style, not a punctuation on it: a bar-long snare figure with the
-  // toms answering it into beat 4, and no crash to arrive at, because the kit has
-  // none. The kick keeps step 0 — the downbeat after this bar is position zero of the
-  // file — and adds beat 4 under the low tom. The hat holds quarters so the roll has a
-  // floor; the open hat and the rim stand down, which is what makes the bar read as an
-  // event.
-  //
-  // The variation is the same groove with its tom answer taken away and its snare
-  // thinned to the four struck steps. It is declared rather than left to
-  // withoutToms(fill) because this feel's ordinary bars already carry toms, so the
-  // thinning has to be visible against them rather than against the fill.
-  // The fill's low tom keeps the big four and pushes past it into the downbeat: in an
-  // ordinary bar the low tom *is* beat 4, so a fill that lands there and stops repeats
-  // the groove instead of answering it. The variation keeps the turnaround click — a
-  // thinning takes the answer out, not the timekeeping — and the fill still drops it,
-  // because the roll wants that sixteenth. Both are what make the middle bar read as
-  // less than the drawn figure and the last bar as more; measured over 400 seeds the
-  // middle bar is nearer an ordinary bar than the fill is at every one of the 48
-  // combinations the three pools can draw.
-  'second-line': {
-    fill: {
-      kick: [0, 12],
-      snare: [0, 1, 2, 4, 5, 6, 8, 14],
-      tomHigh: [10, 11],
-      tomLow: [12, 14],
-      hatClosed: [0, 4, 8, 12],
-    },
-    variation: {
-      kick: [0, 6, 12],
-      snare: [0, 6, 10, 14],
-      hatClosed: [0, 4, 8, 12],
-      hatOpen: [14],
-      rim: [13],
-    },
-  },
-}
-
-const TOM_VOICES: VoiceName[] = ['tomHigh', 'tomLow']
-
-const PITCHED_VOICES: VoiceName[] = ['bass', 'comp']
-
-export const FILL_DURATIONS: Record<VoiceName, number> = {
-  kick: 2,
-  snare: 2,
-  hatClosed: 1,
-  hatOpen: 2,
-  ride: 8,
-  rideBell: 8,
-  claves: 1,
-  cowbell: 1,
-  rim: 1,
-  tomHigh: 2,
-  tomLow: 2,
-  bongoHigh: 1,
-  bongoLow: 1,
-  bass: 2,
-  comp: 4,
-}
-
-// A fill phrase carries no midi, so a pitched voice in one renders the chord at the
-// sample's root note with no error — the same trap assertFigure closes for figures.
-export function assertFill(templateId: string, subject: string, phrase: FillPhrase): void {
-  for (const voice of PITCHED_VOICES) {
-    if (voice in phrase) {
-      throw new Error(
-        `${templateId}: FILLS.${subject} names ${voice}: a fill phrase emits no midi, so the ` +
-          `note would sound at the sample's root pitch — a fill may not name a pitched voice`,
-      )
-    }
-  }
-}
-
-function withoutToms(phrase: FillPhrase): FillPhrase {
-  const thinned: FillPhrase = {}
-  for (const [voice, steps] of Object.entries(phrase) as [VoiceName, number[]][]) {
-    if (TOM_VOICES.includes(voice)) continue
-    thinned[voice] = steps
-  }
-  return thinned
-}
-
-export function middlePassOf(passes: number): number | null {
-  if (passes < 3) return null
-  return Math.floor((passes - 1) / 2)
-}
-
-function scaleStep(step: number, subdivision: number): number {
-  return Math.min(subdivision - 1, Math.round((step * subdivision) / PATTERN_RESOLUTION))
-}
-
-// A pool figure may run past its first bar: step 18 is bar 2's step 2. Splitting it
-// here is what lets one drawn figure span bars while the emission stays per bar.
-export function figureBars(steps: number[], subdivision: number): number[][] {
-  const bars = Math.floor(Math.max(...steps) / PATTERN_RESOLUTION) + 1
-  return Array.from({ length: bars }, (_, bar) =>
-    gridSteps(
-      steps.filter((step) => Math.floor(step / PATTERN_RESOLUTION) === bar).map(
-        (step) => step % PATTERN_RESOLUTION,
-      ),
-      subdivision,
-    ),
-  )
-}
-
-export function gridSteps(steps: number[], subdivision: number): number[] {
-  const seen = new Set<number>()
-  const out: number[] = []
-  for (const source of [...steps].sort((a, b) => a - b)) {
-    const step = scaleStep(source, subdivision)
-    if (seen.has(step)) continue
-    seen.add(step)
-    out.push(step)
-  }
-  return out
-}
-
-function ghostSteps(steps: number[], subdivision: number): number[] {
-  const seen = new Set<number>()
-  const out: number[] = []
-  for (const source of [...steps].sort((a, b) => a - b)) {
-    const scaled = (source * subdivision) / PATTERN_RESOLUTION
-    const odd = 2 * Math.round((scaled - 1) / 2) + 1
-    const step = Math.min(subdivision - 1, Math.max(1, odd))
-    if (seen.has(step)) continue
-    seen.add(step)
-    out.push(step)
-  }
-  return out
-}
-
-function inRegister(midi: number, base: number, floor: number): number {
-  const placed = base + (((midi % 12) + 12) % 12)
-  return placed < floor ? placed + 12 : placed
-}
-
-function walkPool(pitchClasses: Set<number>, floor: number): number[] {
-  const pool: number[] = []
-  for (let midi = floor; midi <= BASS_WALK_CEILING; midi++) {
-    if (pitchClasses.has(((midi % 12) + 12) % 12)) pool.push(midi)
-  }
-  return pool
-}
-
-// The smallest move in `direction` that stays a step from `from` and, where a later note
-// is already fixed, leaves that note reachable too. Falling back to `from` is what the
-// ticket's allowed repeat is: the line ran out of room, not a coin flip.
-function walkStep(
-  from: number,
-  pool: number[],
-  direction: number,
-  toward: number | null,
-  towardLimit = BASS_WALK_MAX_STEP,
-): number {
-  const reachable = pool.filter(
-    (midi) =>
-      Math.abs(midi - from) <= BASS_WALK_MAX_STEP &&
-      (toward === null || Math.abs(toward - midi) <= towardLimit),
-  )
-  const forward = reachable.filter((midi) => Math.sign(midi - from) === direction)
-  const nearest = (candidates: number[]) =>
-    [...candidates].sort((a, b) => Math.abs(a - from) - Math.abs(b - from))[0]
-
-  if (forward.length > 0) return nearest(forward)
-
-  const sideways = reachable.filter((midi) => midi !== from)
-  if (sideways.length > 0) return nearest(sideways)
-
-  // `toward` and the step limit could not both be met. The pool is the harder
-  // constraint — beat three has to stay a chord tone — so the step limit gives first.
-  const inStep = pool.filter((midi) => Math.abs(midi - from) <= BASS_WALK_MAX_STEP)
-  return nearest(inStep.length > 0 ? inStep : pool) ?? from
-}
-
-function inCompRegister(midi: number): number {
-  let folded = midi
-  while (folded >= COMP_REGISTER_CEILING) folded -= 12
-  while (folded < COMP_REGISTER_LOW) folded += 12
-  return folded
-}
-
-function compOctaves(midi: number): number[] {
-  const octaves: number[] = []
-  const lowest = COMP_REGISTER_LOW + (((midi - COMP_REGISTER_LOW) % 12) + 12) % 12
-  for (let candidate = lowest; candidate < COMP_REGISTER_CEILING; candidate += 12) {
-    octaves.push(candidate)
-  }
-  return octaves
-}
-
-function voicingMotion(from: number[], to: number[]): number {
-  let total = 0
-  for (let i = 0; i < Math.min(from.length, to.length); i += 1) {
-    total += Math.abs(from[i] - to[i])
-  }
-  return total
-}
-
-export function voiceLead(previous: number[] | null, chordMidi: number[]): number[] {
-  const tones = [...chordMidi].sort((a, b) => a - b)
-  const independent = tones.map(inCompRegister).sort((a, b) => a - b)
-  if (!previous || previous.length === 0) return independent
-
-  const anchors = [...previous].sort((a, b) => a - b)
-  let best = independent
-  let least = voicingMotion(anchors, independent)
-
-  for (const voicing of octaveChoices(tones)) {
-    const sorted = [...voicing].sort((a, b) => a - b)
-    const moved = voicingMotion(anchors, sorted)
-    if (moved < least) {
-      least = moved
-      best = sorted
-    }
-  }
-  return best
-}
-
-function octaveChoices(tones: number[]): number[][] {
-  let voicings: number[][] = [[]]
-  for (const tone of tones) {
-    const next: number[][] = []
-    for (const voicing of voicings) {
-      for (const octave of compOctaves(tone)) next.push([...voicing, octave])
-    }
-    voicings = next
-  }
-  return voicings
-}
-
-export function playedVoicing(
-  voicing: number[],
-  chordMidi: number[],
-  bassMidi: number[],
-): number[] {
-  const tones = new Set(chordMidi.map(pitchClass))
-  if (tones.size < 4) return voicing
-  const root = pitchClass(chordMidi[0])
-  if (!bassMidi.some((midi) => pitchClass(midi) === root)) return voicing
-  return voicing.filter((midi) => pitchClass(midi) !== root)
-}
-
-function pitchClass(midi: number): number {
-  return ((Math.round(midi) % 12) + 12) % 12
-}
-
-// Test-only. The bass register's three floor-dependent decision sites, reported
-// so a test can compare the decisions across two floors instead of guessing them
-// back out of final pitches — which cannot be done, because the pop and the lift
-// both leave a note at 37-39 whatever the floor was.
-// scripts/grooves/bassFloor.test.ts is the only consumer.
-export type BassDecisions = {
-  pops: {
-    bar: number
-    index: number
-    step: number
-    folded: number
-    wants: boolean
-    can: boolean
-    final: number
-  }[]
-  approaches: {
-    bar: number
-    target: number
-    wantsBelow: boolean
-    belowOk: boolean
-    approach: number
-  }[]
-  lifts: { bottom: number; bar: number; step: number; from: number; to: number }[]
-}
 
 // Test-only, and nothing on the normal path passes one: every production caller
 // of buildEvents takes two arguments, so the floor is BASS_FLOOR_MIDI and no
@@ -610,6 +165,7 @@ export function buildEvents(
   const harmony = buildHarmony(root, flavour, musicRng)
 
   const grid = (steps: number[]) => gridSteps(steps, template.subdivision)
+  const sixteenth = (step: number) => sixteenthOf(step, template.subdivision)
   const placement = placementFor(template.id)
 
   const plays = (voice: VoiceName) => template.voices.includes(voice)
@@ -640,10 +196,7 @@ export function buildEvents(
     (_, step) => step,
   ).filter((step) => step % (template.subdivision / BEATS_PER_BAR) === 0)
 
-  const rideAccents = new Map<number, number>()
-  rideSteps.forEach((step, index) => {
-    rideAccents.set(step, RIDE_ACCENTS[index % RIDE_ACCENTS.length])
-  })
+  const rideAccents = accentCycle(rideSteps, RIDE_ACCENTS)
 
   const playsBongo = template.voices.includes('bongoHigh')
   const bongoFigure = playsBongo
@@ -652,11 +205,9 @@ export function buildEvents(
   const bongoHighSteps = grid(bongoFigure.high)
   const bongoLowSteps = grid(bongoFigure.low)
 
-  const bongoAccents = new Map<number, number>()
   const bongoLine = [...new Set([...bongoHighSteps, ...bongoLowSteps])].sort((a, b) => a - b)
-  bongoLine.forEach((step, index) => {
-    bongoAccents.set(step, BONGO_ACCENTS[index % BONGO_ACCENTS.length])
-  })
+  const bongoAccents = accentCycle(bongoLine, BONGO_ACCENTS)
+
   const kitFigure = pools?.kit
     ? pick(rngFor(`${spec.template}:${spec.seed}:${KIT_LABEL}`), pools.kit)
     : null
@@ -677,13 +228,10 @@ export function buildEvents(
     GHOST_VELOCITY_RANGE[0] +
     (GHOST_VELOCITY_RANGE[1] - GHOST_VELOCITY_RANGE[0]) * rhythmRng()
 
-  const hatAccents = new Map<number, number>()
   const hatLine = [
     ...new Set([...hatSteps, ...(plays('hatOpen') ? hatOpenSteps : [])]),
   ].sort((a, b) => a - b)
-  hatLine.forEach((step, index) => {
-    hatAccents.set(step, HAT_ACCENTS[index % HAT_ACCENTS.length])
-  })
+  const hatAccents = accentCycle(hatLine, HAT_ACCENTS)
 
   // The accent cycle indexes the hit's position in the whole phrase rather than in the
   // bar, so a two-bar figure gives its second bar a different shape from its first. It
@@ -695,8 +243,8 @@ export function buildEvents(
   const compAccent = (position: number, pass: number) =>
     COMP_ACCENTS[(position + pass) % COMP_ACCENTS.length]
 
-  const accentedVelocity = (voice: VoiceName, step: number, sixteenth: number) => {
-    const base = velocityFor(voice, sixteenth)
+  const accentedVelocity = (voice: VoiceName, step: number, sixteenthStep: number) => {
+    const base = velocityFor(voice, sixteenthStep)
     if (voice === 'hatClosed' || voice === 'hatOpen') {
       return clampVelocity(base * (hatAccents.get(step) ?? 1))
     }
@@ -726,9 +274,7 @@ export function buildEvents(
       voice,
       timeSec: (bar * template.subdivision + step) * stepSec + offsetSec,
       durationSec: sixteenths * sixteenthSec,
-      velocity:
-        velocity ??
-        accentedVelocity(voice, step, (step * PATTERN_RESOLUTION) / template.subdivision),
+      velocity: velocity ?? accentedVelocity(voice, step, sixteenth(step)),
     }
     if (midi !== undefined) event.midi = midi
     events.push(event)
@@ -746,190 +292,16 @@ export function buildEvents(
   const compSpreadSec =
     COMP_SPREAD_RANGE[0] + (COMP_SPREAD_RANGE[1] - COMP_SPREAD_RANGE[0]) * rhythmRng()
 
-  type BassNote = { step: number; midi: number; sustain?: number; velocity?: number }
-
-  const quarterBassSteps = [0, 1, 2, 3].map((beat) => (beat * template.subdivision) / 4)
-
-  const bassFigure: BassNote[][] = []
-  const approaches = new Set<number>()
-  let previousBass: number | null = null
-  for (let barInPass = 0; barInPass < BARS_PER_PASS; barInPass++) {
-    const chord = chordFor(barInPass)
-    const notes: BassNote[] = []
-
-    if (walking) {
-      const nextRoot = nextRootAt(barInPass)
-      const target = inRegister(nextRoot ?? chord[0], BASS_BASE_MIDI, bassFloor)
-      const direction = rhythmRng()
-
-      const beatOne = inRegister(chord[0], BASS_BASE_MIDI, bassFloor)
-      const approach =
-        nextRoot === null
-          ? null
-          : direction < 0.5 && target - 1 >= bassFloor
-            ? target - 1
-            : target + 1
-
-      const chordTones = new Set(chord.map((midi) => ((midi % 12) + 12) % 12))
-      const rootClass = ((chord[0] % 12) + 12) % 12
-      const away = new Set([...chordTones].filter((pitchClass) => pitchClass !== rootClass))
-      const stepping = walkPool(chordTones, bassFloor)
-      const restating = walkPool(away.size > 0 ? away : chordTones, bassFloor)
-
-      const heading = Math.sign((approach ?? target) - beatOne) || (direction < 0.5 ? -1 : 1)
-      const beatTwo = walkStep(beatOne, stepping, heading, approach ?? target, BASS_WALK_MAX_STEP * 2)
-      const beatThree = walkStep(beatTwo, restating, heading, approach)
-      const beatFour = approach ?? walkStep(beatThree, stepping, heading, target)
-
-      for (const [index, midi] of [beatOne, beatTwo, beatThree, beatFour].entries()) {
-        notes.push({
-          step: quarterBassSteps[index],
-          midi,
-          sustain: BASS_WALK_SUSTAIN,
-          velocity: BASS_WALK_VELOCITIES[index],
-        })
-      }
-      if (nextRoot !== null) {
-        decisions?.approaches.push({ bar: barInPass, target, wantsBelow: direction < 0.5, belowOk: target - 1 >= bassFloor, approach: beatFour })
-      }
-      bassFigure.push(notes)
-      continue
-    }
-
-    bassSteps.forEach((step, i) => {
-      const rest = rhythmRng()
-      const repeat = rhythmRng()
-      const drop = rhythmRng()
-
-      if (i === 0) {
-        const root = inRegister(chord[0], BASS_BASE_MIDI, bassFloor)
-        previousBass = root
-        notes.push({ step, midi: root })
-        return
-      }
-      if (rest < BASS_REST_CHANCE) return
-
-      let midi: number
-      if (repeat < BASS_REPEAT_CHANCE && previousBass !== null) {
-        midi = previousBass
-      } else {
-        midi = inRegister(chord[i % chord.length], BASS_BASE_MIDI, bassFloor)
-        const folded = midi
-        const wants = drop < BASS_OCTAVE_CHANCE
-        const can = midi + BASS_OCTAVE_LIFT <= BASS_CEILING_MIDI
-        if (wants && can) {
-          midi += BASS_OCTAVE_LIFT
-        }
-        decisions?.pops.push({ bar: barInPass, index: i, step, folded, wants, can, final: midi })
-      }
-      previousBass = midi
-      notes.push({ step, midi })
-    })
-
-    const nextRoot = nextRootAt(barInPass)
-    const direction = rhythmRng()
-    if (nextRoot === null) {
-      bassFigure.push(notes)
-      continue
-    }
-    const target = inRegister(nextRoot, BASS_BASE_MIDI, bassFloor)
-    const approachStep = template.subdivision - 1
-    const wantsBelow = direction < 0.5
-    const belowOk = target - 1 >= bassFloor
-    const approach = wantsBelow && belowOk ? target - 1 : target + 1
-    decisions?.approaches.push({ bar: barInPass, target, wantsBelow, belowOk, approach })
-    previousBass = approach
-    approaches.add(bassFigure.length)
-    bassFigure.push(
-      [...notes.filter((note) => note.step !== approachStep), { step: approachStep, midi: approach }]
-        .sort((a, b) => a.step - b.step),
-    )
-  }
-
-  const isApproach = (bar: number, note: BassNote) =>
-    approaches.has(bar) && note.step === template.subdivision - 1
-
-  const movable = () =>
-    bassFigure.flatMap((notes, bar) =>
-      notes
-        .map((note, index) => ({ bar, index, note }))
-        .filter(({ index, note }) => index > 0 && !isApproach(bar, note)),
-    )
-
-  const soundedIn = (bar: number) => bassFigure[bar].filter((note) => !isApproach(bar, note))
-  const restsSomewhere = () => {
-    const steps = new Set(
-      bassFigure.flatMap((_, bar) => soundedIn(bar).map((note) => note.step)),
-    )
-    return bassFigure.some((_, bar) => soundedIn(bar).length < steps.size)
-  }
-
-  if (!walking && !restsSomewhere()) {
-    const candidates = movable()
-    const heard = candidates.filter(({ bar, note }) =>
-      bassFigure.some(
-        (other, otherBar) =>
-          otherBar !== bar && other.some((n) => n.step === note.step && !isApproach(otherBar, n)),
-      ),
-    )
-    const silenced = (heard.length > 0 ? heard : candidates).at(-1)
-    if (silenced) {
-      bassFigure[silenced.bar] = bassFigure[silenced.bar].filter((n) => n !== silenced.note)
-    }
-  }
-
-  const pitches = () => bassFigure.flat().map((note) => note.midi)
-  const bottom = Math.min(...pitches())
-  const liftable = bassFigure
-    .flatMap((notes, bar) => notes.filter((note) => !isApproach(bar, note)))
-    .filter(
-      (note) => note.midi > bottom && note.midi + BASS_OCTAVE_LIFT <= BASS_CEILING_MIDI,
-    )
-  if (!walking && liftable.length > 0) {
-    const highest = liftable.reduce((high, note) => (note.midi > high.midi ? note : high))
-    const from = highest.midi
-    highest.midi += BASS_OCTAVE_LIFT
-    decisions?.lifts.push({
-      bottom,
-      bar: bassFigure.findIndex((notes) => notes.includes(highest)),
-      step: highest.step,
-      from,
-      to: highest.midi,
-    })
-  }
-
-  const repeatsSomewhere = () => {
-    const line = pitches()
-    return line.some((midi, i) => i > 0 && midi === line[i - 1])
-  }
-  if (!walking && !repeatsSomewhere()) {
-    for (const candidate of movable().reverse()) {
-      const before = bassFigure[candidate.bar][candidate.index - 1]
-      if (!before) continue
-      const was = candidate.note.midi
-      candidate.note.midi = before.midi
-      const line = pitches()
-      if (repeatsSomewhere() && Math.max(...line) - Math.min(...line) > 12) break
-      candidate.note.midi = was
-    }
-  }
-
-  // Gap off the grid, not off the humanized onsets, so length does not jitter with the
-  // timing walk kick and bass share.
-  const bassRing = (barInPass: number, step: number): number => {
-    const cap = template.bassSustain ?? BASS_SUSTAIN_DEFAULT
-    if (cap <= BASS_SUSTAIN_FLOOR) return BASS_SUSTAIN_FLOOR
-
-    const later = bassFigure[barInPass].map((note) => note.step).filter((s) => s > step)
-    const following = bassFigure[(barInPass + 1) % BARS_PER_PASS].map((note) => note.step)
-    const gap =
-      later.length > 0
-        ? Math.min(...later) - step
-        : template.subdivision - step + (following.length > 0 ? Math.min(...following) : 0)
-
-    const sixteenths = (gap * PATTERN_RESOLUTION) / template.subdivision
-    return Math.max(BASS_SUSTAIN_FLOOR, Math.min(cap, sixteenths))
-  }
+  const bass = buildBassLine({
+    template,
+    walking,
+    bassSteps,
+    chordFor,
+    nextRootAt,
+    rhythmRng,
+    bassFloor,
+    decisions,
+  })
 
   const compFigure: number[][] = []
   let previousVoicing: number[] | null = null
@@ -937,7 +309,7 @@ export function buildEvents(
     const chord = chordFor(barInPass)
     const voicing = voiceLead(previousVoicing, chord)
     previousVoicing = voicing
-    const bassMidi = plays('bass') ? bassFigure[barInPass].map((note) => note.midi) : []
+    const bassMidi = plays('bass') ? bass.figure[barInPass].map((note) => note.midi) : []
     compFigure.push(playedVoicing(voicing, chord, bassMidi))
   }
 
@@ -964,6 +336,11 @@ export function buildEvents(
 
   const phraseForRole = (role: 'fill' | 'variation') =>
     role === 'fill' ? fillPhrase : variationPhrase
+
+  const addAccented = (voice: VoiceName, bar: number, step: number, accents: Map<number, number>) => {
+    const base = velocityFor(voice, sixteenth(step))
+    add(voice, bar, step, 1, undefined, clampVelocity(base * (accents.get(step) ?? 1)))
+  }
 
   for (let pass = 0; pass < template.passes; pass++) {
     const start = events.length
@@ -1008,32 +385,23 @@ export function buildEvents(
           for (const step of rimSteps) add('rim', bar, step, 1)
         }
         if (plays('bongoHigh')) {
-          for (const step of bongoHighSteps) {
-            const sixteenth = (step * PATTERN_RESOLUTION) / template.subdivision
-            const base = velocityFor('bongoHigh', sixteenth)
-            add('bongoHigh', bar, step, 1, undefined, clampVelocity(base * (bongoAccents.get(step) ?? 1)))
-          }
+          for (const step of bongoHighSteps) addAccented('bongoHigh', bar, step, bongoAccents)
         }
         if (plays('bongoLow')) {
-          for (const step of bongoLowSteps) {
-            const sixteenth = (step * PATTERN_RESOLUTION) / template.subdivision
-            const base = velocityFor('bongoLow', sixteenth)
-            add('bongoLow', bar, step, 1, undefined, clampVelocity(base * (bongoAccents.get(step) ?? 1)))
-          }
+          for (const step of bongoLowSteps) addAccented('bongoLow', bar, step, bongoAccents)
         }
       }
 
       for (const figure of template.figures ?? []) {
         if (!plays(figure.voice)) continue
         for (const step of grid(figure.bars[barInPass % figure.bars.length])) {
-          const sixteenth = (step * PATTERN_RESOLUTION) / template.subdivision
           add(
             figure.voice,
             bar,
             step,
             FILL_DURATIONS[figure.voice],
             undefined,
-            velocityFor(figure.voice, sixteenth),
+            velocityFor(figure.voice, sixteenth(step)),
           )
         }
       }
@@ -1048,12 +416,12 @@ export function buildEvents(
       }
 
       if (plays('bass')) {
-        for (const note of bassFigure[barInPass]) {
+        for (const note of bass.figure[barInPass]) {
           add(
             'bass',
             bar,
             note.step,
-            note.sustain ?? bassRing(barInPass, note.step),
+            note.sustain ?? bass.ring(barInPass, note.step),
             note.midi,
             note.velocity,
           )
@@ -1065,9 +433,8 @@ export function buildEvents(
         const spread = voicing.length > 1 ? compSpreadSec / (voicing.length - 1) : 0
         const phraseBar = barInPass % compPhrase.length
         compPhrase[phraseBar].forEach((step, inBar) => {
-          const sixteenth = (step * PATTERN_RESOLUTION) / template.subdivision
           const base = clampVelocity(
-            velocityFor('comp', sixteenth) *
+            velocityFor('comp', sixteenth(step)) *
               compAccent(compPhraseOffsets[phraseBar] + inBar, pass),
           )
           voicing.forEach((midi, index) => {

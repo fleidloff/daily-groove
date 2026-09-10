@@ -705,8 +705,8 @@ describe('the music document', () => {
       return rows[0]!
     }
 
-    it('still sends a shared rhythm figure to the pools in events.ts', () => {
-      const row = rowSendingTo('a shared figure', /pattern pools in `events\.ts`/)
+    it('still sends a shared rhythm figure to the pools in events/pools.ts', () => {
+      const row = rowSendingTo('a shared figure', /pattern pools in `events\/pools\.ts`/)
       expect(row[0]).toMatch(/figures?/i)
     })
 

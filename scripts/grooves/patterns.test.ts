@@ -55,8 +55,8 @@ describe('the pattern block', () => {
     expect(new Set(PATTERN_VOICES).size).toBe(8)
   })
 
-  it('replaces a pool events.ts already carries for the first seven, and none for kit', () => {
-    const source = readFileSync(join(import.meta.dirname, 'events.ts'), 'utf8')
+  it('replaces a pool events/pools.ts already carries for the first seven, and none for kit', () => {
+    const source = readFileSync(join(import.meta.dirname, 'events', 'pools.ts'), 'utf8')
     const replaced: Record<string, string[]> = {
       kick: ['KICK_PATTERNS'],
       hatClosed: ['HAT_PATTERNS', 'HAT_PUNCTUATION_PATTERNS'],

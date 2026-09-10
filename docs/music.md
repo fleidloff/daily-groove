@@ -18,7 +18,7 @@ that figure and looped seamlessly.
 
 | | |
 | :-- | :-- |
-| Figure | 4 bars, 4/4 (`BARS_PER_PASS`, `BEATS_PER_BAR` in `events.ts`) |
+| Figure | 4 bars, 4/4 (`BARS_PER_PASS`, `BEATS_PER_BAR` in `events/grid.ts`) |
 | Passes | 2–4, declared per feel. Never 1 — one pass is a loop that repeats byte for byte, which is what passes exist to replace |
 | Catalogue | `catalogue.json`, several seeds per feel. The count changes at every mint, so it lives there and not here |
 | Identity | `{ template, seed }` and nothing else |
@@ -422,7 +422,7 @@ does. And `8` is the ceiling on any cap: the samples are 2.000 s, which at 62 bp
 
 Three things a bass player does that an arpeggiator does not, drawn per note:
 rest (`0.18`), repeat (`0.4`), octave lift (`0.32`). **None of the three is drawn
-for the downbeat** (`events.ts:795-804`), so the figure is built with the bar's
+for the downbeat** (`events/bass.ts`, the `i === 0` branch), so the figure is built with the bar's
 root on beat one, in the base octave. It anchors the bar, the comp's rootless
 voicing depends on it, and an approach note in the bar before resolves onto it.
 
@@ -431,7 +431,7 @@ sentence above used to read "always the bar's root, in the base octave", and tha
 was **wrong** rather than imprecise, so it is retracted here instead of softened.
 A later site — the **always-lift** — guarantees the line moves by an octave
 somewhere in the four bars: it takes the highest note that sits above the figure's
-own lowest and has room under `48`, and lifts it (`events.ts:878-887`). Its filter
+own lowest and has room under `48`, and lifts it (`events/bass.ts`, `liftable`). Its filter
 excludes the approach note and **not the downbeat**, so a downbeat root is a legal
 pick, and measured over the committed catalogue **26 of the 45 lifts land on one** —
 ten of them in bar 1, and all five C-rooted grooves taking that bar's 36 to the
@@ -458,7 +458,7 @@ grooves, voids the sign-offs among them and re-renders the catalogue. That is a 
 a listening gate on it, not a tidy-up.
 
 The approach note is a semitone from the next bar's root, drawn below or above
-(`events.ts:830-834`): below when the draw asks for it, and
+(`events/bass.ts`, `approach`): below when the draw asks for it, and
 **below gives way to above whenever a semitone below would fall under the
 floor** — so exactly one pitch class is never approached from below, whichever
 fold lands on the floor, and the floor at 25 moves that one from E to C♯. No
@@ -737,15 +737,15 @@ to catch a violation.
 | which modes a feel carries | `templates/<feel>.ts` → `flavours` |
 | add a mode | `src/lib/theory/names.ts` (append only), `src/lib/theory/scales.ts`, `theory/validity.ts`, and one template's `flavours` |
 | chord vocabulary or progression rules | `theory/harmony.ts` |
-| kick / hat / bass / ghost / bongo / comp figures, for every feel at once | the pattern pools in `events.ts` |
+| kick / hat / bass / ghost / bongo / comp figures, for every feel at once | the pattern pools in `events/pools.ts` |
 | the same figures for **one** feel only | `templates/<feel>.ts` → `patterns`. A declared pool **replaces** the shared one for that voice, never extends it, so the pools stay the length every committed draw expects. The comp pool is the one whose members may run past a bar — `[0, 6, 12, 18, 24, 28]` is two bars, `bar = step >> 4` — so a phrase that is *drawn per groove* rather than fixed for the feel belongs here. Its length must divide the four-bar pass, and every bar of it has to sound, because a silent bar states no chord |
 | a figure that never varies — a clave, a two-bar ostinato, a once-a-pass tom accent | `templates/<feel>.ts` → `figures`: one step list per bar of the cycle, drawn from no pool and played through fills. It is the *fixed* half of that fork — a multi-bar phrase the feel draws per groove goes to the pool above instead. It carries no midi, so it may not name `bass` or `comp`; a pitched voice there would sound the chord at the sample's root pitch, and `assertFigure` rejects it. `PLACEMENTS` is the answer only for a one-bar override of an existing placement line; anything longer than a bar that never varies is a `figures` entry, and a `figures` entry on `rim` or `hatOpen` suppresses that voice's placement line for the feel |
-| backbeat, open hat, rim placement | `DEFAULT_PLACEMENT` / `PLACEMENTS` in `events.ts`. A feel whose snare line varies per seed instead declares `patterns.kit` — one or the other, never both |
-| fills | `DEFAULT_FILL` / `FILLS` in `events.ts` |
-| bass register and behaviour | `BASS_*` constants in `events.ts` |
+| backbeat, open hat, rim placement | `DEFAULT_PLACEMENT` / `PLACEMENTS` in `events/fills.ts`. A feel whose snare line varies per seed instead declares `patterns.kit` — one or the other, never both |
+| fills | `DEFAULT_FILL` / `FILLS` in `events/fills.ts` |
+| bass register and behaviour | `BASS_*` constants in `events/bass.ts` |
 | how long a feel's drawn bass notes ring | `bassSustain` on `templates/<feel>.ts` — a **cap** on a ring that stops at the next bass onset, floored at `BASS_SUSTAIN_FLOOR = 2`. Absent means `BASS_SUSTAIN_DEFAULT = 3`, the cap every feel shares; a value at or under the floor opts the feel out of ringing. It says nothing about a walking line, which sets its own length and takes precedence |
 | whether a feel or one groove walks its bass | `bassType` on `templates/<feel>.ts` for the whole feel, or on the groove's entry in `catalogue.json` for one of them. The groove wins. A walking line ignores the feel's `patterns.bass`, so declaring both says nothing |
-| comp register, voicing, spread | `COMP_*` constants and `voiceLead` in `events.ts` |
+| comp register, voicing, spread | `COMP_*` constants and `voiceLead` in `events/voicing.ts` |
 | timing feel, lean, drift | `humanize.ts` and the template's `humanize` block |
 | reverb, peak ceiling, bus behaviour | `mix.ts` |
 | what gets rejected | `gate.ts` |

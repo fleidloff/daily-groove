@@ -14,7 +14,7 @@ top of the next two sections.
 `npm run grooves` walks the committed catalogue and puts every entry through the same
 four stages. `cli.ts` is the whole pipeline in one function if you want to read it.
 
-**1. Events** — `events.ts`. A `{ template, seed }` pair goes in. The feel template is
+**1. Events** — `events.ts`, which draws and emits; its tables and its sub-decisions sit in `events/` (`grid.ts`, `pools.ts`, `velocity.ts`, `fills.ts`, `voicing.ts`, `bass.ts`). A `{ template, seed }` pair goes in. The feel template is
 the part a human decided: tempo range, subdivision, swing, which voices play, how loud,
 where in the stereo image, the two to four modes it is allowed to draw, and the
 note-density band it must stay inside. The seed decides everything else. Out comes a list of note
