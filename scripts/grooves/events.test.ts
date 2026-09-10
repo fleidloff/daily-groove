@@ -5,6 +5,7 @@ import {
   BACKING_VOICES,
   BARS_PER_PASS,
   BASS_SUSTAIN_DEFAULT,
+  BASS_SUSTAIN_FLOOR,
   BONGO_LABEL,
   COMP_REGISTER_CEILING,
   COMP_REGISTER_LOW,
@@ -3319,7 +3320,7 @@ describe('a feel can let its bass ring — quick-22', () => {
     const cap = openBallad.bassSustain as number
     for (const seed of seedsOf('open-ballad')) {
       for (const note of bassLine(openBallad, seed)) {
-        if (note.gap <= BASS_SUSTAIN_DEFAULT) continue
+        if (note.gap <= BASS_SUSTAIN_FLOOR) continue
         expect(note.sustain, `seed ${seed} @${note.sixteenth} gap ${note.gap}`).toBeCloseTo(
           Math.min(cap, note.gap),
           9,
@@ -3328,12 +3329,12 @@ describe('a feel can let its bass ring — quick-22', () => {
     }
   })
 
-  it('never rings a note shorter than the default, however close the next onset is', () => {
+  it('never rings a note shorter than the floor, however close the next onset is', () => {
     for (const seed of seedsOf('open-ballad')) {
       for (const note of bassLine(openBallad, seed)) {
-        if (note.gap > BASS_SUSTAIN_DEFAULT) continue
+        if (note.gap > BASS_SUSTAIN_FLOOR) continue
         expect(note.sustain, `seed ${seed} @${note.sixteenth} gap ${note.gap}`).toBeCloseTo(
-          BASS_SUSTAIN_DEFAULT,
+          BASS_SUSTAIN_FLOOR,
           9,
         )
       }
@@ -3344,7 +3345,7 @@ describe('a feel can let its bass ring — quick-22', () => {
     for (const seed of seedsOf('open-ballad')) {
       for (const note of bassLine(openBallad, seed)) {
         expect(note.sustain, `seed ${seed} @${note.sixteenth}`).toBeLessThanOrEqual(
-          Math.max(BASS_SUSTAIN_DEFAULT, note.gap) + 1e-9,
+          Math.max(BASS_SUSTAIN_FLOOR, note.gap) + 1e-9,
         )
       }
     }
@@ -3354,7 +3355,7 @@ describe('a feel can let its bass ring — quick-22', () => {
     const cap = openBallad.bassSustain as number
     for (const seed of seedsOf('open-ballad')) {
       const line = bassLine(openBallad, seed)
-      const longer = line.filter((note) => note.sustain > BASS_SUSTAIN_DEFAULT)
+      const longer = line.filter((note) => note.sustain > BASS_SUSTAIN_FLOOR)
       expect(longer.length, `seed ${seed}`).toBeGreaterThan(line.length / 2)
       for (const note of line) {
         expect(note.sustain, `seed ${seed} @${note.sixteenth}`).toBeLessThanOrEqual(cap + 1e-9)
@@ -3379,23 +3380,57 @@ describe('a feel can let its bass ring — quick-22', () => {
       // 2.000 s of recording is 8.27 sixteenths at 62 bpm, the slowest tempo any feel
       // declares, so a cap above eight rings into the sample's own fade.
       expect(feel.bassSustain, feel.id).toBeLessThanOrEqual(8)
-      // Below the default the declaration says nothing — bassRing floors it back to 2.
-      expect(feel.bassSustain, feel.id).toBeGreaterThan(BASS_SUSTAIN_DEFAULT)
+      // At or below the floor a declaration is the opt-out: bassRing returns the flat
+      // floor and the feel does not ring at all. Below the floor it would say nothing.
+      expect(feel.bassSustain, feel.id).toBeGreaterThanOrEqual(BASS_SUSTAIN_FLOOR)
     }
   })
 
-  it('leaves every feel that declares no bassSustain on the default', () => {
+  it('rings every feel that declares no bassSustain up to the shared default — quick-24', () => {
     const feels = allTemplates().filter((feel) => feel.bassSustain === undefined)
     expect(feels.length).toBeGreaterThan(0)
     for (const feel of feels) {
       for (let seed = 1; seed <= 4; seed += 1) {
         for (const note of bassLine(feel, seed, 'normal')) {
-          expect(note.sustain, `${feel.id}:${seed} @${note.sixteenth}`).toBeCloseTo(
-            BASS_SUSTAIN_DEFAULT,
+          expect(note.sustain, `${feel.id}:${seed} @${note.sixteenth} gap ${note.gap}`).toBeCloseTo(
+            Math.max(BASS_SUSTAIN_FLOOR, Math.min(BASS_SUSTAIN_DEFAULT, note.gap)),
             9,
           )
         }
       }
+    }
+  })
+
+  it('raises the shared cap above the floor, and the floor is what it was — quick-24', () => {
+    // Pinned: a change here re-renders 40 grooves and voids 13 sign-offs.
+    expect(BASS_SUSTAIN_FLOOR).toBe(2)
+    expect(BASS_SUSTAIN_DEFAULT).toBe(3)
+    expect(BASS_SUSTAIN_DEFAULT).toBeGreaterThan(BASS_SUSTAIN_FLOOR)
+  })
+
+  it('lengthens a note with room and leaves a tight one alone, in every drawing feel — quick-24', () => {
+    for (const feel of allTemplates().filter((f) => f.bassSustain === undefined)) {
+      let lengthened = 0
+      let tight = 0
+      for (let seed = 1; seed <= 4; seed += 1) {
+        for (const note of bassLine(feel, seed, 'normal')) {
+          if (note.gap >= BASS_SUSTAIN_DEFAULT) {
+            expect(note.sustain, `${feel.id}:${seed} @${note.sixteenth}`).toBeCloseTo(
+              BASS_SUSTAIN_DEFAULT,
+              9,
+            )
+            lengthened += 1
+          } else {
+            expect(note.sustain, `${feel.id}:${seed} @${note.sixteenth}`).toBeCloseTo(
+              BASS_SUSTAIN_FLOOR,
+              9,
+            )
+            tight += 1
+          }
+        }
+      }
+      expect(lengthened, `${feel.id} lengthens nothing`).toBeGreaterThan(0)
+      expect(tight, `${feel.id} has no tight note to hold`).toBeGreaterThan(0)
     }
   })
 })

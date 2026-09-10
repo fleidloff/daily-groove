@@ -52,16 +52,16 @@ export const BASS_WALK_CEILING = 43
 // A walking bass steps; it does not leap. Nothing may move further than a fifth.
 const BASS_WALK_MAX_STEP = 7
 
-// What a drawn bass note holds when its feel declares no `bassSustain`. Also the floor
-// under one that does: a feel that rings may not shorten the pickup pairs the pool puts
-// a single sixteenth apart.
-export const BASS_SUSTAIN_DEFAULT = 2
+// Two symbols, not one: raising a single constant would have skipped the clamp below
+// and given every feel a flat 3. quick-24; docs/music.md § Voicing.
+export const BASS_SUSTAIN_FLOOR = 2
 
-// One length for all four quarters. The drawn figure's two sixteenths leave as much
-// silence as note, and detached quarters read as a march rather than a line; even
-// quarters are what a walking bass is. Under four, so the note-off still lands before
-// the next attack. A shorter approach note was tried and rejected — it made beat 4 a
-// pickup at the cost of the evenness that carries the line.
+export const BASS_SUSTAIN_DEFAULT = 3
+
+// One length for all four quarters, and detached quarters read as a march rather than a
+// line; even quarters are what a walking bass is. Under four, so the note-off still
+// lands before the next attack. A shorter approach note was tried and rejected — it made
+// beat 4 a pickup at the cost of the evenness that carries the line.
 const BASS_WALK_SUSTAIN = 3.5
 
 // Every walking note is a quarter, so `velocityFor` calls all four `strong` and the
@@ -914,15 +914,11 @@ export function buildEvents(
     }
   }
 
-  // A ringing feel holds each note up to the next bass onset — the next bar's downbeat
-  // when the bar has no later note — so the cap bounds the overrun rather than the note
-  // deciding its own length. BASS_SUSTAIN_DEFAULT is a floor as well as a default, so a
-  // pool that puts two onsets one sixteenth apart still overruns by one, exactly as it
-  // does with no bassSustain declared. The gap is read off the grid rather than off the
-  // humanized onsets, so note length does not jitter with the timing walk.
+  // Gap off the grid, not off the humanized onsets, so length does not jitter with the
+  // timing walk kick and bass share.
   const bassRing = (barInPass: number, step: number): number => {
     const cap = template.bassSustain ?? BASS_SUSTAIN_DEFAULT
-    if (cap <= BASS_SUSTAIN_DEFAULT) return BASS_SUSTAIN_DEFAULT
+    if (cap <= BASS_SUSTAIN_FLOOR) return BASS_SUSTAIN_FLOOR
 
     const later = bassFigure[barInPass].map((note) => note.step).filter((s) => s > step)
     const following = bassFigure[(barInPass + 1) % BARS_PER_PASS].map((note) => note.step)
@@ -932,7 +928,7 @@ export function buildEvents(
         : template.subdivision - step + (following.length > 0 ? Math.min(...following) : 0)
 
     const sixteenths = (gap * PATTERN_RESOLUTION) / template.subdivision
-    return Math.max(BASS_SUSTAIN_DEFAULT, Math.min(cap, sixteenths))
+    return Math.max(BASS_SUSTAIN_FLOOR, Math.min(cap, sixteenths))
   }
 
   const compFigure: number[][] = []

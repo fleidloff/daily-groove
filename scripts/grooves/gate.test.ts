@@ -731,6 +731,68 @@ const QUICK_22_SCOPE =
   'feels keep was raised as a question in the same session and left unanswered, so no ' +
   'part of this verdict reaches it.'
 
+// Quick-24 raised the bass sustain cap every feel shares from 2 sixteenths to 3, splitting
+// BASS_SUSTAIN_DEFAULT from the new BASS_SUSTAIN_FLOOR so the floor could stay at 2. It
+// re-rendered 40 of 54 grooves — every feel but open-ballad, swung-sixteenth and
+// shuffle's three walking grooves — moved 1226 bass durations from 2.000 to 3.000
+// sixteenths and nothing else, and moved no answer. No gain.bass moved.
+//
+// The ticket chose one verdict per feel over one blanket sentence, so this approval is
+// paired with seven scopes below and each pin names the feel it speaks for. Seven grooves
+// were played, one per feel: groove-72, groove-57, groove-17, groove-14, groove-67,
+// groove-08 and groove-03.
+const QUICK_24_APPROVAL =
+  'it’s nice. The bass sounds much fuller. That was definitely a good decision. All signed off'
+
+// The half the approval cannot carry on its own: which grooves each feel's verdict
+// reaches, and what was not asked. Common to all seven — no device was recorded, and
+// nothing was asked about level or balance, which matters more here than usual because
+// bass-over-kick rose +0.50…+0.90 dB per groove and no gain.bass was trimmed to hold it.
+// "Much fuller" is a comparative on the audio he had heard, which is the change itself.
+const QUICK_24_SCOPES: Record<string, string> = {
+  'straight-funk':
+    'Said of straight-funk on 2026-09-10, one of seven feels played that day. groove-03 ' +
+    'was the groove played — the feel’s lowRegisterShare anchor — and its verdict covers ' +
+    'groove-01 beside it, which was not played. 224 of this feel’s 332 bass notes went ' +
+    'from a flat 2.00 to 3.00 sixteenths and 106 kept the floor, which is the long/short ' +
+    'contrast the ticket argued a fixed gate never had.',
+  shuffle:
+    'Said of shuffle on 2026-09-10, one of seven feels played that day. groove-08 was the ' +
+    'groove played and its verdict covers groove-07 beside it. groove-08 rather than the ' +
+    'feel’s anchor groove-44 on purpose: groove-44 walks, so its render did not move and ' +
+    'its pin stands. This is the feel the analysis named as the one at risk — its drawn ' +
+    'three reach −2.31 / −0.41 / −1.99 dB over the kick, making groove-08 the second-most-' +
+    'forward bass in the catalogue — so "much fuller" is read as covering that and not ' +
+    'merely tolerating it. The three walking grooves are untouched and keep their own ' +
+    'earlier verdict.',
+  'half-time':
+    'Said of half-time on 2026-09-10, one of seven feels played that day. groove-14 was ' +
+    'the groove played and its verdict covers groove-38 beside it. This feel holds the ' +
+    'longest note of the seven at 605 ms and is the thinnest in the catalogue at 1.92 ' +
+    'voices per quarter, so it was the first the musician asked for an ear on.',
+  'bright-straight':
+    'Said of bright-straight on 2026-09-10, one of seven feels played that day. groove-17 ' +
+    'was the groove played and it is this feel’s only voided pin, so the verdict covers ' +
+    'no unplayed groove. It is the most connected result of the seven — 128 of its notes ' +
+    'sit at a real gap of 4 — and was second on the musician’s list to hear.',
+  'bossa-nova':
+    'Said of bossa-nova on 2026-09-10, one of seven feels played that day. groove-57 was ' +
+    'the groove played and its verdict covers groove-58 beside it. This feel stays the ' +
+    'least sustained in the catalogue even after the change; the analysis recorded that ' +
+    'its own bassSustain: 4 is the follow-up if an ear ever calls it still short, and ' +
+    'this verdict says it is not.',
+  'second-line':
+    'Said of second-line on 2026-09-10, one of seven feels played that day. groove-67 was ' +
+    'the groove played and its verdict covers groove-65 beside it. **This scope carries ' +
+    'two changes**, which is why quick-24 was built after quick-23 rather than before: ' +
+    'the render played here holds both quick-23’s comp stab moved into the first half of ' +
+    'the bar and quick-24’s longer bass, and the hash cannot say which ticket moved what. ' +
+    'quick-23’s own earlier verdict covers less than this audio.',
+  'boom-bap':
+    'Said of boom-bap on 2026-09-10, one of seven feels played that day. groove-72 was ' +
+    'the groove played — the feel’s anchor — and its verdict covers groove-71 beside it.',
+}
+
 // Session 5 — the seven feature-27 entries the anchor rule does not make anchors.
 const FEATURE_28_APPROVAL_LEGACY =
   'listened to all 7. All sound good. I think what the bass does sounds more like a ' +
@@ -1184,12 +1246,15 @@ const SIGN_OFFS: SignOff[] = [
     // and that render reproduced it byte for byte on 2026-09-07. Feature-28 re-rendered
     // it: the file played on 2026-09-08, at the same path and the same byte length, is
     // 67c10e9712c669bec565c9268b1faff14eff97cf03ca26f17b7f9ab4d716f4ce, and this render reproduces that one.
+    // Re-pinned 2026-09-10 for quick-24's raised bass sustain cap, in
+    // QUICK_24_APPROVAL's words — covered by its feel’s verdict, not played. The file at this path is
+    // fbe1dd6e96403455aebb9c2ef0ed01f780843c4dcf50d77e446583712361fa9b,  879011 bytes.
     id: 'groove-01',
-    pcm: '0765f01f98d3121a83c291d43220a91ee720ee30c548b6a350cb7c25ce4e2768',
+    pcm: '24ecb68055e335ad1cfc6303fa0bdc5800e8cfa12c1a2ca2c2a95be982b7df43',
     mp3: null,
     file: 'public/grooves/groove-01.mp3',
-    approval: FEATURE_28_APPROVAL_LEGACY,
-    scope: FEATURE_28_SCOPE_LEGACY,
+    approval: QUICK_24_APPROVAL,
+    scope: QUICK_24_SCOPES['straight-funk'],
     upstream:
       'samples/pack.json — the bass’s Pastabass tagliatelle set as much as the comp’s ' +
       'single dyn2 layer or the kick and snare alternates — KICK_PATTERNS, ' +
@@ -1221,12 +1286,15 @@ const SIGN_OFFS: SignOff[] = [
     // public/grooves/groove-03.mp3, hashes to
     // 489cfe38c154dbd40ad7582825a8fe7a6a0e7ed5a56231ecf81645dad6ec4516 (896 565 bytes),
     // and this render reproduces it byte for byte.
+    // Re-pinned 2026-09-10 for quick-24's raised bass sustain cap, in
+    // QUICK_24_APPROVAL's words — played. The file at this path is
+    // bc8710c43accab12f36cc9420db088ab1e215d5289add36f27b6685f7d4ceefe,  896565 bytes.
     id: 'groove-03',
-    pcm: '74445662a4b811f104b20492ff0baa6aea197f6a9302dabfeea780e1b429c748',
+    pcm: 'e62dac422443db6583ebcce2969294a1743b95dc59881a39214c8d933e496e41',
     mp3: null,
     file: 'public/grooves/groove-03.mp3',
-    approval: FEATURE_28_APPROVAL_ROOT,
-    scope: FEATURE_28_SCOPE_ROOT,
+    approval: QUICK_24_APPROVAL,
+    scope: QUICK_24_SCOPES['straight-funk'],
     upstream:
       'events.ts’s BASS_FLOOR_MIDI (25) — the constant feature-28 moved, and the first ' +
       'place to look when this fails — as much as samples/pack.json’s Pastabass ' +
@@ -1251,12 +1319,15 @@ const SIGN_OFFS: SignOff[] = [
     // same invocation as before — moved audio, not a moved encoder — and it reproduces
     // the file that was played, public/grooves/groove-07.mp3 (1 014 430 bytes), byte for
     // byte.
+    // Re-pinned 2026-09-10 for quick-24's raised bass sustain cap, in
+    // QUICK_24_APPROVAL's words — covered by its feel’s verdict, not played. The file at this path is
+    // d12ce8260b3c315521384a402af96eae5d45c3c74a787174519c68cf933f5076, 1014430 bytes.
     id: 'groove-07',
-    pcm: '5e9c0a10cfb2a2171e9e1e1a7fab7ea10d5fc5a1872835da4420331184ae2c44',
-    mp3: '20b1ddde2af6e31d116b6ce3d8502c243d0e05be30248eee640dbf3a2771e5bc',
+    pcm: '3a07ede4f0c9dc895a6e67cc21dfb168fa11f97703f787e54cc9bf26d8a9c1d6',
+    mp3: 'd12ce8260b3c315521384a402af96eae5d45c3c74a787174519c68cf933f5076',
     file: 'public/grooves/groove-07.mp3',
-    approval: FEATURE_28_APPROVAL_LEGACY,
-    scope: FEATURE_28_SCOPE_LEGACY,
+    approval: QUICK_24_APPROVAL,
+    scope: QUICK_24_SCOPES['shuffle'],
     upstream:
       'samples/pack.json — the bass’s Pastabass tagliatelle set as much as the comp’s ' +
       'single dyn2 layer or the ride’s alternates — the ride or hat pattern pools, ' +
@@ -1281,12 +1352,15 @@ const SIGN_OFFS: SignOff[] = [
     // public/grooves/groove-08.mp3, hashes to
     // eb947c1ef3a3f5831a7514d7d3427abc58a82a269db86cac40573aa5d1f58b49 (1 014 430
     // bytes), and this render reproduced it byte for byte on 2026-09-07.
+    // Re-pinned 2026-09-10 for quick-24's raised bass sustain cap, in
+    // QUICK_24_APPROVAL's words — played. The file at this path is
+    // 0250ca68fd5eb509ab7608f3a8c9dfc144211cc52263d8d7c9f1a66adfe5c0fb, 1014430 bytes.
     id: 'groove-08',
-    pcm: '0507f8fa0ae90196f85c991e447fb00d17c5bc0138f7a4e4575c108055fe6213',
+    pcm: 'e09cff4d02a70295a5ea6bc46ad6cb82a033f8c663a084a1016812690d2e04f1',
     mp3: null,
     file: 'public/grooves/groove-08.mp3',
-    approval: FEATURE_27_APPROVAL_PER_FEEL,
-    scope: FEATURE_27_SCOPE,
+    approval: QUICK_24_APPROVAL,
+    scope: QUICK_24_SCOPES['shuffle'],
     upstream:
       'samples/pack.json — the bass’s Pastabass tagliatelle set as much as the comp’s ' +
       'single dyn2 layer or the ride’s alternates — the ride or hat pattern pools, ' +
@@ -1319,12 +1393,15 @@ const SIGN_OFFS: SignOff[] = [
     // public/grooves/groove-14.mp3, hashes to
     // 5eb8c63ed99c13b18284f41ab3261f874388554d2463e5aa6f6504493718f1b3 (641 401 bytes),
     // and this render reproduces it byte for byte.
+    // Re-pinned 2026-09-10 for quick-24's raised bass sustain cap, in
+    // QUICK_24_APPROVAL's words — played. The file at this path is
+    // 816114cb33815f4c176d9020d23bcb77c6beef6cd17843b927a25f6ffd263c47,  641401 bytes.
     id: 'groove-14',
-    pcm: 'fc6c0bda2d767369f6d5396fd477ce406c98f1b5681a26310bd06c97cec6486d',
+    pcm: 'd6856e15b064eda22b7154308d3861c8fa3a197a828c1bdcd90d97ed450af143',
     mp3: null,
     file: 'public/grooves/groove-14.mp3',
-    approval: FEATURE_28_APPROVAL_ANCHORS,
-    scope: FEATURE_28_SCOPE_ANCHORS,
+    approval: QUICK_24_APPROVAL,
+    scope: QUICK_24_SCOPES['half-time'],
     upstream:
       'events.ts’s BASS_FLOOR_MIDI (25) — the constant feature-28 moved, and the first ' +
       'place to look when this fails — as much as samples/pack.json’s Pastabass ' +
@@ -1370,12 +1447,15 @@ const SIGN_OFFS: SignOff[] = [
     // and that render reproduced it byte for byte on 2026-09-07. Feature-28 re-rendered
     // it: the file played on 2026-09-08, at the same path and the same byte length, is
     // 020190352b5dd4b9cd37bc4ecf84b20e607497a82c89056872a15acef7856987, and this render reproduces that one.
+    // Re-pinned 2026-09-10 for quick-24's raised bass sustain cap, in
+    // QUICK_24_APPROVAL's words — played. The file at this path is
+    // d052e7d531d51557026e3e2f48f0acde2f6b706ce1e6af602f6dacab80811454,  732934 bytes.
     id: 'groove-17',
-    pcm: '1b3f19c9c797db5ecb7d14473dc1a2a96f2673d0d131df622b9e78737ee6b9d2',
+    pcm: '9812e4565a8b9af685feb275d982b760dd697fdd6eaf809faafbc8eae58b5e7f',
     mp3: null,
     file: 'public/grooves/groove-17.mp3',
-    approval: FEATURE_28_APPROVAL_ROOT,
-    scope: FEATURE_28_SCOPE_ROOT,
+    approval: QUICK_24_APPROVAL,
+    scope: QUICK_24_SCOPES['bright-straight'],
     upstream:
       'samples/pack.json — the bass’s Pastabass tagliatelle set as much as the comp’s ' +
       'single dyn2 layer or the bongo and rim alternates — KICK_PATTERNS, HAT_PATTERNS, ' +
@@ -1447,12 +1527,15 @@ const SIGN_OFFS: SignOff[] = [
     // and that render reproduced it byte for byte on 2026-09-07. Feature-28 re-rendered
     // it: the file played on 2026-09-08, at the same path and the same byte length, is
     // 796c35aac5c3836462ef4c33af560349b84f6bf40f8a86d6e20e53ee380da505, and this render reproduces that one.
+    // Re-pinned 2026-09-10 for quick-24's raised bass sustain cap, in
+    // QUICK_24_APPROVAL's words — covered by its feel’s verdict, not played. The file at this path is
+    // 48d4a863e922c65828c7f27392cdddb7114c54fa89857571443b3ea93def05e5,  592500 bytes.
     id: 'groove-38',
-    pcm: '997e21e7a6e101f14ce4a045c0bb4f64731f0224f3181d03f3f6c44792058ae6',
+    pcm: 'dfff0a54af286c984610e2ad7b1b4b1536e4dd719840def03ff3e5b013b5ad4b',
     mp3: null,
     file: 'public/grooves/groove-38.mp3',
-    approval: FEATURE_28_APPROVAL_LEGACY,
-    scope: FEATURE_28_SCOPE_LEGACY,
+    approval: QUICK_24_APPROVAL,
+    scope: QUICK_24_SCOPES['half-time'],
     upstream:
       'samples/pack.json — the bass’s Pastabass tagliatelle set as much as the comp’s ' +
       'single dyn2 layer or the tom and snare alternates — KICK_PATTERNS, HAT_PATTERNS, ' +
@@ -1678,12 +1761,15 @@ const SIGN_OFFS: SignOff[] = [
     // but not gone: the verdict says "all of them", which is more than quick-15's silence
     // about which grooves were put on and still short of naming this one. QUICK_14_SCOPE
     // is where that inference is stated and bounded; this comment may not go past it.
+    // Re-pinned 2026-09-10 for quick-24's raised bass sustain cap, in
+    // QUICK_24_APPROVAL's words — played. The file at this path is
+    // 230a5e7d8ea0e94d93a2781ac182a8d57996fcf13593ab326c60197be2dce4ee,  716007 bytes.
     id: 'groove-57',
-    pcm: '1490a02c4c2a220017495c7dc36c759ffa769b3183688a45d25330fda16adf57',
+    pcm: 'c7e43e192299c3cb2dc1939af7ab2fcc83503f99f84823aa6c6df040adfba9e4',
     mp3: null,
     file: 'public/grooves/groove-57.mp3',
-    approval: QUICK_14_APPROVAL,
-    scope: QUICK_14_SCOPE,
+    approval: QUICK_24_APPROVAL,
+    scope: QUICK_24_SCOPES['bossa-nova'],
     upstream:
       'events.ts’s BASS_FLOOR_MIDI (25) — the constant feature-28 moved, and the first ' +
       'place to look when this fails — as much as samples/pack.json’s Pastabass ' +
@@ -1727,12 +1813,15 @@ const SIGN_OFFS: SignOff[] = [
     // bytes. "Standing there" is weakened rather than dropped, for the reason given on
     // groove-57: "all of them" is an inference about which files were opened, and
     // QUICK_14_SCOPE is the field that carries it.
+    // Re-pinned 2026-09-10 for quick-24's raised bass sustain cap, in
+    // QUICK_24_APPROVAL's words — covered by its feel’s verdict, not played. The file at this path is
+    // c5a30a1828740c253c3f0cefab9d327024239c22b4853e9e80d518fedb99a3bb,  689675 bytes.
     id: 'groove-58',
-    pcm: '2c7dbc94b96e55475e4d2df82c69c827344295593ee146bdc0e6f64f9fc58683',
+    pcm: 'b4e2eab40c2db147eb1d85caaa47e59bafa55f7ac41b243867229062e3ba27e6',
     mp3: null,
     file: 'public/grooves/groove-58.mp3',
-    approval: QUICK_14_APPROVAL,
-    scope: QUICK_14_SCOPE,
+    approval: QUICK_24_APPROVAL,
+    scope: QUICK_24_SCOPES['bossa-nova'],
     upstream:
       'samples/pack.json — the bass’s Pastabass tagliatelle set as much as the comp’s ' +
       'single dyn2 layer or the rim, kick and snare alternates — the bossa clave in ' +
@@ -1758,12 +1847,15 @@ const SIGN_OFFS: SignOff[] = [
     // and that render reproduced it byte for byte on 2026-09-07. Feature-28 re-rendered
     // it: the file played on 2026-09-08, at the same path and the same byte length, is
     // 507966f1c02a15de4b66856087793aa2f9becc0dd2c8ef5f76e714515d7d154a, and this render reproduces that one.
+    // Re-pinned 2026-09-10 for quick-24's raised bass sustain cap, in
+    // QUICK_24_APPROVAL's words — covered by its feel’s verdict, not played. The file at this path is
+    // 8e0490d103a39da368379d358b50b72bf2e85a4f609a886386b6a687ea902e1c,  961767 bytes.
     id: 'groove-65',
-    pcm: 'e2cbedea8dc174b7ae5af907dba7326faa9e6beb00ad2cb734f37c8ab05ec861',
+    pcm: 'f61fa6a8c7beb79ce8e2bec3a036cbdf40a64a3eec7f940b2b1381c06e46325e',
     mp3: null,
     file: 'public/grooves/groove-65.mp3',
-    approval: QUICK_23_APPROVAL,
-    scope: QUICK_23_SCOPE,
+    approval: QUICK_24_APPROVAL,
+    scope: QUICK_24_SCOPES['second-line'],
     upstream:
       'samples/pack.json — the bass’s Pastabass tagliatelle set as much as the comp’s ' +
       'single dyn2 layer or the snare and tom alternates — second-line’s patterns.kit, ' +
@@ -1796,12 +1888,15 @@ const SIGN_OFFS: SignOff[] = [
     // public/grooves/groove-67.mp3, hashes to
     // fe6a3bfe8929b16215a7f86552ecaaf3e231151fcd1532d4026deee72c42dd7d (1 003 145
     // bytes), and this render reproduces it byte for byte.
+    // Re-pinned 2026-09-10 for quick-24's raised bass sustain cap, in
+    // QUICK_24_APPROVAL's words — played. The file at this path is
+    // 329e922fc19f16600b31f1d99cc856540cb31d4b9b64faec6ca2829eb8617f01, 1003145 bytes.
     id: 'groove-67',
-    pcm: 'eb5a433cb21300566e937ec1a5bb229f2e447ef04ece9e9cf0aba83f379baefc',
+    pcm: 'a8f991efbd7b9dc017c853af12272765d57c96613edb5a98c80e381997225748',
     mp3: null,
     file: 'public/grooves/groove-67.mp3',
-    approval: QUICK_23_APPROVAL,
-    scope: QUICK_23_SCOPE,
+    approval: QUICK_24_APPROVAL,
+    scope: QUICK_24_SCOPES['second-line'],
     upstream:
       'events.ts’s BASS_FLOOR_MIDI (25) — the constant feature-28 moved, and the first ' +
       'place to look when this fails — as much as samples/pack.json’s Pastabass ' +
@@ -1830,12 +1925,15 @@ const SIGN_OFFS: SignOff[] = [
     // and that render reproduced it byte for byte on 2026-09-07. Feature-28 re-rendered
     // it: the file played on 2026-09-08, at the same path and the same byte length, is
     // b270f88c9c7be6b6bda0fab430e10bb1a1b38439cfad7008ab599adcd02294be, and this render reproduces that one.
+    // Re-pinned 2026-09-10 for quick-24's raised bass sustain cap, in
+    // QUICK_24_APPROVAL's words — covered by its feel’s verdict, not played. The file at this path is
+    // 78e282f77e6bb0d7025841cc26514142a4c2c5a09a6265bcaf80f19466b3ee6b,  502221 bytes.
     id: 'groove-71',
-    pcm: '119795914a2e14d21446a22d6511e7c06b45c7842b15a420ee27dd57b17bb6e1',
+    pcm: '121c6badbfcdabf7af468b6deee8d80b8e140126e8cc64f43eecdee0d375dd48',
     mp3: null,
     file: 'public/grooves/groove-71.mp3',
-    approval: FEATURE_28_APPROVAL_LEGACY,
-    scope: FEATURE_28_SCOPE_LEGACY,
+    approval: QUICK_24_APPROVAL,
+    scope: QUICK_24_SCOPES['boom-bap'],
     upstream:
       'samples/pack.json — the bass’s Pastabass tagliatelle set as much as the comp’s ' +
       'single dyn2 layer or the kick and snare alternates — boom-bap’s patterns.kick, ' +
@@ -1870,12 +1968,15 @@ const SIGN_OFFS: SignOff[] = [
     // public/grooves/groove-72.mp3, hashes to
     // 17e4ceac2362e694c877da135c42963c232e55bb41c6340b1e73df66a603b71c (519 148 bytes),
     // and this render reproduces it byte for byte.
+    // Re-pinned 2026-09-10 for quick-24's raised bass sustain cap, in
+    // QUICK_24_APPROVAL's words — played. The file at this path is
+    // 1fe64c6365c6c1d1e67fa2ac9d204999547c65b75683e84b9cc00cabf27dbbdf,  519148 bytes.
     id: 'groove-72',
-    pcm: '05f7fcdde819b2d755942cc98e9c964d0eae99eec61bca89e953cd79d24cd82c',
+    pcm: 'd710367f2aa997b1a2764a6c780cff85782671795b09f17f8c8675db0257571d',
     mp3: null,
     file: 'public/grooves/groove-72.mp3',
-    approval: FEATURE_28_APPROVAL_SPAN,
-    scope: FEATURE_28_SCOPE_SPAN,
+    approval: QUICK_24_APPROVAL,
+    scope: QUICK_24_SCOPES['boom-bap'],
     upstream:
       'events.ts’s BASS_FLOOR_MIDI (25) — the constant feature-28 moved, and the first ' +
       'place to look when this fails — as much as samples/pack.json’s Pastabass ' +
@@ -2005,6 +2106,32 @@ const SIGN_OFFS: SignOff[] = [
 // green over audio that moved. Empty on main: docs/architecture.md's "review only" is
 // what holds that, because this repo has no CI and no pre-push hook and no test can know
 // which branch it is on. Feature-28 R27.
+// The approvals no entry in the table stands on any more. An approval is something a
+// person said about a particular render, and once every entry that quoted it has been
+// re-pinned, the render it was given about no longer exists — but the words were still
+// said, and deleting them would make the table look as though the verdict had never been
+// given. So they are kept here verbatim rather than removed. Nothing asserts against
+// them; this array exists so that retiring an approval is a move rather than a deletion.
+//
+// Quick-24 retired fourteen at once, which is what a change that re-renders 40 of 54
+// grooves costs: every feel but three had its pins re-pinned in one session.
+const SUPERSEDED_APPROVALS: readonly string[] = [
+  FEATURE_27_APPROVAL_PER_FEEL,
+  FEATURE_27_SCOPE,
+  FEATURE_28_APPROVAL_ROOT,
+  FEATURE_28_APPROVAL_SPAN,
+  FEATURE_28_APPROVAL_ANCHORS,
+  FEATURE_28_APPROVAL_LEGACY,
+  FEATURE_28_SCOPE_ROOT,
+  FEATURE_28_SCOPE_SPAN,
+  FEATURE_28_SCOPE_ANCHORS,
+  FEATURE_28_SCOPE_LEGACY,
+  QUICK_14_APPROVAL,
+  QUICK_14_SCOPE,
+  QUICK_23_APPROVAL,
+  QUICK_23_SCOPE,
+]
+
 const PENDING_SIGN_OFFS: readonly string[] = []
 
 function voidSignOff(entry: SignOff): string {
@@ -2079,6 +2206,20 @@ describe('the renders a person signed off — R24, AC16', () => {
 
   afterAll(() => {
     rmSync(dir, { recursive: true, force: true })
+  })
+
+  it('keeps the approvals no entry stands on any more, and does not reuse one', () => {
+    expect(SUPERSEDED_APPROVALS.length, 'nothing has been retired yet').toBeGreaterThan(0)
+    const live = new Set(SIGN_OFFS.flatMap((entry) => [entry.approval, entry.scope ?? '']))
+    for (const words of SUPERSEDED_APPROVALS) {
+      expect(words.length, 'a superseded approval records no words').toBeGreaterThan(0)
+      expect(
+        live.has(words),
+        `a retired approval is back in the table: “${words.slice(0, 60)}…”. An approval ` +
+          'covers the render it was given about, and that render no longer exists — ' +
+          're-pinning an entry to it says a person approved audio they never heard.',
+      ).toBe(false)
+    }
   })
 
   it('still guards every sign-off this repo has been given', () => {

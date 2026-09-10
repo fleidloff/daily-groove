@@ -204,10 +204,12 @@ not a stylistic choice this app can afford. Both feels' kits were dropped by a u
 offset — 7 dB on `boom-bap`, 5 dB on `second-line`, which had the same defect one step
 less severe — so every relationship inside each kit is exactly the one that was
 declared, and only the kit-against-band balance moved. Both now measure comp −2.41 dB
-(`boom-bap`) and −3.32 dB (`second-line`) and bass −5.51 and −5.59 dB against their own
-kick, against `straight-funk`'s comp −2.69 and bass −5.55 — inside 1.0 dB on all four.
+(`boom-bap`) and −3.32 dB (`second-line`) and bass −4.91 and −4.85 dB against their own
+kick, against `straight-funk`'s comp −2.69 and bass −4.86 — inside 1.0 dB on all four.
 Three of the four are far tighter than that, inside 0.3 dB; `second-line`'s comp is the
-one exception at 0.63 dB, and it earned that in quick-23 rather than in the re-gain. The
+one exception at 0.63 dB, and it earned that in quick-23 rather than in the re-gain.
+All three bass figures rose about 0.7 dB in quick-24 and none of the three gains moved,
+for the reason *Bass* gives below: the rise is note-time, not level. The
 bound here is the document's own and is deliberately **tighter** than the 1.5 dB
 `templates/boom-bap.test.ts` and `second-line.test.ts` assert against `straight-funk`:
 set at the contract it would only repeat what those two files already check, and a drift
@@ -366,15 +368,37 @@ template, so all six of its grooves walk. `shuffle` does not declare it: its thr
 `catalogue.json`, and its three aeolian ones keep the drawn figure. The walking line
 is described under *The walking bass* below.
 
-**Note length.** A drawn bass note holds `BASS_SUSTAIN_DEFAULT = 2` sixteenths unless
-its feel declares `bassSustain` — and that is a **cap on a ring, not a length**. The note
-holds on to the next bass onset, or to the next bar's downbeat when its own bar has no
-later note, and `bassSustain` is only the ceiling on that. The floor stays at 2, so a
-feel that rings cannot *shorten* the pickup pairs a pool puts one sixteenth apart.
-`open-ballad` is the one feel that declares it, at `5`, which makes its mean note
-1.8–2.1× the default — 3.57 to 4.17 sixteenths across its five grooves, 82 of their 130
-bass notes longer than the default and none shorter. It was rendered at `6` first and
-heard as ringing a little too long.
+**Note length.** Every drawn bass note holds on to the next bass onset, or to the next
+bar's downbeat when its own bar has no later note, bounded by two constants that are
+deliberately not one symbol:
+
+* **`BASS_SUSTAIN_FLOOR = 2`** — the shortest a note is ever held, and the length a feel
+  takes when it opts out. Where the gap is 1 or 2 the floor wins and the ring never
+  reaches the note, which is why no feel has ever gained an overlap from a raised cap:
+  the overlapping notes are exactly the pickup pairs, and they are exactly the ones the
+  floor holds.
+* **`BASS_SUSTAIN_DEFAULT = 3`** — the cap a feel gets when it declares no `bassSustain`.
+  Three quarters of a beat, so it is the same note everywhere in relative terms and a
+  different one in milliseconds: 349 ms at bossa-nova's mean tempo, 605 ms at
+  half-time's. Neither is the catalogue's longest bass note — that is groove-20's
+  643 ms.
+
+A feel may declare its own `bassSustain`, which replaces the cap and not the floor.
+`open-ballad` declares `5`, rendered at `6` first and heard as ringing a little too long.
+A declaration at or under the floor is an opt-out: the feel takes the flat floor and does
+not ring.
+
+**Quick-24 raised the shared cap from 2 to 3, and splitting the constant was the change
+rather than a tidy-up.** While one symbol was the floor, the default cap *and* the
+short-circuit boundary, raising it handed every undeclaring feel a flat 3 with no gap
+clamp — the overlap the clamp exists to prevent, approach note included. Measured across
+the seven feels it moved: 40 of 54 grooves re-rendered, bass note-time up 12.5–36.3%,
+1226 notes lengthened and 1270 held, and overlap counts byte-for-byte identical before
+and after — 581 overlapping bass pairs in the catalogue either side of the change, worst
+case 1.264 sixteenths both times. What it also retired is the claim that two sixteenths was the funk
+articulation: straight-funk's 332 bass notes were all *exactly* 2.00 long, a fixed gate
+rather than a decay, and the clamp is what gives the idiom its long/short contrast — 106
+of them stay at 296 ms while 224 go to 443 ms.
 
 Two reasons the clamp is the rule and a flat longer number is not. A fixed sustain
 overlaps, and two bass notes a whole tone apart at MIDI 25–26 beat at 2–8 Hz instead of
@@ -483,6 +507,23 @@ octave lift, no forced rest, no forced repeat and no always-lift: the first two
 would break the every-quarter rule and the rest exist to move an arpeggio that a
 directed line already moves. That is why the always-lift figures above count 45
 grooves and not 54.
+
+**Quick-24 raised the shared cap and no `gain.bass` moved, on the reasoning this
+paragraph exists to record.** Bass-over-kick rose +0.50…+0.90 dB per groove, median
++0.61…+0.76 — boom-bap −5.51 → −4.91, bossa-nova −8.59 → −8.02, bright-straight
+−4.59 → −3.84, half-time −6.88 → −6.16, second-line −5.59 → −4.85, shuffle
+−0.74 → −0.38, straight-funk −5.55 → −4.86. Held at their declared values anyway,
+because **nothing got louder**: velocity and attack are untouched and every onset peaks
+where it did, so a metric that can only see note-time is reading the tail. Trimming
+0.7 dB to hold it flat would quieten every bass *attack* 0.7 dB below the one a person
+approved, to correct a level that never moved — the attack sets apparent level in a
+rhythm section and the tail sets weight. It is also about half of two changes already
+signed off at unchanged gain, open-ballad's +1.24 and shuffle's walking three at +1.40.
+Cross-feel balance holds to 0.05 dB, and all 54 grooves pass all seven gate checks with
+1.01 dB of ceiling headroom. The one at risk is `shuffle`, whose drawn three reach
+−2.31 / −0.41 / −1.99 dB over the kick; if that reads forward the lever is
+`bassSustain: 2` on its template and **not** a gain trim, because −19.0 was chosen for
+its *walking* three, whose renders did not move.
 
 **`open-ballad` was tried and rejected.** quick-20 walked three of its grooves —
 groove-49, groove-51 and groove-77 — and a listening turned them down. They were
@@ -702,7 +743,7 @@ to catch a violation.
 | backbeat, open hat, rim placement | `DEFAULT_PLACEMENT` / `PLACEMENTS` in `events.ts`. A feel whose snare line varies per seed instead declares `patterns.kit` — one or the other, never both |
 | fills | `DEFAULT_FILL` / `FILLS` in `events.ts` |
 | bass register and behaviour | `BASS_*` constants in `events.ts` |
-| how long a feel's drawn bass notes ring | `bassSustain` on `templates/<feel>.ts` — a **cap** on a ring that stops at the next bass onset, floored at `BASS_SUSTAIN_DEFAULT = 2`. Absent means the default for every note. It says nothing about a walking line, which sets its own length and takes precedence |
+| how long a feel's drawn bass notes ring | `bassSustain` on `templates/<feel>.ts` — a **cap** on a ring that stops at the next bass onset, floored at `BASS_SUSTAIN_FLOOR = 2`. Absent means `BASS_SUSTAIN_DEFAULT = 3`, the cap every feel shares; a value at or under the floor opts the feel out of ringing. It says nothing about a walking line, which sets its own length and takes precedence |
 | whether a feel or one groove walks its bass | `bassType` on `templates/<feel>.ts` for the whole feel, or on the groove's entry in `catalogue.json` for one of them. The groove wins. A walking line ignores the feel's `patterns.bass`, so declaring both says nothing |
 | comp register, voicing, spread | `COMP_*` constants and `voiceLead` in `events.ts` |
 | timing feel, lean, drift | `humanize.ts` and the template's `humanize` block |

@@ -36,7 +36,7 @@
 
 ## Open questions
 
-_Q1 answered below. Q2 is open._
+_Nothing open. Q1 and Q2 are answered below._
 
 ### Q1. How many listening passes does the sign-off table get?
 
@@ -107,12 +107,45 @@ separate re-renders of that feel — whichever lands second re-voids what the fi
   changes in a diff neither ticket describes, and `git revert` stops being per-ticket,
   which is size-test question 4 for both of them.
 
+## Answered — Q2-A
+
+**Q2-A. Build quick-23 first, then this ticket.**
+
+**Correction first: A's stated cost was wrong, and it does not change the answer.** The
+option claimed A means groove-67 "is played once". It does not. Quick-23's own
+`## Done when` requires its `SIGN_OFFS` re-pinned after a listen, so second-line gets a
+verdict for the comp stab either way, and this ticket needs its own for the bass length.
+Both orders cost two second-line listens, and neither listen is wasted — they are
+verdicts on two different changes.
+
+What A actually buys, and it holds:
+
+* **This ticket's render is the last one, so its pins are stable.** Under B, quick-24
+  would pin second-line and quick-23 would re-void those pins days later; a pin that is
+  void before the ink dries is the one thing the table exists to prevent. Under A the
+  order ends here.
+* **This ticket's second-line verdict is given on the audio that ships** — the earlier
+  comp stab and the longer bass in the same render. Quick-23's verdict is the one that
+  covers less than the final audio, and that is the correct way round: it is the earlier
+  change and its scope can say so.
+* `groove-65` and `groove-67`'s scope fields under this ticket must name both changes,
+  since by then the render carries both and a reader cannot tell from the hash which
+  ticket moved what.
+
+**Precondition this puts on the build.** `/implement-quick-feature 24` should not run
+until quick-23 is built, signed off and committed. Its §3 re-runs the size test against
+the real files, and second-line's template will be mid-flight until then — two tickets
+editing `templates/second-line.ts` in one working tree is exactly the diff neither of
+them describes.
+
 ## Notes
 
 **Size test: question 3 fails, and Fred waived it in `## What`.** 1, 2 and 4 pass.
-Re-run against Q1-B, which changes none of the four: seven listening passes instead of
-four is more of the same work, not different work, and it touches no extra file beyond
-the seven scope fields in `gate.test.ts`.
+Re-run against Q1-B and Q2-A, which change none of the four. Seven listening passes
+instead of four is more of the same work, not different work, and touches no extra file
+beyond the seven scope fields in `gate.test.ts`. Q2-A adds an ordering precondition
+rather than scope: it makes the rollback *cleaner*, since quick-23 lands and reverts on
+its own before this ticket touches the same feel.
 
 1. Nameable in five bullets — the change is two constants and one deleted short circuit. ✅
 2. One module of six — catalogue. No answer moves: every groove keeps its bpm, root,
@@ -214,3 +247,130 @@ the shuffle risk below is answered with.
   its drawn/walking split as something gain cannot fix. At cap 3 its drawn half goes from
   a flat 2.0 to a mean 3.17 against the walking half's 3.5, so the two halves stop
   sounding like different instruments.
+
+## Built
+
+* `scripts/grooves/events.ts` — the split. New exported `BASS_SUSTAIN_FLOOR = 2`;
+  `BASS_SUSTAIN_DEFAULT` raised 2 → 3 and now only the default cap; `bassRing`'s short
+  circuit and its `Math.max` re-keyed from the default to the floor. So every feel rings
+  now, where before only a feel that declared `bassSustain` did.
+* `scripts/grooves/templates/` — untouched. No `gain.bass` moved and no feel declares a
+  new `bassSustain`; `open-ballad` keeps its 5.
+* `public/grooves/` — 40 mp3s, plus `grooves.lock.json` and `events.fixture.json`.
+  **14 grooves are byte-identical**: open-ballad's five, swung-sixteenth's six and
+  shuffle's walking three. 1226 fixture lines differ and every one is a bass duration —
+  no onset, velocity, midi or `music` block moved, and `src/features/daily-groove/data/`
+  has an empty diff.
+* `docs/music.md` — the **Note length** block rewritten around the two constants; a new
+  paragraph under *Bass* recording the per-feel bass-over-kick measurement and why no
+  gain moved; three quoted bass medians corrected to −4.91 / −4.85 / −4.86; the
+  *Where to change what* row re-pointed at the floor.
+* tests: `scripts/grooves/events.test.ts`, the block now 10. Five re-keyed to the floor,
+  `leaves every feel…on the default` replaced by `rings every feel…up to the shared
+  default`, and two new — the two constants' literals, and the long/short split measured
+  per feel from the emitted stream.
+* checks: lint clean · `npm test` 3060 passed · `npm run build` passes including
+  `grooves:verify` · `npm run test:gen` **1607 passed, 14 failed**.
+* verifier: **fail — one bullet, and it needs ears.** Report at
+  `specs/quick/.verify/24.md`, citations checked, 4 parsed and 0 unresolved.
+  * D1 — a note with room rings 3 where it rang 2, in every undeclaring feel: **done**.
+    All 2522 notes checked: gap ≥ 3 → exactly 2.000 → 3.000, no intermediate value
+    anywhere.
+  * D2 — a note with a gap of 1 or 2 unchanged: **done**. 581 overlapping bass pairs
+    before, 581 after, worst case 1.264 sixteenths either side. No feel gained an overlap.
+  * D3 — open-ballad's five and the nine walking grooves byte-identical: **done**, and
+    the seven surviving pins are all on those 14 grooves.
+  * D4 — every `gain.bass` re-measured or left alone with the measurement: **partly**.
+    The numbers are in `docs/music.md`, but nothing asserts them — `docs.test.ts` does
+    not read that file — and nothing is committed.
+  * D5 — every voided pin re-pinned in the words of a listening pass: **not done**.
+  * D6 — a test covers the raised cap and the unchanged floor: **done**.
+
+**What is left, and it is the seven listens Q1-B chose.** `npm run test:gen` fails 14
+assertions across 13 `SIGN_OFFS` entries — groove-07 carries both a pcm and an mp3 hash,
+which is why 13 entries give 14 failures. The seven to play, one per feel, from
+`## Answered — Q1-B`: **groove-72, groove-57, groove-17, groove-14, groove-67,
+groove-08, groove-03**. Then 13 pins and 7 scope fields, with groove-65 and groove-67's
+naming both quick-23's comp stab and this ticket's bass length, per Q2-A.
+
+Three things to listen for, in the `musician`'s order of doubt: **half-time** at 605 ms,
+the longest absolute note and the most exposed bass in the catalogue; **bright-straight**
+at 75% slot fill, the most connected of the movers; and **shuffle's groove-08**, whether
+the bass has gone forward. If a feel is too long the lever is its own `bassSustain: 2`,
+never a move back here — and if bossa-nova is heard as still short, its own
+`bassSustain: 4`.
+
+**Two things the notes did not predict, both found by tests rather than by reading.**
+`docs.test.ts` asserts that `docs/music.md` quotes the bass medians three feels actually
+render, so this ticket moved three figures out of date and they had to be corrected. And
+`BASS_WALK_SUSTAIN`'s comment claimed the drawn figure holds two sixteenths and "leaves
+as much silence as note", which is exactly what this ticket falsified.
+
+## Re-graded after the verifier's findings
+
+Four fixes went in and the verifier re-ran the full set: no grade moved, and the 14
+failures are still the same 13 entries. `gate.test.ts` is the only failing file of 55,
+and its other 67 tests pass — so all seven gate thresholds still hold on all 54 grooves.
+
+* **The cap literal is now pinned.** No test held `BASS_SUSTAIN_DEFAULT` to 3, so 4, 5 or
+  8 would have left the whole block green with only the fixture noticing. D6 now stands
+  on its own test rather than on the fixture.
+* `docs/music.md`'s *Where to change what* row still named the old constant and value;
+  the block 370 lines above it had been rewritten and the row was missed.
+* Two figures sharpened: 349 ms and 605 ms are a 3-sixteenth note **at each feel's mean
+  tempo**, not a feel's mean note length, and neither is the catalogue's longest bass
+  note — groove-20's 643 ms is. The "median slot fill 33% → 50%" claim was **removed**
+  rather than defined: it did not reproduce as duration-over-gap and a number nobody can
+  re-measure is worse in that document than no number. What replaced it is re-measurable
+  — 1226 notes lengthened, 1270 held, 581 overlapping pairs either side.
+* **The verifier withdrew its own D4 finding.** It had said `docs.test.ts` does not read
+  `docs/music.md`; it does, in fourteen describe blocks, and `the kit-against-band
+  balance figures` *renders the committed catalogue* and fails unless the document's
+  quoted median sits within 0.01 dB of what the audio measures. So the three bass medians
+  this ticket corrected are machine-verified, and the correction was forced by that test
+  rather than volunteered. The narrower true statement: the two sustain constants appear
+  nowhere in `docs.test.ts`, so the *Note length* block and the seven-feel *Bass*
+  paragraph are the unguarded half of that document.
+* **One finding not acted on.** `caps every declared ring…` bounds `bassSustain` at
+  `>= BASS_SUSTAIN_FLOOR` and so admits a fractional declaration like `2.5`.
+  `Number.isInteger` would close it, and it is deliberately left open: `BASS_WALK_SUSTAIN`
+  is 3.5, so a fractional sustain is already something this system renders correctly, and
+  a cap of 2.5 would clamp to a legal length. Rejecting it would be a rule invented by a
+  test rather than by the music.
+* D4 stays **partly** on the half that was always going to hold it there: nothing is
+  committed, and nothing can be until D5 closes.
+
+## Heard and signed off — 2026-09-10
+
+> "it's nice. The bass sounds much fuller. That was definitely a good decision. All
+> signed off"
+
+All six `## Done when` bullets now hold. **D5 closes, and D4 with it.**
+
+* Seven grooves played, one per feel per Q1-B: groove-72, groove-57, groove-17,
+  groove-14, groove-67, groove-08, groove-03.
+* 13 `SIGN_OFFS` entries re-pinned under `QUICK_24_APPROVAL` and seven per-feel scopes
+  in `QUICK_24_SCOPES`. groove-07 took a new mp3 hash as well as a pcm one — it is the
+  table's one entry that pins both.
+* `second-line`'s scope names **both** changes, per Q2-A: the render played there carries
+  quick-23's comp stab and this ticket's longer bass, and the hash cannot say which
+  ticket moved what. That is the whole reason this ticket was built second.
+* `shuffle`'s scope records that groove-08 was played rather than the feel's anchor
+  groove-44 — groove-44 walks, so its render never moved and its pin stands — and that
+  the verdict is read as covering the forward bass the analysis flagged rather than
+  merely tolerating it.
+* **14 approval constants went orphaned and are parked, not deleted.**
+  `SUPERSEDED_APPROVALS` in `gate.test.ts` holds them verbatim, with a new test asserting
+  none is back in the live table: an approval covers the render it was given about, and
+  re-pinning an entry to a retired one would say a person approved audio they never
+  heard. Fourteen at once is what a change re-rendering 40 of 54 grooves costs.
+* `npm run test:gen` **1622 passed, 0 failed** · lint clean · `npm test` 3060 passed ·
+  `npm run build` passes including `grooves:verify`.
+
+**The comments this ticket added to `events.ts` were cut back afterwards.** They were
+prose, which both `CLAUDE.md` files forbid, and the file's existing density is not a
+licence. What is left is four lines: why the two constants are separate rather than one,
+and why the gap is read off the grid. The reasoning lives in `docs/music.md` § Voicing,
+which is the right home for it. `BASS_WALK_SUSTAIN`'s pre-existing comment was restored
+to its own wording with only the clause this ticket falsified removed — it claimed the
+drawn figure holds two sixteenths and leaves as much silence as note.
