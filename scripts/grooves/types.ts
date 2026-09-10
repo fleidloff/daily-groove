@@ -74,6 +74,7 @@ export type FeelTemplate = {
   patterns?: PatternPools
   figures?: FixedFigure[]
   bassType?: BassType
+  bassSustain?: number
 }
 
 export type GrooveSpec = {

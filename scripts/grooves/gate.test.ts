@@ -701,18 +701,35 @@ const FEATURE_28_APPROVAL_ANCHORS =
 // pools, a hatOpen figure marking bars 4 and 8, and FILLS['open-ballad'] closing a bar
 // that had no hi-hat at all. It re-rendered all five open-ballad grooves and no other
 // feel, and moved no answer — every one keeps its bpm, root, mode and progression.
-const QUICK_18_APPROVAL =
-  'listened to the new grooves. All sound very good and more interesting than before'
+// Its two entries, groove-78 and groove-79, moved to QUICK_22 below when quick-22
+// re-rendered the same five grooves, so the constants are gone rather than left unused.
+// The words were “listened to the new grooves. All sound very good and more interesting
+// than before”, said of open-ballad on 2026-09-09 and read as covering those five and no
+// more. They are kept here because a superseded approval is still what a person said:
+// nothing in the table stands on them now, and the render they were given about no
+// longer exists.
 
-const QUICK_18_SCOPE =
-  'Said of open-ballad on 2026-09-09, after the rebuild above. “The new grooves” is ' +
-  'the five this ticket re-rendered — groove-49, groove-51, groove-77, groove-78 and ' +
-  'groove-79 — which is what had just been played to him and the only audio that ' +
-  'moved; it is read as covering all five and no more. “More interesting than before” ' +
-  'is a comparative against audio he had heard, which is what makes it worth quoting: ' +
-  'the complaint that opened the ticket was his own, that this feel was boring. What it ' +
-  'does not cover: no device was recorded, nothing was asked about level or balance, ' +
-  'and the flavour monoculture the ticket measured and left alone was not put to him.'
+// Quick-22 gave open-ballad a `bassSustain` of 5: a drawn bass note now rings on to the
+// next bass onset, capped at five sixteenths and floored at the two every other feel
+// still holds. It re-rendered the same five open-ballad grooves and no other feel, and
+// moved no answer. The cap was rendered at 6 first, heard as ringing a little too long,
+// and brought down to 5 — so what was played here is the second render, not the first.
+const QUICK_22_APPROVAL = 'cap at 5 is perfect for open-ballad. checked all newly generated grooves'
+
+const QUICK_22_SCOPE =
+  'Said of open-ballad on 2026-09-10, after the ring above. “All newly generated ' +
+  'grooves” is the five this ticket re-rendered — groove-49, groove-51, groove-77, ' +
+  'groove-78 and groove-79 — so it covers all five and no more, the same reach as the ' +
+  'quick-18 verdict it supersedes. It is a verdict on a number as much as on the ' +
+  'audio: 6 was played ' +
+  'first and rejected as too long, so “perfect” is a comparative against a render he ' +
+  'had heard, and the ticket records 4 as the step down that was never needed. What it ' +
+  'does not cover: no device was recorded, and nothing was asked about level or ' +
+  'balance — gain.bass stayed at −22.0 through both renders on the musician’s ' +
+  'measurement that the master’s peak pin eats the added note-time, which is reasoning ' +
+  'rather than something an ear confirmed. The 2-sixteenth default the other eight ' +
+  'feels keep was raised as a question in the same session and left unanswered, so no ' +
+  'part of this verdict reaches it.'
 
 // Session 5 — the seven feature-27 entries the anchor rule does not make anchors.
 const FEATURE_28_APPROVAL_LEGACY =
@@ -1884,12 +1901,20 @@ const SIGN_OFFS: SignOff[] = [
     // e01966c037bd41eacc3d04d2a115ebe0a65b87721d4037be0b8a4f3bd16046d0, still 710 364
     // bytes — the third render in a row at that length. This entry's scope names the
     // grooves that were played, so it carries no "standing at that path" caveat.
+    //
+    // Re-pinned 2026-09-10 for quick-22's bass ring, in QUICK_22_APPROVAL's words. The
+    // quick-18 pin it replaces was 18eb6cdb…a37b. This groove is the one that answers
+    // the decay question, so a ticket that lengthens every bass note is exactly the
+    // change it was pinned to catch: it carried the catalogue's longest bass note at
+    // 0.462 s and now rings to five sixteenths where the gap allows. The file at this
+    // path is ed17b03804dc9d525605f2b5df620aa36b1e6889e69796bb84c2656dc472c7cd, still
+    // 710 364 bytes — the fourth render in a row at that length.
     id: 'groove-78',
-    pcm: '18eb6cdb36e4601c7165b783124344b33b5969e032ee526dd73c4fce574ea37b',
+    pcm: '1dc4d61d451b93e271c55b9f4478989de99e29bb13e555ea4ec244ab338435b4',
     mp3: null,
     file: 'public/grooves/groove-78.mp3',
-    approval: QUICK_18_APPROVAL,
-    scope: QUICK_18_SCOPE,
+    approval: QUICK_22_APPROVAL,
+    scope: QUICK_22_SCOPE,
     upstream:
       'samples/pack.json — the bass’s Pastabass tagliatelle set as much as the comp’s ' +
       'single dyn2 layer or the tom and snare alternates — KICK_PATTERNS, HAT_PATTERNS, ' +
@@ -1928,12 +1953,19 @@ const SIGN_OFFS: SignOff[] = [
     // 1fa15e4a455cbf014eb1a5a19211683c7fd2ff95ecb5552ba8ade7aa09118bb2, still 679 017
     // bytes. Its old scope's one reservation was about groove-57's level under a
     // different feature and does not travel to this verdict.
+    //
+    // Re-pinned 2026-09-10 for quick-22, for the reason given on groove-78. The quick-18
+    // pin it replaces was 57d7ad81…f543; the file at this path is
+    // d2501e28b541342b056b8974e054b863828bfa26e52a577c6cb09a8288386302, still 679 017
+    // bytes. It keeps the anchor: the ring weighs on note-time and lowRegisterShare is
+    // measured in note-time, so the argmax could have moved and did not — the test
+    // below still names this groove for the feel.
     id: 'groove-79',
-    pcm: '57d7ad8188c11a39dfc6a87b5daaa4006ac453ad597795b5fcaaf71d437af543',
+    pcm: '5f08ed1c32bab2deaaa910206850958d06502991bbb2ec78bcec14c6e9040764',
     mp3: null,
     file: 'public/grooves/groove-79.mp3',
-    approval: QUICK_18_APPROVAL,
-    scope: QUICK_18_SCOPE,
+    approval: QUICK_22_APPROVAL,
+    scope: QUICK_22_SCOPE,
     upstream:
       'events.ts’s BASS_FLOOR_MIDI (25) — the constant feature-28 moved, and the first ' +
       'place to look when this fails — as much as samples/pack.json’s Pastabass ' +

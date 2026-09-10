@@ -4,6 +4,7 @@ import type { Harmony } from './theory/harmony.ts'
 import {
   BACKING_VOICES,
   BARS_PER_PASS,
+  BASS_SUSTAIN_DEFAULT,
   BONGO_LABEL,
   COMP_REGISTER_CEILING,
   COMP_REGISTER_LOW,
@@ -3268,5 +3269,133 @@ describe('a template brings its own figures — feature-25 epic-1', () => {
         serialised(dry(BRIGHT), 'bright-straight'),
       )
     })
+  })
+})
+
+describe('a feel can let its bass ring — quick-22', () => {
+  const openBallad = templateById('open-ballad')
+
+  // The grid step an event was emitted on. At open-ballad's 68 bpm a sixteenth is
+  // 220 ms, and swing (2 ms at this feel's 0.02), the shared ±11 ms timing walk and
+  // drift (18 ms) together stay well inside half of that, so rounding recovers the
+  // step. Same technique applySwing uses on the pre-humanize stream.
+  function bassLine(feel: FeelTemplate, seed: number, bassType?: 'normal' | 'walking-bass') {
+    const built = buildEvents(
+      { id: 'g', uuid: UUID, template: feel.id, seed, ...(bassType ? { bassType } : {}) },
+      feel,
+    )
+    const barSec = (60 / built.music.bpm) * BARS_PER_PASS
+    const stepSec = barSec / feel.subdivision
+    const sixteenthSec = barSec / PATTERN_RESOLUTION
+    const notes = built.events
+      .filter((event) => event.voice === 'bass')
+      .map((event) => ({
+        sixteenth: (Math.round(event.timeSec / stepSec) * PATTERN_RESOLUTION) / feel.subdivision,
+        sustain: event.durationSec / sixteenthSec,
+      }))
+      .sort((a, b) => a.sixteenth - b.sixteenth)
+
+    const loopSixteenths = built.music.loopBars * PATTERN_RESOLUTION
+    const withGaps = notes.map((note, index) => ({
+      ...note,
+      gap:
+        (index + 1 < notes.length ? notes[index + 1].sixteenth : loopSixteenths) - note.sixteenth,
+    }))
+
+    // fitToLoop truncates any note whose ring reaches the loop end, and it truncates
+    // from a humanized onset, so those lengths are no whole number of sixteenths. The
+    // closing bar is where that bites; every assertion about a declared sustain drops it.
+    return withGaps.filter((note) => note.sixteenth < loopSixteenths - PATTERN_RESOLUTION)
+  }
+
+  const seedsOf = (id: string) =>
+    readCatalogue().filter((spec) => spec.template === id).map((spec) => spec.seed)
+
+  it('declares a ring longer than the default it overrides', () => {
+    expect(openBallad.bassSustain).toBeGreaterThan(BASS_SUSTAIN_DEFAULT)
+  })
+
+  it('rings a note on to the next bass onset, up to the feel’s cap', () => {
+    const cap = openBallad.bassSustain as number
+    for (const seed of seedsOf('open-ballad')) {
+      for (const note of bassLine(openBallad, seed)) {
+        if (note.gap <= BASS_SUSTAIN_DEFAULT) continue
+        expect(note.sustain, `seed ${seed} @${note.sixteenth} gap ${note.gap}`).toBeCloseTo(
+          Math.min(cap, note.gap),
+          9,
+        )
+      }
+    }
+  })
+
+  it('never rings a note shorter than the default, however close the next onset is', () => {
+    for (const seed of seedsOf('open-ballad')) {
+      for (const note of bassLine(openBallad, seed)) {
+        if (note.gap > BASS_SUSTAIN_DEFAULT) continue
+        expect(note.sustain, `seed ${seed} @${note.sixteenth} gap ${note.gap}`).toBeCloseTo(
+          BASS_SUSTAIN_DEFAULT,
+          9,
+        )
+      }
+    }
+  })
+
+  it('overruns the next onset only where the floor beats the gap, and only by that much', () => {
+    for (const seed of seedsOf('open-ballad')) {
+      for (const note of bassLine(openBallad, seed)) {
+        expect(note.sustain, `seed ${seed} @${note.sixteenth}`).toBeLessThanOrEqual(
+          Math.max(BASS_SUSTAIN_DEFAULT, note.gap) + 1e-9,
+        )
+      }
+    }
+  })
+
+  it('rings most of the feel’s notes longer, and never past the cap', () => {
+    const cap = openBallad.bassSustain as number
+    for (const seed of seedsOf('open-ballad')) {
+      const line = bassLine(openBallad, seed)
+      const longer = line.filter((note) => note.sustain > BASS_SUSTAIN_DEFAULT)
+      expect(longer.length, `seed ${seed}`).toBeGreaterThan(line.length / 2)
+      for (const note of line) {
+        expect(note.sustain, `seed ${seed} @${note.sixteenth}`).toBeLessThanOrEqual(cap + 1e-9)
+      }
+    }
+  })
+
+  it('lets a walking note keep its own length against a feel that rings', () => {
+    const seed = seedsOf('open-ballad')[0]
+    const walking: FeelTemplate = { ...openBallad, bassType: 'walking-bass' }
+    const { bassSustain, ...silent } = walking
+    expect(bassSustain).toBeDefined()
+    expect(bassLine(walking, seed).map((note) => note.sustain)).toEqual(
+      bassLine(silent as FeelTemplate, seed).map((note) => note.sustain),
+    )
+  })
+
+  it('caps every declared ring at the length the samples hold', () => {
+    const declaring = allTemplates().filter((feel) => feel.bassSustain !== undefined)
+    expect(declaring.length).toBeGreaterThan(0)
+    for (const feel of declaring) {
+      // 2.000 s of recording is 8.27 sixteenths at 62 bpm, the slowest tempo any feel
+      // declares, so a cap above eight rings into the sample's own fade.
+      expect(feel.bassSustain, feel.id).toBeLessThanOrEqual(8)
+      // Below the default the declaration says nothing — bassRing floors it back to 2.
+      expect(feel.bassSustain, feel.id).toBeGreaterThan(BASS_SUSTAIN_DEFAULT)
+    }
+  })
+
+  it('leaves every feel that declares no bassSustain on the default', () => {
+    const feels = allTemplates().filter((feel) => feel.bassSustain === undefined)
+    expect(feels.length).toBeGreaterThan(0)
+    for (const feel of feels) {
+      for (let seed = 1; seed <= 4; seed += 1) {
+        for (const note of bassLine(feel, seed, 'normal')) {
+          expect(note.sustain, `${feel.id}:${seed} @${note.sixteenth}`).toBeCloseTo(
+            BASS_SUSTAIN_DEFAULT,
+            9,
+          )
+        }
+      }
+    }
   })
 })

@@ -349,6 +349,36 @@ template, so all six of its grooves walk. `shuffle` does not declare it: its thr
 `catalogue.json`, and its three aeolian ones keep the drawn figure. The walking line
 is described under *The walking bass* below.
 
+**Note length.** A drawn bass note holds `BASS_SUSTAIN_DEFAULT = 2` sixteenths unless
+its feel declares `bassSustain` — and that is a **cap on a ring, not a length**. The note
+holds on to the next bass onset, or to the next bar's downbeat when its own bar has no
+later note, and `bassSustain` is only the ceiling on that. The floor stays at 2, so a
+feel that rings cannot *shorten* the pickup pairs a pool puts one sixteenth apart.
+`open-ballad` is the one feel that declares it, at `5`, which makes its mean note
+1.8–2.1× the default — 3.57 to 4.17 sixteenths across its five grooves, 82 of their 130
+bass notes longer than the default and none shorter. It was rendered at `6` first and
+heard as ringing a little too long.
+
+Two reasons the clamp is the rule and a flat longer number is not. A fixed sustain
+overlaps, and two bass notes a whole tone apart at MIDI 25–26 beat at 2–8 Hz instead of
+reading as one instrument. And the chromatic approach note on the last sixteenth rings an
+off-scale semitone into the next bar under the new chord — which `offScalePitches` cannot
+catch, because it exempts that note by its **onset** and never looks at how long it
+sounds. In a game about naming the scale by ear that is not untidy, it is misleading.
+
+**The clamp bounds that overrun; it does not end it.** Where a pool puts two onsets one
+sixteenth apart — `[0, 8, 14]` plus an approach at 15 — the floor of 2 beats the gap of
+1 and the note rings one sixteenth past, about 0.22 s at 68 bpm. That is exactly what
+every feel does with no `bassSustain` at all, so a ringing feel is no worse; what the
+clamp buys against a flat cap is one sixteenth of overrun instead of four.
+
+Three mechanics worth knowing. The gap is read off the grid, not off the humanized
+onsets, so note length does not jitter with the timing walk kick and bass share.
+`fitToLoop` still truncates whatever reaches the loop end, so the closing note is clipped
+whatever the cap says, and the bass has no overhang bar to ring into the way a cymbal
+does. And `8` is the ceiling on any cap: the samples are 2.000 s, which at 62 bpm is
+8.27 sixteenths, so past that a note runs into the file's own fade.
+
 Three things a bass player does that an arpeggiator does not, drawn per note:
 rest (`0.18`), repeat (`0.4`), octave lift (`0.32`). **None of the three is drawn
 for the downbeat** (`events.ts:795-804`), so the figure is built with the bar's
@@ -550,8 +580,9 @@ Masters normalise **true peak onto `PEAK_CEILING = 0.891`** (≈ −1 dBFS). Bec
 peak is pinned, RMS is a function of crest factor: the loudness spread across the
 catalogue is a *balance* question, not a master-trim one.
 
-A measured instance of that, from feature-27's bass swap. `open-ballad` carries the
-catalogue's longest bass notes (0.462 s) and a muted flatwound sustains less than an
+A measured instance of that, from feature-27's bass swap. `open-ballad` carried the
+catalogue's longest bass notes at the time — 0.462 s, since lengthened by quick-22's
+`bassSustain` — and a muted flatwound sustains less than an
 upright, so at a bass-over-kick balance reproduced to 0.01 dB its master RMS median
 still fell 0.96 dB — three times any other feel's. Less sustain delivers less energy
 into a peak-pinned master at the same track level. It stays comfortably inside the
@@ -654,6 +685,7 @@ to catch a violation.
 | backbeat, open hat, rim placement | `DEFAULT_PLACEMENT` / `PLACEMENTS` in `events.ts`. A feel whose snare line varies per seed instead declares `patterns.kit` — one or the other, never both |
 | fills | `DEFAULT_FILL` / `FILLS` in `events.ts` |
 | bass register and behaviour | `BASS_*` constants in `events.ts` |
+| how long a feel's drawn bass notes ring | `bassSustain` on `templates/<feel>.ts` — a **cap** on a ring that stops at the next bass onset, floored at `BASS_SUSTAIN_DEFAULT = 2`. Absent means the default for every note. It says nothing about a walking line, which sets its own length and takes precedence |
 | whether a feel or one groove walks its bass | `bassType` on `templates/<feel>.ts` for the whole feel, or on the groove's entry in `catalogue.json` for one of them. The groove wins. A walking line ignores the feel's `patterns.bass`, so declaring both says nothing |
 | comp register, voicing, spread | `COMP_*` constants and `voiceLead` in `events.ts` |
 | timing feel, lean, drift | `humanize.ts` and the template's `humanize` block |

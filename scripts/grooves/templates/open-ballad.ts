@@ -34,6 +34,13 @@ export const openBallad: FeelTemplate = {
     comp: -0.16,
   },
   passes: 2,
+  // Five sixteenths, clamped to the next bass onset. Six was rendered first and heard
+  // as ringing a little too long; five is the step down the musician's handover named
+  // for that verdict. The pool's gaps are 1, 2, 4, 5, 6, 7, 8, 9, 10 and 15, so five
+  // lets a note reach its gap up to 5 and caps everything wider — including the `[0, 8]`
+  // pairs, which is where the length comes off. A cap is what keeps BASS_REST_CHANCE's
+  // 9-to-15-sixteenth gaps audible as space rather than swallowed.
+  bassSustain: 5,
   density: { minPerBar: 27, maxPerBar: 37 },
   patterns: {
     // The hat, and the reason this feel is on the sixteenth grid at all. At
