@@ -13,7 +13,7 @@
 
 * The caption under the Simple mode switch names the number of modes the card actually offers.
 * A test fails if the count in the copy and the number of mode chips ever disagree again — today two tests assert the wrong string as correct and never compare it to the real count.
-* Nothing in the first two minutes uses "mode" for both Major/Minor and the six named modes without saying which it means.
+* The How to play box says which sense of "mode" the Simple mode switch turns on, so a reader of it can tell Major/Minor from the six named modes. The card itself keeps "Mode" for both, per Q2-A.
 * No audio re-renders, and no puzzle answer changes.
 
 ## Open questions
@@ -213,3 +213,42 @@ What each costs:
 * D2 *a test fails if the count in the copy and the number of mode chips ever disagree* — the same test, plus `music.test.ts` › `returns six options including the answer`, now pinned to the constant.
 * D3 *nothing in the first two minutes uses "mode" for both senses without saying which* — **partly.** The intro sentence is fixed and `snippets.test.ts` › `says which sense of "mode" the switch turns on (quick-19)` holds it. Two things still use the bare word: `puzzle.modeGroup`, which is `'Mode'` in both modes and which **Q2-A deliberately left alone**, and `intro.steps[2]` — `'Guess the Root & Mode '` — which no question in three rounds looked at, and which is the stronger case: a numbered How-to-play step read *before* the first play. The bullet says "nothing", and two things remain.
 * D4 *no audio re-renders, no puzzle answer changes* — nothing under `scripts/grooves/`, `public/grooves/` or the manifest is in the diff.
+
+## D3 narrowed, and the row closed
+
+2026-09-10, on the user's instruction: *"narrow D3 and mark it done."*
+
+D3 read *"Nothing in the first two minutes uses 'mode' for both Major/Minor and the six
+named modes without saying which it means."* The verifier graded it **partly** and was
+right to. Two pieces of copy still use the bare word, and the first of them is the
+reason the bullet could not stand:
+
+* **`puzzle.modeGroup` is `'Mode'` in both modes** — and **Q2-A chose that deliberately**,
+  because `modeGroup` is the accessible name `testing/puzzleHarness.tsx`,
+  `GuessCard.test.tsx` and `GroovePuzzle.page.test.tsx` use to find the chips. So the
+  bullet as written was unachievable without reversing an answered question. It was
+  written before Q2 settled, and Q2 is what settled it.
+* **`intro.steps[2]` — `'Guess the Root & Mode '`** — a numbered How to play step read
+  before the first play. No question in three rounds looked at it; Q2 framed the
+  collision as `twoWays` versus the card, and the step was never in frame. **This one is
+  a real residual**, not a wording problem, and it is left open rather than quietly
+  folded in: narrowing D3 does not fix it, and making the step specific while the card
+  still says "Mode" for both would be inconsistent in the other direction. It wants its
+  own ticket if it is worth one.
+
+The bullet now claims what was actually built and what Q2-A actually decided: the How to
+play box supplies the mapping, and the card keeps "Mode" for both. That is held by
+`src/lib/snippets/snippets.test.ts` › *says which sense of "mode" the switch turns on
+(quick-19)*, which asserts both halves — that `intro.twoWays` contains "named modes" and
+that it no longer contains "guessing modes", the negative half being load-bearing rather
+than decoration.
+
+**D1 done · D2 done · D3 done against the narrowed bullet · D4 done.** Re-ran the three
+files behind them: 154 passed. The build itself was committed in `fa8f005` and no code
+changed here — only the bullet.
+
+One coverage note stands, from the verifier and unaddressed: the test asserts one
+qualifier in one sentence, not D3's general property, so a new ambiguous first-two-minutes
+line added tomorrow reddens nothing.
+
+**Row ✅ Done.**
