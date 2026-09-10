@@ -155,3 +155,143 @@ That is a question rather than something a test or a look at the page can settle
 `verifier` would have nothing to grade it against. It is **answered above** — no, and
 why. That section is yours, so replacing the line with the answer, or striking it, is
 yours to do.
+
+## Built
+
+Built in the lead. The `musician` was dispatched during the analyze run and its
+recommendation is recorded above as decisions, so nothing musical was re-derived here.
+
+* `scripts/grooves/templates/second-line.ts` — `patterns.comp` from `[[2], [6], [10], [11]]` to **`[[3], [5], [2], [1]]`**, with the index→groove→step mapping and the reason step 6 was dropped written into the file. Nothing else on the template moved: `gain.comp` is still −4.2 and the density band is still 21–30.
+* `scripts/grooves/second-line.test.ts` — two new tests, named for the ticket.
+* `scripts/grooves/events.fixture.json`, `scripts/grooves/grooves.lock.json` — re-pinned.
+* `public/grooves/groove-{65,66,67,68,69,70}.mp3` — re-rendered.
+* `docs/music.md` — the kit-against-band balance paragraph, below.
+
+**Rendered stab positions, confirming the mapping the decision rests on:**
+
+| groove | before | after |
+| :-- | :-- | :-- |
+| groove-65 | 10 | **2** |
+| groove-66 | 10 | **2** |
+| groove-67 | 11 | **1** |
+| groove-68 | 10 | **2** |
+| groove-69 | 6 | **5** |
+| groove-70 | 2 | **3** |
+
+Four of six moved out of the back half of the bar. Every groove kept the pool index it
+drew before, which is what the order was chosen to guarantee.
+
+* tests: `puts every stab in the first half of the bar — quick-23` asserts every pool figure against `PATTERN_GRID / 2`, and `leaves the chord no later than the bar's midpoint, in every committed groove — quick-23` renders all six and asserts the emitted step. Both assert the **bound**, not the four literals — quick-16 asks that a feel's declarations stop being pinned to today's numbers, so the positions stay free to be re-turned by ear.
+* checks: `npm run lint` clean · `npx vitest run --project app --project tooling` 3060 passed · `npm run test:gen` 1617 passed, **2 failed — the two voided sign-offs and nothing else** · `npm run grooves:verify` 54 grooves, 24 notes, all matching the lock.
+* gate: all six pass the seven checks. Density unchanged at 24.1–26.8 against 21–30.
+
+### The 1.53 dB landed, and it moved a figure in `docs/music.md`
+
+Predicted in `## Notes` and now measured: `second-line`'s comp median fell **0.71 dB**,
+from −2.61 to **−3.32 dB** over its own kick.
+
+**The predicted count was wrong and the verifier caught it: two grooves lost 1.53 dB,
+not three.** Only groove-69 (6 → 5) and groove-70 (2 → 3) crossed from an even step to
+an odd one, where `VELOCITIES` drops 0.62 to 0.52. groove-65, -66 and -68 went 10 → 2,
+even to even, and lost nothing; groove-67 went 11 → 1, odd to odd, and lost nothing
+either. The "three" came from the adjacent and correct claim that the feel goes from 5
+medium / 1 weak to 3 medium / 3 weak — which is a change of two grooves. The median
+still fell 0.71 dB, further than either groove moved, because the two that changed
+crossed the middle of the distribution. Nothing tests that sentence: `docs.test.ts`
+scans only signed two-decimal figures and "1.53" carries no minus, so it was unguarded
+prose.
+
+That put it **0.63 dB** from `straight-funk`'s −2.69, past the **0.3 dB** the balance
+paragraph in `docs/music.md` used to claim for all four figures. `docs.test.ts` reads its
+threshold out of that prose, so the number chosen there is a real guard and not a
+description.
+
+It was first restated as **1.5 dB** — the tolerance the two template test files assert —
+and the verifier's judgement was that this is honest but too wide: at 1.5 the sentence
+only repeats what those files already check, and a drift of `boom-bap`'s comp from 0.27
+to 1.4 dB would pass everything in the tree. It now reads **1.0 dB**, which covers the
+measured 0.63 with headroom and leaves the sentence able to fail. The 0.3 dB detail
+survives as prose about the three figures still that tight, and the guard that actually
+catches drift — all six figures re-measured at a 0.01 dB tolerance — was never touched.
+
+**`gain.comp` was deliberately not touched.** The ticket's own assumption held it back:
+the level was measured and is not the defect. About +0.8 dB would restore the old median
+if the listening asks for it, and that stays inside the 1.5 dB tolerance.
+
+### Heard and approved
+
+groove-65 and groove-67 are pinned sign-offs, voided by the re-render and **not
+re-pinned** — nobody has heard this audio. Their `gate.test.ts` entries already name
+`patterns.comp` in their own `upstream` lists, so the table anticipated this change.
+
+Three things to listen for, in the order they are likely to matter:
+
+1. Whether the chord is easier to tie to the root at all — the whole point.
+2. Whether **step 1** reads as a syncopation or as a late downbeat. It lands 181 ms after the beat with swing, and it is the pool member the `musician` was least sure of. It is groove-67's.
+3. Whether the 1.53 dB loss matters on the two grooves that took it — **groove-69 and groove-70**.
+
+One unasked-for consequence to listen for as well: swing 0.22 delays an odd sixteenth by
+18 ms, so **three of six chords now swing with the roll** where five of six used to land
+unswung. `boom-bap` deliberately went the other way.
+
+## Verified
+
+`specs/quick/.verify/23.md` — **pass with gaps**, all five citations resolving.
+
+| bullet | grade | what settles it |
+| :-- | :-- | :-- |
+| D1 first half of the bar | **done** | `second-line.test.ts` › *puts every stab in the first half of the bar — quick-23* |
+| D2 no stab on a quarter | **done** | the existing *declares one stab a figure, always off the beat* block |
+| D3 *"does 2 stabs make sense"* | **not gradeable** | a question, not a criterion — answered in `## Notes`, and the line is yours to replace or strike |
+| D4 other eight pools unchanged | **done** | `eventsFixture.test.ts` › *deep-equals what the generator builds today* |
+| D5 re-rendered, re-pinned after listening | **partly** | re-render done; re-pinning correctly withheld until you have heard it |
+| D6 a test covers the bound | **done** | both new tests, **16 of 16 mutations caught** independently by each, moving one figure to 9/10/11/13 at each of the four indices |
+
+Checked rather than taken on trust: the index→groove→step mapping probed with a marker
+pool (70→0, 69→1, 65/66/68→2, 67→3, and the old pool reproduces 2/6/10/11 at those same
+indices); all six dB figures to the digit; the fixture showing 54 keys with six entries
+moved, `music` unchanged in all six and **every non-comp event byte-identical**; and all
+six passing the gate — density 24.13–26.75, loudness −21.12…−22.85 with 1.12 dB the
+tightest margin, worst seam 0.00194 against 0.02.
+
+Two things it found wrong, both fixed above and in `docs/music.md`: the 1.53 dB **count**
+(two grooves, not three) and a stale comment in `second-line.test.ts` still quoting
+comp −2.61 and 1.42 dB of room — the first thing a reader consults when that assertion
+goes red. The bound in the balance paragraph was narrowed from 1.5 to 1.0 on its
+recommendation.
+
+Two residuals it named and neither is fixed:
+
+* **A reorder of the pool is caught but not diagnosed.** Four reorderings all pass both new tests and the whole comp block; only `eventsFixture.test.ts` catches them, and it reads as a six-groove fixture mismatch rather than "you re-rolled which groove gets which stab". The file comment is what carries that warning.
+* **A two-bar figure such as `[2, 17]` passes the bound test**, because `17 % 16 = 1`. Out of scope here, and worth knowing if the two-bar option in `## Notes` is ever taken.
+
+The quick door still fits on all four questions: one module, nothing frozen, one revert.
+
+## Heard and approved — row ✅ Done
+
+2026-09-10, over all six:
+
+> listened to all grooves. all sound good
+
+So groove-65 and groove-67 are re-pinned to this render, on `QUICK_23_APPROVAL`.
+`QUICK_23_SCOPE` records what the words reach and what they do not: they cover **where
+the chord sits**, which is the whole change, and the two consequences of that placement
+that were predicted before he heard them and are not mix decisions —
+
+* **level**, the 1.53 dB on groove-69 and groove-70 and the 0.71 dB median fall, with `gain.comp` untouched at −4.2 and +0.8 dB named as the lever if it is ever judged too soft;
+* **swing**, three of six chords now landing with the roll where five of six were unswung, which nobody asked for.
+
+What the scope does not claim: the words name the set of six rather than a render, so
+neither pinned groove is known to have been played on its own; groove-66, -68, -69 and
+-70 draw the new pool unpinned; and the `musician`'s specific doubt about **step 1** on
+groove-67 was put to him only as part of the whole set.
+
+**D5 is now done.** D1, D2, D4 and D6 were already done; D3 is not a criterion, so every
+gradeable bullet holds.
+
+* checks after the re-pin: `npm run lint` clean · `npx vitest run` all green · `npm run grooves:verify` — 54 grooves, 24 notes, all matching the lock.
+
+**One line in `## Done when` is still a question**, not something a test can settle:
+*"question: does having 2 stabs per bar make sense stylistically?"*. It is answered under
+`## Notes` — no, on three measured costs — and replacing the line with that answer, or
+striking it, is yours to do. The row is ✅ on the five bullets that are criteria.

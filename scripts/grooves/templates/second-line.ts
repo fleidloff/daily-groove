@@ -130,10 +130,26 @@ export const secondLine: FeelTemplate = {
       [2, 6, 10, 14],
       [0, 4, 6, 8, 12, 14],
     ],
-    // One stab a bar, always off the beat. The keys are the sparsest voice in this
-    // feel by construction: one onset times a three- or four-note voicing can never
-    // reach the shared pool's two.
-    comp: [[2], [6], [10], [11]],
+    // One stab a bar, always off the beat, and quick-23 moved all four into the first
+    // half. The bass states the bar's root on steps 0-1 and stops there in every bar,
+    // so a stab on the old 10 or 11 put the chord 650 ms after the root had gone and
+    // the ear had to bridge the two from memory; 1-3 abut it or overlap it. Step 6 was
+    // dropped rather than kept: it is the "and of 2" and the most idiomatic single
+    // position in the style, but it is also the busiest step of the bar in all six
+    // committed grooves — kick plus a snare accent — so a chord there groups with the
+    // drum instead of reading as its own event.
+    //
+    // The order is load-bearing. `pick` indexes a four-member pool, so each committed
+    // groove keeps the index it draws today, and the index decides its step: index 0 is
+    // groove-70 (step 3), index 1 groove-69 (step 5), index 2 groove-65, -66 and -68
+    // (step 2), index 3 groove-67 (step 1). Step 2 sits at index 2 because
+    // three of the six land there and it is the only medium-velocity step left in the
+    // pool — VELOCITIES puts an even off-sixteenth at 0.62 against an odd one's 0.52.
+    // Re-ordering or shortening this array re-rolls which groove gets which stab.
+    //
+    // The keys are still the sparsest voice in this feel by construction: one onset
+    // times a three- or four-note voicing can never reach the shared pool's two.
+    comp: [[3], [5], [2], [1]],
     // Declared rather than inherited, because the shared pool sits on 3, 7, 11 and 15
     // — three of which the kit figures already strike, so against this feel it would
     // collapse to one tap a bar or none — and because a ghost on 13 would land on the

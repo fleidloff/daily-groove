@@ -14,7 +14,7 @@ import {
 } from './events.ts'
 import { rmsDbfs } from './level.ts'
 import { loadPack } from './pack.ts'
-import { assertPatterns } from './patterns.ts'
+import { PATTERN_GRID, assertPatterns } from './patterns.ts'
 import { renderVoices } from './voices.ts'
 import { TEMPLATES, allTemplates, templateById } from './templates/index.ts'
 import { secondLine } from './templates/second-line.ts'
@@ -526,6 +526,33 @@ describe('second-line comp — A8, R6, AC6', () => {
     }
   })
 
+  // quick-23. The bound, not the steps: quick-16 asks that a feel's declarations stop
+  // being pinned to today's literals, so this asserts where a stab may fall and leaves
+  // the four positions free to be re-turned by ear.
+  it('puts every stab in the first half of the bar — quick-23', () => {
+    const half = PATTERN_GRID / 2
+    for (const figure of secondLine.patterns!.comp!) {
+      expect(
+        figure[0],
+        `stab on ${figure[0]} is in the back half of the bar, ${figure[0] - half + 1} steps late`,
+      ).toBeLessThan(half)
+    }
+  })
+
+  it('leaves the chord no later than the bar’s midpoint, in every committed groove — quick-23', () => {
+    const half = PATTERN_GRID / 2
+    for (const spec of readCatalogue()) {
+      if (spec.template !== 'second-line') continue
+      const { events, music } = buildEvents(spec, secondLine)
+      const stepSec = ((60 / music.bpm) * 4) / secondLine.subdivision
+      for (const event of events) {
+        if (event.voice !== 'comp') continue
+        const step = Math.round(event.timeSec / stepSec) % secondLine.subdivision
+        expect(step, `${spec.id} stabs on ${step}`).toBeLessThan(half)
+      }
+    }
+  })
+
   it('draws the shared pool on the three feels it is measured against', () => {
     for (const id of RICHER) {
       expect(templateById(id).patterns?.comp, `${id} declares its own comp pool`).toBeUndefined()
@@ -587,12 +614,14 @@ describe('second-line harmony balance — the mix the harmony verdict bought', (
   // relationship to the snare, both of which a uniform kit offset preserves, so a comp
   // handed back 6 dB would go unremarked by every one of them.
   //
-  // Tolerance. The six committed grooves spread about 2 dB between them (comp −4.03 …
-  // −2.23 against the kick), so only the median reads the balance rather than one
-  // groove's voicing. Re-measured at the MIDI 25 bass floor feature-28 lowered the
-  // register to, the medians are comp −2.61 / bass −5.59 against straight-funk's
-  // −2.69 / −5.55: deviations of 0.08 and 0.04 dB, so 1.5 dB leaves 1.42 dB of room
-  // above the larger.
+  // Tolerance. The six committed grooves spread about 2 dB between them (comp −4.51 …
+  // −2.32 against the kick), so only the median reads the balance rather than one
+  // groove's voicing. The medians are comp −3.32 / bass −5.59 against straight-funk's
+  // −2.69 / −5.55: deviations of 0.63 and 0.04 dB, so 1.5 dB leaves 0.87 dB of room
+  // above the larger. The comp figure was −2.61 until quick-23 pulled the stab into
+  // the first half of the bar: two of the six crossed from an even step to an odd one,
+  // which VELOCITIES strikes 1.53 dB softer, and the median fell 0.71 dB. That is a
+  // consequence of where the chord sits, not of gain.comp, which is untouched at −4.2.
   it('puts its comp and its bass where straight-funk puts them, over the six that shipped', async () => {
     const mine = await harmonyOverKick('second-line')
     const funk = await harmonyOverKick('straight-funk')

@@ -204,15 +204,32 @@ not a stylistic choice this app can afford. Both feels' kits were dropped by a u
 offset — 7 dB on `boom-bap`, 5 dB on `second-line`, which had the same defect one step
 less severe — so every relationship inside each kit is exactly the one that was
 declared, and only the kit-against-band balance moved. Both now measure comp −2.41 dB
-(`boom-bap`) and −2.61 dB (`second-line`) and bass −5.51 and −5.59 dB against their own
-kick, against `straight-funk`'s comp −2.69 and bass −5.55 — inside 0.3 dB on all four,
-which is what `templates/boom-bap.test.ts` and `second-line.test.ts` assert, at a 1.5 dB
-tolerance, against `straight-funk` rather than against a literal. The bass figures were
-re-measured when feature-27 swapped the upright for a picked electric, and again at the
-MIDI 25 floor feature-28 lowered the register to — both times *closer* to
+(`boom-bap`) and −3.32 dB (`second-line`) and bass −5.51 and −5.59 dB against their own
+kick, against `straight-funk`'s comp −2.69 and bass −5.55 — inside 1.0 dB on all four.
+Three of the four are far tighter than that, inside 0.3 dB; `second-line`'s comp is the
+one exception at 0.63 dB, and it earned that in quick-23 rather than in the re-gain. The
+bound here is the document's own and is deliberately **tighter** than the 1.5 dB
+`templates/boom-bap.test.ts` and `second-line.test.ts` assert against `straight-funk`:
+set at the contract it would only repeat what those two files already check, and a drift
+of `boom-bap`'s comp from 0.27 to 1.4 dB would pass everything in the tree. Set just
+above the measurement, this sentence can still fail. The bass figures
+were re-measured when feature-27 swapped the upright for a picked electric, and again at
+the MIDI 25 floor feature-28 lowered the register to — both times *closer* to
 `straight-funk`'s than the upright's were, because a floor that quietens every feel's
-bass alike moves the deviation barely at all; the comp figures did not move, because the
-comp did not.
+bass alike moves the deviation barely at all.
+
+**`second-line`'s comp figure moved once, and not because the comp's level changed.**
+quick-23 pulled its stab into the first half of the bar so the chord lands beside the
+root instead of 650 ms after it. `VELOCITIES` is positional — an even off-sixteenth is
+0.62, an odd one 0.52 — and the only even off-beat steps in the first half are 2 and 6.
+Dropping 6 leaves one medium step for four pool members, so **two** of the feel's six
+grooves now strike the chord 1.53 dB softer — groove-69 (6 → 5) and groove-70 (2 → 3),
+the only two that crossed from an even step to an odd one. groove-65, -66 and -68 moved
+10 → 2, even to even, and lost nothing; groove-67 went 11 → 1, odd to odd, and lost
+nothing either. The feel's median still fell 0.71 dB, further than either groove moved,
+because the two that changed crossed the middle of the distribution. It is a
+side effect of *where* the chord sits, not a mix decision: `gain.comp` is untouched at
+−4.2. About +0.8 dB there would restore the old median if a listening ever asks for it.
 `boom-bap`'s comp plays one stab a bar, on an even sixteenth, so the chord lands
 unswung while the kit swings at 0.34 around it. Two
 passes, so there is no middle pass and the loop declares a fill bar and no

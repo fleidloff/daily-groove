@@ -815,6 +815,31 @@ const QUICK_20_APPROVAL = 'now the walking bass sounds really good!'
 // day, right after the swung-sixteenth approval above.
 const QUICK_21_APPROVAL = 'listened to all grooves. All sound good.'
 
+// quick-23 pulled second-line's one comp stab a bar into the first half, so the chord
+// lands beside the bar's root instead of ~650 ms after it. Rendered and played the same
+// day; these are the feel's two pinned grooves.
+const QUICK_23_APPROVAL = 'listened to all grooves. all sound good'
+
+const QUICK_23_SCOPE =
+  'Asked on 2026-09-10, of second-line’s six grooves after quick-23 moved patterns.comp ' +
+  'from [[2],[6],[10],[11]] to [[3],[5],[2],[1]]. What it covers: where the chord sits, ' +
+  'which is the whole change — no gain moved, no density band moved, and the feel still ' +
+  'plays one stab a bar off the beat. It also covers two consequences of that placement ' +
+  'that were predicted before he heard it and are not mix decisions. First, level: ' +
+  'VELOCITIES is positional, and groove-69 and groove-70 crossed from an even step to ' +
+  'an odd one, so they strike the chord 1.53 dB softer and the feel’s comp median fell ' +
+  '0.71 dB, from −2.61 to −3.32 dB against its own kick — 0.63 dB from straight-funk’s, ' +
+  'where the other three sit inside 0.3. gain.comp is untouched at −4.2, and about ' +
+  '+0.8 dB there would restore the old median if it is ever judged too soft. Second, ' +
+  'swing: 0.22 delays an odd sixteenth by 18 ms, so three of the six chords now swing ' +
+  'with the roll where five of six used to land unswung — boom-bap deliberately went ' +
+  'the other way, and nobody asked for this one. ' +
+  'What it does not cover: the words name the set of six and not a render, so neither ' +
+  'of these two grooves is known to have been played individually; groove-66, -68, -69 ' +
+  'and -70 draw the new pool unpinned; no device was recorded; and the musician’s doubt ' +
+  'about step 1 — groove-67’s, landing 181 ms after the beat, syncopation or late ' +
+  'downbeat — was put to him only as part of the whole set.'
+
 const QUICK_21_SCOPE =
   'Three listenings on 2026-09-10, and the words pinned above are the third. The first ' +
   'heard the walking bass on all six shuffle grooves at gain.bass −20.4 and approved it ' +
@@ -1734,11 +1759,11 @@ const SIGN_OFFS: SignOff[] = [
     // it: the file played on 2026-09-08, at the same path and the same byte length, is
     // 507966f1c02a15de4b66856087793aa2f9becc0dd2c8ef5f76e714515d7d154a, and this render reproduces that one.
     id: 'groove-65',
-    pcm: 'f9a8601b0b6ef3b940c595f7ec1f167915075b14ae9d69922c4d03c341e668d9',
+    pcm: 'e2cbedea8dc174b7ae5af907dba7326faa9e6beb00ad2cb734f37c8ab05ec861',
     mp3: null,
     file: 'public/grooves/groove-65.mp3',
-    approval: FEATURE_28_APPROVAL_LEGACY,
-    scope: FEATURE_28_SCOPE_LEGACY,
+    approval: QUICK_23_APPROVAL,
+    scope: QUICK_23_SCOPE,
     upstream:
       'samples/pack.json — the bass’s Pastabass tagliatelle set as much as the comp’s ' +
       'single dyn2 layer or the snare and tom alternates — second-line’s patterns.kit, ' +
@@ -1772,11 +1797,11 @@ const SIGN_OFFS: SignOff[] = [
     // fe6a3bfe8929b16215a7f86552ecaaf3e231151fcd1532d4026deee72c42dd7d (1 003 145
     // bytes), and this render reproduces it byte for byte.
     id: 'groove-67',
-    pcm: '576a769ce17b0487f927ceba8aec464d3f6a44b6d17eaef68ab78157653e319a',
+    pcm: 'eb5a433cb21300566e937ec1a5bb229f2e447ef04ece9e9cf0aba83f379baefc',
     mp3: null,
     file: 'public/grooves/groove-67.mp3',
-    approval: FEATURE_28_APPROVAL_ANCHORS,
-    scope: FEATURE_28_SCOPE_ANCHORS,
+    approval: QUICK_23_APPROVAL,
+    scope: QUICK_23_SCOPE,
     upstream:
       'events.ts’s BASS_FLOOR_MIDI (25) — the constant feature-28 moved, and the first ' +
       'place to look when this fails — as much as samples/pack.json’s Pastabass ' +
