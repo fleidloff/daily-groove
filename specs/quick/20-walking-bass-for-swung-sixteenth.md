@@ -185,3 +185,102 @@ As written, bullet 2 grades **not done** the moment `open-ballad` renders, and b
 `AGENTS.md`'s rule a bullet short of done keeps the row off ✅. The intent underneath it
 looks like *no feel outside these two changes*, and the notes are written against that
 reading — but the words are yours to fix, and until they are the ticket cannot close.
+
+## Answered by the render — the open-ballad trial
+
+Listened to on 2026-09-10 and turned down for that feel, in these words:
+
+> for open-ballad, I don't like it. But for swung-sixteenth it'S really good. remove it
+> from open-ballad
+
+So the third `## What` bullet is answered rather than dropped: the trial ran, and the
+answer is no. groove-49, groove-51 and groove-77 had their `bassType` removed and were
+re-rendered — their MP3s are byte-identical to what they shipped before, so the trial
+cost the catalogue nothing.
+
+The reason is on the record in `docs/music.md` so it is not re-proposed as an oversight.
+**The reason written here first was wrong, and quick-21 corrected it.** It said
+`open-ballad` does not ride, so a walking bass becomes the only voice stating all four
+quarters — but that feel's closed hat states all four quarters in 100% of its bars. What
+it lacks is a voice in the *bass's own weight class* on every quarter, which comes from
+feathering, and feathering is gated on the ride. At 62–74 bpm that put the line in front
+of the arrangement.
+
+**`## Done when` bullet 2 is now literally true.** It read *"No other feel's bass line
+changes"*, contradicted the `open-ballad` bullet for the length of the trial, and the
+revert resolved it without anyone rewording it.
+
+## Built
+
+* `scripts/grooves/types.ts` — `BassType = 'normal' | 'walking-bass'`, optional on `FeelTemplate` and on `GrooveSpec`, the groove winning.
+* `scripts/grooves/events.ts` — the walking path: `walkPool`/`walkStep`, `BASS_WALK_CEILING` 43, `BASS_WALK_MAX_STEP` 7, `BASS_WALK_SUSTAIN` 3.5, `BASS_WALK_APPROACH_SUSTAIN` 2.5, `BASS_WALK_VELOCITIES` `[0.92, 0.78, 0.85, 0.74]`, and three `!walking &&` guards that keep the drawn figure's forced rest, forced repeat and always-lift off a walking line.
+* `scripts/grooves/templates/swung-sixteenth.ts` — `bassType: 'walking-bass'`. No `patterns.bass`: a walking line fixes its own quarter grid and ignores the pool, so declaring one would have said nothing and would have cost `bassFloor.test.ts` its record.
+* `scripts/grooves/theory/pitches.ts` — `APPROACH_WINDOW` `1/8` → `1/4`, so beat 4 at 0.75 of the bar is inside the gate's one-off-scale-note hole.
+* `scripts/grooves/catalogue.json` — untouched in the end. Its three `bassType` entries went in for the trial and came back out.
+* `docs/music.md` — a *The walking bass* section, a `bassType` row in *Where to change what*, the `open-ballad` rejection and its reason, and four corrected always-lift figures: 31 of 54 → **27 of 48**, and fourteen of twenty → **eleven of the sixteen that still draw a bass**. Stale because six grooves stopped taking a lift; `docs.test.ts` does not measure those numbers, so nothing was red.
+* `scripts/grooves/gate.test.ts` — the four voided sign-offs re-pinned to the approved render, with the listening recorded as `QUICK_20_APPROVAL` / `QUICK_20_SCOPE`. `FEATURE_28_APPROVAL_GAIN` and `FEATURE_28_SCOPE_GAIN` deleted: all four entries that rested on them moved to this listening, and a scope nothing bears is a scope that misleads. groove-50's scope composes the new one and quotes the feature-28 gain history inline, because that layer is still load-bearing there.
+* `scripts/grooves/events.test.ts` — `isApproachNote` accepts the bar's last quarter as well as its last step; R7's "line, not an arpeggio" and R8's approach-position test scoped to the feels that do not walk. groove-49's comp literal was re-pinned during the trial and restored on the revert.
+* `scripts/grooves/bassFloor.test.ts` — builds every groove on the drawn path with `bassType` forced to `'normal'`, so all 54 stay inside feature-28's claim and **every hand-measured literal in it stands unchanged**. One assertion — the only one tying that build to what ships — scoped to the 48 grooves that ship a drawn bass.
+* `scripts/grooves/events.fixture.json`, `scripts/grooves/grooves.lock.json`, and six MP3s under `public/grooves/` — groove-28, -34, -40, -48, -50, -82.
+
+* tests: `scripts/grooves/walkingBass.test.ts`, new, 18 tests — every quarter filled and nothing between, the root on beat 1, beat 3 a chord tone that is not the root, beat 4 a semitone from the next root, no move over a fifth, no octave leap, the register rails, a repeat possible but not forced, and which grooves walk.
+* checks: `npm run lint` clean · `npx vitest run` 4663 passed / 200 files, 0 failed · `npm run build` passes · `npm run grooves:verify` — 54 grooves, 24 notes, manifests and catalogue all match the lock.
+* gate: all six walking grooves pass the seven checks. Loudness tops out at groove-48's RMS −21.03 against a −20 ceiling, and density at 32.88 against a 42 ceiling — both measured through `gate.ts`'s own checks by the verifier, after a first reading of mine put groove-48 at −20.45 by measuring one channel by hand.
+* verifier: **pass** — D1, D2 and D3 all done, six citations all resolving. Report at `specs/quick/.verify/20.md`.
+  * **D1** — every bass note lands on a quarter and every quarter has one: `walkingBass.test.ts` › *puts one bass note on each of the four quarters of every bar* and *never rests: the bass note count is four times the bar count*.
+  * **D2** — no other feel's bass line changes: measured, not argued. Diffing `events.fixture.json` key-by-key against HEAD gives 6 changed of 54, all `swung-sixteenth`. The one thing that moved for every feel is `APPROACH_WINDOW`, which widens what the gate tolerates rather than what any groove plays.
+  * **D3** — the six are re-rendered and the walking bass is what plays: `gate.test.ts` › *renders the exact audio that was played to a person and approved*, plus `walkingBass.test.ts` › *walks exactly the six swung-sixteenth grooves and nothing else*.
+
+Four things it found, all fixed after the report:
+
+* `docs/music.md:431` still said the always-lift figures count **45** grooves — the trial-era number, self-contradicting the 48 four lines above it. Now 48. Nothing catches this: `docs.test.ts` measures none of these counts.
+* groove-48's loudness is **−21.03 dB**, not the −20.45 recorded above. The verifier measured it through `gate.ts`'s own `checkLoudness`; my figure came from averaging one channel by hand. A dB of headroom rather than half, and the wrong number was the one someone would later have tried to protect.
+* `QUICK_20_SCOPE` said groove-34 and groove-82 "draw the figure unpinned". They are `swung-sixteenth`, so they walk — they are the two *unpinned* ones, which was the intent. Reworded. A sign-off scope is the last place to be loose.
+* `isApproachNote` in `events.test.ts` had been widened for all nine feels rather than the walking one, and it gates three scale-membership checks with a `continue`. It now takes the feel and reads `bassType`, so the eight feels the ticket never meant to touch are exempted exactly as before.
+
+Two coverage gaps it named that are **not** fixed, and are worth knowing:
+
+* `walkStep`'s last-resort branch can return a note further than `BASS_WALK_MAX_STEP` when the in-step pool is empty. Twelve seeds across two feels never reach it, so that branch is unexercised.
+* No test pins the walking line's positions for the catalogue's own six seeds directly — they are covered only through the fixture's byte-identity pin, so a careless re-pin would loosen D1's grip on the shipped grooves.
+
+## The even-quarters change — after the row was first marked Done
+
+Asked on 2026-09-10, once the walking bass was in and rendered:
+
+> it seems that the musician decided that the 4th walking bass note of every bar is a
+> bit shorter than the rest? Can we rather have them all equal? That'S more like a
+> walking bass?
+
+Correct, and the reasoning holds: even, driving quarters are what a walking bass *is*,
+and the `musician`'s shorter beat 4 bought the chromatic a pickup feel at the cost of
+that evenness. `BASS_WALK_APPROACH_SUSTAIN = 2.5` is gone; all four quarters now take
+`BASS_WALK_SUSTAIN = 3.5`, which leaves half a sixteenth of gap so the note-off still
+lands before the next attack. The rejected value is recorded in `docs/music.md` so it is
+not re-proposed as an improvement.
+
+* `scripts/grooves/events.ts` — `BASS_WALK_APPROACH_SUSTAIN` removed; one length for all four.
+* `scripts/grooves/walkingBass.test.ts` — two new tests: all four quarters are one length, and no note reaches the next attack. Twenty tests now.
+* `docs/music.md` — the *Length* paragraph records the change and the rejected 2.5.
+* the six MP3s, `events.fixture.json` and `grooves.lock.json` re-rendered and re-pinned.
+
+**The four sign-offs are void again, and are deliberately left red.** groove-28,
+groove-40, groove-48 and groove-50 no longer render the audio approved on 2026-09-10 —
+the note lengths are what changed. Their hashes are *not* re-pinned: nobody has heard
+this version, and `voidSignOff` is explicit that a hash may not be re-pinned to make the
+suite green. `QUICK_20_SCOPE` still names `BASS_WALK_APPROACH_SUSTAIN (2.5)` because
+that is what the earlier listening actually covered; both the hashes and that sentence
+get settled together on the next approval.
+
+* checks: `npm run lint` clean · `npx vitest run` 4661 passed, **4 failed — the four voided sign-offs and nothing else** · `npm run grooves:verify` — 54 grooves, 24 notes, all matching the lock.
+* gate: all six pass the seven checks, each with exactly one bass note length.
+
+**Heard and approved on 2026-09-10**, in these words:
+
+> now the walking bass sounds really good!
+
+So the four sign-offs are re-pinned to this render and `QUICK_20_APPROVAL` carries that
+sentence. `QUICK_20_SCOPE` now records both sessions and the direction of travel between
+them — the shorter fourth note was heard, named and rejected on the idiom, which makes
+the evenness a decision rather than a default. **Row back to ✅ Done.**
+
+* checks after the re-pin: `npm run lint` clean · `npx vitest run` 4665 passed, 0 failed · `npm run build` passes · `npm run grooves:verify` — 54 grooves, 24 notes, all matching the lock.

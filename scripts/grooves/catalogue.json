@@ -135,13 +135,15 @@
     "id": "groove-42",
     "uuid": "45d84df7-18a2-40f7-80a5-24726266255b",
     "template": "shuffle",
-    "seed": 1469996602
+    "seed": 1469996602,
+    "bassType": "walking-bass"
   },
   {
     "id": "groove-44",
     "uuid": "f4828027-ea17-46d3-b6c4-2d8b315e6a3c",
     "template": "shuffle",
-    "seed": 1470316408
+    "seed": 1470316408,
+    "bassType": "walking-bass"
   },
   {
     "id": "groove-46",
@@ -177,7 +179,8 @@
     "id": "groove-52",
     "uuid": "663a6eda-b223-4a70-9842-647cc36255ab",
     "template": "shuffle",
-    "seed": 1472960470
+    "seed": 1472960470,
+    "bassType": "walking-bass"
   },
   {
     "id": "groove-53",

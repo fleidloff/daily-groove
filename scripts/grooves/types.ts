@@ -52,6 +52,8 @@ export type FixedFigure = {
   bars: number[][]
 }
 
+export type BassType = 'normal' | 'walking-bass'
+
 export type FeelTemplate = {
   id: string
   tempoRange: [number, number]
@@ -71,6 +73,7 @@ export type FeelTemplate = {
   density: { minPerBar: number; maxPerBar: number }
   patterns?: PatternPools
   figures?: FixedFigure[]
+  bassType?: BassType
 }
 
 export type GrooveSpec = {
@@ -78,6 +81,7 @@ export type GrooveSpec = {
   uuid: string
   template: string
   seed: number
+  bassType?: BassType
 }
 
 export type NoteEvent = {

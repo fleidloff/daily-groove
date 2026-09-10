@@ -339,9 +339,19 @@ under the ceiling, while B0 is MIDI 23 — below the lowest sampled note and
 unreachable from a floor at 25 — so that note is deliberately unchanged, a
 ceiling-and-pop matter rather than a floor one.
 
+**Two bass types, and the rest of this section describes the first.** `BassType`
+in `types.ts` is `'normal'` or `'walking-bass'`, read off the groove first and the
+feel second — `spec.bassType ?? template.bassType ?? 'normal'` — so a feel can walk
+every one of its grooves and a single groove can walk against a feel that does not.
+**Nine grooves walk.** `swung-sixteenth` declares `bassType: 'walking-bass'` on its
+template, so all six of its grooves walk. `shuffle` does not declare it: its three
+**blues** grooves — groove-42, groove-44, groove-52 — carry it per groove in
+`catalogue.json`, and its three aeolian ones keep the drawn figure. The walking line
+is described under *The walking bass* below.
+
 Three things a bass player does that an arpeggiator does not, drawn per note:
 rest (`0.18`), repeat (`0.4`), octave lift (`0.32`). **None of the three is drawn
-for the downbeat** (`events.ts:599-604`), so the figure is built with the bar's
+for the downbeat** (`events.ts:795-804`), so the figure is built with the bar's
 root on beat one, in the base octave. It anchors the bar, the comp's rootless
 voicing depends on it, and an approach note in the bar before resolves onto it.
 
@@ -350,38 +360,143 @@ sentence above used to read "always the bar's root, in the base octave", and tha
 was **wrong** rather than imprecise, so it is retracted here instead of softened.
 A later site — the **always-lift** — guarantees the line moves by an octave
 somewhere in the four bars: it takes the highest note that sits above the figure's
-own lowest and has room under `48`, and lifts it (`events.ts:672-680`). Its filter
+own lowest and has room under `48`, and lifts it (`events.ts:878-887`). Its filter
 excludes the approach note and **not the downbeat**, so a downbeat root is a legal
-pick, and measured over the committed catalogue **31 of the 54 lifts land on one** —
+pick, and measured over the committed catalogue **26 of the 45 lifts land on one** —
 ten of them in bar 1, and all five C-rooted grooves taking that bar's 36 to the
-ceiling at 48. The groove-02 reading above is one of the 31: bar 2 beat 1 is a
+ceiling at 48. Forty-five and not fifty-four because nine grooves walk and take no
+lift at all. The groove-02 reading above is one of the 26: bar 2 beat 1 is a
 downbeat. What the lift cannot reach is a root that folds to 25–27, because those
 *are* the figure's lowest note, which is why the low-rooted grooves state their root
 low on every bar.
 
 Nothing in the repo records whether that is a defect or the arrangement, and this
-paragraph does not settle it. What is on the record is a listening: fourteen of the
-twenty renders `gate.test.ts`'s sign-off table pins contain a lifted downbeat root,
-`groove-01` among them, so it has been heard and approved rather than shipped
+paragraph does not settle it. What is on the record is a listening: ten of the
+fifteen renders `gate.test.ts`'s sign-off table pins that still draw a bass contain a
+lifted downbeat root, `groove-01` among them, so it has been heard and approved rather than shipped
 unheard. **The reading here is that it stays, documented, and is not worth a
 re-render.** A bass player does state a root up the octave; the lifted note is still
 seven semitones under the comp's floor; and the comp drops its root either way,
 because `playedVoicing` compares pitch classes and not pitches. Against that, the
 one thing genuinely lost is the bar's low anchor in the bar it lands on, ten times
-out of fifty-four on bar 1 — position zero of the file, where a player hears the
+out of forty-five on bar 1 — position zero of the file, where a player hears the
 tonic first. Anyone who decides that matters should know the price before opening a
-ticket: `index > 0` on the filter is one clause, and every one of the 31 has another
-note to lift instead, so no groove loses its octave move — but it moves audio in 31
-grooves, voids fourteen sign-offs and re-renders the catalogue. That is a change with
+ticket: `index > 0` on the filter is one clause, and every one of the 26 has another
+note to lift instead, so no groove loses its octave move — but it moves audio in 26
+grooves, voids the sign-offs among them and re-renders the catalogue. That is a change with
 a listening gate on it, not a tidy-up.
 
 The approach note is a semitone from the next bar's root, drawn below or above
-(`events.ts:626-629`): below when the draw asks for it, and
+(`events.ts:830-834`): below when the draw asks for it, and
 **below gives way to above whenever a semitone below would fall under the
 floor** — so exactly one pitch class is never approached from below, whichever
 fold lands on the floor, and the floor at 25 moves that one from E to C♯. No
 ceiling twin is needed: `target` is `inRegister(nextRoot, 24)` and tops out at
 36, so a semitone above it never comes near `48`.
+
+**The walking bass** — four quarters a bar, one on every beat, and nothing
+between them. The root on beat 1, a chord tone on 2, a chord tone that is *not*
+the root on 3, and on 4 the same chromatic approach the drawn figure plays,
+moved from the bar's last step to the last quarter. Beat 2 takes a chord tone and
+not a scale tone: the walk is spelled out of the harmony, which is what keeps the
+mode audible in the voice a player listens to for it.
+
+Direction is what makes it a line rather than an oscillation. Beat 4 is fixed
+before beats 2 and 3 are chosen, so the bar knows where it is going: the heading
+is `sign(beat4 − beat1)`, and each of 2 and 3 takes the **smallest step in that
+heading** that leaves the next note reachable. Nearest-neighbour without a
+heading wanders between the same two pitches for four bars. Nothing may move
+further than a fifth (`BASS_WALK_MAX_STEP = 7`), and where the heading offers no
+candidate inside the register the previous note sounds again — which is where the
+repeat comes from. It is a consequence of the line running out of room, not a
+draw.
+
+`BASS_WALK_CEILING = 43` (G2) against the floor at 25. It is a rail rather than a
+range: `inRegister` puts every root in 25–36 and the approach in 25–37, so both
+of a bar's fixed ends sit well under it and it binds only on a beat-3 chord tone
+reaching up from a high root. One value for both feels — lowering it for the
+ballad would not make that line sit lower on average, it would make it hit the
+wall and repeat more often.
+
+Two things the walking path sets that the drawn one leaves to
+`velocityFor`. **Length:** `BASS_WALK_SUSTAIN = 3.5` sixteenths, the same on all
+four quarters. The drawn figure's `2` leaves as much silence as note, and
+detached quarters read as a march rather than a line. A shorter approach note —
+`2.5` on beat 4, to make the chromatic hear as a pickup rather than a claim of
+its own — was rendered and **rejected**: it buys the pickup at the cost of the
+even quarters that are what a walking bass *is*. Recorded here so it is not
+re-proposed as an improvement. **Velocity:**
+`BASS_WALK_VELOCITIES = [0.92, 0.78, 0.85, 0.74]`. Every walking note is a
+quarter, so `VELOCITIES` would call all four `strong` and the whole line would
+play one velocity layer; these cross the pack's boundaries at 0.86 and 0.74 on
+purpose, so beats 2 and 4 get a softer attack and not merely a quieter one.
+
+**None of the drawn figure's three gestures applies.** No rest, no per-note
+octave lift, no forced rest, no forced repeat and no always-lift: the first two
+would break the every-quarter rule and the rest exist to move an arpeggio that a
+directed line already moves. That is why the always-lift figures above count 45
+grooves and not 54.
+
+**`open-ballad` was tried and rejected.** quick-20 walked three of its grooves —
+groove-49, groove-51 and groove-77 — and a listening turned them down. They were
+re-rendered back to their drawn figure and are byte-identical to what they
+shipped before.
+
+**The reason this document first gave was wrong, and it is retracted rather than
+reworded.** It read: *that feel does not ride, so a walking bass becomes the only
+voice stating all four quarters.* Measured over 200 seeds a feel with swing and
+humanize zeroed, ordinary bars only, that is false — `open-ballad`'s closed hat
+states all four quarters in **100%** of its bars. What the ballad lacks is a
+voice in the **bass's own weight class** on every quarter, and that comes from
+**feathering**, not from the ride: the feather fills the quarters the drawn
+`KICK_PATTERNS` figure leaves, and it is gated on `rides`. Measured, the kick
+states all four quarters in 100% of `shuffle` and `swung-sixteenth` bars, 7% of
+`bossa-nova`'s and 0% everywhere else. Mean voices per quarter tells the same
+story, measured over ordinary bars as each feel ships today: `swung-sixteenth`
+4.21, `shuffle` 3.64, `bossa-nova` 3.27, `bright-straight` 2.72, `open-ballad`
+2.66, `boom-bap` 2.29, `straight-funk` 2.09, `second-line` 2.10, `half-time`
+1.92. Read `swung-sixteenth`'s with care: it is the one feel whose whole template
+walks, so its own walking bass is inside that 4.21. The ballad's quarters were
+thin *and* high, so a walking bass at 62–74 bpm stood in front of the
+arrangement.
+
+**So "does it ride" is an exact proxy and not the reason.** It is exact only
+because this document bolted feathering to riding on purpose — *"the other half
+of one jazz gesture"* — and it would stop being exact the moment anyone
+decoupled them. A non-riding feel could only walk by gaining a low-register
+quarter anchor it does not have, which means decoupling the feather, which
+re-renders every riding groove.
+
+The shape of the line is still not measured: the sustain, the velocity table and
+the ceiling were approved by ear on `swung-sixteenth`. `shuffle`'s three blues grooves inherit all
+three unchanged under quick-21, on the reading that they are properties of the
+sample pack and of the bar rather than of the feel — `BASS_WALK_SUSTAIN` is in
+sixteenths of the bar so it is grid- and tempo-independent, and the velocities
+are set to cross the pack's layer boundaries at 0.86 and 0.74. The ceiling is the
+one that wants care: the walk's range across the three `shuffle` grooves that
+ship is MIDI 25–41, so 43 does not bind *them*, but over 200 seeds of that feel
+the walk does reach 43. It is a rail that the committed grooves happen not to
+touch, not a limit the feel cannot meet.
+
+**`shuffle` is the first feel with a walking half and a drawn half, and `gain`
+cannot serve both.** `gain.bass` is per feel. Walking lifts a groove's
+bass-over-kick by **1.40 dB** measured over the three grooves that walk (1.35,
+1.34, 1.52), and the cause is worth splitting because it is easy to get wrong:
+isolating each, `BASS_WALK_SUSTAIN` is **1.21 dB** of it and note count only
+**0.19 dB**. It is the note-*time* that moves the level, not the note count —
+four quarters at 3.5 sixteenths hold the bass down nearly twice as long as the
+drawn figure's notes do. So the two halves want different numbers, and
+`-19` is what ships: narrowing the walk to three grooves was chosen precisely to
+leave the aeolian three untouched, and `-20.4` would have quietened them by 1.4
+dB instead. The consequence is on the record rather than hidden — the three
+walking grooves measure −0.35, +0.01 and −0.22 dB against the drawn three's
+−2.87, −1.13 and −2.61, which puts the walking bass level with the kick and the
+most forward in the catalogue, and drags the feel's median to −0.74 dB.
+**That balance was heard and approved on its own listening**, after going unheard
+for one round — the approval that had been given covered the whole feel at
+`-20.4`, so narrowing the scope left the level owing a pass and it was paid.
+Walking the whole feel at `-20.4` remains the alternative if a forward bass is
+ever judged wrong here.
 
 **Comp** — folded into a fixed window, MIDI `55–76`, so a groove in B does not
 sit a major seventh above one in C. The ceiling keeps it out of the soloist's
@@ -539,6 +654,7 @@ to catch a violation.
 | backbeat, open hat, rim placement | `DEFAULT_PLACEMENT` / `PLACEMENTS` in `events.ts`. A feel whose snare line varies per seed instead declares `patterns.kit` — one or the other, never both |
 | fills | `DEFAULT_FILL` / `FILLS` in `events.ts` |
 | bass register and behaviour | `BASS_*` constants in `events.ts` |
+| whether a feel or one groove walks its bass | `bassType` on `templates/<feel>.ts` for the whole feel, or on the groove's entry in `catalogue.json` for one of them. The groove wins. A walking line ignores the feel's `patterns.bass`, so declaring both says nothing |
 | comp register, voicing, spread | `COMP_*` constants and `voiceLead` in `events.ts` |
 | timing feel, lean, drift | `humanize.ts` and the template's `humanize` block |
 | reverb, peak ceiling, bus behaviour | `mix.ts` |

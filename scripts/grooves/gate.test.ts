@@ -630,8 +630,11 @@ const FEATURE_27_APPROVAL_PER_FEEL =
 // five sessions, so this constant and the approval above now carry exactly one entry,
 // groove-08 — the one groove whose audio survived the floor change and both gain raises
 // byte for byte. Splitting the string would produce two identical strings; nothing here
-// diverged, eleven entries left. Both constants stay as written because groove-08 still
-// rests on them and the record below still quotes them.
+// diverged, eleven entries left. quick-21 briefly took the twelfth and then gave it
+// back: walking the whole shuffle template moved groove-08's audio, and narrowing the
+// walk to the feel's three blues grooves restored it byte for byte. So groove-08 still
+// rests on these two constants, and the streak the paragraph above describes still
+// holds — it has now survived the floor change, both gain raises and a walking bass.
 //
 // The sentence this table cannot do without is the third one. He played one groove of
 // each feel and did not say which, so nothing here may claim that the render pinned in
@@ -694,8 +697,6 @@ const FEATURE_28_APPROVAL_ANCHORS =
 
 // Session 4 — the re-hear after the two gain raises. groove-57 at bossa-nova's −22.2,
 // and swung-sixteenth's six at −19.5.
-const FEATURE_28_APPROVAL_GAIN = 'all sound good now. Thanks a lot'
-
 // Quick-18's open-ballad rebuild: subdivision 8 → 16, its own hat, kick, bass and comp
 // pools, a hatOpen figure marking bars 4 and 8, and FILLS['open-ballad'] closing a bar
 // that had no hi-hat at all. It re-rendered all five open-ballad grooves and no other
@@ -780,20 +781,69 @@ const FEATURE_28_SCOPE_ANCHORS =
   'device was recorded, no comparative was given, and neither of feature-27’s open ' +
   'questions was put.'
 
-const FEATURE_28_SCOPE_GAIN =
-  FEATURE_28_LISTENING +
-  'The re-hear after both raises: groove-57 at bossa-nova’s gain.bass of −22.2, and ' +
-  'swung-sixteenth’s six — groove-28, groove-34, groove-40, groove-48, groove-50 and ' +
-  'groove-82 — at −19.5. Both raises were in place and neither feel is re-rendered by ' +
-  'the other, so every groove in this session was heard at the values that ship. “now” ' +
-  'is the load-bearing word: gate A had asked for groove-57’s bass to come up and ' +
-  'session 3 for groove-50’s, and this is the verdict on the result rather than on the ' +
-  'request. The per-feel reach of the knob was accepted in his own words the same day — ' +
-  '“I’m fine with the gain being per feel. Change the whole feel” — so the five bossa ' +
-  'grooves that moved with groove-57 and the five swung-sixteenth grooves that moved ' +
-  'with groove-50 moved by decision rather than as a side effect. What it does not ' +
-  'cover: five words over seven grooves, no device recorded, and no groove named beyond ' +
-  'the two the requests had named.'
+// FEATURE_28_SCOPE_GAIN stood here. Its four entries were swung-sixteenth's, and all
+// four now rest on quick-20's listening instead, so no shipped render was approved by
+// that session any more and a scope nothing bears is a scope that misleads. What it
+// recorded that still matters — the request, the words, and that the −19.5 it set is
+// still the gain that ships — is quoted inside groove-50's scope, the one entry where
+// that layer is still load-bearing.
+
+// quick-20 gave swung-sixteenth a walking bass and, as a trial, three open-ballad
+// grooves as well. Both halves were rendered and played on 2026-09-10, and the verdict
+// came back split — which is why these four entries move and no open-ballad entry does.
+const QUICK_20_APPROVAL = 'now the walking bass sounds really good!'
+
+// quick-21 gave shuffle the same walking bass, on the reading that the two riding feels
+// are the two with a low-register voice on every quarter. Rendered and played the same
+// day, right after the swung-sixteenth approval above.
+const QUICK_21_APPROVAL = 'listened to all grooves. All sound good.'
+
+const QUICK_21_SCOPE =
+  'Three listenings on 2026-09-10, and the words pinned above are the third. The first ' +
+  'heard the walking bass on all six shuffle grooves at gain.bass −20.4 and approved it ' +
+  '(“awesome. all sound very nice.”). The scope then narrowed on his call to the ' +
+  'musician’s recommendation — walk the feel’s three blues grooves, leave the three ' +
+  'aeolian ones drawn — which forced gain.bass back to −19, because that value is per ' +
+  'feel and one number cannot serve a walking half and a drawn half at once. groove-07, ' +
+  'groove-08 and groove-19 went back byte-identical; the first two carry their older ' +
+  'listenings again and groove-19 was never pinned. That left this render’s *level* unheard: at −19 the three walking grooves sit ' +
+  'at −0.35, +0.01 and −0.22 dB, bass level with kick and the most forward in the ' +
+  'catalogue, where the approved version had sat about 1.4 dB lower. The third ' +
+  'listening closes that — he played the catalogue and approved it as it now stands, so ' +
+  'the words above cover the balance and not only the figure. ' +
+  'What it covers: the walking line inherited from swung-sixteenth with no constant ' +
+  're-turned — BASS_WALK_SUSTAIN (3.5), BASS_WALK_VELOCITIES ([0.92, 0.78, 0.85, 0.74]) ' +
+  'and BASS_WALK_CEILING (43) — the note choice, and the −19 balance. ' +
+  'What it does not cover: it is one sentence over the whole catalogue, so no groove is ' +
+  'known to have been played individually and nothing here may claim this render reached ' +
+  'his ear specifically; groove-42 and groove-52 walk unpinned; no device was recorded; ' +
+  'and −20.4 with the walk on all six remains the alternative if the forward bass is ' +
+  'ever judged wrong.'
+
+const QUICK_20_SCOPE =
+  'Two sessions on 2026-09-10, and the words pinned above are the second one’s. The ' +
+  'first heard the walking bass quick-20 put on swung-sixteenth’s six and, ' +
+  'as a trial, on open-ballad’s groove-49, groove-51 and groove-77. The verdict was ' +
+  'split in one sentence — “for open-ballad, I don’t like it. But for swung-sixteenth ' +
+  'it’s really good. remove it from open-ballad” — so the rejection is as much on the ' +
+  'record as the approval, and the three open-ballad grooves were re-rendered back to ' +
+  'their drawn figure and are byte-identical to what they shipped before. What it ' +
+  'covers: the walking line as it stands on this feel, which is the note choice ' +
+  'together with BASS_WALK_SUSTAIN (3.5), BASS_WALK_APPROACH_SUSTAIN (2.5), ' +
+  'BASS_WALK_VELOCITIES ([0.92, 0.78, 0.85, 0.74]) and BASS_WALK_CEILING (43) — none ' +
+  'of which was measured, and all of which he heard the result of rather than chose. ' +
+  'Then he asked for one of them back: “it seems that the musician decided that the 4th ' +
+  'walking bass note of every bar is a bit shorter than the rest? Can we rather have ' +
+  'them all equal? That’s more like a walking bass?” — so BASS_WALK_APPROACH_SUSTAIN ' +
+  '(2.5) was dropped, all four quarters took BASS_WALK_SUSTAIN (3.5), the six were ' +
+  're-rendered, and these hashes are that render. The approval above is his verdict on ' +
+  'it. Note the direction of travel: the shorter fourth note was heard, named and ' +
+  'rejected on the idiom, so the evenness is a decision and not a default. ' +
+  'What it does not cover: the words name the figure and not a render, so no one of ' +
+  'these four grooves is known to have been played individually; four of the feel’s six ' +
+  'are pinned here and groove-34 and groove-82 walk the same figure unpinned; no device ' +
+  'was recorded; and nothing was asked about the bass gain of −19.5, which the ' +
+  'feature-28 history in groove-50’s scope still carries.'
 
 const FEATURE_28_SCOPE_LEGACY =
   FEATURE_28_LISTENING +
@@ -1309,13 +1359,15 @@ const SIGN_OFFS: SignOff[] = [
     // it: the file played on 2026-09-08, at the same path and the same byte length, is
     // 01511bb00db5066e2f852056385955935c02a8206a05eb7897563d5c72b3d8be, and this render reproduces that one.
     id: 'groove-28',
-    pcm: '13664c213c63c56b3a4098d02adc4338e6435ef597cd6c66c005d6aae8c985ca',
+    pcm: '488a49365670fc1ed7bd0558c5e936021e27e15dc494b849c00e66e3e6a48998',
     mp3: null,
     file: 'public/grooves/groove-28.mp3',
-    approval: FEATURE_28_APPROVAL_GAIN,
-    scope: FEATURE_28_SCOPE_GAIN,
+    approval: QUICK_20_APPROVAL,
+    scope: QUICK_20_SCOPE,
     upstream:
-      'samples/pack.json — the bass’s Pastabass tagliatelle set as much as the comp’s ' +
+      'the walking bass — BASS_WALK_SUSTAIN, BASS_WALK_APPROACH_SUSTAIN, '  +
+      'BASS_WALK_VELOCITIES, BASS_WALK_CEILING, BASS_WALK_MAX_STEP, walkStep’s heading '  +
+      'rule or the swung-sixteenth template’s bassType — samples/pack.json — the bass’s Pastabass tagliatelle set as much as the comp’s ' +
       'single dyn2 layer or the ride’s alternates — RIDE_PATTERNS[16] or the hat ' +
       'punctuation pool, FEATHER_VELOCITY, the swung-sixteenth template’s gain.bass ' +
       '(−19.5), its gain.comp, its other gains, pan or humanize block',
@@ -1392,13 +1444,15 @@ const SIGN_OFFS: SignOff[] = [
     // it: the file played on 2026-09-08, at the same path and the same byte length, is
     // 22ee612e74e6a4ade1a8b007a889e79239285b7149d77d454f28b02497bbcc7f, and this render reproduces that one.
     id: 'groove-40',
-    pcm: '42aac080bf7c246acd72fbd54147da315e923ef2d3ac5762e8f78bf79fc80926',
+    pcm: 'c0a0de2f2fe04888c3e903996ea3cfcca2e299a282f6831d9abbf341286d66e1',
     mp3: null,
     file: 'public/grooves/groove-40.mp3',
-    approval: FEATURE_28_APPROVAL_GAIN,
-    scope: FEATURE_28_SCOPE_GAIN,
+    approval: QUICK_20_APPROVAL,
+    scope: QUICK_20_SCOPE,
     upstream:
-      'samples/pack.json — the bass’s Pastabass tagliatelle set as much as the comp’s ' +
+      'the walking bass — BASS_WALK_SUSTAIN, BASS_WALK_APPROACH_SUSTAIN, '  +
+      'BASS_WALK_VELOCITIES, BASS_WALK_CEILING, BASS_WALK_MAX_STEP, walkStep’s heading '  +
+      'rule or the swung-sixteenth template’s bassType — samples/pack.json — the bass’s Pastabass tagliatelle set as much as the comp’s ' +
       'single dyn2 layer or the ride’s alternates — RIDE_PATTERNS[16] or the hat ' +
       'punctuation pool, FEATHER_VELOCITY, the swung-sixteenth template’s gain.bass ' +
       '(−19.5), its gain.comp, its other gains, pan or humanize block',
@@ -1416,28 +1470,40 @@ const SIGN_OFFS: SignOff[] = [
     // the loop's sixteen bars. So this is the one render in the table where the floor
     // pitch is heard as a chord root on a downbeat, which is precisely the reading gate B
     // could not reach — none of its grooves is rooted C♯. Session 3 played it. Its bass
-    // sits −1.69 dB under its kick, which is the feel's own median of −1.71; shuffle runs
-    // the loudest bass in the registry at −19.0 and the low octave is forward here.
+    // read −1.69 dB under its kick at the drawn figure, against the feel's own median of
+    // −1.71. quick-21 gave it a walking bass, which lifts a groove's bass-over-kick by
+    // about 1.43 dB — 0.53 dB of that from note count, 0.90 dB from BASS_WALK_SUSTAIN
+    // nearly doubling the bass's note-time — and left gain.bass at −19.0, because only
+    // three of the feel's six walk and one per-feel number cannot serve both halves. So
+    // this render measures −0.35 dB: bass level with kick, the most forward in the
+    // catalogue, and the feel's median dragged to −0.74. That balance went unheard for
+    // one round and was then approved on its own listening; QUICK_21_SCOPE records all
+    // three passes and which one closed it.
     //
     // It draws shuffle's all-eighths ride figure [0,2,4,6,8,10,12,14], which groove-08
     // also pins. That figure now carries two entries, which is R20's growth and not a
-    // replacement: groove-08's approval is on audio that never moved, and this one's is
-    // on audio that did. groove-19 and groove-52 draw the figure unpinned — by the
-    // verdict, not by either hash.
+    // replacement, and the distinction between them survived quick-21 by a hair: walking
+    // the whole template moved both, then narrowing the walk to the blues three put
+    // groove-08 back byte-identical, so its approval is still on audio that never moved
+    // and this one's is still on audio that did. groove-52 walks this figure unpinned;
+    // groove-19 draws it unpinned, because it is one of the three aeolian grooves the
+    // walk deliberately left alone — by the verdict, not by either hash.
     //
     // mp3 stays null for the reason given on groove-40; the file that was played,
     // public/grooves/groove-44.mp3, hashes to
     // 9c31e39f08ef3e7948bff37d0e5c1ad80a80a0da65ba5f2ccccc8bbe0285d465 (1 139 190
     // bytes), and this render reproduces it byte for byte.
     id: 'groove-44',
-    pcm: 'fd554dda1d97b1be26bc22a5c1eb24e911136e28f72e8226a724e950c000d6d1',
+    pcm: 'acc01755b075a577dc61cd624bf2ffb7879d75b3118bd453e0de55c8473e9e30',
     mp3: null,
     file: 'public/grooves/groove-44.mp3',
-    approval: FEATURE_28_APPROVAL_ANCHORS,
-    scope: FEATURE_28_SCOPE_ANCHORS,
+    approval: QUICK_21_APPROVAL,
+    scope: QUICK_21_SCOPE,
     upstream:
       'events.ts’s BASS_FLOOR_MIDI (25) — the constant feature-28 moved, and the first ' +
-      'place to look when this fails — as much as samples/pack.json’s Pastabass ' +
+      'place to look when this fails — as much as the walking bass’s BASS_WALK_SUSTAIN, ' +
+      'BASS_WALK_VELOCITIES, BASS_WALK_CEILING or this groove’s bassType in ' +
+      'catalogue.json — as much as samples/pack.json’s Pastabass ' +
       'tagliatelle set or the ride’s alternates — the ride or hat pattern pools, ' +
       'RIDE_SUSTAIN_SIXTEENTHS, RIDE_ACCENTS, the shuffle template’s gain.bass (−19.0), ' +
       'its gain.comp, its other gains, pan or humanize block',
@@ -1459,13 +1525,15 @@ const SIGN_OFFS: SignOff[] = [
     // byte-identical, and the swung-sixteenth raise for groove-50's sake took it a
     // second time.
     id: 'groove-48',
-    pcm: 'a29715ba3ba88fc2c5c1958307c03dd9546056053edea537ae6e31c64fa668dd',
+    pcm: 'e592561a36d8b474e44da91cd8a861fca1a4bd0b4f95d0df3f9ce7259a70fe32',
     mp3: null,
     file: 'public/grooves/groove-48.mp3',
-    approval: FEATURE_28_APPROVAL_GAIN,
-    scope: FEATURE_28_SCOPE_GAIN,
+    approval: QUICK_20_APPROVAL,
+    scope: QUICK_20_SCOPE,
     upstream:
-      'samples/pack.json — the bass’s Pastabass tagliatelle set as much as the comp’s ' +
+      'the walking bass — BASS_WALK_SUSTAIN, BASS_WALK_APPROACH_SUSTAIN, '  +
+      'BASS_WALK_VELOCITIES, BASS_WALK_CEILING, BASS_WALK_MAX_STEP, walkStep’s heading '  +
+      'rule or the swung-sixteenth template’s bassType — samples/pack.json — the bass’s Pastabass tagliatelle set as much as the comp’s ' +
       'single dyn2 layer or the ride’s alternates — RIDE_PATTERNS[16] or the hat ' +
       'punctuation pool, FEATHER_VELOCITY, the swung-sixteenth template’s gain.bass ' +
       '(−19.5), its gain.comp, its other gains, pan or humanize block',
@@ -1502,16 +1570,17 @@ const SIGN_OFFS: SignOff[] = [
     // 322dd91d96f71f23917f30fd49e5910333bc11af67a1be39f818d27a320e5c80 (810 048 bytes),
     // and this render reproduces it byte for byte.
     id: 'groove-50',
-    pcm: '62e13fbc527c5af2b47db187f9224ae2924719d54a70ce5381df1a83d76e7fa2',
+    pcm: '5c879c7aaa9816707afa0b918673c5d8779afdf0f564a80b224e4ab975310ee9',
     mp3: null,
     file: 'public/grooves/groove-50.mp3',
-    approval: FEATURE_28_APPROVAL_GAIN,
+    approval: QUICK_20_APPROVAL,
     scope:
-      FEATURE_28_SCOPE_GAIN +
-      ' Session 3 played this groove too and its verdict on it is not quoted here: “the ' +
-      'bass can go louder” is the request this raise answered, so the words above are ' +
-      'the verdict on the result and the earlier ones are void against a render that ' +
-      'no longer exists.',
+      QUICK_20_SCOPE +
+      ' This groove carries one more layer of that: feature-28 session 3 asked for “the ' +
+      'bass can go louder” here and the −19.5 raise answered it, then approved the ' +
+      'result with “all sound good now. Thanks a lot”. Those words are now void against ' +
+      'this render — the bass they were said about no longer plays this figure — and the ' +
+      'gain they set is still the one that ships, unexamined by the listening above.',
     upstream:
       'events.ts’s BASS_FLOOR_MIDI (25) — the constant feature-28 moved, and the first ' +
       'place to look when this fails — as much as samples/pack.json’s Pastabass ' +

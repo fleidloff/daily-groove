@@ -6,7 +6,9 @@ export type PitchFailure = { voice: VoiceName; midi: number; timeSec: number }
 
 const BEATS_PER_BAR = 4
 
-const APPROACH_WINDOW = 1 / 8
+// A quarter, not an eighth: a walking bass puts its chromatic approach on beat 4, which
+// starts at 0.75 of the bar. The drawn figure's step-15 approach is inside either.
+const APPROACH_WINDOW = 1 / 4
 
 const APPROACH_SLACK = 1 / 32
 

@@ -4,7 +4,7 @@ import type { BassDecisions } from './events.ts'
 import { readCatalogue } from './catalogue.ts'
 import { fixtureKey, readFixture, serialiseEvent } from './eventsFixture.ts'
 import { templateById } from './templates/index.ts'
-import type { MusicMeta, NoteEvent } from './types.ts'
+import type { GrooveSpec, MusicMeta, NoteEvent } from './types.ts'
 
 // Feature-28 lowered BASS_FLOOR_MIDI from 28 to 25. AC4 and AC5 are claims about
 // the *difference* between those two registers, so both are built here from
@@ -84,11 +84,23 @@ type Built = {
   decisions: BassDecisions
 }
 
+// quick-20 gave swung-sixteenth's six grooves a walking bass and quick-21 gave it to
+// shuffle's three blues grooves, so nine of the catalogue's fifty-four walk. A walking line draws no
+// octave pop, takes no always-lift, and puts its approach note on beat four, so not one
+// of the three floor-dependent sites measured below exists in one. Every groove is still
+// built here on the drawn path, with the bass type forced back to normal: the claim is
+// what lowering the floor did to the figure that pops and lifts, and forcing it is what
+// keeps all 54 inside that claim and every figure below the one a person measured.
+const drawn = (spec: GrooveSpec): GrooveSpec => ({ ...spec, bassType: 'normal' })
+
+const walks = (spec: GrooveSpec) =>
+  (spec.bassType ?? templateById(spec.template).bassType ?? 'normal') === 'walking-bass'
+
 // The floor-25 side is built with no override, so it is the floor the catalogue
 // actually ships with. Move BASS_FLOOR_MIDI and every assertion below goes red,
 // not just the one that names the constant.
 function buildAt(bassFloorMidi?: number): Built[] {
-  return readCatalogue().map((spec) => {
+  return readCatalogue().map(drawn).map((spec) => {
     const decisions: BassDecisions = { pops: [], approaches: [], lifts: [] }
     const { events, music } = buildEvents(spec, templateById(spec.template), {
       bassFloorMidi,
@@ -120,7 +132,7 @@ describe('the bass floor — the two registers this feature sits between', () =>
   })
 
   it('ships at floor 25, and an explicit floor 25 builds the same thing', () => {
-    for (const spec of readCatalogue()) {
+    for (const spec of readCatalogue().map(drawn)) {
       const plain = buildEvents(spec, templateById(spec.template))
       const forced = buildEvents(spec, templateById(spec.template), { bassFloorMidi: FLOOR })
       expect(
@@ -131,9 +143,16 @@ describe('the bass floor — the two registers this feature sits between', () =>
     }
   })
 
-  it('matches the committed event record on the floor-25 side', () => {
+  // The nine walking grooves are the exception, and they are excluded here rather than
+  // anywhere else in the file: this is the one assertion that ties the forced-drawn build
+  // to what actually ships. For those nine the shipped line is the walking one, which
+  // walkingBass.test.ts covers and this file deliberately does not build.
+  it('matches the committed event record on the floor-25 side, for every groove that ships a drawn bass', () => {
     const fixture = readFixture()
+    const shipsDrawn = new Set(readCatalogue().filter((spec) => !walks(spec)).map(fixtureKey))
+    expect(shipsDrawn.size, 'every groove walks — this assertion has nothing left to check').toBe(45)
     for (const groove of after) {
+      if (!shipsDrawn.has(groove.key)) continue
       expect(fixture[groove.key], groove.key).toBeDefined()
       expect(groove.lines, `${groove.id}: the floor-25 build is not what events.fixture.json holds`)
         .toEqual(fixture[groove.key].events)

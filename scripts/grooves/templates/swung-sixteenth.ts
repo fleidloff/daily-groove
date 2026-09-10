@@ -35,4 +35,5 @@ export const swungSixteenth: FeelTemplate = {
   },
   passes: 4,
   density: { minPerBar: 16, maxPerBar: 42 },
+  bassType: 'walking-bass',
 }

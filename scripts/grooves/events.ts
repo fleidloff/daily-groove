@@ -44,6 +44,26 @@ const BASS_CEILING_MIDI = 48
 
 const BASS_FLOOR_MIDI = 25
 
+// A walking line needs room to step four times a bar without hitting the fold window's
+// wall; the drawn figure never moves far enough to care. G2, a fourth under the drawn
+// figure's ceiling and twelve semitones under the comp's floor.
+export const BASS_WALK_CEILING = 43
+
+// A walking bass steps; it does not leap. Nothing may move further than a fifth.
+const BASS_WALK_MAX_STEP = 7
+
+// One length for all four quarters. The drawn figure's two sixteenths leave as much
+// silence as note, and detached quarters read as a march rather than a line; even
+// quarters are what a walking bass is. Under four, so the note-off still lands before
+// the next attack. A shorter approach note was tried and rejected — it made beat 4 a
+// pickup at the cost of the evenness that carries the line.
+const BASS_WALK_SUSTAIN = 3.5
+
+// Every walking note is a quarter, so `velocityFor` calls all four `strong` and the
+// whole line plays one velocity layer. These cross the pack's layer boundaries at 0.86
+// and 0.74 on purpose: beats 2 and 4 get a softer attack, not merely a quieter one.
+const BASS_WALK_VELOCITIES = [0.92, 0.78, 0.85, 0.74]
+
 const BASS_REST_CHANCE = 0.18
 const BASS_REPEAT_CHANCE = 0.4
 const BASS_OCTAVE_CHANCE = 0.32
@@ -423,6 +443,44 @@ function inRegister(midi: number, base: number, floor: number): number {
   return placed < floor ? placed + 12 : placed
 }
 
+function walkPool(pitchClasses: Set<number>, floor: number): number[] {
+  const pool: number[] = []
+  for (let midi = floor; midi <= BASS_WALK_CEILING; midi++) {
+    if (pitchClasses.has(((midi % 12) + 12) % 12)) pool.push(midi)
+  }
+  return pool
+}
+
+// The smallest move in `direction` that stays a step from `from` and, where a later note
+// is already fixed, leaves that note reachable too. Falling back to `from` is what the
+// ticket's allowed repeat is: the line ran out of room, not a coin flip.
+function walkStep(
+  from: number,
+  pool: number[],
+  direction: number,
+  toward: number | null,
+  towardLimit = BASS_WALK_MAX_STEP,
+): number {
+  const reachable = pool.filter(
+    (midi) =>
+      Math.abs(midi - from) <= BASS_WALK_MAX_STEP &&
+      (toward === null || Math.abs(toward - midi) <= towardLimit),
+  )
+  const forward = reachable.filter((midi) => Math.sign(midi - from) === direction)
+  const nearest = (candidates: number[]) =>
+    [...candidates].sort((a, b) => Math.abs(a - from) - Math.abs(b - from))[0]
+
+  if (forward.length > 0) return nearest(forward)
+
+  const sideways = reachable.filter((midi) => midi !== from)
+  if (sideways.length > 0) return nearest(sideways)
+
+  // `toward` and the step limit could not both be met. The pool is the harder
+  // constraint — beat three has to stay a chord tone — so the step limit gives first.
+  const inStep = pool.filter((midi) => Math.abs(midi - from) <= BASS_WALK_MAX_STEP)
+  return nearest(inStep.length > 0 ? inStep : pool) ?? from
+}
+
 function inCompRegister(midi: number): number {
   let folded = midi
   while (folded >= COMP_REGISTER_CEILING) folded -= 12
@@ -551,6 +609,7 @@ export function buildEvents(
 
   const plays = (voice: VoiceName) => template.voices.includes(voice)
   const rides = plays('ride')
+  const walking = (spec.bassType ?? template.bassType ?? 'normal') === 'walking-bass'
 
   const pools = template.patterns
 
@@ -682,7 +741,9 @@ export function buildEvents(
   const compSpreadSec =
     COMP_SPREAD_RANGE[0] + (COMP_SPREAD_RANGE[1] - COMP_SPREAD_RANGE[0]) * rhythmRng()
 
-  type BassNote = { step: number; midi: number }
+  type BassNote = { step: number; midi: number; sustain?: number; velocity?: number }
+
+  const quarterBassSteps = [0, 1, 2, 3].map((beat) => (beat * template.subdivision) / 4)
 
   const bassFigure: BassNote[][] = []
   const approaches = new Set<number>()
@@ -690,6 +751,45 @@ export function buildEvents(
   for (let barInPass = 0; barInPass < BARS_PER_PASS; barInPass++) {
     const chord = chordFor(barInPass)
     const notes: BassNote[] = []
+
+    if (walking) {
+      const nextRoot = nextRootAt(barInPass)
+      const target = inRegister(nextRoot ?? chord[0], BASS_BASE_MIDI, bassFloor)
+      const direction = rhythmRng()
+
+      const beatOne = inRegister(chord[0], BASS_BASE_MIDI, bassFloor)
+      const approach =
+        nextRoot === null
+          ? null
+          : direction < 0.5 && target - 1 >= bassFloor
+            ? target - 1
+            : target + 1
+
+      const chordTones = new Set(chord.map((midi) => ((midi % 12) + 12) % 12))
+      const rootClass = ((chord[0] % 12) + 12) % 12
+      const away = new Set([...chordTones].filter((pitchClass) => pitchClass !== rootClass))
+      const stepping = walkPool(chordTones, bassFloor)
+      const restating = walkPool(away.size > 0 ? away : chordTones, bassFloor)
+
+      const heading = Math.sign((approach ?? target) - beatOne) || (direction < 0.5 ? -1 : 1)
+      const beatTwo = walkStep(beatOne, stepping, heading, approach ?? target, BASS_WALK_MAX_STEP * 2)
+      const beatThree = walkStep(beatTwo, restating, heading, approach)
+      const beatFour = approach ?? walkStep(beatThree, stepping, heading, target)
+
+      for (const [index, midi] of [beatOne, beatTwo, beatThree, beatFour].entries()) {
+        notes.push({
+          step: quarterBassSteps[index],
+          midi,
+          sustain: BASS_WALK_SUSTAIN,
+          velocity: BASS_WALK_VELOCITIES[index],
+        })
+      }
+      if (nextRoot !== null) {
+        decisions?.approaches.push({ bar: barInPass, target, wantsBelow: direction < 0.5, belowOk: target - 1 >= bassFloor, approach: beatFour })
+      }
+      bassFigure.push(notes)
+      continue
+    }
 
     bassSteps.forEach((step, i) => {
       const rest = rhythmRng()
@@ -759,7 +859,7 @@ export function buildEvents(
     return bassFigure.some((_, bar) => soundedIn(bar).length < steps.size)
   }
 
-  if (!restsSomewhere()) {
+  if (!walking && !restsSomewhere()) {
     const candidates = movable()
     const heard = candidates.filter(({ bar, note }) =>
       bassFigure.some(
@@ -780,7 +880,7 @@ export function buildEvents(
     .filter(
       (note) => note.midi > bottom && note.midi + BASS_OCTAVE_LIFT <= BASS_CEILING_MIDI,
     )
-  if (liftable.length > 0) {
+  if (!walking && liftable.length > 0) {
     const highest = liftable.reduce((high, note) => (note.midi > high.midi ? note : high))
     const from = highest.midi
     highest.midi += BASS_OCTAVE_LIFT
@@ -797,7 +897,7 @@ export function buildEvents(
     const line = pitches()
     return line.some((midi, i) => i > 0 && midi === line[i - 1])
   }
-  if (!repeatsSomewhere()) {
+  if (!walking && !repeatsSomewhere()) {
     for (const candidate of movable().reverse()) {
       const before = bassFigure[candidate.bar][candidate.index - 1]
       if (!before) continue
@@ -926,7 +1026,9 @@ export function buildEvents(
       }
 
       if (plays('bass')) {
-        for (const note of bassFigure[barInPass]) add('bass', bar, note.step, 2, note.midi)
+        for (const note of bassFigure[barInPass]) {
+          add('bass', bar, note.step, note.sustain ?? 2, note.midi, note.velocity)
+        }
       }
 
       if (plays('comp')) {

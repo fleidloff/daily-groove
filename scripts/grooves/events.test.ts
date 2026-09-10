@@ -59,11 +59,14 @@ function isApproachNote(
   event: NoteEvent,
   music: MusicMeta,
   harmony: Harmony,
-  subdivision: number,
+  feel: Pick<FeelTemplate, 'subdivision' | 'bassType'>,
 ): boolean {
   if (event.voice !== 'bass' || event.midi === undefined) return false
+  const { subdivision } = feel
   const grid = Math.round(event.timeSec / (((60 / music.bpm) * 4) / subdivision))
-  if (grid % subdivision !== subdivision - 1) return false
+  const approachStep =
+    feel.bassType === 'walking-bass' ? (subdivision * 3) / 4 : subdivision - 1
+  if (grid % subdivision !== approachStep) return false
   const chords = harmony.progressionMidi
   const bar = Math.floor(grid / subdivision)
   const rootAt = (b: number) => chords[(b % music.bars) % chords.length][0]
@@ -345,7 +348,7 @@ describe('buildEvents — the words match the notes', () => {
       expect(offScalePitches(events, music, harmony)).toEqual([])
       for (const event of events) {
         if (event.midi === undefined) continue
-        if (isApproachNote(event, music, harmony, template.subdivision)) continue
+        if (isApproachNote(event, music, harmony, template)) continue
         expect(scale).toContain(event.midi % 12)
       }
     }
@@ -396,7 +399,7 @@ describe('buildEvents — the words match the notes', () => {
       const chords = music.progression.split('–')
       for (const event of events) {
         if (event.voice !== 'bass') continue
-        if (isApproachNote(event, music, harmony, template.subdivision)) continue
+        if (isApproachNote(event, music, harmony, template)) continue
         const chord = chords[(barOf(event, music.bpm) % music.bars) % chords.length]
         expect(pitchClassesOf(chord)).toContain((event.midi as number) % 12)
       }
@@ -639,7 +642,7 @@ describe('buildEvents — every template renders', () => {
 
           for (const event of events) {
             if (event.voice !== 'bass') continue
-            if (isApproachNote(event, music, harmony, feel.subdivision)) continue
+            if (isApproachNote(event, music, harmony, feel)) continue
             const chord =
               chords[(barOfEvent(event.timeSec) % music.bars) % chords.length]
             expect(
@@ -1248,7 +1251,7 @@ describe('buildEvents — hands and fingers — R3, R4, R5, R6, R7, R8, R8a', ()
   })
 
   it('plays a line, not an arpeggio: repeats, octaves and rests — R7, AC8', () => {
-    for (const feel of allTemplates()) {
+    for (const feel of allTemplates().filter((f) => f.bassType !== 'walking-bass')) {
       for (let seed = 1; seed <= 20; seed += 1) {
         const { events, music, harmony } = played(still(feel), seed)
         const bass = events.filter((e) => e.voice === 'bass')
@@ -1279,6 +1282,8 @@ describe('buildEvents — hands and fingers — R3, R4, R5, R6, R7, R8, R8a', ()
 
   it('walks into every chord change with a chromatic approach note — R8, AC9', () => {
     for (const feel of allTemplates()) {
+      const approachStep =
+        feel.bassType === 'walking-bass' ? (feel.subdivision * 3) / 4 : feel.subdivision - 1
       for (let seed = 1; seed <= 12; seed += 1) {
         const { events, music, harmony } = played(still(feel), seed)
         const chords = harmony.progressionMidi
@@ -1294,7 +1299,7 @@ describe('buildEvents — hands and fingers — R3, R4, R5, R6, R7, R8, R8a', ()
           const last = inBar[inBar.length - 1]
           const nextRoot = rootAt(bar + 1)
 
-          expect(last.step, `${where} approaches off the last step`).toBe(feel.subdivision - 1)
+          expect(last.step, `${where} approaches off the last step`).toBe(approachStep)
           expect(interval(last.midi as number, nextRoot), `${where} is not a semitone away`).toBe(1)
 
           const after = bass.find((e) => e.timeSec > last.timeSec) ?? bass[0]

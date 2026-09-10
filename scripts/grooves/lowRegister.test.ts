@@ -67,7 +67,7 @@ describe('lowRegisterRanking', () => {
     expect(ties).toEqual(inCatalogueOrder)
   })
 
-  it('ranks the grooves of the catalogue it is given', () => {
+  it('ranks the grooves of the catalogue it is given, and no others', () => {
     const catalogue = readCatalogue()
     const two = catalogue.filter((spec) => spec.template === 'shuffle').slice(0, 2)
     expect(lowRegisterRanking('shuffle', two).map((row) => row.id)).toEqual(
