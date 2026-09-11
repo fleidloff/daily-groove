@@ -64,9 +64,9 @@ The slice separates six concerns, and they are not the same thing as its folders
 | **catalogue** | `scripts/grooves/`, and the two manifests it writes: `src/features/daily-groove/data/grooves.generated.ts` and `data/notes.generated.ts` |
 | **theory** | `src/lib/theory/` — eighteen modules, of which the generator imports `names.ts`, `roots.ts` and `scales.ts` |
 | **audio** | `lib/audio/`, plus the three hooks that drive playback: `hooks/useTransport.ts`, `hooks/useReferenceNote.ts`, `hooks/useModeLick.ts` |
-| **puzzle** | `lib/puzzle/`, `lib/persistence/`, `state/`, plus the four hooks that carry the session and the settings: `hooks/usePuzzleSession.ts`, `hooks/useProgress.ts`, `hooks/useSimpleMode.ts`, `hooks/useTapSounds.ts` |
+| **puzzle** | `lib/puzzle/`, `lib/persistence/`, `lib/stats/`, `state/`, plus the four hooks that carry the session and the settings: `hooks/usePuzzleSession.ts`, `hooks/useProgress.ts`, `hooks/useSimpleMode.ts`, `hooks/useTapSounds.ts` |
 | **coaching** | `lib/presentation/` — twelve modules behind one `index.ts` |
-| **shell** | `components/` — the composer `GroovePuzzle.tsx`, the four regions `header/`, `intro/`, `puzzle/`, `solved/`, and `dev/`, which is no region but the dev-only preview `GroovePreview.tsx` — plus the three routes under `src/app/`, of which `dev/grooves/page.dev.tsx` is built only under `next dev`, and `lib/share/`, whose two modules exist only to build those routes' URLs and hand one to the browser |
+| **shell** | `components/` — the composer `GroovePuzzle.tsx`, the five regions `header/`, `intro/`, `puzzle/`, `solved/`, `stats/`, and `dev/`, which is no region but the dev-only preview `GroovePreview.tsx` — plus the five routes under `src/app/`, of which `dev/grooves/page.dev.tsx` is built only under `next dev` and `api/stats/route.ts` is the app's only server route, and `lib/share/`, whose two modules exist only to build those routes' URLs and hand one to the browser |
 
 Four things sit in no module, and say so rather than being filed somewhere they
 do not belong. `src/lib/groove.ts`, `hash.ts`, `date.ts` and `snippets/` sit
@@ -159,6 +159,13 @@ re-measured rather than believed.
   together. One other file resolves a date, and does so through the *unpinned*
   `selectGrooveForDate` on purpose: `components/dev/GroovePreview.tsx`, which
   previews the rota rather than what a player with saved results would see.
+- **puzzle's `lib/stats/` draws no arrow out of the module.** `computeStats.ts`
+  imports `../../types`, `@/lib/date` and one sibling, `../persistence/streak` —
+  the page's streak is the header's streak, computed by the same function rather
+  than by a second one that could drift. Nothing it reaches touches `window`,
+  which is what lets it run on the server: it is the only file in the slice that
+  executes outside the browser. The day's date reaches it as an argument for the
+  same reason.
 - **coaching → theory** — `lib/presentation/index.ts` reaches `roots`,
   `families`, `music` and `transpose`; `date.ts` reaches `transpose`;
   `nearMiss.ts` reaches `families`, `difference` and
@@ -196,6 +203,15 @@ And what points *at* a module matters as much:
   three hooks are inside it, not consumers of it.
 - **The design system imports none of the six.** That is zone 1, and it is the
   arrow that keeps `src/components/` reusable.
+- **`components/stats/` is imported by the slice's `index.ts` and by nothing
+  else.** It is the one region no other component composes: `GroovePuzzle.tsx`
+  does not know it exists, because `/stats` is a route of its own rather than a
+  panel of the puzzle. Its own two files import each other, the design system,
+  `lib/stats/types`, `lib/persistence/storage` and `@/lib/date`.
+- **`src/app/api/stats/route.ts` is the app's only server route**, and the only
+  file under `src/app/` that renders nothing. It reaches the slice exactly the
+  way a page does — through `@/features/daily-groove` — and
+  `src/app/route-boundary.test.ts` binds it and its test the same way.
 
 ### What is not drawn, and what holds it
 

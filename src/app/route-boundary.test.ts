@@ -12,6 +12,10 @@ const ROUTE_FILES = [
   "src/app/groove/not-found.tsx",
   "src/app/groove/not-found.test.tsx",
   "src/app/dev/grooves/page.dev.tsx",
+  "src/app/stats/page.tsx",
+  "src/app/api/stats/route.ts",
+  "src/app/api/stats/route.test.ts",
+  "src/app/stats/page.test.tsx",
 ];
 
 const PUBLIC_SURFACE = "@/features/daily-groove";

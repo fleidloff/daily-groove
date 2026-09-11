@@ -32,4 +32,20 @@ describe('StreakBadge', () => {
       screen.getByLabelText(header.streakName({ days: 12 })).textContent,
     ).not.toMatch(/day/i)
   })
+
+  it('opens the stats page when tapped (V2)', () => {
+    render(<StreakBadge streak={5} />)
+    expect(
+      screen.getByRole('link', { name: header.streakName({ days: 5 }) }),
+    ).toHaveAttribute('href', '/stats')
+  })
+
+  it('keeps the fire out of the link accessible name (V2)', () => {
+    const { container } = render(<StreakBadge streak={5} />)
+    expect(container.querySelectorAll('a')).toHaveLength(1)
+    expect(
+      screen.getByRole('link', { name: header.streakName({ days: 5 }) })
+        .textContent,
+    ).toBe('🔥5')
+  })
 })

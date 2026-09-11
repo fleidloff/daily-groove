@@ -43,6 +43,8 @@ describe('daily-groove public surface', () => {
     expect(runtimeExports).toEqual([
       'GroovePreview',
       'GroovePuzzle',
+      'StatsPage',
+      'computeStats',
       'grooveByUuid',
       'grooveHref',
       'isTodaysGroove',
@@ -74,6 +76,8 @@ describe('daily-groove public surface', () => {
     expect(names).toEqual([
       'GroovePreview',
       'GroovePuzzle',
+      'StatsPage',
+      'computeStats',
       'grooveByUuid',
       'grooveHref',
       'isTodaysGroove',
@@ -96,7 +100,7 @@ describe('daily-groove public surface', () => {
     )
   })
 
-  it('exports exactly the six shared type names (AC14)', () => {
+  it('exports exactly the seven shared type names (AC14)', () => {
     const source = readFileSync(join(featureDir, 'index.ts'), 'utf8')
     const blocks = [...source.matchAll(/export\s+type\s*\{([^}]*)\}/g)]
     const names = blocks
@@ -111,6 +115,7 @@ describe('daily-groove public surface', () => {
       'Flavour',
       'Groove',
       'Root',
+      'Stats',
     ])
   })
 

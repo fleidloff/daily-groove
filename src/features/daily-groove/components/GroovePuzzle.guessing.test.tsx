@@ -1046,6 +1046,15 @@ describe('GroovePuzzle', () => {
     const inAppLinks = () =>
       screen.queryAllByRole('link').filter((link) => link.getAttribute('href')?.startsWith('/'))
 
+    const waysBackToToday = () =>
+      inAppLinks().filter((link) => link.getAttribute('href') === '/')
+
+    const everyInAppLinkIsKnown = () => {
+      for (const link of inAppLinks()) {
+        expect(['/', '/stats']).toContain(link.getAttribute('href'))
+      }
+    }
+
     const offSiteLinks = () =>
       screen.queryAllByRole('link').filter((link) => !link.getAttribute('href')?.startsWith('/'))
 
@@ -1071,7 +1080,8 @@ describe('GroovePuzzle', () => {
       await guess(user, 'D', wrongFlavour())
 
       expect(invitation()).toBeNull()
-      expect(inAppLinks()).toHaveLength(1)
+      expect(waysBackToToday()).toHaveLength(1)
+      everyInAppLinkIsKnown()
       expect(wayBack()).toHaveAttribute('href', '/')
     })
 
@@ -1092,9 +1102,9 @@ describe('GroovePuzzle', () => {
       ).toBeTruthy()
       expect(panel).not.toContainElement(invite)
 
-      const onward = inAppLinks()
+      const onward = waysBackToToday()
       expect(onward).toHaveLength(2)
-      for (const link of onward) expect(link).toHaveAttribute('href', '/')
+      everyInAppLinkIsKnown()
       everyOffSiteLinkReallyLeaves()
     })
 
@@ -1142,7 +1152,8 @@ describe('GroovePuzzle', () => {
       await guess(user, 'C', 'Aeolian')
       expect(solutionPanel()).toBeInTheDocument()
       expect(invitation()).toBeNull()
-      expect(inAppLinks()).toEqual([])
+      expect(waysBackToToday()).toEqual([])
+      everyInAppLinkIsKnown()
       solvedRun.unmount()
 
       mockStore.get.mockResolvedValue(null)
@@ -1156,7 +1167,8 @@ describe('GroovePuzzle', () => {
 
       expect(solutionPanel()).toBeInTheDocument()
       expect(invitation()).toBeNull()
-      expect(inAppLinks()).toEqual([])
+      expect(waysBackToToday()).toEqual([])
+      everyInAppLinkIsKnown()
     })
   })
   it('spends nothing when the sounds are switched (F16 E2 E7, R5, AC5)', async () => {

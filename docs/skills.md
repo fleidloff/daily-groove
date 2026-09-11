@@ -170,10 +170,14 @@ done / partly / not done. It diagnoses, it doesn't fix.
 
 ## `/prototype`
 
-Off the chain, and optional. `/prototype feature-8` turns settled PRDs into one
-clickable HTML file under `specs/features/feature-8/prototype/` — the app's own
-tokens, phone width, every state the PRD names reachable from a switcher bar at
-the top. `/prototype 7` does the same for a quick ticket.
+Off all three doors, and optional. `/prototype feature-8` turns settled PRDs
+into one clickable HTML file under `specs/features/feature-8/prototype/` — the
+app's own tokens, phone width, every state the PRD names reachable from a
+switcher bar at the top. `/prototype 7` does the same for a quick ticket, and
+`/prototype V4` for a vibed change, drawing `specs/tmp/4-*/spec.md` into a
+`prototype.html` beside it. That one is deleted with its folder when the change
+ships, so anything the drawing invents goes back into `spec.md` as an `## Open`
+question rather than living only in the picture.
 
 It refuses to run while a PRD still has open questions, for the same reason
 `/writespec` does: drawing a screen decides a hundred things, and a picture the
@@ -211,7 +215,8 @@ specs/
 ├── quick/N-slug.md              one-page tickets, outside the chain
 ├── tmp/N-title/                 vibed changes — deleted once shipped
 │   ├── spec.md                  what changes, and what done means
-│   └── tech-spec.md             how it gets built
+│   ├── tech-spec.md             how it gets built
+│   └── prototype.html           optional, /prototype VN
 └── features/feature-N/
     ├── briefing.md              step 1
     ├── roadmap.md               step 2

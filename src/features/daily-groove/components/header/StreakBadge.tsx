@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { Pill } from '@/components/display/Pill'
 import { header } from '@/lib/snippets'
 
@@ -7,10 +8,10 @@ type StreakBadgeProps = {
 
 export function StreakBadge({ streak }: StreakBadgeProps) {
   return (
-    <div aria-label={header.streakName({ days: streak })}>
+    <Link href="/stats" aria-label={header.streakName({ days: streak })}>
       <Pill icon={<span aria-hidden="true">🔥</span>}>
         {header.streakCount({ days: streak })}
       </Pill>
-    </div>
+    </Link>
   )
 }

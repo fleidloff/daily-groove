@@ -1,7 +1,7 @@
 ---
 name: prototype
-description: Build a clickable HTML prototype of a feature or a quick ticket — one self-contained file under the spec folder, dressed in the app's own tokens, with every screen and state reachable from a switcher bar. Reads `specs/features/feature-X/prd/*.md` or `specs/quick/N-slug.md` and refuses to run while their questions are open. Use whenever the user runs `/prototype`, or asks for a clickable mockup, a click-dummy, a walkthrough, or to see what a spec would look like before it is built.
-argument-hint: [feature-X [epic-N] | N]
+description: Build a clickable HTML prototype of a feature, a quick ticket or a vibed change — one self-contained file under the spec folder, dressed in the app's own tokens, with every screen and state reachable from a switcher bar. Reads `specs/features/feature-X/prd/*.md`, `specs/quick/N-slug.md` or `specs/tmp/N-title/spec.md` and refuses to run while their questions are open. Use whenever the user runs `/prototype`, or asks for a clickable mockup, a click-dummy, a walkthrough, or to see what a spec would look like before it is built.
+argument-hint: [feature-X [epic-N] | N | VN]
 ---
 
 # Prototype
@@ -15,8 +15,9 @@ line all day; the prototype is where you find out it pushes the chips below the
 fold. Finding that here costs one file. Finding it in `/implement-feature` costs
 an epic.
 
-It is not a step in the chain. `/writespec` doesn't wait for it and
-`/implement-feature` never reads it. Run it when a PRD is settled and you want
+It is a step in no door. `/writespec` doesn't wait for it,
+`/implement-feature` never reads it, and `/implement-vibe-with-docs` doesn't
+either. Run it when a PRD, a ticket or a vibed `spec.md` is settled and you want
 to look at it, or skip it entirely.
 
 ## 0. Never commit, never touch `src/`
@@ -32,11 +33,23 @@ edited the app would be the feature, badly.
 | `/prototype feature-8` | every PRD in `specs/features/feature-8/prd/` | `specs/features/feature-8/prototype/index.html` |
 | `/prototype feature-8 epic-2` | that one PRD | `specs/features/feature-8/prototype/epic-2-<slug>.html` |
 | `/prototype 7` | `specs/quick/7-*.md` | `specs/quick/7-<slug>.prototype.html` |
+| `/prototype V4` | `specs/tmp/4-<title>/spec.md` | `specs/tmp/4-<title>/prototype.html` |
 | bare `/prototype` | — | list what is prototypable and ask which |
 
 Accept loose input the way `/brainstorm` §1 does: `8`, `feature 8` and
 `specs/features/feature-8` all resolve. A bare number is a quick ticket only
 when `specs/quick/N-*.md` exists and no feature folder was named.
+
+**A vibed change is addressed by its `V`**, the same letter the terminal title
+and the *Vibed changes* table use — `V4`, and `tmp-4` or
+`specs/tmp/4-jam-mode` as well. Bare `4` stays the quick ticket, because that
+is already what it means; a bare number never resolves to `specs/tmp/`.
+
+A vibed prototype lives inside the folder it describes, and
+`/implement-vibe-with-docs` §9 deletes that folder once the change ships. That
+is the right lifetime — the picture expires with the spec it drew — but it
+means the file is not where anything is preserved. §7 says what has to leave it
+first.
 
 Re-running over an existing prototype rewrites it. Say so first if the user's
 own edits are in the file — check `git status` before overwriting.
@@ -60,6 +73,19 @@ analyze phase is `/quick-feature`'s job, not a precondition for a picture. But
 if `## Open questions` is there with anything unticked, the same rule applies:
 say what is open, stop.
 
+**A vibed change is gated on `spec.md`, not on `tech-spec.md`.** A prototype is
+a question about the product, and `tech-spec.md` is the code — a spec still in
+its `spec` phase is prototypable, and often that is exactly when it is worth
+drawing. What must hold: `## What` and `## Done when` both say something, and
+nothing under `## Open` is a question the drawing would have to answer. Per
+`/vibe-with-docs` §5 that section carries the question currently being asked,
+so an open bullet there is usually the live one — if it decides a screen, name
+it and stop, the way a PRD's does. A bullet parked on something the picture
+never shows — a storage key, a test boundary — doesn't block.
+
+The `**Phase:**` line is the quick read: `tech spec` or `ready to build` means
+the product is settled.
+
 **Most quick tickets don't want one at all.** A ticket you can describe in five
 bullets is usually faster to build than to draw. Say so and point at
 `/quick-feature N` — or `/implement-quick-feature N` if it is already analyzed —
@@ -68,8 +94,12 @@ circling.
 
 ## 3. Read the inputs
 
-- **The PRD or the ticket.** The requirements are the brief. Every screen and
-  every state in the prototype should trace to a line in it.
+- **The PRD, the ticket, or the vibed `spec.md`.** The requirements are the
+  brief. Every screen and every state in the prototype should trace to a line
+  in it. For a vibed change that is `## What` and `## Done when`; read
+  `## Decided` too, because a decision with its reason written down is one the
+  drawing must not quietly re-take. Don't read `tech-spec.md` — it is the code,
+  and drawing from it makes the picture a diagram of the build.
 - **`docs/persona.md`.** Sam is on a phone, twenty minutes before dinner. That
   decides the frame width, the tap targets and what has to be visible without
   scrolling — the same tie-breaker `/brainstorm` §2 uses.
@@ -118,7 +148,7 @@ This is what separates a prototype from a screenshot, and it is the part worth
 spending the effort on.
 
 A fixed bar at the top of the page, outside the frame, with one button per state
-the PRD describes — *first run · unsolved · one miss · root confirmed · solved ·
+the PRD — or the vibed spec's `## Done when` — describes — *first run · unsolved · one miss · root confirmed · solved ·
 gave up*. Clicking one shows that state. Label the bar as scaffolding, in a
 colour nothing in the app uses, so nobody mistakes it for a screen.
 
@@ -147,7 +177,7 @@ is a normal amount.
 
 ## 7. Record it beside the spec
 
-Append to the PRD, or to a quick ticket's `## Notes`:
+Append to the PRD, to a quick ticket's `## Notes`, or to a vibed `spec.md`:
 
 ```markdown
 ## Prototype
@@ -168,6 +198,15 @@ its `## Question log`. If the invented list is long enough to reshape the
 requirements, say so and point at `/brainstorm <feature>`; folding answers in is
 that skill's job and doing it here would bypass the log.
 
+**For a vibed change the list has one more place to go, and it is not optional.**
+The folder is deleted when the change ships, so a gap recorded only in the
+`## Prototype` note dies with the file that found it. Anything the drawing
+invented that the user should actually decide goes under `## Open` in `spec.md`
+as a question — written the way `/vibe-with-docs` §5 writes one, with its two to
+four options and which you would recommend — so the next `/vibe-with-docs <N>`
+picks it up and the answer lands in `## Decided`, where §8 of the build can turn
+it into a record. Don't answer it here: this skill draws, it does not settle.
+
 ## 8. Checks
 
 There are none to run. The file is outside `src/`, no build compiles it and no
@@ -185,4 +224,7 @@ The file path and the `open` command to run it. The states it holds. The
 invented list from §7, in full — it is the reason to read the report. Anything
 standing in for the real thing (fonts, data, silence where audio would be). Then
 the next step: `/writespec <feature>` if the picture confirmed the spec,
-`/brainstorm <feature>` if it opened questions, `/quick-feature N` for a ticket.
+`/brainstorm <feature>` if it opened questions, `/quick-feature N` for a ticket,
+`/vibe-with-docs <N>` for a vibed change — which is the next step either way
+there, whether to answer what the drawing opened or to move on to the tech
+spec.

@@ -188,7 +188,7 @@ describe('lib holds no loose modules', () => {
     expect(loose).toEqual([])
   })
 
-  it('contains exactly the five concern folders', () => {
+  it('contains exactly the six concern folders', () => {
     const dirs = entries()
       .filter((entry) => entry.isDirectory())
       .map((entry) => entry.name)
@@ -199,6 +199,7 @@ describe('lib holds no loose modules', () => {
       'presentation',
       'puzzle',
       'share',
+      'stats',
     ])
   })
 })
@@ -291,16 +292,24 @@ describe('feature components sit in screen regions', () => {
       'PlayTodayLink',
     ],
     solved: ['SolvedPanel', 'LeadSheet', 'ScaleStaff'],
+    stats: ['StatsPage', 'AttemptBars'],
   }
 
   const entries = () => readdirSync(COMPONENTS, { withFileTypes: true })
 
-  it('contains exactly the five region directories', () => {
+  it('contains exactly the six region directories', () => {
     const dirs = entries()
       .filter((entry) => entry.isDirectory())
       .map((entry) => entry.name)
       .sort()
-    expect(dirs).toEqual(['dev', 'header', 'intro', 'puzzle', 'solved'])
+    expect(dirs).toEqual([
+      'dev',
+      'header',
+      'intro',
+      'puzzle',
+      'solved',
+      'stats',
+    ])
   })
 
   it('holds only the root component at the components/ root', () => {

@@ -951,6 +951,15 @@ describe('GroovePuzzle', () => {
     const inAppLinks = () =>
       screen.queryAllByRole('link').filter((link) => link.getAttribute('href')?.startsWith('/'))
 
+    const waysBackToToday = () =>
+      inAppLinks().filter((link) => link.getAttribute('href') === '/')
+
+    const everyInAppLinkIsKnown = () => {
+      for (const link of inAppLinks()) {
+        expect(['/', '/stats']).toContain(link.getAttribute('href'))
+      }
+    }
+
     const offSiteLinks = () =>
       screen.queryAllByRole('link').filter((link) => !link.getAttribute('href')?.startsWith('/'))
 
@@ -966,22 +975,23 @@ describe('GroovePuzzle', () => {
       const user = userEvent.setup()
       await renderShared()
 
-      expect(inAppLinks()).toHaveLength(1)
-      expect(inAppLinks()[0]).toHaveAttribute('href', '/')
-      expect(wayBack()).toBe(inAppLinks()[0])
+      expect(waysBackToToday()).toHaveLength(1)
+      expect(wayBack()).toBe(waysBackToToday()[0])
+      everyInAppLinkIsKnown()
       everyOffSiteLinkReallyLeaves()
 
       await play(user)
       await guess(user, 'G', wrongFlavour())
-      expect(inAppLinks()).toHaveLength(1)
-      expect(inAppLinks()[0]).toHaveAttribute('href', '/')
+      expect(waysBackToToday()).toHaveLength(1)
+      everyInAppLinkIsKnown()
       everyOffSiteLinkReallyLeaves()
     })
 
     it('adds the only link the daily page never had (R5, AC5)', async () => {
       await renderPuzzle()
 
-      expect(inAppLinks()).toEqual([])
+      expect(waysBackToToday()).toEqual([])
+      everyInAppLinkIsKnown()
       everyOffSiteLinkReallyLeaves()
     })
 
@@ -1002,8 +1012,8 @@ describe('GroovePuzzle', () => {
       ).toBeTruthy()
       expect(box).not.toContainElement(invite)
       expect(columns[1]).toContainElement(invite)
-      expect(inAppLinks()).toHaveLength(2)
-      for (const link of inAppLinks()) expect(link).toHaveAttribute('href', '/')
+      expect(waysBackToToday()).toHaveLength(2)
+      everyInAppLinkIsKnown()
     })
 
     it('has the same puzzle region and the same controls in both modes (R4, AC3)', async () => {

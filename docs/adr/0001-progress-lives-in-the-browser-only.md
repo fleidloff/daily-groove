@@ -17,7 +17,10 @@ All player state lives in `localStorage`. No accounts, no backend, no sync.
 
 - The app deploys as one static Next.js build with nothing behind it, which is
   what later let the catalogue be a build-time artefact and the routes be
-  static.
+  static. **No longer true** — [0053](0053-stats-are-computed-on-the-server.md)
+  added `POST /api/stats`, so the build now has one server route behind it. The
+  decision above is untouched: state still lives only in `localStorage`, and
+  the stats route stores nothing.
 - A player's history is tied to one browser. Clearing site data is losing the
   streak, and there is no way to move it to a phone.
 - Every feature that wants to remember something adds a key under

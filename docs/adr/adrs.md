@@ -75,3 +75,5 @@ replaced it.
 | [0050](0050-the-generators-tests-grade-what-is-wrong.md) | The generator's tests grade what is wrong, not what is different | 🤔 Proposed | 2026-09-08 |
 | [0051](0051-the-app-is-named-groovdle.md) | The app is named Groovdle | ✅ Accepted — supersedes [0018](0018-the-app-is-named-eardle.md) | 2026-09-11 |
 | [0052](0052-a-groove-is-not-built-from-a-named-song.md) | A groove is not built from a named song | 🚫 Rejected — replaces [0045](0045-a-song-becomes-a-groove-inside-the-existing-styles.md) | 2026-09-11 |
+| [0053](0053-stats-are-computed-on-the-server.md) | Stats are computed on the server | ✅ Accepted — amends [0001](0001-progress-lives-in-the-browser-only.md) | 2026-09-11 |
+| [0054](0054-the-stats-page-shows-no-guilt.md) | The stats page shows no guilt | ✅ Accepted | 2026-09-11 |

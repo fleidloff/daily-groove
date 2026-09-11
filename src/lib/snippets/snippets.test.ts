@@ -15,6 +15,7 @@ const AREAS = [
   'puzzle',
   'routes',
   'solved',
+  'stats',
 ] as const
 
 function filesUnder(dir: string): string[] {

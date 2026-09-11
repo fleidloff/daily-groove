@@ -95,3 +95,25 @@ export type RoutesSnippets = {
   playTodayLink: string
   redirecting: string
 }
+
+export type StatsSnippets = {
+  title: string
+  subtitle: string
+  back: string
+  playedLabel: string
+  playedUnit: string
+  streak: string
+  attemptsLabel: string
+  last7: string
+  all: string
+  noteAll: string
+  noteLast7: string
+  solved: string
+  revealed: string
+  failed: string
+  retry: string
+  empty: string
+  emptyHint: string
+  dayOneSolved: (args: { guesses: string }) => string
+  dayOneRevealed: string
+}
