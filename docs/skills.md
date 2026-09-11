@@ -106,7 +106,9 @@ down as they land:
 
 `/vibe-with-docs` allocates `specs/tmp/N-title/` on the first turn and starts
 asking — one question per message, never a list — until it is 90% confident it
-could build the right thing without guessing. Every answer goes into `spec.md`
+could build the right thing without guessing. Each question arrives as two to
+four options with exactly one recommended and the reason for it, and `sam`'s
+verdict quoted inside the options where the answer turns on the player. Every answer goes into `spec.md`
 before the next question, so **stopping after any answer is safe**: defining a
 feature over a week, a few questions at a time, is the normal way to use it.
 Once the product is settled it moves to `tech-spec.md` and asks the

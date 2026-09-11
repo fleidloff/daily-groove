@@ -1,6 +1,6 @@
 ---
 name: vibe-with-docs
-description: Design a feature in chat, one question at a time, and write the answers down as you go — allocates `specs/tmp/N-title/`, fills `spec.md` with what the change is and what done means, then `tech-spec.md` with how it gets built. Asks in the conversation rather than in the document, and keeps asking until it is 90% confident. Writes no code; `/implement-vibe-with-docs N` builds it. Use whenever the user runs `/vibe-with-docs`, or asks to think a feature through in chat, design something conversationally, or spec a change without running the five-step chain.
+description: Design a feature in chat, one question at a time, and write the answers down as you go — allocates `specs/tmp/N-title/`, fills `spec.md` with what the change is and what done means, then `tech-spec.md` with how it gets built. Every question arrives as options with exactly one recommended, and the persona's verdict quoted where it bears. Asks in the conversation rather than in the document, and keeps asking until it is 90% confident. Writes no code; `/implement-vibe-with-docs N` builds it. Use whenever the user runs `/vibe-with-docs`, or asks to think a feature through in chat, design something conversationally, or spec a change without running the five-step chain.
 argument-hint: [what to build]
 ---
 
@@ -127,15 +127,51 @@ After every answer:
 - implementation. It has its own phase, and asking early anchors the design to
   the first shape you thought of.
 
-**Recommend, don't survey.** Where you have a view, ask the question and say
-which way you would go and why. Three options with no opinion is work handed
-back.
+### How to ask: options, one of them recommended
 
-**Dispatch `sam` when the question is the player's**, per
-[AGENTS.md](../../../AGENTS.md) — what they would do, what would lose them,
-what they would not understand. Its answer goes in `## Decided` in its own
-voice. Don't dispatch it for anything the code decides; it will tell you "no
-persona bearing" anyway.
+**Every question comes as options.** Two to four of them, each a decision the
+user could take, each with the consequence of taking it. Never an open prompt —
+"how should this work?" hands the work back.
+
+**Exactly one option is marked `(recommended)`, with the reason in the same
+breath.** You have read the tree and they have not; withholding the view makes
+them do that reading. Recommend the option you would build, not the safest one.
+
+**Every option is a real decision — don't spend one on "let's discuss it".**
+The harness already offers the user a free-text way out of any question, so an
+options list that includes one is spending a slot on something they have
+anyway. Give two to four answers and let them talk instead of picking if they
+want to; when they do, drop the options and have the conversation, and the
+outcome still goes in `## Decided`.
+
+Ask with `AskUserQuestion` when the options are short enough to fit its labels,
+and in prose when an option needs a paragraph to be fair to it.
+
+### Include the persona's opinion when the question is the player's
+
+**Dispatch `sam` before asking, whenever the answer turns on what the player
+would do** — what they would want, what would lose them, what they would not
+understand — per [AGENTS.md](../../../AGENTS.md).
+
+Then put its verdict *in the options*, so the user is choosing with it in front
+of them rather than after the fact:
+
+- the option Sam favours says so, in its own line: *"Sam: 'I play Wordle every
+  morning — I will find that shortcut.'"*
+- quote it rather than paraphrasing. The value is that a product call is made
+  in the player's voice, and a summary is your voice again.
+- **Sam's verdict is an input, not the recommendation.** Where you disagree,
+  recommend your option and say Sam's view under the other one — the user
+  should see the disagreement, not a resolved version of it.
+- if it comes back "no persona bearing", the question was the code's. Ask it
+  without a persona line and don't dispatch it again for that thread.
+
+Don't dispatch it for anything the code decides — where a file goes, what a
+type is called, whether a test is worth writing.
+
+**Whatever the answer, `## Decided` records the reason the user gave**, not the
+option number. "B" is not a reason, and six weeks later the number means
+nothing.
 
 ## 5. Stopping is safe, and it is the normal case
 
@@ -151,10 +187,12 @@ What that requires of you:
 - **Keep `**Phase:**` current** — the line at the top of `spec.md` is how a
   later session knows whether it is still shaping the product or already on the
   code. Change it when the phase changes, not at the end.
-- **Write the question you are about to ask.** Before asking, the thing still
-  open goes under `## Open` with what it is waiting on. If the answer arrives,
-  move it to `## Decided`; if the user stops, the next session reads exactly
-  where the conversation was.
+- **Write the question you are about to ask, with its options.** Before asking,
+  the thing still open goes under `## Open` — the question, the two to four
+  options, and which one you recommended and why. If the answer arrives, move
+  it to `## Decided`; if the user stops, the next session picks the question up
+  with the same options rather than re-deriving them and landing on different
+  ones.
 - **No summary is owed at the end of a session.** `spec.md` is the summary. If
   the user stops mid-flight, say the folder path and what the next question was,
   in a line.
@@ -244,9 +282,11 @@ track, and one track in one epic is a perfectly good tech spec — it is what a
 two-file change looks like. An invented second track costs a dispatch, a brief
 and a merge to buy nothing.
 
-**Ask the user before splitting**, in one question, when it is a real fork:
-"this looks like two epics — the data and the UI — or one; which do you want?"
-The answer goes in `## Decided`.
+**Ask the user before splitting**, in one question, when it is a real fork —
+in §4's shape, options with one recommended: one epic, or two named epics with
+what each one ships on its own. The answer goes in `## Decided`. This is a
+question about build order rather than about the player, so it usually carries
+no persona line.
 
 ### What to ask, and what to read
 
@@ -255,6 +295,10 @@ what that hook returns, whether a helper exists — is a question you should hav
 searched. Ask about forks the code cannot settle: where a boundary should fall,
 whether a thing gets a door, what a test should pin, whether the split is worth
 it.
+
+**§4's shape holds here too**: two to four options, exactly one recommended
+with its reason. What changes is the persona line — an implementation fork rarely has one, and a question that
+does was a `spec.md` question that arrived late.
 
 **Name the module for every file**, from the six in
 [docs/architecture.md](../../../docs/architecture.md). Two modules is
