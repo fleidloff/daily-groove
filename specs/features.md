@@ -55,6 +55,24 @@ briefing. Rename the folder to the next free number to put one on the plan.
 
 ---
 
+## Vibed changes
+
+Changes designed in chat rather than in a document — `/vibe-with-docs` asks one
+question at a time and writes the answers into `specs/tmp/N-title/`,
+`/implement-vibe-with-docs` builds it. That folder is
+**deleted once the change ships**, so this table is the whole record of it: the
+reasoning that was worth keeping went to `docs/adr/` and the documents under
+`docs/`, and the row below says which.
+
+Every row here is done by definition — the row is written only when the
+verifier came back **pass**. A change still in flight has a folder in
+`specs/tmp/` and no row.
+
+| # | Change | Date | Summary |
+| :-- | :-- | :-- | :-- |
+
+---
+
 ## Quick changes
 
 Small changes built from a one-page ticket in `specs/quick/` instead of the

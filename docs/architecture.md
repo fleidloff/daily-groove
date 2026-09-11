@@ -8,7 +8,10 @@ goes, what a linter will reject — live in one place:
 rule tagged *lint-enforced* or *human-checked* and named after the file that
 motivated it. Read that before writing code.
 
-See also [testing.md](testing.md) for what must be tested.
+See also [testing.md](testing.md) for what must be tested, and
+**[adr/adrs.md](adr/adrs.md)** for why the shape is this one — the decisions
+behind it, in the order they were taken, including the ones that have since
+been replaced.
 
 ## The model
 

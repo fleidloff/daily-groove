@@ -62,9 +62,10 @@ state it owed, and pays it — `✔` or `✳` — when the last one reports back
 .claude/scripts/title.sh "reading the lint zones"
 ```
 
-- Whenever you know which feature or quick ticket the session is on, its number
-  goes first: `F<N>)` for `specs/features/feature-N/`, `Q<N>)` for
-  `specs/quick/N-slug.md`. A candidate keeps its letter — `FA)`.
+- Whenever you know which feature, quick ticket or vibed change the session is
+  on, its number goes first: `F<N>)` for `specs/features/feature-N/`, `Q<N>)`
+  for `specs/quick/N-slug.md`, `V<N>)` for `specs/tmp/N-title/`. A candidate
+  keeps its letter — `FA)`.
 - Set it as soon as the number is known — the skill's argument (`/brainstorm
   feature-8`), the ticket you just allocated, the spec folder you are reading —
   and keep the prefix on every title after that until the session moves on.
@@ -77,8 +78,8 @@ state it owed, and pays it — `✔` or `✳` — when the last one reports back
 - The text sticks until you replace it, so replace it when the task changes.
   Nothing else will.
 - Applies to every step of the chain in [docs/skills.md](docs/skills.md), and to
-  `/quick-feature`, `/implement-quick-feature`, `/verify-epic` and
-  `/prototype`.
+  `/quick-feature`, `/implement-quick-feature`, `/vibe-with-docs`,
+  `/implement-vibe-with-docs`, `/verify-epic` and `/prototype`.
 - **Only the main session sets it.** Dispatched agents never do; several of them
   run at once and would overwrite each other.
 
@@ -89,7 +90,8 @@ your own initiative.** Every change stays in the working tree so it can be read
 as one diff.
 
 The one thing that changes that is the **Status** column in
-[specs/features.md](specs/features.md). A feature or a quick ticket is committed
+[specs/features.md](specs/features.md) — or, for a vibed change, the presence of
+its row in *Vibed changes* at all. A feature or a quick ticket is committed
 only once its row reads ✅ **Done** — and the row reaches ✅ only when every
 acceptance criterion is verified, not when the work feels finished. So the order
 is always: build → verify → mark the row → *then* the commit is the user's to
@@ -97,13 +99,38 @@ ask for.
 
 - **A row at 🔨 In progress means do not commit**, however green the suite is.
 - **`/implement-feature` never commits**, and its §0 says so; this generalises
-  that rule to every path, including `/implement-quick-feature`, a fix made by
-  hand, and anything an agent did.
+  that rule to every path, including `/implement-quick-feature`,
+  `/implement-vibe-with-docs`, a fix made by hand, and anything an agent did.
 - **Getting to ✅ is work, not paperwork.** An acceptance criterion graded
   *partly* keeps the row off ✅, so closing it — writing the missing test,
   committing an assertion that only lived in scratch — is what unblocks the
   commit. Say what is standing in the way rather than asking to commit anyway.
+- **A vibed change has one more thing to finish**, and it is not paperwork
+  either: `/implement-vibe-with-docs` §8 writes the ADRs and updates the
+  documents the change made untrue *before* it deletes
+  `specs/tmp/N-title/`. The archive row and the ADRs are all that survives the
+  deletion, so skipping that step loses the reasoning rather than deferring
+  it.
 - If a commit is genuinely needed mid-flight to make progress, **stop and ask**.
+
+## Why the app is like this
+
+**[docs/adr/adrs.md](docs/adr/adrs.md)** — one architecture decision record per
+decision that would be expensive to reverse, oldest first: browser-only
+progress, pre-rendered MP3s, a listening sign-off as the bar for how a groove
+sounds, what is frozen and what may always re-render, the six modules, the
+narrowing hint, one string table. Superseded ones are kept, so the chain that
+got to today is readable — four decisions have already been replaced by a later
+number.
+
+Read it when you are about to change something the app has settled, or when a
+constraint makes no sense and you want to know what it is holding up. **A new
+record is the answer only for a decision the code cannot state itself** — the
+import graph lives in [docs/architecture.md](docs/architecture.md), the rules in
+[docs/coding-guidelines.md](docs/coding-guidelines.md), and the musical model in
+[docs/music.md](docs/music.md). Copy `docs/adr/0000-template.md`, take the next
+four-digit number, and add the row to `adrs.md`. Linked rather than
+`@`-imported, for the same reason as the document below.
 
 ## Changing what the grooves sound like
 
@@ -138,9 +165,18 @@ cannot fix. Fanning the *build* out over a two-file change buys nothing, and
 costs the one view of the whole change that catches a ticket which is no longer
 small.
 
+The third door dispatches like the chain, having decided like the quick one.
+`/vibe-with-docs` writes no code and dispatches only `sam`, for a question that
+turns on the player — but its `tech-spec.md` declares tracks, roles and waves,
+so `/implement-vibe-with-docs` fans a worker out per track exactly as
+`/implement-feature` does, and builds in the lead only when the spec is a single
+track. Either way the same `verifier` gates it, graded against `spec.md`'s
+`## Done when` bullets.
+
 `sam` is the odd one out, because it builds nothing. It *is* the player in
 [docs/persona.md](docs/persona.md), and `/roadmap`, `/brainstorm`, `/prototype`
-and `/create-feature-for-persona` dispatch it whenever a decision turns on what
+`/create-feature-for-persona` and `/vibe-with-docs` dispatch it whenever a
+decision turns on what
 that player would do rather than on what the code needs. The answer comes back
 in first person, quoting the line of the persona it rests on, so a product call
 is made in the player's voice instead of by whoever is holding the keyboard —

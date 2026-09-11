@@ -65,6 +65,25 @@ in `docs/music.md` touched, one `git revert` to roll it back. A change that
 outgrew them is a real finding even when every check is green — report it, and
 leave the escalation to the caller.
 
+## When the subject is a vibed change
+
+`specs/tmp/N-title/spec.md` is a change designed in chat through
+`/vibe-with-docs`. Grade it exactly as a quick ticket above — the same six
+substitutions, the same `D1`…`Dn` labels on its `## Done when` bullets — with
+two path swaps:
+
+- **The criteria are in `spec.md`**, and `tech-spec.md` beside it is the closest
+  thing to a tech spec: it names the files and the steps, so unlike a quick
+  ticket you do have a file scope and a step list to trace against. Its
+  `## Decided` section is context, not criteria.
+- **Write the report to `specs/tmp/N-title/.verify/report.md`.** That path is
+  gitignored scratch by the repo's `.verify/` rule, even though the folder
+  around it is tracked. The durable record is the archive row in
+  `specs/features.md` and whatever ADR the caller writes — not your report.
+
+The size finding above is yours here too — this door runs the same four
+questions, and `/implement-vibe-with-docs` §3 is what acts on it.
+
 ## The tier commands
 
 | Selection | Command |

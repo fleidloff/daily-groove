@@ -93,6 +93,51 @@ be one epic, it asks whether to move the feature here instead. Say yes and it
 writes the ticket from the briefing, deletes the feature folder, moves the row,
 and points at `/quick-feature N`.
 
+## The third door — designing it in chat
+
+The chain asks its questions inside the document; the quick door asks them
+inside the ticket. This one asks them in the conversation and writes the answers
+down as they land:
+
+```
+/vibe-with-docs  →  one question at a time  →  spec.md  →  tech-spec.md  →  /implement-vibe-with-docs N
+                     answers written down as they land        the code, then the record
+```
+
+`/vibe-with-docs` allocates `specs/tmp/N-title/` on the first turn and starts
+asking — one question per message, never a list — until it is 90% confident it
+could build the right thing without guessing. Every answer goes into `spec.md`
+before the next question, so **stopping after any answer is safe**: defining a
+feature over a week, a few questions at a time, is the normal way to use it.
+Once the product is settled it moves to `tech-spec.md` and asks the
+implementation questions the same way. It writes no code.
+
+`tech-spec.md` is decomposed the way `/writespec`'s are: contracts frozen up
+front, tracks that own disjoint files, a role per track, and waves — split into
+epics when the change has two things that ship and verify on their own, and left
+as one track when it does not.
+
+`/implement-vibe-with-docs N` builds it, test first: it writes the contracts in
+the lead, then dispatches one agent per track in each wave by the role the track
+declares, or builds in the lead when there is a single track. The `verifier`
+gates it against `spec.md`'s `## Done when` bullets. Then it does the part
+that makes the door work: turns the decisions worth keeping into records in
+[adr/adrs.md](adr/adrs.md), updates whichever documents under `docs/` the change
+made untrue, adds the row to the *Vibed changes* table in
+[../specs/features.md](../specs/features.md) — and **deletes the temporary
+folder**, so the deletion arrives in the same diff as the change. The archive
+row and the ADRs are the only record that survives it, which is why writing
+them is not optional.
+
+**Which door.** All three can fan work out, so size is not what picks between
+them — uncertainty is. The chain is for a feature where the *requirements* are
+the risky part: it writes a briefing, a roadmap and a PRD per epic before any
+spec exists, and verifies each epic on its own. The quick door is for a change
+already clear enough to fit in five bullets. This one is for the middle — you
+know what you want, the details need talking through, and you would rather talk
+than write. It runs the same four size questions and, like the quick door, only
+ever *suggests* moving the work; that call is yours.
+
 ## `/verify-epic`
 
 `/implement-feature` runs `/verify-epic` itself at the end of every epic, so you
@@ -142,6 +187,9 @@ rather than by the person who built the app.
 specs/
 ├── features.md                  one line per feature — the index
 ├── quick/N-slug.md              one-page tickets, outside the chain
+├── tmp/N-title/                 vibed changes — deleted once shipped
+│   ├── spec.md                  what changes, and what done means
+│   └── tech-spec.md             how it gets built
 └── features/feature-N/
     ├── briefing.md              step 1
     ├── roadmap.md               step 2
@@ -156,6 +204,9 @@ to be updated by hand: `/create-feature` adds the row, `/roadmap` and
 implement, and `/implement-feature` marks it ✅ Done once every acceptance
 criterion is verified. Quick tickets work the same way: `/quick-feature` moves
 the row to ❓ Questions open or 🛠 Ready to build, and only
-`/implement-quick-feature` writes ✅.
+`/implement-quick-feature` writes ✅. A vibed change gets no row until it
+ships: `/implement-vibe-with-docs` writes one into *Vibed changes* as the last
+thing it does before deleting the folder.
 
-See also: [architecture.md](architecture.md) · [testing.md](testing.md)
+See also: [architecture.md](architecture.md) · [testing.md](testing.md) ·
+[adr/adrs.md](adr/adrs.md)
