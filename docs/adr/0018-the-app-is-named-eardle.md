@@ -1,6 +1,6 @@
 # 0018. The app is named Eardle
 
-- **Status:** ✅ Accepted
+- **Status:** ⛔ Superseded by [0051 — The app is named Groovdle](0051-the-app-is-named-groovdle.md)
 - **Date:** 2026-08-31
 - **Source:** [feature-8](../../specs/features/feature-8/briefing.md)
 
@@ -25,3 +25,6 @@ once in code.
   the snippets ([0035 — Every user-facing string lives in `src/lib/snippets/en`](0035-every-string-lives-in-one-place.md)), so it is now one
   entry among the strings.
 - The repo, the folder and the internal slugs are still `daily-groove`.
+- Renamed to Groovdle on 2026-09-11 by
+  [0051 — The app is named Groovdle](0051-the-app-is-named-groovdle.md), which keeps the
+  Wordle comparison and moves the tagline with the name.

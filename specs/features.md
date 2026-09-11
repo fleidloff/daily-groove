@@ -70,6 +70,7 @@ verifier came back **pass**. A change still in flight has a folder in
 
 | # | Change | Date | Summary |
 | :-- | :-- | :-- | :-- |
+| 1 | Groovdle | 2026-09-11 | Renames the app from Eardle to Groovdle and moves the tagline with it — "Wordle for your ears" becomes "Wordle for grooves", because the name and the subtitle were pointing at different things. The `- Daily Ear Training` suffix on the name stays, since the same field is the browser tab title. Two string fields in `src/lib/snippets/en/branding.ts` and nothing else: nine call sites import them, which is the property [ADR 0035](../docs/adr/0035-every-string-lives-in-one-place.md) bought. Adds a guard to `snippets.test.ts` that fails if any `.ts`/`.tsx` file under `src/` says the old name, so the next rename cannot miss a copy. Wrote [ADR 0051](../docs/adr/0051-the-app-is-named-groovdle.md), which supersedes 0018, and corrected `docs/architecture.md`'s module map, which still listed the `src/lib/branding.ts` feature-21 deleted. |
 
 ---
 

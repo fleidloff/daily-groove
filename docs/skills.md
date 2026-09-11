@@ -72,6 +72,14 @@ gate, grading the ticket's `## Done when` bullets over the full lint / test /
 build set the way it grades an epic's acceptance criteria. The lead fixes what
 it finds; the verifier cannot.
 
+### The three skills
+
+| Run | What it does | Writes | Refuses |
+| :-- | :-- | :-- | :-- |
+| `/create-quick-feature` | Interviews you the way `/create-feature` does, then stops. The middle way in, when you'd rather be asked than open the file. | `specs/quick/N-slug.md` — `## What` and `## Done when` only | nothing; it is the first step |
+| `/quick-feature N` | Reads the ticket against the tree, runs the size test, names the files the change will touch and the assumptions it took, and asks anything blocking as tickable options in the ticket. Re-run folds the answers in. **Writes no code, not even a test.** | `## Notes`, `## Open questions`, `## Answered` in the ticket | nothing — but it re-analyzes no settled ticket, and says so |
+| `/implement-quick-feature N` | Re-runs the size test against the real files, writes the test then the code **in the lead**, gates it with the `verifier`, fixes what comes back, and records what was built. | the code, `## Built` in the ticket, the row moved to ✅ | a ticket with no `## Notes`, an unticked question, or answers never folded in |
+
 Neither is the cheap door for a real feature. Four questions decide:
 five bullets or fewer, at most two of the six modules in
 [architecture.md](architecture.md), nothing frozen in [music.md](music.md)
@@ -108,11 +116,12 @@ down as they land:
 asking — one question per message, never a list — until it is 90% confident it
 could build the right thing without guessing. Each question arrives as two to
 four options with exactly one recommended and the reason for it, and `sam`'s
-verdict quoted inside the options where the answer turns on the player. Every answer goes into `spec.md`
-before the next question, so **stopping after any answer is safe**: defining a
-feature over a week, a few questions at a time, is the normal way to use it.
-Once the product is settled it moves to `tech-spec.md` and asks the
-implementation questions the same way. It writes no code.
+verdict quoted inside the options where the answer turns on the player. Every
+answer goes into `spec.md` before the next question, so **stopping after any
+answer is safe**: defining a feature over a week, a few questions at a time, is
+the normal way to use it. Once the product is settled it moves to
+`tech-spec.md` and asks the implementation questions the same way. It writes no
+code.
 
 `tech-spec.md` is decomposed the way `/writespec`'s are: contracts frozen up
 front, tracks that own disjoint files, a role per track, and waves — split into
@@ -130,6 +139,17 @@ made untrue, adds the row to the *Vibed changes* table in
 folder**, so the deletion arrives in the same diff as the change. The archive
 row and the ADRs are the only record that survives it, which is why writing
 them is not optional.
+
+### The two skills
+
+| Run | What it does | Writes | Refuses |
+| :-- | :-- | :-- | :-- |
+| `/vibe-with-docs` | Allocates the folder, then interviews you in chat — one question per message, options with one recommended, every answer written down before the next question is asked. Settles the product first, then the implementation. **Writes no code.** Re-run with the number to resume where you stopped. | `specs/tmp/N-title/spec.md`, then `tech-spec.md` | nothing; it is the way in |
+| `/implement-vibe-with-docs N` | Writes the contracts in the lead, runs the tracks in waves — one agent per track, by the role the track declares — or builds in the lead when there is one track. Gates with the `verifier`, then writes the permanent record and deletes the folder. | the code, the ADRs, the `docs/` corrections, the archive row — and the folder's deletion | a folder with no `tech-spec.md`, an `## Open` bullet the build needs, or an empty `## Done when` |
+
+`/vibe-with-docs` takes a subject (`/vibe-with-docs a jam mode`), a number to
+resume (`/vibe-with-docs 1`), or nothing — bare, it asks what you are building,
+or lists the folders in `specs/tmp/` when some are open.
 
 **Which door.** All three can fan work out, so size is not what picks between
 them — uncertainty is. The chain is for a feature where the *requirements* are

@@ -79,6 +79,28 @@ describe('the language folder is private to the index', () => {
   })
 })
 
+// Split so this file does not name the old name contiguously and trip its own scan,
+// the same reason PRIVATE_FOLDER above is built by concatenation.
+const OLD_APP_NAME = `Ear${'dle'}`
+
+describe('the app is named once, and nothing still says the old name (V1)', () => {
+  it('is named nowhere under src/ by its old name', () => {
+    const pattern = new RegExp(OLD_APP_NAME, 'i')
+    const offenders = filesUnder(SRC_ROOT)
+      .filter((file) => pattern.test(readFileSync(file, 'utf8')))
+      .map((file) => file.slice(SRC_ROOT.length + 1))
+
+    expect(
+      offenders,
+      [
+        `${offenders.join(', ')} still says the app's old name.`,
+        `The name lives in one field, branding.appName, and every consumer imports it,`,
+        'so a rename is that one edit — a second copy of the name is a place the rename missed.',
+      ].join('\n'),
+    ).toEqual([])
+  })
+})
+
 describe('an interpolating snippet is a function of its arguments', () => {
   it('returns the same string for the same arguments', () => {
     expect(snippets.puzzle.bpm({ bpm: 96 })).toBe(snippets.puzzle.bpm({ bpm: 96 }))

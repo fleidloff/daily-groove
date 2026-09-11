@@ -40,7 +40,7 @@ replaced it.
 | [0015](0015-simple-mode-is-fewer-names.md) | Simple mode is fewer names, not an easier puzzle | ✅ Accepted | 2026-08-30 |
 | [0016](0016-the-rota-plays-every-groove-once.md) | The rota plays every groove once before it repeats | ✅ Accepted — amends [0003](0003-the-days-groove-is-a-function-of-the-date.md) | 2026-08-30 |
 | [0017](0017-the-nudge-hands-the-root-over.md) | The nudge hands the root over after two misses | ⛔ Superseded by [0028](0028-the-hint-narrows-only-the-reveal-reveals.md) | 2026-08-30 |
-| [0018](0018-the-app-is-named-eardle.md) | The app is named Eardle | ✅ Accepted | 2026-08-31 |
+| [0018](0018-the-app-is-named-eardle.md) | The app is named Eardle | ⛔ Superseded by [0051](0051-the-app-is-named-groovdle.md) | 2026-08-31 |
 | [0019](0019-a-groove-is-sixteen-bars-shown-as-four.md) | A groove is sixteen bars of loop, shown as four | ✅ Accepted | 2026-08-31 |
 | [0020](0020-only-identity-is-frozen.md) | Only a groove's identity is frozen; its audio may always re-render | ✅ Accepted — supersedes [0011](0011-a-minted-grooves-audio-is-frozen.md) | 2026-08-31 |
 | [0021](0021-the-ear-aids-play-one-sound.md) | The ear aids play one sound, and there is no instrument on screen | ✅ Accepted | 2026-08-31 |
@@ -73,3 +73,4 @@ replaced it.
 | [0048](0048-one-audio-stage-with-a-persisted-level.md) | One audio stage with a persisted master level | 🤔 Proposed | 2026-09-08 |
 | [0049](0049-a-comp-figure-may-span-bars.md) | A comp figure may span more than one bar | ✅ Accepted | 2026-09-08 |
 | [0050](0050-the-generators-tests-grade-what-is-wrong.md) | The generator's tests grade what is wrong, not what is different | 🤔 Proposed | 2026-09-08 |
+| [0051](0051-the-app-is-named-groovdle.md) | The app is named Groovdle | ✅ Accepted — supersedes [0018](0018-the-app-is-named-eardle.md) | 2026-09-11 |

@@ -69,11 +69,13 @@ The slice separates six concerns, and they are not the same thing as its folders
 | **shell** | `components/` — the composer `GroovePuzzle.tsx`, the four regions `header/`, `intro/`, `puzzle/`, `solved/`, and `dev/`, which is no region but the dev-only preview `GroovePreview.tsx` — plus the three routes under `src/app/`, of which `dev/grooves/page.dev.tsx` is built only under `next dev`, and `lib/share/`, whose two modules exist only to build those routes' URLs and hand one to the browser |
 
 Four things sit in no module, and say so rather than being filed somewhere they
-do not belong. `src/lib/groove.ts`, `hash.ts`, `date.ts` and `branding.ts` sit
+do not belong. `src/lib/groove.ts`, `hash.ts`, `date.ts` and `snippets/` sit
 *below* all six: the shared type contract, the frozen hash, the date helpers and
-the app's name. `groove.ts` and `hash.ts` are imported by both halves of the
-app/generator boundary; `date.ts` and `branding.ts` are the app's alone, and
-appear under `scripts/` only as tier-routing path strings. Either way an arrow
+every user-facing string, the app's own name included. `groove.ts` and
+`hash.ts` are imported by both halves of the app/generator boundary; `date.ts`
+and `snippets/` are the app's alone, and `date.ts` appears under `scripts/`
+only as a tier-routing path string. `branding.ts` stood in the fourth place
+until feature-21 folded it into `snippets/en/branding.ts`. Either way an arrow
 from one module would misdescribe them. Inside the slice, `types.ts` is the
 vocabulary: it re-exports the five types in `src/lib/groove.ts` and adds
 `DailyResult`, so every module imports it and an arrow to it would say nothing.

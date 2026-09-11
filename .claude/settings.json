@@ -2,6 +2,14 @@
   "env": {
     "CLAUDE_CODE_DISABLE_TERMINAL_TITLE": "1"
   },
+  "permissions": {
+    "allow": [
+      "Write(specs/tmp/**/.verify/**)",
+      "Edit(specs/tmp/**/.verify/**)",
+      "Write(specs/tmp/**/.implement/**)",
+      "Edit(specs/tmp/**/.implement/**)"
+    ]
+  },
   "hooks": {
     "SessionStart": [
       { "hooks": [{ "type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/scripts/title.sh --reset" }] }
