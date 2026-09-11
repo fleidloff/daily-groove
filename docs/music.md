@@ -752,6 +752,7 @@ to catch a violation.
 | the track a scale is heard in, shown on the reveal | `heard-in.json`, keyed by `Groove.scale`; `npm run grooves -- --manifest-only` re-renders it |
 | which instrument a voice is — swapping the recording behind it, not adding one | `samples/pack.json` (its notes, velocity layers and `nominalVelocity`) and `samples/provenance.json` (source, licence, and what was done to every file). `samples/README.md` is the rulebook for sourcing, preparing and levelling one, and the levels are turned in two independent places: the pack's `nominalVelocity` first, the template's `gain` after. `npm run notes` — not `npm run grooves` — is what rewrites the lock's `packSha256` |
 | add a voice | `types.ts` (`VoiceName`), samples, `samples/pack.json`, every template's `gain`/`pan`, a pattern, and its own RNG stream label |
+| the four chords **one** groove plays, rather than the ones its seed drew | `chords` on that groove's entry in `catalogue.json` — four names, snapped to the nearest chord the answer's scale holds by `harmonyFromChords` in `theory/harmony.ts`. It consumes no randomness and adds no draw, so a groove without the field renders byte-identically. `/song-groove` is what writes one; [ADR 0052](adr/0052-a-groove-may-declare-its-chords.md) is why it is allowed |
 | the daily order, after minting grooves | `ROTA_EPOCH` in `src/features/daily-groove/lib/puzzle/selectGroove.ts` — bump it by one, every release that mints |
 
 After any change to what the audio contains, re-render and re-verify:

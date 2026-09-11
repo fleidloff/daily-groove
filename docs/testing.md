@@ -33,6 +33,10 @@ Some conventions no linter can check are guarded by tests that read the tree or
 the source from disk and fail when it drifts:
 `src/components/structure.test.ts`,
 `src/features/daily-groove/structure.test.ts`,
-`src/app/route-boundary.test.ts`, `scripts/grooves/boundary.test.ts` and
-`src/lib/hash.test.ts`. They run under `npm test`. The guidelines say which rule
-each one stands behind, and which rules `npm run lint` enforces instead.
+`src/app/route-boundary.test.ts`, `scripts/grooves/boundary.test.ts`,
+`scripts/songSkills.test.ts` and `src/lib/hash.test.ts`. They run under
+`npm test`. `songSkills.test.ts` is the odd one out: it checks that a **skill**
+still points at code that exists — the epoch to bump, the freeze tables to
+extend — because a skill that has gone stale still reads plausibly. The
+guidelines say which rule each one stands behind, and which rules
+`npm run lint` enforces instead.

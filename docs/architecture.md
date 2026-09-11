@@ -65,7 +65,7 @@ The slice separates six concerns, and they are not the same thing as its folders
 | **theory** | `src/lib/theory/` — eighteen modules, of which the generator imports `names.ts`, `roots.ts` and `scales.ts` |
 | **audio** | `lib/audio/`, plus the three hooks that drive playback: `hooks/useTransport.ts`, `hooks/useReferenceNote.ts`, `hooks/useModeLick.ts` |
 | **puzzle** | `lib/puzzle/`, `lib/persistence/`, `state/`, plus the four hooks that carry the session and the settings: `hooks/usePuzzleSession.ts`, `hooks/useProgress.ts`, `hooks/useSimpleMode.ts`, `hooks/useTapSounds.ts` |
-| **coaching** | `lib/presentation/` — eleven modules behind one `index.ts` |
+| **coaching** | `lib/presentation/` — twelve modules behind one `index.ts` |
 | **shell** | `components/` — the composer `GroovePuzzle.tsx`, the four regions `header/`, `intro/`, `puzzle/`, `solved/`, and `dev/`, which is no region but the dev-only preview `GroovePreview.tsx` — plus the three routes under `src/app/`, of which `dev/grooves/page.dev.tsx` is built only under `next dev`, and `lib/share/`, whose two modules exist only to build those routes' URLs and hand one to the browser |
 
 Four things sit in no module, and say so rather than being filed somewhere they
@@ -163,7 +163,8 @@ re-measured rather than believed.
   `families`, `music` and `transpose`; `date.ts` reaches `transpose`;
   `nearMiss.ts` reaches `families`, `difference` and
   `scales`. **coaching → puzzle** — `lib/presentation/ruledOut.ts` reaches
-  `../puzzle/narrowing`. **coaching → catalogue** — `index.ts` reads `GROOVES`.
+  `../puzzle/narrowing`. **coaching → catalogue** — `index.ts` reads `GROOVES`,
+  and `heardIn.ts` reads `HEARD_IN` to resolve a groove's song line.
 - **shell → every other module.** Coaching through the door from
   `GroovePuzzle.tsx` and `components/puzzle/GuessCard.tsx`; the rest directly, as
   `GroovePuzzle.tsx`'s own imports show — three into `lib/audio/`, one each into

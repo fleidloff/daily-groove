@@ -13,6 +13,9 @@ Features are named two ways:
 Status runs 📋 **Planned** → 🛠 **Ready to implement** (every epic specced, no
 open questions) → 🔨 **In progress** → ✅ **Done** (every epic implemented,
 tested and verified). Lettered candidates sit at ✏️ **Briefed** until promoted.
+⏸ **Parked** is off that line: specced, still valid as a description, and
+deliberately not built — the row says why, and the ADR it links says it at
+length.
 
 | # | Feature | Status | Summary |
 | :-- | :-- | :-- | :-- |
@@ -41,7 +44,7 @@ tested and verified). Lettered candidates sit at ✏️ **Briefed** until promot
 | [23](features/feature-23/) | Transpose for the sax | ✅ Done | Lets a sax or trumpet player play the whole puzzle in their instrument's written pitch — the root chips, the check, the heading, the chords and the notes — remembered across days, while the audio and the share link stay in concert pitch. |
 | [24](features/feature-24/) | Swing ride | ✅ Done | Gives the two feels that genuinely swing a jazz ride to keep time instead of a hi-hat, feathers the kick beneath it, and sources the claves, cowbell and ride bell the styles in `new-styles.md` will need. |
 | [25](features/feature-25/) | Three new styles | ✅ Done | Adds Bossa Nova, second line and boom-bap to the six feels, lets a feel own two to four modes that other feels may share, and reshuffles the whole rota so new grooves always mix through the old ones. Reggae one-drop (epic 2) and son montuno (epic 5) were both built and withdrawn on the player's verdict before anything was committed. **The eighteen new grooves were heard and approved on 2026-09-06** — one sentence over all eighteen, which discharges epic 1's R24, epic 3's R10 and epic 4's R10/R8 positively but not per groove, so boom-bap's retune loop never runs; three `SIGN_OFFS` pins were added, one per new feel. `npm run test:all` is green (196 files, 4481 tests); `pastPuzzles.test.ts` was retired rather than re-baselined, its unique coverage moved to `dailyGroove.test.ts` and the uuid freeze it carried restored as `uuidFreeze.test.ts` on both tiers. Marked ✅ on Fred's decision that the blanket approval satisfies the four ACs that asked for a per-groove sign-off; the remaining three read **partly** because one is unverifiable until the feature is committed, one is untested by design, and two have an antecedent a positive verdict makes unreachable. See `.implement/report.md`. |
-| [26](features/feature-26/) | Grooves from songs | 🛠 Ready to implement | Lets the reveal name the tune a single groove was built on rather than one its mode is merely heard in, steers the generator at a standard's changes by searching seeds inside the frozen draw, and gives that whole path to a skill that renders a candidate for a person to hear before anything reaches the catalogue. |
+| [26](features/feature-26/) | Grooves from songs | ⏸ Parked | Lets the reveal name the tune a single groove was built on rather than one its mode is merely heard in, steers the generator at a standard's changes by searching seeds inside the frozen draw, and gives that whole path to a skill that renders a candidate for a person to hear before anything reaches the catalogue. **Parked:** built as an experiment on 2026-09-11 and reverted — the chords turned out to be reachable and irrelevant, since what identifies a record is its feel. A groove by name needs a style per song named. [ADR 0052](../docs/adr/0052-a-groove-is-not-built-from-a-named-song.md). |
 | [27](features/feature-27/) | New bass | ✅ Done | Replaces the generator's pizzicato contrabass with an electric Squier Bass VI (Pastabass `tagliatelle`, CC0) and re-renders the whole catalogue, re-balancing `gain.bass` in all nine feels. |
 | [28](features/feature-28/) | Bass register lower end | ✅ Done | Drops the bass floor from the open low E to the C♯1 the Bass VI library actually sampled, so the twelve grooves rooted in C♯, D or E♭ are carried by a bass on the low string instead of one an octave up in the register the player plays chords in. |
 
@@ -54,6 +57,7 @@ briefing. Rename the folder to the next free number to put one on the plan.
 | :-- | :-- | :-- | :-- |
 
 ---
+
 
 ## Vibed changes
 

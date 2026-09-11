@@ -67,10 +67,11 @@ replaced it.
 | [0042](0042-three-licks-per-mode.md) | Three licks per mode, one picked for the day | ✅ Accepted | 2026-09-05 |
 | [0043](0043-the-mode-row-offers-six-names.md) | The mode row offers six names and never narrows itself | ✅ Accepted | 2026-09-05 |
 | [0044](0044-dev-only-pages-live-in-the-tree.md) | Dev-only pages live in the tree and not in the build | ✅ Accepted | 2026-09-05 |
-| [0045](0045-a-song-becomes-a-groove-inside-the-existing-styles.md) | A song becomes a groove inside the existing styles | 🤔 Proposed | 2026-09-06 |
+| [0045](0045-a-song-becomes-a-groove-inside-the-existing-styles.md) | A song becomes a groove inside the existing styles | 🚫 Rejected — see [0052](0052-a-groove-is-not-built-from-a-named-song.md) | 2026-09-06 |
 | [0046](0046-the-rota-spreads-mode-root-and-style.md) | The rota spreads mode, root and style over three days | ✅ Accepted — amends [0016](0016-the-rota-plays-every-groove-once.md) | 2026-09-06 |
 | [0047](0047-the-dominance-floor-rises-by-minting.md) | The dominance floor rises by minting, not by widening the ratio | ✅ Accepted | 2026-09-06 |
 | [0048](0048-one-audio-stage-with-a-persisted-level.md) | One audio stage with a persisted master level | 🤔 Proposed | 2026-09-08 |
 | [0049](0049-a-comp-figure-may-span-bars.md) | A comp figure may span more than one bar | ✅ Accepted | 2026-09-08 |
 | [0050](0050-the-generators-tests-grade-what-is-wrong.md) | The generator's tests grade what is wrong, not what is different | 🤔 Proposed | 2026-09-08 |
 | [0051](0051-the-app-is-named-groovdle.md) | The app is named Groovdle | ✅ Accepted — supersedes [0018](0018-the-app-is-named-eardle.md) | 2026-09-11 |
+| [0052](0052-a-groove-is-not-built-from-a-named-song.md) | A groove is not built from a named song | 🚫 Rejected — replaces [0045](0045-a-song-becomes-a-groove-inside-the-existing-styles.md) | 2026-09-11 |

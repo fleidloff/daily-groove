@@ -1,6 +1,6 @@
 # 0045. A song becomes a groove inside the existing styles
 
-- **Status:** 🤔 Proposed
+- **Status:** 🚫 Rejected — see [0052 — A groove is not built from a named song](0052-a-groove-is-not-built-from-a-named-song.md)
 - **Date:** 2026-09-06
 - **Source:** [feature-26](../../specs/features/feature-26/briefing.md)
 
@@ -29,4 +29,6 @@ groove falls back to the root-and-mode lookup of
   wanted chords, rather than setting them.
 - A groove can carry a reference of its own, so the reveal can name the song it
   was modelled on instead of a generic one for the mode.
-- Not yet built. The row reads 🛠 Ready to implement.
+- Not built. Tried as an experiment on 2026-09-11 and rejected:
+  [0052 — A groove is not built from a named song](0052-a-groove-is-not-built-from-a-named-song.md)
+  records what three rendered songs sounded like and why the premise failed.

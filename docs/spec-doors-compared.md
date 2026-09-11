@@ -6,7 +6,8 @@ twice, deliberately, so the two spec-driven approaches could be compared:
 - **feature-26**, through the five-step chain: `/create-feature` → `/roadmap` →
   `/brainstorm` → `/writespec`. Settled 2026-09-06, in one day.
 - **V1**, through the chat door: `/vibe-with-docs`, one question at a time.
-  Settled 2026-09-11, `specs/tmp/1-grooves-from-songs/`.
+  Settled 2026-09-11, `specs/tmp/1-grooves-from-songs/`, **and built the same
+  day** — which is what the last section is about.
 
 V1 was written without reading feature-26's documents, so what follows is a
 comparison of two independent readings of one briefing, not of a draft and its
@@ -155,18 +156,121 @@ Two qualifications, in fairness to the chat door:
    it, which is why the best version of this feature is neither document: it is
    **V1's `harmonyFromChords` built against feature-26's constraint analysis.**
 
-## If you build it
+## What the build actually taught us
 
-Take feature-26 as the spine and graft V1's mechanism onto it:
+V1 was built on 2026-09-11, the same day, through `/implement-vibe-with-docs`.
+All three epics landed. This section is what the code said that neither
+document did — and the first thing it says is a caveat about this comparison.
 
-- Epic 1 from feature-26 (hand-written pins ship value on day one), with V1's
-  `selectHeardIn` behind the coaching door and V1's single-owner rule for the
-  name.
-- Epic 2 from V1 (`harmonyFromChords`, declared chords) — but keep
-  feature-26's answer-rule and pair-rule analysis, which apply unchanged and
-  bite harder.
-- Epic 3 from feature-26, minus the refusal path, which declared chords make
-  unnecessary. Keep its style-and-mode coupling argument: a feel owns two to
-  four modes, so the two choices cannot be made independently.
-- Decide again, deliberately, whether the substitution stays silent. It is the
-  one open disagreement between the two documents and the persona.
+### The caveat: this document contaminated the build
+
+The collision problem above was found *here*, by reading feature-26 to write
+this comparison — and then carried into the build as a §3 escalation before a
+line of Epic 2 existed. So the build is **not independent evidence** that the
+chat door would have caught it. It is evidence that the escalation step works
+once somebody knows what to look for.
+
+The honest counterfactual is unknown. `/implement-vibe-with-docs` §3 does say to
+re-run the size test against the files you actually open, and `select.ts` is one
+of them — but I opened it because this document told me to.
+
+### V1's mechanism survived contact with the code
+
+The one thing the chat door found that the chain did not is now built and green.
+`harmonyFromChords` sits beside an untouched `buildHarmony`, takes no `rng`,
+adds nothing to `MUSIC_LABEL`, and a full re-render to a scratch directory
+hashed every one of the 54 mp3s against the lock unchanged. 19 new generator
+tests.
+
+**feature-26's reason for ruling out the whole category was too strict, and the
+build proves it** rather than merely arguing it.
+
+### The `musician` found more than either document
+
+Neither spec knew any of this, and all of it is load-bearing:
+
+- `chordsForScale` returns **at most one chord per degree**, so "nearest chord"
+  collapses to "nearest degree" and a root match is unique. That turns a
+  distance function into a lookup.
+- **`chordName` must be bar 1's chord, not the tonic**, or
+  `theory/validity.ts:94`'s `names[0] === chordName` fails the harmony gate. In
+  the drawn path the two coincide, which is why no document noticed.
+- `blues` offers only three candidates through its idiom, so any non-blues tune
+  flattens onto three chords there.
+- A progression that never states the tonic is unanswerable, so it must throw.
+
+The lesson is not about doors: **a spec written by anyone who has not read
+`docs/music.md` will be missing the musical constraints, whichever door it came
+through.** What saved it was dispatching the agent that has read it.
+
+### The verifier caught three things the spec's own author missed
+
+All three were mine, in the build, not in either document:
+
+- **D3 was simply not built.** V1's own `## Done when` says a second command
+  commits the candidate; I built the other seven bullets and left that one as a
+  sentence in the skill saying somebody else would do it. The verifier failed
+  the whole change on it. Eight bullets were enough to catch a missing skill —
+  **a short criteria list still worked as a gate**, which is the strongest
+  result the chat door got all day.
+- **The uniqueness exception was implemented wider than the decision.** Fred
+  decided "two grooves may share an answer when one is pinned"; both narrowed
+  tests dropped *every* pinned groove before checking, so two song grooves
+  could quietly take the same answer.
+- **A file I reported as written did not exist.** The fix for D3 was a heredoc
+  whose parent directory I had not created, so the write failed — and the
+  `npm` commands on the following lines still ran and still reported green. I
+  relayed a green suite and a delivered file in the same breath, and only one
+  of them was true. The verifier looked for the file four ways and said so.
+
+  **That is the case for a gate that cannot fix anything.** A green suite is not
+  evidence that the thing you meant to write exists, because the suite does not
+  know what you meant to write. Nothing else in this repo would have caught it:
+  not lint, not 3 069 tests, not the build.
+
+### One guard had to be widened, and no document predicted it
+
+V1's Q7 put the uuid-before-scale rule behind `lib/presentation/`'s door.
+feature-20 had pinned that door's runtime exports to exactly two names, with a
+test. Adding a third is legitimate — the guard exists to force deliberation, not
+to forbid growth — but it was a decision made at build time, by whoever was
+holding the keyboard, on a boundary a whole feature was spent creating.
+
+**Neither spec mentioned the guard.** A tech spec that names a file it will
+widen should name the test that will stop it.
+
+### What it cost
+
+Three agent dispatches beyond the lead: the `musician` for the substitution
+rule, one `implementer` for `harmonyFromChords`, and the `verifier` twice. Epic
+1 and Epic 3 were built in the lead. The build was roughly the same order of
+effort as the speccing conversation — which, for a feature this size, is the
+number that should make anyone think twice about a 4 408-line spec.
+
+## What is left
+
+V1 is built, so this is no longer a plan — it is the list of things feature-26
+holds that the shipped code does not.
+
+- **feature-26's Epic 1 pins.** It would hand-pin a handful of existing grooves
+  whose four chords already resemble a nameable tune, so the reveal changes the
+  morning it lands rather than waiting for a mint. V1 shipped the mechanism and
+  zero pins, so nothing a player sees has changed yet. **This is the cheapest
+  unbuilt thing in either document.**
+- **The style-and-mode coupling argument**, which `song-groove` has as a table
+  but not as the reasoning: a feel owns two to four modes, so wanting harmonic
+  minor picks `half-time` and nothing else.
+- **The seed search itself.** Declared chords made it unnecessary for reaching a
+  tune, but a search that scores `{template, seed}` candidates is still the only
+  way to mint a groove that is *musically* the best of many. Nothing in V1
+  compares candidates.
+- **The `scale|progression` pair rule.** Fred's collision decision covered
+  `root|flavour`; the pair rule is still unexcepted, and a song whose changes
+  land on a pair an existing groove holds will fail the suite with no rule
+  saying what to do. feature-26's answer was to replace the colliding groove in
+  place, keeping its id and uuid.
+- **The open disagreement.** Whether the substitution stays silent is still
+  decided against the persona, twice, deliberately. `spec.md` said what that
+  costs on the day a player who knows the tune meets a moved chord; the built
+  reveal says nothing. Worth revisiting when the first song groove is actually
+  heard.
